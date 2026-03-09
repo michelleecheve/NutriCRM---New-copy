@@ -20,21 +20,18 @@ export const AdminPanel: React.FC = () => {
     setExpanded(prev => ({ ...prev, [pageId]: !prev[pageId] }));
 
   const togglePageRole = (pageId: string, role: UserRole) => {
-    if (role === 'admin') return; // admin siempre tiene acceso
     setPermissions(prev =>
       prev.map(p => {
         if (p.pageId !== pageId) return p;
         const roles = p.roles.includes(role)
           ? p.roles.filter(r => r !== role)
           : [...p.roles, role];
-        if (!roles.includes('admin')) roles.push('admin');
         return { ...p, roles };
       })
     );
   };
 
   const toggleModuleRole = (pageId: string, moduleId: string, role: UserRole) => {
-    if (role === 'admin') return;
     setPermissions(prev =>
       prev.map(p => {
         if (p.pageId !== pageId || !p.modules) return p;
@@ -45,7 +42,6 @@ export const AdminPanel: React.FC = () => {
             const roles = m.roles.includes(role)
               ? m.roles.filter(r => r !== role)
               : [...m.roles, role];
-            if (!roles.includes('admin')) roles.push('admin');
             return { ...m, roles };
           }),
         };
@@ -124,8 +120,8 @@ export const AdminPanel: React.FC = () => {
       <div className="flex gap-3 bg-violet-50 border border-violet-100 rounded-2xl px-5 py-4">
         <Info className="w-4 h-4 text-violet-500 flex-shrink-0 mt-0.5" />
         <p className="text-sm text-violet-700">
-          El rol <strong>Admin</strong> siempre tiene acceso completo y no puede modificarse.
-          Los cambios se aplican de inmediato para los demás roles.
+          Configura los permisos para cada rol, incluyendo <strong>Admin</strong>.
+          Los cambios se aplican inmediatamente después de guardar.
         </p>
       </div>
 
@@ -186,7 +182,7 @@ export const AdminPanel: React.FC = () => {
                   <div key={role.key} className="flex justify-center">
                     <Checkbox
                       checked={page.roles.includes(role.key)}
-                      disabled={role.key === 'admin'}
+                      disabled={false}
                       onChange={() => togglePageRole(page.pageId, role.key)}
                       color={checkboxColor[role.key]}
                     />
@@ -211,7 +207,7 @@ export const AdminPanel: React.FC = () => {
                       <div key={role.key} className="flex justify-center">
                         <Checkbox
                           checked={mod.roles.includes(role.key)}
-                          disabled={role.key === 'admin'}
+                          disabled={false}
                           onChange={() => toggleModuleRole(page.pageId, mod.moduleId, role.key)}
                           color={checkboxColor[role.key]}
                         />

@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { authStore } from '../services/authStore';
+import { authStore, MOCK_USERS } from '../services/authStore';
 import { UserProfile } from '../types';
 import {
   Save, User, Mail, Phone, Award, Camera, Check, Loader2,
   MapPin, Globe, Lock, Key, ExternalLink, Instagram,
-  ChevronDown, Clock, Link2, UserPlus, Trash2, Copy
+  ChevronDown, Clock, Link2, UserPlus, Trash2, Copy, Users
 } from 'lucide-react';
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Sub-components ────────────────────────────────────────────────────────────
 
 const InputField = ({ label, icon: Icon, value, onChange, type = "text", readOnly = false, placeholder = "" }: any) => (
   <div className="space-y-2">
@@ -70,39 +70,54 @@ const getLocalTimezone = () => {
   return `UTC${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
 
-// ─── Vinculacion Section (solo nutricionista) ─────────────────────────────────
+// ─── Vinculacion Section (Nutricionista) ──────────────────────────────────────
 
-const VinculacionSection: React.FC = () => {
-  const [inviteEmail, setInviteEmail] = useState('');
+const VinculacionNutricionista: React.FC = () => {
+  const currentUser = authStore.getCurrentUser();
+  const [linkCode, setLinkCode] = useState('');
   const [copied, setCopied] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  // Código fijo por sesión (en producción vendría de Supabase)
-  const shareCode = React.useMemo(() => {
-    const stored = sessionStorage.getItem('nutricrm_share_code');
-    if (stored) return stored;
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    sessionStorage.setItem('nutricrm_share_code', code);
-    return code;
-  }, []);
+  // Usar el ID del usuario como código de vinculación
+  const myLinkCode = currentUser?.id || '';
 
   const linkedReceptionists = authStore.getLinkedReceptionists();
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shareCode);
+  const handleCopyMyCode = () => {
+    navigator.clipboard.writeText(myLinkCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleInvite = () => {
-    if (!inviteEmail.trim()) {
-      setMsg({ type: 'err', text: 'Ingresa un correo electrónico.' });
+  const handleLinkReceptionist = () => {
+    if (!linkCode.trim()) {
+      setMsg({ type: 'err', text: 'Ingresa un código de vinculación.' });
       return;
     }
-    // Simulación — en Supabase esto haría un insert en tabla de invitaciones
-    setMsg({ type: 'ok', text: `Invitación enviada a ${inviteEmail}` });
-    setInviteEmail('');
+
+    // Buscar la recepcionista por su ID
+    const receptionist = MOCK_USERS.find(u => u.id === linkCode && u.role === 'recepcionista');
+    
+    if (!receptionist) {
+      setMsg({ type: 'err', text: 'Código inválido. No se encontró una recepcionista con ese código.' });
+      return;
+    }
+
+    // Verificar si ya está vinculada
+    if (currentUser?.linkedReceptionistIds?.includes(receptionist.id)) {
+      setMsg({ type: 'err', text: 'Esta recepcionista ya está vinculada.' });
+      return;
+    }
+
+    // En producción esto haría un UPDATE en Supabase
+    setMsg({ type: 'ok', text: `Recepcionista ${receptionist.profile.name} vinculada correctamente.` });
+    setLinkCode('');
     setTimeout(() => setMsg(null), 3000);
+  };
+
+  const handleUnlink = (receptionistId: string, receptionistName: string) => {
+    if (!confirm(`¿Desvincular a ${receptionistName}?`)) return;
+    alert(`Desvinculando a ${receptionistName}... (implementar con Supabase)`);
   };
 
   return (
@@ -112,21 +127,21 @@ const VinculacionSection: React.FC = () => {
         <h3 className="font-bold text-slate-800">Vinculación con Recepcionistas</h3>
       </div>
 
-      {/* Share code */}
+      {/* My linking code */}
       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 space-y-3">
         <div>
-          <p className="text-sm font-bold text-emerald-800">Código de vinculación</p>
+          <p className="text-sm font-bold text-emerald-800">Tu código de vinculación</p>
           <p className="text-xs text-emerald-600 mt-0.5">
-            Comparte este código con tu recepcionista para que pueda acceder a tu calendario.
+            Comparte este código con tu recepcionista para que pueda vincularse a tu cuenta.
           </p>
         </div>
         <div className="flex gap-3">
-          <div className="flex-1 bg-white border border-emerald-200 rounded-xl px-4 py-3 font-mono text-xl font-bold tracking-widest text-emerald-700 text-center">
-            {shareCode}
+          <div className="flex-1 bg-white border border-emerald-200 rounded-xl px-4 py-3 font-mono text-base font-bold tracking-wide text-emerald-700 select-all">
+            {myLinkCode}
           </div>
           <button
             type="button"
-            onClick={handleCopy}
+            onClick={handleCopyMyCode}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
               copied
                 ? 'bg-emerald-600 text-white'
@@ -139,27 +154,27 @@ const VinculacionSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Invite by email */}
+      {/* Link a receptionist by code */}
       <div className="space-y-2">
-        <label className="text-sm font-bold text-slate-700 block">Invitar por correo</label>
+        <label className="text-sm font-bold text-slate-700 block">Vincular recepcionista por código</label>
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
-              type="email"
-              value={inviteEmail}
-              onChange={e => setInviteEmail(e.target.value)}
-              placeholder="secretaria@clinica.com"
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              type="text"
+              value={linkCode}
+              onChange={e => setLinkCode(e.target.value)}
+              placeholder="recep-001"
+              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-mono font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
             />
           </div>
           <button
             type="button"
-            onClick={handleInvite}
+            onClick={handleLinkReceptionist}
             className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all text-sm"
           >
             <UserPlus className="w-4 h-4" />
-            Invitar
+            Vincular
           </button>
         </div>
         {msg && (
@@ -190,13 +205,169 @@ const VinculacionSection: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-slate-800 truncate">{recep.profile.name}</p>
                 <p className="text-xs text-slate-400 truncate">{recep.email}</p>
+                <p className="text-[10px] text-slate-400 font-mono truncate">ID: {recep.id}</p>
               </div>
               <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">
                 Activa
               </span>
               <button
                 type="button"
-                onClick={() => alert(`Desvincular a ${recep.profile.name} (implementar con Supabase)`)}
+                onClick={() => handleUnlink(recep.id, recep.profile.name)}
+                className="w-8 h-8 flex items-center justify-center bg-white border border-red-100 text-red-400 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Vinculacion Section (Recepcionista) ──────────────────────────────────────
+
+const VinculacionRecepcionista: React.FC = () => {
+  const currentUser = authStore.getCurrentUser();
+  const [linkCode, setLinkCode] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  // Usar el ID del usuario como código de vinculación
+  const myLinkCode = currentUser?.id || '';
+
+  const linkedNutritionists = authStore.getLinkedNutritionists();
+
+  const handleCopyMyCode = () => {
+    navigator.clipboard.writeText(myLinkCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleLinkNutritionist = () => {
+    if (!linkCode.trim()) {
+      setMsg({ type: 'err', text: 'Ingresa un código de vinculación.' });
+      return;
+    }
+
+    // Buscar la nutricionista por su ID
+    const nutritionist = MOCK_USERS.find(u => u.id === linkCode && u.role === 'nutricionista');
+    
+    if (!nutritionist) {
+      setMsg({ type: 'err', text: 'Código inválido. No se encontró una nutricionista con ese código.' });
+      return;
+    }
+
+    // Verificar si ya está vinculada
+    if (currentUser?.linkedNutritionistIds?.includes(nutritionist.id)) {
+      setMsg({ type: 'err', text: 'Esta nutricionista ya está vinculada.' });
+      return;
+    }
+
+    // En producción esto haría un UPDATE en Supabase
+    setMsg({ type: 'ok', text: `Nutricionista ${nutritionist.profile.name} vinculada correctamente.` });
+    setLinkCode('');
+    setTimeout(() => setMsg(null), 3000);
+  };
+
+  const handleUnlink = (nutritionistId: string, nutritionistName: string) => {
+    if (!confirm(`¿Desvincular a ${nutritionistName}?`)) return;
+    alert(`Desvinculando a ${nutritionistName}... (implementar con Supabase)`);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+        <Users className="w-5 h-5 text-blue-600" />
+        <h3 className="font-bold text-slate-800">Vinculación con Nutricionistas</h3>
+      </div>
+
+      {/* My linking code */}
+      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-3">
+        <div>
+          <p className="text-sm font-bold text-blue-800">Tu código de vinculación</p>
+          <p className="text-xs text-blue-600 mt-0.5">
+            Comparte este código con la nutricionista para que pueda vincularse a tu cuenta.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <div className="flex-1 bg-white border border-blue-200 rounded-xl px-4 py-3 font-mono text-base font-bold tracking-wide text-blue-700 select-all">
+            {myLinkCode}
+          </div>
+          <button
+            type="button"
+            onClick={handleCopyMyCode}
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+              copied
+                ? 'bg-blue-600 text-white'
+                : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
+            }`}
+          >
+            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copied ? 'Copiado' : 'Copiar'}
+          </button>
+        </div>
+      </div>
+
+      {/* Link a nutritionist by code */}
+      <div className="space-y-2">
+        <label className="text-sm font-bold text-slate-700 block">Vincular nutricionista por código</label>
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              value={linkCode}
+              onChange={e => setLinkCode(e.target.value)}
+              placeholder="nutri-001"
+              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-mono font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleLinkNutritionist}
+            className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all text-sm"
+          >
+            <UserPlus className="w-4 h-4" />
+            Vincular
+          </button>
+        </div>
+        {msg && (
+          <p className={`text-sm font-medium px-1 ${msg.type === 'ok' ? 'text-blue-600' : 'text-red-500'}`}>
+            {msg.text}
+          </p>
+        )}
+      </div>
+
+      {/* Linked nutritionists */}
+      <div className="space-y-3">
+        <p className="text-sm font-bold text-slate-700">
+          Nutricionistas vinculadas ({linkedNutritionists.length})
+        </p>
+        {linkedNutritionists.length === 0 ? (
+          <div className="bg-slate-50 rounded-xl p-5 text-center text-sm text-slate-400">
+            No tienes nutricionistas vinculadas aún.
+          </div>
+        ) : (
+          linkedNutritionists.map(nutri => (
+            <div
+              key={nutri.id}
+              className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-4"
+            >
+              <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm flex-shrink-0">
+                {nutri.profile.name.charAt(0)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-800 truncate">{nutri.profile.name}</p>
+                <p className="text-xs text-slate-400 truncate">{nutri.email}</p>
+                <p className="text-[10px] text-slate-400 font-mono truncate">ID: {nutri.id}</p>
+              </div>
+              <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
+                Activa
+              </span>
+              <button
+                type="button"
+                onClick={() => handleUnlink(nutri.id, nutri.profile.name)}
                 className="w-8 h-8 flex items-center justify-center bg-white border border-red-100 text-red-400 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -215,10 +386,11 @@ export const Profile: React.FC = () => {
   const currentUser = authStore.getCurrentUser();
   const role = currentUser?.role ?? 'nutricionista';
 
-  // Helpers para saber qué mostrar
-  const showNutriFields   = authStore.canAccessModule('profile', 'profile-nutri-fields');
-  const showSistema       = authStore.canAccessModule('profile', 'profile-sistema');
-  const showVinculacion   = authStore.canAccessModule('profile', 'profile-vinculacion');
+  // Helpers para saber qué mostrar basándose en permisos de módulos
+  const showNutriFields = authStore.canAccessModule('profile', 'profile-nutri-fields');
+  const showSistema = authStore.canAccessModule('profile', 'profile-sistema');
+  const showVinculacionRecepcionistas = authStore.canAccessModule('profile', 'profile-vinculacion-recepcionistas');
+  const showVinculacionNutricionistas = authStore.canAccessModule('profile', 'profile-vinculacion-nutricionistas');
 
   const [formData, setFormData] = useState<UserProfile>(authStore.getUserProfile());
   const [isSaved, setIsSaved]   = useState(false);
@@ -274,7 +446,7 @@ export const Profile: React.FC = () => {
         </h2>
         <p className="text-slate-500 mt-1">
           {role === 'recepcionista'
-            ? 'Gestiona tu información de contacto.'
+            ? 'Gestiona tu información de contacto y vinculaciones.'
             : 'Gestiona tu información pública y credenciales.'}
         </p>
       </div>
@@ -378,10 +550,13 @@ export const Profile: React.FC = () => {
               <TextAreaField label="Dirección" icon={MapPin} value={formData.address || ''} onChange={(e: any) => setFormData({ ...formData, address: e.target.value })} placeholder="Ingresa la dirección de tu clínica..." rows={3} />
             </div>
 
-            {/* ── SECCIÓN 2: Vinculación (solo nutricionista/admin) ── */}
-            {showVinculacion && <VinculacionSection />}
+            {/* ── SECCIÓN 2: Vinculación con Recepcionistas (nutricionista) ── */}
+            {showVinculacionRecepcionistas && <VinculacionNutricionista />}
 
-            {/* ── SECCIÓN 3: Configuración de Sistema (solo nutricionista/admin) ── */}
+            {/* ── SECCIÓN 3: Vinculación con Nutricionistas (recepcionista) ── */}
+            {showVinculacionNutricionistas && <VinculacionRecepcionista />}
+
+            {/* ─�� SECCIÓN 4: Configuración de Sistema (solo nutricionista/admin) ── */}
             {showSistema && (
               <div className="space-y-6">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -408,7 +583,7 @@ export const Profile: React.FC = () => {
               </div>
             )}
 
-            {/* ── SECCIÓN 4: Seguridad y Cuenta (todos) ── */}
+            {/* ── SECCIÓN 5: Seguridad y Cuenta (todos) ── */}
             <div className="space-y-6">
               <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                 <Lock className="w-5 h-5 text-emerald-600" />

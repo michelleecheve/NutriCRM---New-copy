@@ -107,7 +107,7 @@ export const DEFAULT_PERMISSIONS: PagePermission[] = [
       {
         moduleId: 'calendar-selector',
         label: 'Selector de Calendario (elegir nutricionista)',
-        roles: ['recepcionista'],
+        roles: ['admin', 'recepcionista'],
       },
     ],
   },
@@ -127,9 +127,14 @@ export const DEFAULT_PERMISSIONS: PagePermission[] = [
         roles: ['admin', 'nutricionista'],
       },
       {
-        moduleId: 'profile-vinculacion',
+        moduleId: 'profile-vinculacion-recepcionistas',
         label: 'Vinculación con Recepcionistas',
         roles: ['admin', 'nutricionista'],
+      },
+      {
+        moduleId: 'profile-vinculacion-nutricionistas',
+        label: 'Vinculación con Nutricionistas',
+        roles: ['admin', 'recepcionista'],
       },
     ],
   },
@@ -220,6 +225,12 @@ class AuthStore {
   // ── Linked Users ──────────────────────────────────────────────────────────
 
   getLinkedNutritionists(): AppUser[] {
+    // Admin puede ver todas las nutricionistas
+    if (this.currentUser?.role === 'admin') {
+      return MOCK_USERS.filter(u => u.role === 'nutricionista');
+    }
+    
+    // Recepcionista solo ve las vinculadas
     if (!this.currentUser?.linkedNutritionistIds) return [];
     return MOCK_USERS.filter(u =>
       u.role === 'nutricionista' &&

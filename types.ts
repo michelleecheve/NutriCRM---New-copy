@@ -205,6 +205,11 @@ export interface Appointment {
   modality: 'Presencial' | 'Video';
   status: 'Programada' | 'Completada' | 'Cancelada' | 'Reagendada';
   notes?: string;
+  // ── New fields for role tracking ──
+  nutritionistId?: string;    // ID de la nutricionista que creó/maneja la cita
+  receptionistId?: string;    // ID de la recepcionista que agendó la cita (si aplica)
+  createdBy?: string;         // ID del usuario que creó la cita
+  createdByRole?: 'admin' | 'nutricionista' | 'recepcionista'; // Rol del usuario que la creó
 }
 
 export interface Patient {
