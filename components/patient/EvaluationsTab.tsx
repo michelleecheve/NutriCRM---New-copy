@@ -1,19 +1,28 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Calendar, Plus, Check } from 'lucide-react';
+import { Calendar, Plus, Check, Trash2, Save, Pencil } from 'lucide-react';
 import { store } from '../../services/store';
 import { SectionHeader } from './SharedComponents';
 import type { PatientEvaluation } from '../../types';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 
+type Draft = {
+  title: string;
+  createdDate: string;
+};
+
 export const EvaluationsTab: React.FC<{ patientId: string }> = ({ patientId }) => {
   const [evaluations, setEvaluations] = useState<PatientEvaluation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string>('');
+
   const load = () => {
     const list = store.getEvaluations(patientId);
     setEvaluations(list);
-    setSelectedId(store.getSelectedEvaluationId(patientId));
+    const sel = store.getSelectedEvaluationId(patientId);
+    setSelectedId(sel);
   };
 
   useEffect(() => {
@@ -25,6 +34,20 @@ export const EvaluationsTab: React.FC<{ patientId: string }> = ({ patientId }) =
     return store.getEvaluationById(selectedId) ?? null;
   }, [selectedId]);
 
+  useEffect(() => {
+    if (!selected) {
+      setDraft(null);
+      setErrorMsg('');
+      return;
+    }
+
+    setDraft({
+      title: selected.title ?? `Evaluación ${selected.date}`,
+      createdDate: selected.createdDate ?? selected.date,
+    });
+    setErrorMsg('');
+  }, [selected?.id]);
+
   const handleCreateToday = () => {
     const ev = store.addEvaluation(patientId, todayStr());
     setSelectedId(ev.id);
@@ -35,6 +58,50 @@ export const EvaluationsTab: React.FC<{ patientId: string }> = ({ patientId }) =
     store.setSelectedEvaluationId(patientId, evId);
     setSelectedId(evId);
   };
+
+  const handleSave = () => {
+    if (!selected || !draft) return;
+
+    setErrorMsg('');
+    try {
+      store.updateEvaluation(selected.id, {
+        title: draft.title?.trim() ? draft.title.trim() : undefined,
+        createdDate: draft.createdDate,
+      });
+      load();
+    } catch (e: any) {
+      setErrorMsg(e?.message ?? 'No se pudo guardar la evaluación.');
+    }
+  };
+
+  const handleDelete = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!selected) return;
+
+    const ok = window.confirm(
+      `¿Seguro que deseas eliminar esta evaluación?\n\nTítulo: ${selected.title ?? '(sin título)'}\nFecha (sistema): ${selected.date}\n\nEsta acción no se puede deshacer.`
+    );
+    if (!ok) return;
+
+    store.deleteEvaluation(selected.id);
+
+    // refrescar selección + UI
+    const newSel = store.getSelectedEvaluationId(patientId);
+    setSelectedId(newSel);
+    setDraft(null);
+    setErrorMsg('');
+    load();
+  };
+
+  const hasChanges = useMemo(() => {
+    if (!selected || !draft) return false;
+    const t = selected.title ?? `Evaluación ${selected.date}`;
+    const cd = selected.createdDate ?? selected.date;
+    return draft.title !== t || draft.createdDate !== cd;
+  }, [selected, draft]);
 
   return (
     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500 min-h-[400px]">
@@ -75,8 +142,8 @@ export const EvaluationsTab: React.FC<{ patientId: string }> = ({ patientId }) =
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-extrabold text-slate-800 truncate">{ev.date}</p>
-                      <p className="text-[11px] text-slate-400 font-mono truncate">{ev.id}</p>
+                      <p className="text-sm font-extrabold text-slate-800 truncate">{ev.title ?? ev.date}</p>
+                      <p className="text-[11px] text-slate-400 font-mono truncate">{ev.date} · {ev.id}</p>
                     </div>
                     {isActive && (
                       <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
@@ -92,27 +159,80 @@ export const EvaluationsTab: React.FC<{ patientId: string }> = ({ patientId }) =
 
         {/* Detail */}
         <div className="lg:col-span-2">
-          {!selected ? (
+          {!selected || !draft ? (
             <div className="h-full min-h-[220px] border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-slate-400 p-8">
               <p className="font-bold">Selecciona una evaluación</p>
               <p className="text-sm mt-1">Las demás pestañas se asignarán a esta evaluación.</p>
             </div>
           ) : (
             <div className="border border-slate-200 rounded-2xl bg-white p-6">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Evaluación seleccionada</p>
-              <h3 className="text-xl font-extrabold text-slate-900 mt-1">{selected.date}</h3>
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Evaluación seleccionada</p>
+
+                  <div className="mt-2 flex items-center gap-2">
+                    <Pencil className="w-4 h-4 text-slate-300 shrink-0" />
+                    <input
+                      value={draft.title}
+                      onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                      placeholder="Título de la evaluación"
+                      className="w-full text-xl font-extrabold text-slate-900 bg-transparent outline-none border-b border-transparent focus:border-slate-200"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-100 bg-red-50 text-red-700 font-bold text-sm hover:bg-red-100 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Eliminar
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={!hasChanges}
+                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl font-bold text-sm transition-colors ${
+                      hasChanges ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    }`}
+                  >
+                    <Save className="w-4 h-4" />
+                    Guardar
+                  </button>
+                </div>
+              </div>
+
+              {errorMsg && (
+                <div className="mt-4 p-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm font-bold">
+                  {errorMsg}
+                </div>
+              )}
 
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Creada</p>
+                  <input
+                    type="date"
+                    value={draft.createdDate}
+                    onChange={(e) => setDraft({ ...draft, createdDate: e.target.value })}
+                    className="mt-2 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200"
+                  />
+
+                  <p className="mt-2 text-[11px] text-slate-400 font-mono break-all">
+                    createdAt (auditoría): {selected.createdAt}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Evaluation ID</p>
                   <p className="mt-1 font-mono text-sm font-bold text-slate-800 break-all">{selected.id}</p>
-                </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Creada</p>
-                  <p className="mt-1 text-sm font-bold text-slate-800">
-                    {new Date(selected.createdAt).toLocaleString('es-ES')}
+
+                  <p className="mt-2 text-[11px] text-slate-400 font-mono break-all">
+                    date (sistema): {selected.date}
                   </p>
-                  <p className="mt-1 text-[11px] text-slate-400 font-mono break-all">{selected.createdAt}</p>
                 </div>
               </div>
 

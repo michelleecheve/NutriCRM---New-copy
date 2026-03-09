@@ -31,6 +31,17 @@ function save<T>(key: string, value: T): void {
   }
 }
 
+function formatSpanishLongDate(yyyyMmDd: string): string {
+  // Evita desfase por zona horaria: fuerza hora medio día.
+  const d = new Date(`${yyyyMmDd}T12:00:00`);
+  const day = d.getDate();
+  const month = d.toLocaleDateString('es-ES', { month: 'long' });
+  const year = d.getFullYear();
+
+  const monthCap = month.charAt(0).toUpperCase() + month.slice(1);
+  return `${day} ${monthCap}, ${year}`;
+}
+
 // ─── Seed Data (solo se usa la PRIMERA vez que no hay nada en localStorage) ───
 
 const SEED_PATIENTS: Patient[] = [
@@ -197,25 +208,18 @@ class Store {
   private user:         UserProfile   = load(KEYS.user,         SEED_USER);
   private statuses:     string[]      = load(KEYS.statuses,     SEED_STATUSES);
 
-  // ✅ nuevos
   private evaluations: PatientEvaluation[] = load(KEYS.evaluations, SEED_EVALUATIONS);
   private selectedEvaluationByPatient: Record<string, string> = load(KEYS.evalSelected, SEED_SELECTED);
 
   constructor() {
-    // Cleanup fictitious menus from Michelle Echeverria if they exist in localStorage
     this.patients = this.patients.map(p => {
       if (p.firstName === 'Michelle' && p.lastName === 'Echeverria') {
-        return {
-          ...p,
-          menus: p.menus.filter(m => !m.id.startsWith('menu-hist-'))
-        };
+        return { ...p, menus: p.menus.filter(m => !m.id.startsWith('menu-hist-')) };
       }
       return p;
     });
     save(KEYS.patients, this.patients);
   }
-
-  // ── Patients ────────────────────────────────────────────────────────────────
 
   getPatients(): Patient[] {
     return this.patients;
@@ -270,8 +274,6 @@ class Store {
     save(KEYS.patients, this.patients);
   }
 
-  // ── Invoices ────────────────────────────────────────────────────────────────
-
   getInvoices(): Invoice[] {
     return this.invoices;
   }
@@ -293,8 +295,6 @@ class Store {
     save(KEYS.invoices, this.invoices);
   }
 
-  // ── Appointments (Calendario General) ────────────────────────────────────────
-
   getAppointments(): Appointment[] {
     return this.appointments;
   }
@@ -303,7 +303,6 @@ class Store {
     const newAppt = { ...appointment, id: Math.random().toString(36).substring(7) };
     this.appointments = [...this.appointments, newAppt];
     save(KEYS.appointments, this.appointments);
-
     return newAppt;
   }
 
@@ -316,8 +315,6 @@ class Store {
     this.appointments = this.appointments.filter(a => a.id !== id);
     save(KEYS.appointments, this.appointments);
   }
-
-  // ── Evaluations (Paciente: 1 por día) ────────────────────────────────────────
 
   getEvaluations(patientId: string): PatientEvaluation[] {
     return this.evaluations
@@ -334,20 +331,21 @@ class Store {
   }
 
   addEvaluation(patientId: string, date: string): PatientEvaluation {
-    // regla: 1 por día por paciente
     const existing = this.getEvaluationByPatientAndDate(patientId, date);
     if (existing) {
-      // si ya existe, la seleccionamos para facilitar el flujo
       this.selectedEvaluationByPatient[patientId] = existing.id;
       save(KEYS.evalSelected, this.selectedEvaluationByPatient);
       return existing;
     }
 
     const nowIso = new Date().toISOString();
+
     const ev: PatientEvaluation = {
       id: `EVAL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
       patientId,
       date,
+      title: `Evaluación ${formatSpanishLongDate(date)}`, // ✅ default como pediste
+      createdDate: date,
       createdAt: nowIso,
     };
 
@@ -358,6 +356,44 @@ class Store {
     save(KEYS.evalSelected, this.selectedEvaluationByPatient);
 
     return ev;
+  }
+
+  updateEvaluation(evaluationId: string, patch: Partial<PatientEvaluation>): PatientEvaluation | null {
+    const current = this.getEvaluationById(evaluationId);
+    if (!current) return null;
+
+    const { createdAt, ...safePatch } = patch as any;
+
+    if (safePatch.date && safePatch.date !== current.date) {
+      const conflict = this.getEvaluationByPatientAndDate(current.patientId, safePatch.date);
+      if (conflict && conflict.id !== current.id) {
+        throw new Error('Ya existe una evaluación para esa fecha en este paciente.');
+      }
+    }
+
+    const updated: PatientEvaluation = {
+      ...current,
+      ...safePatch,
+    };
+
+    this.evaluations = this.evaluations.map(e => e.id === evaluationId ? updated : e);
+    save(KEYS.evaluations, this.evaluations);
+
+    return updated;
+  }
+
+  deleteEvaluation(evaluationId: string): void {
+    const ev = this.getEvaluationById(evaluationId);
+    if (!ev) return;
+
+    this.evaluations = this.evaluations.filter(e => e.id !== evaluationId);
+    save(KEYS.evaluations, this.evaluations);
+
+    const pid = ev.patientId;
+    if (this.selectedEvaluationByPatient[pid] === evaluationId) {
+      delete this.selectedEvaluationByPatient[pid];
+      save(KEYS.evalSelected, this.selectedEvaluationByPatient);
+    }
   }
 
   getSelectedEvaluationId(patientId: string): string | null {
@@ -373,8 +409,6 @@ class Store {
     save(KEYS.evalSelected, this.selectedEvaluationByPatient);
   }
 
-  // ── User Profile ────────────────────────────────────────────────────────────
-
   getUserProfile(): UserProfile {
     return this.user;
   }
@@ -384,8 +418,6 @@ class Store {
     save(KEYS.user, this.user);
   }
 
-  // ── Patient Statuses ────────────────────────────────────────────────────────
-  
   getPatientStatuses(): string[] {
     return this.statuses;
   }

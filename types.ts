@@ -260,11 +260,23 @@ export interface AppUser {
   linkCode?: string;
 }
 
+/**
+ * PatientEvaluation
+ * - date: representa "la evaluación del día" (clave 1 por día por paciente)
+ * - createdAt: auditoría (ISO datetime, no editable)
+ * - createdDate: lo que se muestra en UI en "Creada" y se puede editar (solo fecha)
+ * - title: nombre/título editable
+ */
 export interface PatientEvaluation {
-  id: string;        // evaluationId
+  id: string;             // evaluationId
   patientId: string;
-  date: string;      // YYYY-MM-DD (1 por día por paciente)
-  createdAt: string; // ISO
+
+  date: string;           // YYYY-MM-DD (1 por día por paciente)
+
+  title?: string;         // editable (ej: "Seguimiento", "Primera consulta", etc.)
+  createdDate: string;    // YYYY-MM-DD (editable en UI)
+
+  createdAt: string;      // ISO (auditoría técnica)
 }
 
 export enum AppRoute {
