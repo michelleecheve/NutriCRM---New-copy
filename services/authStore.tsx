@@ -148,7 +148,7 @@ export const DEFAULT_PERMISSIONS: PagePermission[] = [
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 
 const SESSION_KEY = 'nutricrm_session_v1';
-const PERMISSIONS_KEY = 'nutricrm_permissions_v1';
+const PERMISSIONS_KEY = 'nutricrm_permissions_v1.1';
 
 // ─── Auth Store Class ─────────────────────────────────────────────────────────
 
