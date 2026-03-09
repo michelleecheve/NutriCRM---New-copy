@@ -1,13 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { authStore, MOCK_USERS } from '../services/authStore';
+import { authStore } from '../services/authStore';
 import { UserProfile } from '../types';
 import {
   Save, User, Mail, Phone, Award, Camera, Check, Loader2,
   MapPin, Globe, Lock, Key, ExternalLink, Instagram,
   ChevronDown, Clock, Link2, UserPlus, Trash2, Copy, Users
 } from 'lucide-react';
-
-// ─── Sub-components ────────────────────────────────────────────────────────────
 
 const InputField = ({ label, icon: Icon, value, onChange, type = "text", readOnly = false, placeholder = "" }: any) => (
   <div className="space-y-2">
@@ -70,17 +68,14 @@ const getLocalTimezone = () => {
   return `UTC${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
 
-// ─── Vinculacion Section (Nutricionista) ──────────────────────────────────────
-
 const VinculacionNutricionista: React.FC = () => {
-  const currentUser = authStore.getCurrentUser();
+  const currentUser: any = authStore.getCurrentUser();
   const [linkCode, setLinkCode] = useState('');
   const [copied, setCopied] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Usar el ID del usuario como código de vinculación
-  const myLinkCode = currentUser?.id || '';
-
+  const myLinkCode = currentUser?.linkCode || '';
   const linkedReceptionists = authStore.getLinkedReceptionists();
 
   const handleCopyMyCode = () => {
@@ -94,31 +89,25 @@ const VinculacionNutricionista: React.FC = () => {
       setMsg({ type: 'err', text: 'Ingresa un código de vinculación.' });
       return;
     }
-
-    // Buscar la recepcionista por su ID
-    const receptionist = MOCK_USERS.find(u => u.id === linkCode && u.role === 'recepcionista');
-    
-    if (!receptionist) {
-      setMsg({ type: 'err', text: 'Código inválido. No se encontró una recepcionista con ese código.' });
-      return;
+    const res = authStore.linkReceptionistToNutritionistByCode(linkCode.trim());
+    setMsg({ type: res.ok ? 'ok' : 'err', text: res.message });
+    if (res.ok) {
+      setLinkCode('');
+      setRefreshKey(x => x + 1);
     }
-
-    // Verificar si ya está vinculada
-    if (currentUser?.linkedReceptionistIds?.includes(receptionist.id)) {
-      setMsg({ type: 'err', text: 'Esta recepcionista ya está vinculada.' });
-      return;
-    }
-
-    // En producción esto haría un UPDATE en Supabase
-    setMsg({ type: 'ok', text: `Recepcionista ${receptionist.profile.name} vinculada correctamente.` });
-    setLinkCode('');
     setTimeout(() => setMsg(null), 3000);
   };
 
   const handleUnlink = (receptionistId: string, receptionistName: string) => {
     if (!confirm(`¿Desvincular a ${receptionistName}?`)) return;
-    alert(`Desvinculando a ${receptionistName}... (implementar con Supabase)`);
+    const res = authStore.unlinkReceptionistFromNutritionist(receptionistId);
+    setMsg({ type: res.ok ? 'ok' : 'err', text: res.message });
+    if (res.ok) setRefreshKey(x => x + 1);
+    setTimeout(() => setMsg(null), 3000);
   };
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _ = refreshKey;
 
   return (
     <div className="space-y-6">
@@ -127,7 +116,6 @@ const VinculacionNutricionista: React.FC = () => {
         <h3 className="font-bold text-slate-800">Vinculación con Recepcionistas</h3>
       </div>
 
-      {/* My linking code */}
       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 space-y-3">
         <div>
           <p className="text-sm font-bold text-emerald-800">Tu código de vinculación</p>
@@ -154,7 +142,6 @@ const VinculacionNutricionista: React.FC = () => {
         </div>
       </div>
 
-      {/* Link a receptionist by code */}
       <div className="space-y-2">
         <label className="text-sm font-bold text-slate-700 block">Vincular recepcionista por código</label>
         <div className="flex gap-3">
@@ -164,7 +151,7 @@ const VinculacionNutricionista: React.FC = () => {
               type="text"
               value={linkCode}
               onChange={e => setLinkCode(e.target.value)}
-              placeholder="recep-001"
+              placeholder="RECEP-9Z1P0A"
               className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-mono font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
             />
           </div>
@@ -184,7 +171,6 @@ const VinculacionNutricionista: React.FC = () => {
         )}
       </div>
 
-      {/* Linked receptionists */}
       <div className="space-y-3">
         <p className="text-sm font-bold text-slate-700">
           Recepcionistas vinculadas ({linkedReceptionists.length})
@@ -205,7 +191,6 @@ const VinculacionNutricionista: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-slate-800 truncate">{recep.profile.name}</p>
                 <p className="text-xs text-slate-400 truncate">{recep.email}</p>
-                <p className="text-[10px] text-slate-400 font-mono truncate">ID: {recep.id}</p>
               </div>
               <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">
                 Activa
@@ -225,17 +210,14 @@ const VinculacionNutricionista: React.FC = () => {
   );
 };
 
-// ─── Vinculacion Section (Recepcionista) ──────────────────────────────────────
-
 const VinculacionRecepcionista: React.FC = () => {
-  const currentUser = authStore.getCurrentUser();
+  const currentUser: any = authStore.getCurrentUser();
   const [linkCode, setLinkCode] = useState('');
   const [copied, setCopied] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Usar el ID del usuario como código de vinculación
-  const myLinkCode = currentUser?.id || '';
-
+  const myLinkCode = currentUser?.linkCode || '';
   const linkedNutritionists = authStore.getLinkedNutritionists();
 
   const handleCopyMyCode = () => {
@@ -249,31 +231,25 @@ const VinculacionRecepcionista: React.FC = () => {
       setMsg({ type: 'err', text: 'Ingresa un código de vinculación.' });
       return;
     }
-
-    // Buscar la nutricionista por su ID
-    const nutritionist = MOCK_USERS.find(u => u.id === linkCode && u.role === 'nutricionista');
-    
-    if (!nutritionist) {
-      setMsg({ type: 'err', text: 'Código inválido. No se encontró una nutricionista con ese código.' });
-      return;
+    const res = authStore.linkNutritionistToReceptionistByCode(linkCode.trim());
+    setMsg({ type: res.ok ? 'ok' : 'err', text: res.message });
+    if (res.ok) {
+      setLinkCode('');
+      setRefreshKey(x => x + 1);
     }
-
-    // Verificar si ya está vinculada
-    if (currentUser?.linkedNutritionistIds?.includes(nutritionist.id)) {
-      setMsg({ type: 'err', text: 'Esta nutricionista ya está vinculada.' });
-      return;
-    }
-
-    // En producción esto haría un UPDATE en Supabase
-    setMsg({ type: 'ok', text: `Nutricionista ${nutritionist.profile.name} vinculada correctamente.` });
-    setLinkCode('');
     setTimeout(() => setMsg(null), 3000);
   };
 
   const handleUnlink = (nutritionistId: string, nutritionistName: string) => {
     if (!confirm(`¿Desvincular a ${nutritionistName}?`)) return;
-    alert(`Desvinculando a ${nutritionistName}... (implementar con Supabase)`);
+    const res = authStore.unlinkNutritionistFromReceptionist(nutritionistId);
+    setMsg({ type: res.ok ? 'ok' : 'err', text: res.message });
+    if (res.ok) setRefreshKey(x => x + 1);
+    setTimeout(() => setMsg(null), 3000);
   };
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _ = refreshKey;
 
   return (
     <div className="space-y-6">
@@ -282,7 +258,6 @@ const VinculacionRecepcionista: React.FC = () => {
         <h3 className="font-bold text-slate-800">Vinculación con Nutricionistas</h3>
       </div>
 
-      {/* My linking code */}
       <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-3">
         <div>
           <p className="text-sm font-bold text-blue-800">Tu código de vinculación</p>
@@ -309,7 +284,6 @@ const VinculacionRecepcionista: React.FC = () => {
         </div>
       </div>
 
-      {/* Link a nutritionist by code */}
       <div className="space-y-2">
         <label className="text-sm font-bold text-slate-700 block">Vincular nutricionista por código</label>
         <div className="flex gap-3">
@@ -319,7 +293,7 @@ const VinculacionRecepcionista: React.FC = () => {
               type="text"
               value={linkCode}
               onChange={e => setLinkCode(e.target.value)}
-              placeholder="nutri-001"
+              placeholder="NUTRI-4K8D2Q"
               className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-mono font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
           </div>
@@ -339,7 +313,6 @@ const VinculacionRecepcionista: React.FC = () => {
         )}
       </div>
 
-      {/* Linked nutritionists */}
       <div className="space-y-3">
         <p className="text-sm font-bold text-slate-700">
           Nutricionistas vinculadas ({linkedNutritionists.length})
@@ -360,7 +333,6 @@ const VinculacionRecepcionista: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-slate-800 truncate">{nutri.profile.name}</p>
                 <p className="text-xs text-slate-400 truncate">{nutri.email}</p>
-                <p className="text-[10px] text-slate-400 font-mono truncate">ID: {nutri.id}</p>
               </div>
               <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
                 Activa
@@ -380,20 +352,17 @@ const VinculacionRecepcionista: React.FC = () => {
   );
 };
 
-// ─── Main Profile Component ───────────────────────────────────────────────────
-
 export const Profile: React.FC = () => {
   const currentUser = authStore.getCurrentUser();
   const role = currentUser?.role ?? 'nutricionista';
 
-  // Helpers para saber qué mostrar basándose en permisos de módulos
   const showNutriFields = authStore.canAccessModule('profile', 'profile-nutri-fields');
   const showSistema = authStore.canAccessModule('profile', 'profile-sistema');
   const showVinculacionRecepcionistas = authStore.canAccessModule('profile', 'profile-vinculacion-recepcionistas');
   const showVinculacionNutricionistas = authStore.canAccessModule('profile', 'profile-vinculacion-nutricionistas');
 
   const [formData, setFormData] = useState<UserProfile>(authStore.getUserProfile());
-  const [isSaved, setIsSaved]   = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [isProcessingImg, setIsProcessingImg] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -425,8 +394,11 @@ export const Profile: React.FC = () => {
         const canvas = document.createElement('canvas');
         let { width, height } = img;
         const MAX_SIZE = 1080;
-        if (width > height) { if (width > MAX_SIZE) { height = Math.round(height * MAX_SIZE / width); width = MAX_SIZE; } }
-        else { if (height > MAX_SIZE) { width = Math.round(width * MAX_SIZE / height); height = MAX_SIZE; } }
+        if (width > height) {
+          if (width > MAX_SIZE) { height = Math.round(height * MAX_SIZE / width); width = MAX_SIZE; }
+        } else {
+          if (height > MAX_SIZE) { width = Math.round(width * MAX_SIZE / height); height = MAX_SIZE; }
+        }
         canvas.width = width; canvas.height = height;
         canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
         let quality = 0.9;
@@ -452,13 +424,11 @@ export const Profile: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        {/* Cover */}
         <div className="h-32 bg-gradient-to-r from-emerald-600 to-teal-600 relative">
           <div className="absolute inset-0 bg-white/10"></div>
         </div>
 
         <div className="px-8 pb-8">
-          {/* Avatar */}
           <div className="relative flex justify-between items-end -mt-12 mb-8">
             <div className="relative group">
               <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-lg relative overflow-hidden">
@@ -488,8 +458,6 @@ export const Profile: React.FC = () => {
           </div>
 
           <form onSubmit={handleSave} className="space-y-10">
-
-            {/* ── SECCIÓN 1: Datos ── */}
             <div className="space-y-6">
               <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                 <User className="w-5 h-5 text-emerald-600" />
@@ -499,7 +467,6 @@ export const Profile: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Campos solo para nutricionista/admin */}
                 {showNutriFields && (
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 block">Título</label>
@@ -519,10 +486,8 @@ export const Profile: React.FC = () => {
                   </div>
                 )}
 
-                {/* Nombre — todos lo ven */}
                 <InputField label="Nombre Completo" icon={User} value={formData.name} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} />
 
-                {/* Campos solo nutricionista/admin */}
                 {showNutriFields && (
                   <>
                     <InputField label="Especialidad / Título" icon={Award} value={formData.specialty} onChange={(e: any) => setFormData({ ...formData, specialty: e.target.value })} />
@@ -530,14 +495,11 @@ export const Profile: React.FC = () => {
                   </>
                 )}
 
-                {/* Teléfonos — todos los ven */}
                 <InputField label="Teléfono de Clínica" icon={Phone} value={formData.phone} onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })} />
                 <InputField label="Teléfono Personal" icon={Phone} value={formData.personalPhone || ''} onChange={(e: any) => setFormData({ ...formData, personalPhone: e.target.value })} />
 
-                {/* Correo — todos lo ven */}
                 <InputField label="Correo Electrónico de Contacto" icon={Mail} type="email" value={formData.contactEmail || ''} onChange={(e: any) => setFormData({ ...formData, contactEmail: e.target.value })} />
 
-                {/* Instagram y Web — solo nutricionista/admin */}
                 {showNutriFields && (
                   <>
                     <InputField label="Usuario Instagram" icon={Instagram} value={formData.instagramHandle || ''} placeholder="blancamoorales" onChange={(e: any) => setFormData({ ...formData, instagramHandle: e.target.value })} />
@@ -546,17 +508,12 @@ export const Profile: React.FC = () => {
                 )}
               </div>
 
-              {/* Dirección — todos la ven */}
               <TextAreaField label="Dirección" icon={MapPin} value={formData.address || ''} onChange={(e: any) => setFormData({ ...formData, address: e.target.value })} placeholder="Ingresa la dirección de tu clínica..." rows={3} />
             </div>
 
-            {/* ── SECCIÓN 2: Vinculación con Recepcionistas (nutricionista) ── */}
             {showVinculacionRecepcionistas && <VinculacionNutricionista />}
-
-            {/* ── SECCIÓN 3: Vinculación con Nutricionistas (recepcionista) ── */}
             {showVinculacionNutricionistas && <VinculacionRecepcionista />}
 
-            {/* ─�� SECCIÓN 4: Configuración de Sistema (solo nutricionista/admin) ── */}
             {showSistema && (
               <div className="space-y-6">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -582,31 +539,6 @@ export const Profile: React.FC = () => {
                 </div>
               </div>
             )}
-
-            {/* ── SECCIÓN 5: Seguridad y Cuenta (todos) ── */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                <Lock className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-bold text-slate-800">Seguridad y Cuenta</h3>
-              </div>
-              <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Correo Electrónico Registrado</label>
-                  <div className="flex items-center gap-2 text-slate-700 font-bold">
-                    <Mail className="w-4 h-4 text-slate-400" />
-                    {currentUser?.email}
-                  </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                  <button type="button" className="flex items-center gap-2 text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
-                    <Key className="w-4 h-4" /> Cambiar contraseña
-                  </button>
-                  <button type="button" className="flex items-center gap-2 text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
-                    <ExternalLink className="w-4 h-4" /> Cambiar correo de login
-                  </button>
-                </div>
-              </div>
-            </div>
 
             <div className="pt-4 flex justify-end">
               <button

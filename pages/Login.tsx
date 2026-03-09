@@ -102,9 +102,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div className="mt-6 bg-slate-50 rounded-2xl p-4 space-y-1.5">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Accesos de prueba</p>
             {[
-              { role: 'Nutricionista', email: 'blancamoralesc96@gmail.com', pass: 'nutri123' },
-              { role: 'Recepcionista', email: 'secretaria@nutricrm.com',    pass: 'recep123' },
-              { role: 'Admin',         email: 'admin@nutricrm.com',         pass: 'admin123' },
+              { role: 'Nutricionista',   email: 'blancamoralesc96@gmail.com', pass: 'nutri123' },
+              // ✅ Nuevo acceso rápido
+              { role: 'Nutricionista 2', email: 'nutri2@nutricrm.com',        pass: 'nutri123' },
+              { role: 'Recepcionista',   email: 'secretaria@nutricrm.com',    pass: 'recep123' },
+              { role: 'Admin',           email: 'admin@nutricrm.com',         pass: 'admin123' },
             ].map(c => (
               <button
                 key={c.role}

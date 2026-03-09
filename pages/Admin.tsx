@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  ShieldCheck, Save, RotateCcw, ChevronDown, ChevronRight, Info
+  ShieldCheck, Save, RotateCcw, ChevronDown, ChevronRight, Info, Bug
 } from 'lucide-react';
 import { authStore, DEFAULT_PERMISSIONS } from '../services/authStore';
 import { PagePermission, UserRole } from '../types';
@@ -11,10 +11,61 @@ const ROLES: { key: UserRole; label: string; color: string; dot: string }[] = [
   { key: 'recepcionista', label: 'Recepcionista',   color: 'text-blue-600',   dot: 'bg-blue-500'   },
 ];
 
+// OJO: debe coincidir con la key que usa authStore
+const PERMISSIONS_KEY = 'nutricrm_permissions_v1.1';
+
+type InjectionReport = {
+  injectedPages: string[];  // pageId
+  injectedModules: { pageId: string; moduleId: string }[];
+};
+
+const buildInjectionReport = (stored: PagePermission[] | null, defaults: PagePermission[]): InjectionReport => {
+  const report: InjectionReport = { injectedPages: [], injectedModules: [] };
+
+  if (!stored || !Array.isArray(stored)) {
+    // Si no había nada guardado, no lo consideramos "inyección": es primera vez.
+    return report;
+  }
+
+  const storedPageIds = new Set(stored.map(p => p.pageId));
+
+  for (const defPage of defaults) {
+    if (!storedPageIds.has(defPage.pageId)) {
+      report.injectedPages.push(defPage.pageId);
+      continue;
+    }
+
+    const stPage = stored.find(p => p.pageId === defPage.pageId);
+    const stModuleIds = new Set((stPage?.modules ?? []).map(m => m.moduleId));
+
+    for (const defMod of defPage.modules ?? []) {
+      if (!stModuleIds.has(defMod.moduleId)) {
+        report.injectedModules.push({ pageId: defPage.pageId, moduleId: defMod.moduleId });
+      }
+    }
+  }
+
+  return report;
+};
+
 export const AdminPanel: React.FC = () => {
   const [permissions, setPermissions] = useState<PagePermission[]>(authStore.getPermissions());
   const [expanded, setExpanded]       = useState<Record<string, boolean>>({});
   const [saved, setSaved]             = useState(false);
+
+  // ── Debug: detectar inyección (comparando stored vs defaults) ──────────────
+  const injectionReport = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(PERMISSIONS_KEY);
+      const stored = raw ? (JSON.parse(raw) as PagePermission[]) : null;
+      return buildInjectionReport(stored, DEFAULT_PERMISSIONS);
+    } catch {
+      return { injectedPages: [], injectedModules: [] };
+    }
+  }, []);
+
+  const showInjectionBanner =
+    injectionReport.injectedPages.length > 0 || injectionReport.injectedModules.length > 0;
 
   const toggle = (pageId: string) =>
     setExpanded(prev => ({ ...prev, [pageId]: !prev[pageId] }));
@@ -55,6 +106,7 @@ export const AdminPanel: React.FC = () => {
     setTimeout(() => setSaved(false), 2000);
   };
 
+  // Recomendación: mantenerlo como botón de emergencia
   const handleReset = () => {
     if (!confirm('¿Restaurar todos los permisos a los valores por defecto?')) return;
     setPermissions(DEFAULT_PERMISSIONS);
@@ -101,9 +153,10 @@ export const AdminPanel: React.FC = () => {
         <div className="flex gap-3">
           <button
             onClick={handleReset}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold text-sm rounded-xl hover:bg-slate-50 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-red-200 text-red-600 font-bold text-sm rounded-xl hover:bg-red-50 transition-all"
+            title="Volver a los permisos por defecto"
           >
-            <RotateCcw className="w-4 h-4" /> Restablecer
+            <RotateCcw className="w-4 h-4" /> Restablecer a defaults
           </button>
           <button
             onClick={handleSave}
@@ -115,6 +168,38 @@ export const AdminPanel: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Debug banner: solo aparece si detecta inyección real */}
+      {showInjectionBanner && (
+        <div className="flex gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
+          <Bug className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-900">
+            <p className="font-bold">Depuración: se detectaron permisos nuevos y fueron inyectados automáticamente.</p>
+
+            {injectionReport.injectedPages.length > 0 && (
+              <p className="mt-1">
+                <span className="font-bold">Páginas nuevas:</span>{' '}
+                <span className="font-mono">{injectionReport.injectedPages.join(', ')}</span>
+              </p>
+            )}
+
+            {injectionReport.injectedModules.length > 0 && (
+              <p className="mt-1">
+                <span className="font-bold">Módulos nuevos:</span>{' '}
+                <span className="font-mono">
+                  {injectionReport.injectedModules
+                    .map(m => `${m.pageId}/${m.moduleId}`)
+                    .join(', ')}
+                </span>
+              </p>
+            )}
+
+            <p className="mt-2 text-amber-800">
+              Si esto no era esperado, revisa el historial de cambios de <span className="font-mono">DEFAULT_PERMISSIONS</span>.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Info banner */}
       <div className="flex gap-3 bg-violet-50 border border-violet-100 rounded-2xl px-5 py-4">
