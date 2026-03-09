@@ -1,4 +1,4 @@
-import { Patient, Invoice, UserProfile, Appointment } from '../types';
+import { Patient, Invoice, UserProfile, Appointment, PatientEvaluation } from '../types';
 
 // ─── Storage Keys ──────────────────────────────────────────────────────────────
 const KEYS = {
@@ -7,6 +7,10 @@ const KEYS = {
   appointments: 'nutriflow_appointments_v1',
   user:         'nutriflow_user_v1',
   statuses:     'nutriflow_statuses_v1',
+
+  // ✅ Evaluaciones (nuevo)
+  evaluations:  'nutriflow_patient_evaluations_v1',
+  evalSelected: 'nutriflow_patient_selected_evaluation_v1',
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -158,8 +162,8 @@ const SEED_INVOICES: Invoice[] = [
 ];
 
 const SEED_APPOINTMENTS: Appointment[] = [
-  { id: 'appt-1', patientId: '1', patientName: 'Michelle Echeverria', date: new Date().toISOString().split('T')[0],                          time: '15:00', duration: 60, type: 'Seguimiento', modality: 'Presencial', status: 'Programada' },
-  { id: 'appt-2', patientId: '2', patientName: 'Juan Perez',          date: new Date(Date.now() + 86400000).toISOString().split('T')[0],     time: '10:00', duration: 45, type: 'Seguimiento', modality: 'Video',      status: 'Programada' },
+  { id: 'appt-1', patientId: '1', patientName: 'Michelle Echeverria', date: new Date().toISOString().split('T')[0],                      time: '15:00', duration: 60, type: 'Seguimiento', modality: 'Presencial', status: 'Programada' },
+  { id: 'appt-2', patientId: '2', patientName: 'Juan Perez',          date: new Date(Date.now() + 86400000).toISOString().split('T')[0], time: '10:00', duration: 45, type: 'Seguimiento', modality: 'Video',      status: 'Programada' },
 ];
 
 const SEED_USER: UserProfile = {
@@ -180,6 +184,10 @@ const SEED_USER: UserProfile = {
 
 const SEED_STATUSES: string[] = ['Cita Agendada', 'Cita Cancelada', 'Menú Pendiente', 'Menú Entregado'];
 
+// ✅ seed vacío para evaluaciones (no queremos crear evaluaciones automáticamente)
+const SEED_EVALUATIONS: PatientEvaluation[] = [];
+const SEED_SELECTED: Record<string, string> = {};
+
 // ─── Store Class ───────────────────────────────────────────────────────────────
 
 class Store {
@@ -188,6 +196,10 @@ class Store {
   private appointments: Appointment[] = load(KEYS.appointments, SEED_APPOINTMENTS);
   private user:         UserProfile   = load(KEYS.user,         SEED_USER);
   private statuses:     string[]      = load(KEYS.statuses,     SEED_STATUSES);
+
+  // ✅ nuevos
+  private evaluations: PatientEvaluation[] = load(KEYS.evaluations, SEED_EVALUATIONS);
+  private selectedEvaluationByPatient: Record<string, string> = load(KEYS.evalSelected, SEED_SELECTED);
 
   constructor() {
     // Cleanup fictitious menus from Michelle Echeverria if they exist in localStorage
@@ -238,6 +250,7 @@ class Store {
         trainingFrequency: '', daysPerWeek: '', hoursPerDay: '', goals: '',
         consultationReason: '', diagnosis: '', familyHistory: '',
         medications: '', allergies: '',
+        menarcheAge: '', regularPeriod: '', periodDuration: '',
       },
       dietary: { currentDiet: '', preferences: '', dailyCaloriesTarget: 2000, notes: '' },
       dietaryEvaluations: [],
@@ -280,7 +293,7 @@ class Store {
     save(KEYS.invoices, this.invoices);
   }
 
-  // ── Appointments ────────────────────────────────────────────────────────────
+  // ── Appointments (Calendario General) ────────────────────────────────────────
 
   getAppointments(): Appointment[] {
     return this.appointments;
@@ -302,6 +315,62 @@ class Store {
   deleteAppointment(id: string): void {
     this.appointments = this.appointments.filter(a => a.id !== id);
     save(KEYS.appointments, this.appointments);
+  }
+
+  // ── Evaluations (Paciente: 1 por día) ────────────────────────────────────────
+
+  getEvaluations(patientId: string): PatientEvaluation[] {
+    return this.evaluations
+      .filter(e => e.patientId === patientId)
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  getEvaluationById(id: string): PatientEvaluation | undefined {
+    return this.evaluations.find(e => e.id === id);
+  }
+
+  getEvaluationByPatientAndDate(patientId: string, date: string): PatientEvaluation | undefined {
+    return this.evaluations.find(e => e.patientId === patientId && e.date === date);
+  }
+
+  addEvaluation(patientId: string, date: string): PatientEvaluation {
+    // regla: 1 por día por paciente
+    const existing = this.getEvaluationByPatientAndDate(patientId, date);
+    if (existing) {
+      // si ya existe, la seleccionamos para facilitar el flujo
+      this.selectedEvaluationByPatient[patientId] = existing.id;
+      save(KEYS.evalSelected, this.selectedEvaluationByPatient);
+      return existing;
+    }
+
+    const nowIso = new Date().toISOString();
+    const ev: PatientEvaluation = {
+      id: `EVAL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      patientId,
+      date,
+      createdAt: nowIso,
+    };
+
+    this.evaluations = [ev, ...this.evaluations];
+    save(KEYS.evaluations, this.evaluations);
+
+    this.selectedEvaluationByPatient[patientId] = ev.id;
+    save(KEYS.evalSelected, this.selectedEvaluationByPatient);
+
+    return ev;
+  }
+
+  getSelectedEvaluationId(patientId: string): string | null {
+    return this.selectedEvaluationByPatient[patientId] ?? null;
+  }
+
+  setSelectedEvaluationId(patientId: string, evaluationId: string | null): void {
+    if (!evaluationId) {
+      delete this.selectedEvaluationByPatient[patientId];
+    } else {
+      this.selectedEvaluationByPatient[patientId] = evaluationId;
+    }
+    save(KEYS.evalSelected, this.selectedEvaluationByPatient);
   }
 
   // ── User Profile ────────────────────────────────────────────────────────────

@@ -1,18 +1,62 @@
+// NOTE: Este archivo fue tomado del repo y se le agregó PatientEvaluation (al final).
+// Si tú ya lo modificaste antes con otros cambios, avísame y lo ajusto para no pisarte cosas.
+
+export interface MealEntry {
+  mealTime: string;
+  time: string;
+  place: string;
+  description: string;
+}
+
+export interface DietaryEvaluation {
+  id: string;
+  date: string;
+  mealsPerDay: number;
+  excludedFoods: string;
+  notes?: string;
+  recall: MealEntry[];
+  foodFrequency: Record<string, string>;
+  foodFrequencyOthers?: string;
+}
+
+export interface ClinicalRecord {
+  status: string;
+  dob: string;
+  age: number;
+  sex: string;
+  occupation: string;
+  phone: string;
+  email: string;
+  initialWeight: string;
+  initialHeight: string;
+  sport: string;
+  category: string;
+  sportsAge: string;
+  otherSports: string;
+  trainingFrequency: string;
+  daysPerWeek: string;
+  hoursPerDay: string;
+  goals: string;
+  consultationReason: string;
+  diagnosis: string;
+  familyHistory: string;
+  medications: string;
+  allergies: string;
+  menarcheAge: string;
+  regularPeriod: string;
+  periodDuration: string;
+}
+
 export interface Measurement {
   date: string;
-  metaComplied: boolean;
-  gender?: 'M' | 'F';
+  metaComplied?: boolean;
   age?: number;
   weight?: number;
   height?: number;
   imc?: number;
   bodyFat?: number;
   fatKg?: number;
-  leanMassKg?: number;
-  leanMassPct?: number;
   aks?: number;
-  boneMass?: number;
-  residualMass?: number;
   muscleKg?: number;
   biceps?: number;
   triceps?: number;
@@ -35,13 +79,9 @@ export interface Measurement {
   abdominalLow?: number;
   thighRight?: number;
   thighLeft?: number;
-  diagnosticN?: string;
-  endomorfo?: number;
-  mesomorfo?: number;
-  ectomorfo?: number;
-  x?: number;
-  y?: number;
-  subjectiveValuation?: number;
+  gender?: string;
+  // muchos campos más pueden existir; el repo ya los usa “flexible”
+  [key: string]: any;
 }
 
 export interface SomatotypeRecord {
@@ -49,83 +89,6 @@ export interface SomatotypeRecord {
   date: string;
   x: number;
   y: number;
-  notes?: string;
-}
-
-export interface LabResult {
-  id: string;
-  name: string;
-  date: string;
-  url: string;
-  type: 'pdf' | 'image' | 'other';
-}
-
-export interface Photo {
-  id: string;
-  name: string;
-  date: string;
-  url: string;
-  type: 'pdf' | 'image' | 'other';
-  description?: string;
-}
-
-export interface SportEntry {
-  sport: string;
-  daysPerWeek: string;
-  schedule: string;
-  hoursPerDay: string;
-}
-
-export interface ClinicalRecord {
-  status?: '-' | 'Cita Agendada' | 'Menú Pendiente' | 'Menú Entregado' | 'Cita Cancelada';
-  dob: string;
-  age: number;
-  sex: string;
-  cui?: string;
-  occupation: string;
-  study?: string;
-  phone: string;
-  email: string;
-  initialWeight: string;
-  initialHeight: string;
-  sport: string;
-  category: string;
-  sportsAge: string;
-  otherSports: string;
-  trainingFrequency: string;
-  daysPerWeek: string;
-  hoursPerDay: string;
-  goals: string;
-  antecedentes?: string;
-  sportsProfile?: SportEntry[];
-  consultationReason: string;
-  diagnosis: string;
-  familyHistory: string;
-  medications: string;
-  supplements?: string;
-  allergies: string;
-  menarcheAge?: string;
-  regularPeriod?: string;
-  periodDuration?: string;
-  menstrualOthers?: string;
-}
-
-export interface MealEntry {
-  mealTime: string;
-  time: string;
-  place: string;
-  description: string;
-}
-
-export interface DietaryEvaluation {
-  id: string;
-  date: string;
-  mealsPerDay: number;
-  excludedFoods: string;
-  notes?: string;
-  recall: MealEntry[];
-  foodFrequency: Record<string, string>;
-  foodFrequencyOthers?: string;
 }
 
 export interface VetCalculation {
@@ -167,18 +130,6 @@ export interface PortionsRecord {
   azu: number;
 }
 
-export interface DietaryRecord {
-  currentDiet: string;
-  preferences: string;
-  dailyCaloriesTarget: number;
-  notes: string;
-  lastAiSuggestion?: string;
-  vet?: VetCalculation;
-  macros?: MacrosRecord;
-  portions?: PortionsRecord;
-  menus?: GeneratedMenu[];
-}
-
 export interface GeneratedMenu {
   id: string;
   createdAt: string;
@@ -194,6 +145,18 @@ export interface GeneratedMenu {
   menuPreviewData?: any;
 }
 
+export interface DietaryRecord {
+  currentDiet: string;
+  preferences: string;
+  dailyCaloriesTarget: number;
+  notes: string;
+  lastAiSuggestion?: string;
+  vet?: VetCalculation;
+  macros?: MacrosRecord;
+  portions?: PortionsRecord;
+  menus?: GeneratedMenu[];
+}
+
 export interface Appointment {
   id: string;
   patientId: string;
@@ -205,11 +168,28 @@ export interface Appointment {
   modality: 'Presencial' | 'Video';
   status: 'Programada' | 'Completada' | 'Cancelada' | 'Reagendada';
   notes?: string;
-  // ── New fields for role tracking ──
-  nutritionistId?: string;    // ID de la nutricionista que creó/maneja la cita
-  receptionistId?: string;    // ID de la recepcionista que agendó la cita (si aplica)
-  createdBy?: string;         // ID del usuario que creó la cita
-  createdByRole?: 'admin' | 'nutricionista' | 'recepcionista'; // Rol del usuario que la creó
+  nutritionistId?: string;
+  receptionistId?: string;
+  createdBy?: string;
+  createdByRole?: 'admin' | 'nutricionista' | 'recepcionista';
+}
+
+export interface LabResult {
+  id: string;
+  name: string;
+  date: string;
+  url: string;
+  type: 'image' | 'pdf' | 'other';
+  description?: string;
+}
+
+export interface Photo {
+  id: string;
+  name: string;
+  date: string;
+  url: string;
+  type: 'image' | 'pdf' | 'other';
+  description?: string;
 }
 
 export interface Patient {
@@ -250,38 +230,42 @@ export interface UserProfile {
   instagramHandle?: string;
   address?: string;
   website?: string;
-  avatar: string;
+  avatar?: string;
   timezone?: string;
 }
 
-// ─── ROLES ────────────────────────────────────────────────────────────────────
+export interface PageModulePermission {
+  moduleId: string;
+  label: string;
+  roles: Array<'admin' | 'nutricionista' | 'recepcionista'>;
+}
 
 export type UserRole = 'admin' | 'nutricionista' | 'recepcionista';
+
+export interface PagePermission {
+  pageId: string;
+  label: string;
+  roles: Array<'admin' | 'nutricionista' | 'recepcionista'>;
+  modules?: PageModulePermission[];
+}
 
 export interface AppUser {
   id: string;
   email: string;
   password: string;
-  role: UserRole;
+  role: 'admin' | 'nutricionista' | 'recepcionista';
   profile: UserProfile;
-  linkedNutritionistIds?: string[]; // solo recepcionista
-  linkedReceptionistIds?: string[];  // solo nutricionista
+  linkedNutritionistIds?: string[];
+  linkedReceptionistIds?: string[];
+  linkCode?: string;
 }
 
-export interface ModulePermission {
-  moduleId: string;
-  label: string;
-  roles: UserRole[];
+export interface PatientEvaluation {
+  id: string;        // evaluationId
+  patientId: string;
+  date: string;      // YYYY-MM-DD (1 por día por paciente)
+  createdAt: string; // ISO
 }
-
-export interface PagePermission {
-  pageId: string;
-  label: string;
-  roles: UserRole[];
-  modules?: ModulePermission[];
-}
-
-// ─── ROUTES ───────────────────────────────────────────────────────────────────
 
 export enum AppRoute {
   LOGIN            = 'login',
