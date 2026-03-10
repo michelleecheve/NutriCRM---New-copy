@@ -1,8 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
 import { Patient } from '../../types';
 import { Plus, Calculator } from 'lucide-react';
 import { MenuAddRead } from './MenuAddRead';
+import { MenuCard } from './MenuCard';
 
 export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void }> = ({ patient, onUpdate }) => {
   const [isStarted, setIsStarted] = useState(false);
@@ -15,7 +15,7 @@ export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => vo
     [...rootMenus, ...dietaryMenus].forEach(m => {
       if (m && m.id) uniqueMenus.set(m.id, m);
     });
-    return Array.from(uniqueMenus.values()).sort((a, b) => 
+    return Array.from(uniqueMenus.values()).sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }, [patient]);
@@ -35,7 +35,7 @@ export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => vo
       <div className="space-y-8 animate-in fade-in duration-500">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold text-slate-800">Menús del Paciente</h2>
-          <button 
+          <button
             onClick={handleStartNew}
             className="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center gap-2"
           >
@@ -54,28 +54,11 @@ export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => vo
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {menus.map((menu) => (
-              <div 
+              <MenuCard
                 key={menu.id}
+                menu={menu}
                 onClick={() => handleEditMenu(menu)}
-                className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer group"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="bg-emerald-100 p-2 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                    <Calculator className="w-5 h-5" />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">
-                    {new Date(menu.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-slate-800 mb-1">{menu.name || 'Sin nombre'}</h3>
-                <p className="text-sm text-slate-500 mb-4">
-                  {menu.vet?.kcalToWork} kcal · {menu.macros?.cho.pct}/{menu.macros?.chon.pct}/{menu.macros?.fat.pct}
-                </p>
-                <div className="flex items-center gap-2 text-emerald-600 text-xs font-bold">
-                  <span>Ver detalles</span>
-                  <Plus className="w-3 h-3 rotate-45" />
-                </div>
-              </div>
+              />
             ))}
           </div>
         )}
@@ -84,14 +67,14 @@ export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => vo
   }
 
   return (
-    <MenuAddRead 
-      patient={patient} 
-      onUpdate={onUpdate} 
-      editingMenuId={editingMenuId} 
+    <MenuAddRead
+      patient={patient}
+      onUpdate={onUpdate}
+      editingMenuId={editingMenuId}
       onClose={() => {
         setIsStarted(false);
         setEditingMenuId(null);
-      }} 
+      }}
     />
   );
 };

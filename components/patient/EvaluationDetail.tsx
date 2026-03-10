@@ -1,12 +1,28 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Pencil, Save, Trash2, Utensils, ArrowLeft, Calculator, Microscope, Image as ImageIcon, BookOpen } from 'lucide-react';
+import {
+  AlertTriangle,
+  Pencil,
+  Save,
+  Trash2,
+  Utensils,
+  ArrowLeft,
+  Calculator,
+  Microscope,
+  Image as ImageIcon,
+  BookOpen,
+  Plus,
+  Crosshair
+} from 'lucide-react';
 import { store } from '../../services/store';
 import { DietaryCard } from './DietaryCard';
 import { DietaryForm } from './DietaryForm';
 import { NewMeasurementForm } from './NewMeasurementForm';
 import { FileGallery } from './FileGallery';
 import { MenuAddRead } from './MenuAddRead';
-import type { DietaryEvaluation, Patient, PatientEvaluation } from '../../types';
+import { MenuCard } from './MenuCard';
+import type { DietaryEvaluation, Patient, PatientEvaluation, Measurement } from '../../types';
+import { MeasurementsHistory } from './MeasurementsHistory';
+import { SomatocartaModule } from './SomatocartaModule';
 
 type Draft = {
   title: string;
@@ -73,9 +89,16 @@ export const EvaluationDetail: React.FC<{
     foodFrequencyOthers: ''
   });
 
-  // ✅ menu state (embed MenuAddRead)
+  // ✅ menu section state (list/cards + editor)
   const [menuView, setMenuView] = useState<'card' | 'edit'>('card');
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
+
+  // ✅ measurements editor in this page
+  const [measView, setMeasView] = useState<'card' | 'edit'>('card');
+  const [measEditingId, setMeasEditingId] = useState<string | null>(null);
+
+  // ✅ somatocarta section state (card vs module)
+  const [somatoView, setSomatoView] = useState<'card' | 'edit'>('card');
 
   const selected = useMemo(() => store.getEvaluationById(evaluationId) ?? null, [evaluationId]);
 
@@ -100,19 +123,31 @@ export const EvaluationDetail: React.FC<{
     return (patient.photos || []).filter((f: any) => f?.date === selected.date);
   }, [patient.photos, selected?.date]);
 
-  // ✅ vincular menú por fecha (preferencia: linkedEvaluationId, fallback por basedOnMeasurementDate)
-  const linkedMenu = useMemo(() => {
-    if (!selected) return null;
+  // ✅ somatocarta vinculada por fecha
+  const linkedSomatotypes = useMemo(() => {
+    if (!selected) return [];
+    return (patient.somatotypes || []).filter((s: any) => s?.date === selected.date);
+  }, [patient.somatotypes, selected?.date]);
+
+  // ✅ menús vinculados a ESTA evaluación (plural)
+  const linkedMenus = useMemo(() => {
+    if (!selected) return [];
     const allMenus: any[] = [...(patient.menus || []), ...(patient.dietary?.menus || [])];
 
-    // 1) preferir menu.linkedEvaluationId
-    const byEvalId = allMenus.find(m => (m as any)?.linkedEvaluationId === selected.id);
-    if (byEvalId) return byEvalId;
-
-    // 2) fallback por fecha
-    const byDate = allMenus.find(m => (m as any)?.basedOnMeasurementDate === selected.date);
-    return byDate ?? null;
+    return allMenus
+      .filter(m => {
+        const byEvalId = (m as any)?.linkedEvaluationId === selected.id;
+        const byDate = (m as any)?.basedOnMeasurementDate === selected.date;
+        return byEvalId || byDate;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [patient.menus, patient.dietary?.menus, selected?.id, selected?.date]);
+
+  // ✅ Measurement linked to this evaluation date (0..1)
+  const linkedMeasurement = useMemo(() => {
+    if (!selected) return null;
+    return patient.measurements.find(m => m.date === selected.date) ?? null;
+  }, [patient.measurements, selected?.date]);
 
   useEffect(() => {
     if (!selected) {
@@ -127,6 +162,7 @@ export const EvaluationDetail: React.FC<{
     });
     setErrorMsg('');
 
+    // dietary init
     setDietaryView('card');
     setEvalSelectorOpen(false);
     setFormEvaluationId(selected.id);
@@ -146,10 +182,17 @@ export const EvaluationDetail: React.FC<{
       });
     }
 
-    // ✅ init menu section
+    // menu init
     setMenuView('card');
-    setEditingMenuId(linkedMenu?.id ?? null);
-  }, [selected?.id, linkedMenu?.id]);
+    setEditingMenuId(null);
+
+    // measurement init
+    setMeasView('card');
+    setMeasEditingId(null);
+
+    // somatocarta init
+    setSomatoView('card');
+  }, [selected?.id]);
 
   const hasChanges = useMemo(() => {
     if (!selected || !draft) return false;
@@ -221,6 +264,28 @@ export const EvaluationDetail: React.FC<{
 
     onUpdate(updatedPatient);
     store.updatePatient(updatedPatient);
+  };
+
+  // ✅ Persistencia correcta: fusionar "somatotypes de esta fecha" con "somatotypes de otras fechas"
+  const handleUpdateSomatocartaForThisEvaluation = (updatedPatientFromModule: Patient) => {
+    if (!selected) return;
+
+    const newRecordsForThisDate = (updatedPatientFromModule.somatotypes || []).filter(s => s.date === selected.date);
+    const rest = (patient.somatotypes || []).filter(s => s.date !== selected.date);
+
+    const updatedPatient: Patient = { ...patient, somatotypes: [...newRecordsForThisDate, ...rest] };
+    onUpdate(updatedPatient);
+    store.updatePatient(updatedPatient);
+
+    setSomatoView('card');
+  };
+
+  const handleEditLinkedMeasurement = (m: Measurement) => {
+    setMeasEditingId(m.date);
+    setMeasView('edit');
+    setTimeout(() => {
+      document.getElementById('evaluation-measurements')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   };
 
   if (!selected || !draft) {
@@ -327,7 +392,7 @@ export const EvaluationDetail: React.FC<{
           </div>
         </div>
 
-        {/* Card 2 */}
+        {/* Card 2: Dietary */}
         <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
@@ -335,7 +400,7 @@ export const EvaluationDetail: React.FC<{
                 <Utensils className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-900">Evaluación dietética</p>
+                <p className="text-lg font-bold text-slate-900">Evaluación Dietética</p>
                 <p className="text-xs text-slate-500">
                   Vinculada por fecha: <span className="font-mono font-bold">{selected.date}</span>
                 </p>
@@ -373,41 +438,17 @@ export const EvaluationDetail: React.FC<{
           )}
         </div>
 
-        {/* Card 3: Antropometría */}
-        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+        {/* Card 3: Measurements (linked by date) */}
+        <div id="evaluation-measurements" className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-50 p-2 rounded-lg">
                 <Calculator className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-900">Medidas antropométricas</p>
+                <p className="text-lg font-bold text-slate-900">Medidas Antropométricas</p>
                 <p className="text-xs text-slate-500">
                   Vinculadas por fecha: <span className="font-mono font-bold">{selected.date}</span>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <NewMeasurementForm
-            patient={patient}
-            onUpdate={onUpdate}
-            onViewChange={() => {}}
-            showDelete={false}
-          />
-        </div>
-
-        {/* ✅ Card 4: Menú (debajo de medidas) */}
-        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4 mb-5">
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-50 p-2 rounded-lg">
-                <BookOpen className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-lg font-bold text-slate-900">Menú</p>
-                <p className="text-xs text-slate-500">
-                  Vinculado por fecha: <span className="font-mono font-bold">{selected.date}</span>
                 </p>
               </div>
             </div>
@@ -415,12 +456,109 @@ export const EvaluationDetail: React.FC<{
             <button
               type="button"
               onClick={() => {
-                setEditingMenuId(linkedMenu?.id ?? null);
+                setMeasEditingId(linkedMeasurement?.date ?? null);
+                setMeasView('edit');
+              }}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              {linkedMeasurement ? 'Editar' : 'Crear'}
+            </button>
+          </div>
+
+          {measView === 'edit' ? (
+            <NewMeasurementForm
+              patient={patient}
+              onUpdate={onUpdate}
+              mode={measEditingId ? 'detail' : 'new'}
+              editingId={measEditingId}
+              onClose={() => {
+                setMeasView('card');
+                setMeasEditingId(null);
+              }}
+              showDelete={false}
+            />
+          ) : linkedMeasurement ? (
+            <MeasurementsHistory
+              patient={{ ...patient, measurements: [linkedMeasurement] }}
+              onEdit={handleEditLinkedMeasurement}
+            />
+          ) : (
+            <div className="p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-slate-500 text-sm">
+              No hay registro antropométrico para esta fecha. Presiona <span className="font-bold">Crear</span> para agregarlo.
+            </div>
+          )}
+        </div>
+
+        {/* Card 4: Somatocarta (linked by date) */}
+        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-50 p-2 rounded-lg">
+                <Crosshair className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-slate-900">Somatocarta</p>
+                <p className="text-xs text-slate-500">
+                  Vinculada por fecha: <span className="font-mono font-bold">{selected.date}</span>
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSomatoView('edit')}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Crear Somatotipo
+            </button>
+          </div>
+
+          {somatoView === 'edit' ? (
+            <SomatocartaModule
+              patient={patient}
+              onUpdate={handleUpdateSomatocartaForThisEvaluation}
+              showDelete={false}
+            />
+          ) : linkedSomatotypes.length > 0 ? (
+            <SomatocartaModule
+              patient={{ ...patient, somatotypes: linkedSomatotypes }}
+              onUpdate={() => {}}
+              showDelete={false}
+            />
+          ) : (
+            <div className="p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-slate-500 text-sm">
+              No hay registros de somatotipo para esta fecha. Presiona <span className="font-bold">Crear Somatotipo</span> para agregar uno.
+            </div>
+          )}
+        </div>
+
+        {/* Card 5: Menus (plural) */}
+        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-50 p-2 rounded-lg">
+                <BookOpen className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-slate-900">Menú(s)</p>
+                <p className="text-xs text-slate-500">
+                  Vinculados por fecha: <span className="font-mono font-bold">{selected.date}</span>
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditingMenuId(null);
                 setMenuView('edit');
               }}
-              className="px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
             >
-              {linkedMenu ? 'Editar' : 'Crear'}
+              <Plus className="w-4 h-4" />
+              Crear
             </button>
           </div>
 
@@ -431,40 +569,30 @@ export const EvaluationDetail: React.FC<{
               editingMenuId={editingMenuId}
               onClose={() => {
                 setMenuView('card');
-                // refrescar id en base al store/patient (se recalcula en memo en el siguiente render)
+                setEditingMenuId(null);
               }}
             />
-          ) : linkedMenu ? (
-            <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-extrabold text-slate-900 truncate">
-                    {linkedMenu.name ?? 'Menú'}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Fecha: <span className="font-mono font-bold">{(linkedMenu as any).basedOnMeasurementDate ?? selected.date}</span>
-                  </p>
-                </div>
-                <button
-                  type="button"
+          ) : linkedMenus.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {linkedMenus.map(menu => (
+                <MenuCard
+                  key={menu.id}
+                  menu={menu}
                   onClick={() => {
-                    setEditingMenuId(linkedMenu.id);
+                    setEditingMenuId(menu.id);
                     setMenuView('edit');
                   }}
-                  className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors"
-                >
-                  Ver / Editar
-                </button>
-              </div>
+                />
+              ))}
             </div>
           ) : (
             <div className="p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-slate-500 text-sm">
-              No hay menú para esta fecha. Presiona <span className="font-bold">Crear</span> para agregarlo.
+              No hay menús para esta fecha. Presiona <span className="font-bold">Crear</span> para agregar uno.
             </div>
           )}
         </div>
 
-        {/* Card 5: Labs */}
+        {/* Card 6: Labs */}
         <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
@@ -484,14 +612,14 @@ export const EvaluationDetail: React.FC<{
             patientId={patient.id}
             files={linkedLabs}
             onUpdate={handleUpdateLabsForThisEvaluation}
-            title="Resultados de Laboratorio"
+            title="Resultados De Laboratorio"
             icon={Microscope}
             accept="application/pdf,image/*"
             showDelete={false}
           />
         </div>
 
-        {/* Card 6: Fotos */}
+        {/* Card 7: Photos */}
         <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
@@ -499,7 +627,7 @@ export const EvaluationDetail: React.FC<{
                 <ImageIcon className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-900">Fotos de progreso</p>
+                <p className="text-lg font-bold text-slate-900">Fotos De Progreso</p>
                 <p className="text-xs text-slate-500">
                   Vinculadas por fecha: <span className="font-mono font-bold">{selected.date}</span>
                 </p>
@@ -511,7 +639,7 @@ export const EvaluationDetail: React.FC<{
             patientId={patient.id}
             files={linkedPhotos}
             onUpdate={handleUpdatePhotosForThisEvaluation}
-            title="Galería de Progreso"
+            title="Galería De Progreso"
             icon={ImageIcon}
             accept="image/*"
             showDelete={false}

@@ -1,152 +1,233 @@
-
-import React, { useState, useRef } from 'react';
-import { Patient, SomatotypeRecord } from '../../types';
-import { Calendar, Eye, Edit2, Trash2, X, Crosshair, Plus, Download } from 'lucide-react';
+import React, { useMemo, useRef, useState } from 'react';
+import { Patient, SomatotypeRecord, PatientEvaluation } from '../../types';
+import { Calendar, Eye, Edit2, Trash2, X, Crosshair, Plus, Download, Link2, Pencil, AlertTriangle } from 'lucide-react';
 import { GridInput } from './SharedComponents';
+import { store } from '../../services/store';
+import { SomatocartaGraph } from './SomatocartaGraph';
 
-
-const SomatocartaChart = ({ x, y }: { x: number; y: number }) => {
-  // Internal coordinate system for viewBox
-  const W = 500;
-  const H = 500;
-  const P = 60; // Padding for labels and illustrations
-
-  // Axis range: X from -10 to 10, Y from -10 to 10
-  const X_MIN = -10, X_MAX = 10;
-  const Y_MIN = -10, Y_MAX = 10;
-
-  // Map data coords → SVG pixels with padding
-  const toSVG = (dx: number, dy: number) => ({
-    x: P + ((dx - X_MIN) / (X_MAX - X_MIN)) * (W - 2 * P),
-    y: H - P - ((dy - Y_MIN) / (Y_MAX - Y_MIN)) * (H - 2 * P),
-  });
-
-  const origin = toSVG(0, 0);
-  const MESO = toSVG(0, 10);
-  const ENDO = toSVG(-8, -8);
-  const ECTO = toSVG(8, -8);
-  const pt = toSVG(x, y);
-
-  // Curved boundary path using arcs
-  const r = 400;
-  const boundaryPath = `
-    M ${MESO.x} ${MESO.y}
-    A ${r} ${r} 0 0 1 ${ECTO.x} ${ECTO.y}
-    A ${r} ${r} 0 0 1 ${ENDO.x} ${ENDO.y}
-    A ${r} ${r} 0 0 1 ${MESO.x} ${MESO.y}
-  `;
-
-  const xTicks = [-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10];
-  const yTicks = [-10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10];
-
-  return (
-    <div className="w-full h-full flex items-center justify-center bg-white">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="xMidYMid meet"
-        className="w-full h-full"
-      >
-        {/* ── Grid ── */}
-        {xTicks.map((tx) => {
-          const sx = toSVG(tx, 0).x;
-          return (
-            <line
-              key={`gx${tx}`}
-              x1={sx} y1={P} x2={sx} y2={H - P}
-              stroke="#E2E8F0" strokeWidth="0.5"
-            />
-          );
-        })}
-        {yTicks.map((ty) => {
-          const sy = toSVG(0, ty).y;
-          return (
-            <line
-              key={`gy${ty}`}
-              x1={P} y1={sy} x2={W - P} y2={sy}
-              stroke="#E2E8F0" strokeWidth="0.5"
-            />
-          );
-        })}
-
-        {/* ── Main axes ── */}
-        <line x1={P} y1={origin.y} x2={W - P} y2={origin.y} stroke="#E2E8F0" strokeWidth="1.5" />
-        <line x1={origin.x} y1={P} x2={origin.x} y2={H - P} stroke="#E2E8F0" strokeWidth="1.5" />
-
-        {/* ── Curved boundary ── */}
-        <path
-          d={boundaryPath}
-          fill="none"
-          stroke="#94A3B8"
-          strokeWidth="2"
-          strokeDasharray="6,4"
-        />
-
-        {/* ── Lines from origin to vertices ── */}
-        <line x1={origin.x} y1={origin.y} x2={MESO.x} y2={MESO.y} stroke="#94A3B8" strokeWidth="1" strokeDasharray="4,4" />
-        <line x1={origin.x} y1={origin.y} x2={ENDO.x} y2={ENDO.y} stroke="#94A3B8" strokeWidth="1" strokeDasharray="4,4" />
-        <line x1={origin.x} y1={origin.y} x2={ECTO.x} y2={ECTO.y} stroke="#94A3B8" strokeWidth="1" strokeDasharray="4,4" />
-
-        {/* ── Illustrations (Minimal Silhouettes) ── */}
-        {/* Mesomorph (Top) */}
-        <g transform={`translate(${MESO.x}, ${MESO.y - 35}) scale(0.5)`}>
-          <path d="M-12,0 L12,0 L18,10 L12,45 L-12,45 L-18,10 Z" fill="#047857" opacity="0.15" />
-          <circle cx="0" cy="-12" r="8" fill="#047857" opacity="0.25" />
-          <path d="M-15,8 Q0,2 15,8" fill="none" stroke="#047857" strokeWidth="2.5" opacity="0.4" />
-        </g>
-
-        {/* Endomorph (Left) */}
-        <g transform={`translate(${ENDO.x - 35}, ${ENDO.y + 15}) scale(0.5)`}>
-          <ellipse cx="0" cy="22" rx="20" ry="25" fill="#1D4ED8" opacity="0.15" />
-          <circle cx="0" cy="-12" r="8" fill="#1D4ED8" opacity="0.25" />
-        </g>
-
-        {/* Ectomorph (Right) */}
-        <g transform={`translate(${ECTO.x + 35}, ${ECTO.y + 15}) scale(0.5)`}>
-          <rect x="-8" y="0" width="16" height="45" rx="6" fill="#B45309" opacity="0.15" />
-          <circle cx="0" cy="-12" r="8" fill="#B45309" opacity="0.25" />
-        </g>
-
-        {/* ── Labels ── */}
-        <text x={MESO.x} y={MESO.y - 10} textAnchor="middle" fontSize="12" fontWeight="800" fill="#064E3B" className="font-sans">Mesomorfia</text>
-        <text x={ENDO.x - 5} y={ENDO.y + 25} textAnchor="middle" fontSize="12" fontWeight="800" fill="#1E3A8A" className="font-sans">Endomorfia</text>
-        <text x={ECTO.x + 5} y={ECTO.y + 25} textAnchor="middle" fontSize="12" fontWeight="800" fill="#78350F" className="font-sans">Ectomorfia</text>
-
-        {/* ── Axis ticks ── */}
-        {xTicks.filter(t => t % 4 === 0).map(t => (
-          <text key={`tx${t}`} x={toSVG(t, 0).x} y={origin.y + 16} textAnchor="middle" fontSize="10" fill="#94A3B8" fontWeight="600" className="font-mono">{t}</text>
-        ))}
-        {yTicks.filter(t => t % 4 === 0).map(t => (
-          <text key={`ty${t}`} x={origin.x - 10} y={toSVG(0, t).y + 4} textAnchor="end" fontSize="10" fill="#94A3B8" fontWeight="600" className="font-mono">{t}</text>
-        ))}
-
-        {/* ── Data Point ── */}
-        <circle cx={pt.x} cy={pt.y} r="6" fill="#10B981" stroke="white" strokeWidth="2.5" className="drop-shadow-sm" />
-        <text 
-          x={pt.x} 
-          y={pt.y - 12} 
-          textAnchor="middle" 
-          fontSize="10" 
-          fontWeight="bold" 
-          fill="#064E3B" 
-          className="font-mono"
-        >
-          ({x.toFixed(1)}, {y.toFixed(1)})
-        </text>
-      </svg>
+const ConfirmModal: React.FC<{
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ title, message, confirmText = 'Sí, Eliminar', cancelText = 'Cancelar', onConfirm, onCancel }) => (
+  <div className="fixed inset-0 z-[80] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="bg-white w-full max-w-md rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+          </div>
+          <h3 className="font-bold text-slate-900">{title}</h3>
+        </div>
+        <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600">
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="p-5">
+        <p className="text-sm text-slate-600">{message}</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50"
+          >
+            {cancelText}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700"
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
     </div>
-  );
+  </div>
+);
+
+const formatSomatoDate = (yyyyMmDd: string) => {
+  // render like: "8 Mar 2026"
+  const d = new Date(`${yyyyMmDd}T12:00:00`);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-export const SomatocartaModule: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void }> = ({ patient, onUpdate }) => {
+export const SomatocartaModule: React.FC<{
+  patient: Patient;
+  onUpdate: (p: Patient) => void;
+  showDelete?: boolean; // ✅ para ocultar al usar dentro de EvaluationDetail
+}> = ({ patient, onUpdate, showDelete = true }) => {
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<{ date: string, x: string, y: string }>({
-    date: new Date().toISOString().split('T')[0],
+
+  // ✅ delete flow sin confirm()
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
+  // ✅ evaluaciones disponibles (para vincular)
+  const patientEvaluations: PatientEvaluation[] = useMemo(
+    () => store.getEvaluations(patient.id),
+    [patient.id]
+  );
+
+  // ✅ "vinculación por defecto para crear" (igual que FileGallery upload)
+  const [createEvalSelectorOpen, setCreateEvalSelectorOpen] = useState(false);
+  const [createEvaluationId, setCreateEvaluationId] = useState<string | null>(
+    store.getSelectedEvaluationId(patient.id)
+  );
+
+  const createEvaluation = useMemo(() => {
+    if (!createEvaluationId) return null;
+    return store.getEvaluationById(createEvaluationId) ?? null;
+  }, [createEvaluationId]);
+
+  const createLinkedDate =
+    createEvaluation?.date ??
+    (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
+
+  // ✅ formData
+  const [formData, setFormData] = useState<{ date: string; x: string; y: string }>({
+    date: createLinkedDate,
     x: '',
     y: ''
   });
+
+  // ✅ modal "ver gráfico"
   const [viewingChart, setViewingChart] = useState<SomatotypeRecord | null>(null);
-  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  // ✅ vincular POR CARD (como FileGallery)
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [linkingSomatoId, setLinkingSomatoId] = useState<string | null>(null);
+  const [somatoEvalSelectorOpen, setSomatoEvalSelectorOpen] = useState(false);
+  const [somatoEvaluationId, setSomatoEvaluationId] = useState<string | null>(null);
+
+  const somatoEvaluation = useMemo(() => {
+    if (!somatoEvaluationId) return null;
+    return store.getEvaluationById(somatoEvaluationId) ?? null;
+  }, [somatoEvaluationId]);
+
+  const somatoLinkedDate =
+    somatoEvaluation?.date ??
+    (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
+
+  const sortedRecords = useMemo(
+    () => [...(patient.somatotypes || [])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [patient.somatotypes]
+  );
+
+  const resetForm = () => {
+    setFormData({ date: createLinkedDate, x: '', y: '' });
+    setEditingId(null);
+    setShowForm(false);
+    setCreateEvalSelectorOpen(false);
+  };
+
+  const handleChangeCreateEvaluation = (evId: string) => {
+    const ev = store.getEvaluationById(evId);
+    setCreateEvaluationId(evId || null);
+    if (ev) store.setSelectedEvaluationId(patient.id, ev.id);
+    setCreateEvalSelectorOpen(false);
+    if (ev) setFormData(prev => ({ ...prev, date: ev.date }));
+  };
+
+  const handleEditClick = (rec: SomatotypeRecord) => {
+    setFormData({ date: rec.date, x: rec.x.toString(), y: rec.y.toString() });
+    setEditingId(rec.id);
+    setShowForm(true);
+    setTimeout(() => {
+      document.getElementById('somatocarta-form')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
+  const handleSave = () => {
+    if (!formData.x || !formData.y || !formData.date) return;
+
+    const xVal = parseFloat(formData.x);
+    const yVal = parseFloat(formData.y);
+
+    let updatedSomatotypes = [...(patient.somatotypes || [])];
+
+    if (editingId) {
+      updatedSomatotypes = updatedSomatotypes.map(s =>
+        s.id === editingId ? { ...s, date: formData.date, x: xVal, y: yVal } : s
+      );
+    } else {
+      const newRecord: SomatotypeRecord = {
+        id: Math.random().toString(36).substring(7),
+        date: formData.date,
+        x: xVal,
+        y: yVal
+      };
+      updatedSomatotypes = [newRecord, ...updatedSomatotypes];
+    }
+
+    const updatedPatient = { ...patient, somatotypes: updatedSomatotypes };
+    onUpdate(updatedPatient);
+    store.updatePatient(updatedPatient);
+
+    resetForm();
+  };
+
+  const requestDelete = (id: string) => {
+    setDeleteTargetId(id);
+    setConfirmDeleteOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTargetId) return;
+    const updatedSomatotypes = (patient.somatotypes || []).filter(s => s.id !== deleteTargetId);
+
+    const updatedPatient = { ...patient, somatotypes: updatedSomatotypes };
+    onUpdate(updatedPatient);
+    store.updatePatient(updatedPatient);
+
+    setConfirmDeleteOpen(false);
+    setDeleteTargetId(null);
+
+    if (editingId === deleteTargetId) resetForm();
+  };
+
+  const openLinkModal = (rec: SomatotypeRecord) => {
+    setLinkingSomatoId(rec.id);
+
+    // if already linked by id and still exists, keep it; else match by date; else selected eval
+    const currentLinkedEvalId = (rec as any).linkedEvaluationId as string | undefined;
+    if (currentLinkedEvalId && store.getEvaluationById(currentLinkedEvalId)) {
+      setSomatoEvaluationId(currentLinkedEvalId);
+    } else {
+      const match = patientEvaluations.find(e => e.date === rec.date);
+      setSomatoEvaluationId(match?.id ?? store.getSelectedEvaluationId(patient.id));
+    }
+
+    setSomatoEvalSelectorOpen(false);
+    setLinkModalOpen(true);
+  };
+
+  const applyLink = () => {
+    if (!linkingSomatoId) return;
+
+    const updatedSomatotypes = (patient.somatotypes || []).map(s => {
+      if (s.id !== linkingSomatoId) return s;
+      return {
+        ...s,
+        date: somatoLinkedDate,
+        linkedEvaluationId: somatoEvaluationId ?? null
+      } as any;
+    });
+
+    const updatedPatient = { ...patient, somatotypes: updatedSomatotypes };
+    onUpdate(updatedPatient);
+    store.updatePatient(updatedPatient);
+
+    setLinkModalOpen(false);
+    setLinkingSomatoId(null);
+    setSomatoEvalSelectorOpen(false);
+  };
 
   const downloadChartAsImage = () => {
     if (!chartContainerRef.current) return;
@@ -157,8 +238,7 @@ export const SomatocartaModule: React.FC<{ patient: Patient; onUpdate: (p: Patie
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    
-    // Set canvas size to match SVG viewBox or desired output size
+
     canvas.width = 1000;
     canvas.height = 1000;
 
@@ -166,176 +246,347 @@ export const SomatocartaModule: React.FC<{ patient: Patient; onUpdate: (p: Patie
     const url = URL.createObjectURL(svgBlob);
 
     img.onload = () => {
-      if (ctx) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const pngUrl = canvas.toDataURL('image/png');
-        const downloadLink = document.createElement('a');
-        downloadLink.href = pngUrl;
-        downloadLink.download = `somatocarta-${viewingChart?.date || 'chart'}.png`;
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(url);
-      }
+      if (!ctx) return;
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const pngUrl = canvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      downloadLink.download = `somatocarta-${viewingChart?.date || 'chart'}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(url);
     };
     img.src = url;
   };
 
-  const resetForm = () => {
-    setFormData({ date: new Date().toISOString().split('T')[0], x: '', y: '' });
-    setEditingId(null);
-    setShowForm(false);
-  };
-
-  const handleEditClick = (rec: SomatotypeRecord) => {
-    setFormData({
-        date: rec.date,
-        x: rec.x.toString(),
-        y: rec.y.toString()
-    });
-    setEditingId(rec.id);
-    setShowForm(true);
-    setTimeout(() => {
-        document.getElementById('somatocarta-form')?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  };
-
-  const handleSave = () => {
-    if (!formData.x || !formData.y || !formData.date) return;
-    
-    const xVal = parseFloat(formData.x);
-    const yVal = parseFloat(formData.y);
-    
-    let updatedSomatotypes = [...(patient.somatotypes || [])];
-
-    if (editingId) {
-        updatedSomatotypes = updatedSomatotypes.map(s => 
-            s.id === editingId 
-            ? { ...s, date: formData.date, x: xVal, y: yVal }
-            : s
-        );
-    } else {
-        const newRecord: SomatotypeRecord = {
-            id: Math.random().toString(36).substring(7),
-            date: formData.date,
-            x: xVal,
-            y: yVal
-        };
-        updatedSomatotypes = [newRecord, ...updatedSomatotypes];
-    }
-    
-    onUpdate({ ...patient, somatotypes: updatedSomatotypes });
-    resetForm();
-  };
-
-  const handleDelete = (id: string) => {
-    if(confirm('¿Estás seguro de que deseas eliminar este registro?')) {
-        const updated = patient.somatotypes.filter(s => s.id !== id);
-        onUpdate({ ...patient, somatotypes: updated });
-        if (editingId === id) resetForm();
-    }
-  };
-
-  const sortedRecords = [...(patient.somatotypes || [])].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 mt-8 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-500">
-       <div className="flex justify-between items-center p-6 border-b border-slate-100">
-         <div className="flex items-center gap-2 text-emerald-800">
+    <>
+      {confirmDeleteOpen && (
+        <ConfirmModal
+          title="Eliminar Registro"
+          message="¿Seguro que deseas eliminar este registro? Esta acción no se puede deshacer."
+          onCancel={() => {
+            setConfirmDeleteOpen(false);
+            setDeleteTargetId(null);
+          }}
+          onConfirm={confirmDelete}
+        />
+      )}
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 mt-8 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="flex justify-between items-center p-6 border-b border-slate-100">
+          <div className="flex items-center gap-2 text-emerald-800">
             <Crosshair className="w-5 h-5" />
-            <h3 className="font-bold text-lg">Historial de Somatocarta</h3>
-         </div>
-         <button 
-           onClick={() => {
-             if (showForm) resetForm();
-             else setShowForm(true);
-           }}
-           className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm transition-colors ${showForm ? 'bg-slate-100 text-slate-600' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700'}`}
-         >
-           {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-           {showForm ? 'Cancelar' : 'Generar Nuevo Somatotipo'}
-         </button>
-       </div>
+            <h3 className="font-bold text-lg">Historial De Somatocarta</h3>
+          </div>
 
-       {showForm && (
-         <div id="somatocarta-form" className="p-6 bg-slate-50 border-b border-slate-100 grid grid-cols-1 md:grid-cols-4 gap-4 items-end animate-in slide-in-from-top-2">
-            <GridInput label="Fecha" type="date" value={formData.date} onChange={(e: any) => setFormData({...formData, date: e.target.value})} />
-            <GridInput label="Coordenada X" type="number" placeholder="-1.5" value={formData.x} onChange={(e: any) => setFormData({...formData, x: e.target.value})} />
-            <GridInput label="Coordenada Y" type="number" placeholder="4.2" value={formData.y} onChange={(e: any) => setFormData({...formData, y: e.target.value})} />
-            <button onClick={handleSave} className="h-[38px] bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-colors">
-               {editingId ? 'Actualizar Registro' : 'Guardar Registro'}
-            </button>
-         </div>
-       )}
+          <button
+            onClick={() => {
+              if (showForm) resetForm();
+              else {
+                setFormData(prev => ({ ...prev, date: createLinkedDate }));
+                setEditingId(null);
+                setShowForm(true);
+              }
+            }}
+            className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm transition-colors ${
+              showForm ? 'bg-slate-100 text-slate-600' : 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700'
+            }`}
+          >
+            {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {showForm ? 'Cancelar' : 'Crear Somatotipo'}
+          </button>
+        </div>
 
-       <div className="p-6">
+        {showForm && (
+          <div id="somatocarta-form" className="p-6 bg-slate-50 border-b border-slate-100 space-y-4 animate-in slide-in-from-top-2">
+            {/* Vinculación por defecto (igual que FileGallery) */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Evaluación Asignada</p>
+
+              {!createEvalSelectorOpen ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-700">
+                    {createEvaluation ? `${createEvaluation.title ?? createEvaluation.date} — ${formatSomatoDate(createEvaluation.date)}` : '—'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCreateEvalSelectorOpen(true)}
+                    className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
+                    title="Cambiar Evaluación Asignada"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={createEvaluationId ?? ''}
+                    onChange={(e) => handleChangeCreateEvaluation(e.target.value)}
+                    className="text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200 w-full"
+                    autoFocus
+                    disabled={patientEvaluations.length === 0}
+                  >
+                    {patientEvaluations.length === 0 ? (
+                      <option value="">Crea Una Evaluación Primero</option>
+                    ) : (
+                      <>
+                        <option value="">Seleccionar...</option>
+                        {patientEvaluations.map(ev => (
+                          <option key={ev.id} value={ev.id}>
+                            {ev.title ?? ev.date} — {formatSomatoDate(ev.date)}
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setCreateEvalSelectorOpen(false)}
+                    className="p-2 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Form */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              <GridInput label="Fecha" type="date" value={formData.date} onChange={(e: any) => setFormData({ ...formData, date: e.target.value })} />
+              <GridInput label="Coordenada X" type="number" placeholder="-1.5" value={formData.x} onChange={(e: any) => setFormData({ ...formData, x: e.target.value })} />
+              <GridInput label="Coordenada Y" type="number" placeholder="4.2" value={formData.y} onChange={(e: any) => setFormData({ ...formData, y: e.target.value })} />
+
+              <div className="flex gap-2">
+                <button onClick={handleSave} className="h-[38px] flex-1 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-colors">
+                  {editingId ? 'Actualizar Registro' : 'Guardar Registro'}
+                </button>
+
+                {editingId && showDelete && (
+                  <button
+                    type="button"
+                    onClick={() => requestDelete(editingId)}
+                    className="h-[38px] px-3 bg-red-50 border border-red-100 text-red-700 font-bold rounded-lg hover:bg-red-100 transition-colors"
+                    title="Eliminar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="p-6">
           {sortedRecords.length === 0 ? (
-             <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-xl">
-                <Crosshair className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500">No hay registros de somatotipo.</p>
-             </div>
+            <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-xl">
+              <Crosshair className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-500">No Hay Registros De Somatotipo.</p>
+            </div>
           ) : (
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sortedRecords.map(rec => (
-                   <div key={rec.id} className={`border rounded-xl p-4 hover:shadow-md transition-all bg-white relative group ${editingId === rec.id ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-slate-200'}`}>
-                      <div className="flex justify-between items-start mb-3">
-                         <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-emerald-500" />
-                            <span className="font-bold text-slate-700 text-sm">{rec.date}</span>
-                         </div>
-                         <div className="flex gap-1">
-                            <button onClick={() => setViewingChart(rec)} className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="Ver Gráfico"><Eye className="w-4 h-4" /></button>
-                            <button onClick={() => handleEditClick(rec)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar"><Edit2 className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(rec.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
-                         </div>
-                      </div>
-                      <div className="flex gap-4 mb-3">
-                         <div className="flex-1 bg-slate-50 rounded p-2 text-center">
-                            <div className="text-xs text-slate-400 uppercase font-bold">Coord X</div>
-                            <div className="font-bold text-slate-800">{rec.x}</div>
-                         </div>
-                         <div className="flex-1 bg-slate-50 rounded p-2 text-center">
-                            <div className="text-xs text-slate-400 uppercase font-bold">Coord Y</div>
-                            <div className="font-bold text-slate-800">{rec.y}</div>
-                         </div>
-                      </div>
-                      <div className="h-32 w-full opacity-50 group-hover:opacity-100 transition-opacity">
-                         <SomatocartaChart x={rec.x} y={rec.y} />
-                      </div>
-                   </div>
-                ))}
-             </div>
-          )}
-       </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sortedRecords.map(rec => (
+                <div
+                  key={rec.id}
+                  className={`border rounded-xl p-4 hover:shadow-md transition-all bg-white relative group ${
+                    editingId === rec.id ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-slate-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Calendar className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span className="font-bold text-slate-700 text-sm truncate">
+                        {formatSomatoDate(rec.date)}
+                      </span>
+                    </div>
 
+                    <div className="flex gap-1 shrink-0">
+                      {/* Vincular por card */}
+                      <button
+                        type="button"
+                        onClick={() => openLinkModal(rec)}
+                        className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                        title="Vincular A Evaluación"
+                      >
+                        <Link2 className="w-4 h-4" />
+                      </button>
+
+                      <button onClick={() => setViewingChart(rec)} className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="Ver Gráfico">
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleEditClick(rec)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Editar">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      {showDelete && (
+                        <button onClick={() => requestDelete(rec.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Eliminar">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 mb-3">
+                    <div className="flex-1 bg-slate-50 rounded p-2 text-center">
+                      <div className="text-xs text-slate-400 uppercase font-bold">Coord X</div>
+                      <div className="font-bold text-slate-800">{rec.x}</div>
+                    </div>
+                    <div className="flex-1 bg-slate-50 rounded p-2 text-center">
+                      <div className="text-xs text-slate-400 uppercase font-bold">Coord Y</div>
+                      <div className="font-bold text-slate-800">{rec.y}</div>
+                    </div>
+                  </div>
+
+                  <div className="h-32 w-full opacity-50 group-hover:opacity-100 transition-opacity">
+                    <SomatocartaGraph x={rec.x} y={rec.y} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Modal vinculación por card */}
+        {linkModalOpen && (
+          <div className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Link2 className="w-5 h-5 text-emerald-600" />
+                  <h3 className="font-bold text-slate-900">Vincular Somatotipo A Evaluación</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setLinkModalOpen(false);
+                    setLinkingSomatoId(null);
+                    setSomatoEvalSelectorOpen(false);
+                  }}
+                  className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Evaluación Asignada</p>
+
+                  {!somatoEvalSelectorOpen ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-700">
+                        {somatoEvaluation ? `${somatoEvaluation.title ?? somatoEvaluation.date} — ${formatSomatoDate(somatoEvaluation.date)}` : '—'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSomatoEvalSelectorOpen(true)}
+                        className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
+                        title="Cambiar Evaluación Asignada"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={somatoEvaluationId ?? ''}
+                        onChange={(e) => { setSomatoEvaluationId(e.target.value || null); setSomatoEvalSelectorOpen(false); }}
+                        className="text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200 w-full"
+                        autoFocus
+                        disabled={patientEvaluations.length === 0}
+                      >
+                        {patientEvaluations.length === 0 ? (
+                          <option value="">Crea Una Evaluación Primero</option>
+                        ) : (
+                          <>
+                            <option value="">Seleccionar...</option>
+                            {patientEvaluations.map(ev => (
+                              <option key={ev.id} value={ev.id}>
+                                {ev.title ?? ev.date} — {formatSomatoDate(ev.date)}
+                              </option>
+                            ))}
+                          </>
+                        )}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setSomatoEvalSelectorOpen(false)}
+                        className="p-2 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Fecha De Evaluación</p>
+                  <input
+                    type="date"
+                    value={somatoLinkedDate}
+                    disabled
+                    readOnly
+                    className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-600 outline-none cursor-not-allowed"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLinkModalOpen(false);
+                      setLinkingSomatoId(null);
+                      setSomatoEvalSelectorOpen(false);
+                    }}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyLink}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
+                  >
+                    Guardar Vínculo
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal grande ver gráfico */}
         {viewingChart && (
           <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setViewingChart(null)}>
-             <div className="bg-white rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                   <div>
-                      <h3 className="font-bold text-lg text-slate-900">Somatocarta</h3>
-                      <p className="text-sm text-slate-500">Fecha: {viewingChart.date}</p>
-                   </div>
-                   <div className="flex items-center gap-2">
-                      <button 
-                        onClick={downloadChartAsImage}
-                        className="p-2 hover:bg-emerald-100 rounded-full text-emerald-600 transition-colors flex items-center gap-2 px-4 font-bold text-sm"
-                        title="Descargar Imagen"
-                      >
-                        <Download className="w-5 h-5" />
-                        Descargar PNG
-                      </button>
-                      <button onClick={() => setViewingChart(null)} className="p-2 hover:bg-slate-200 rounded-full text-slate-500"><X className="w-6 h-6" /></button>
-                   </div>
+            <div className="bg-white rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900">Somatocarta</h3>
+                  <p className="text-sm text-slate-500">Fecha: {formatSomatoDate(viewingChart.date)}</p>
                 </div>
-                <div ref={chartContainerRef} className="p-8 h-[600px] flex items-center justify-center bg-white">
-                   <SomatocartaChart x={viewingChart.x} y={viewingChart.y} />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={downloadChartAsImage}
+                    className="p-2 hover:bg-emerald-100 rounded-full text-emerald-600 transition-colors flex items-center gap-2 px-4 font-bold text-sm"
+                    title="Descargar Imagen"
+                  >
+                    <Download className="w-5 h-5" />
+                    Descargar PNG
+                  </button>
+                  <button onClick={() => setViewingChart(null)} className="p-2 hover:bg-slate-200 rounded-full text-slate-500">
+                    <X className="w-6 h-6" />
+                  </button>
                 </div>
-             </div>
+              </div>
+
+              <div ref={chartContainerRef} className="p-8 h-[600px] flex items-center justify-center bg-white">
+                <SomatocartaGraph x={viewingChart.x} y={viewingChart.y} />
+              </div>
+            </div>
           </div>
-       )}
-    </div>
+        )}
+      </div>
+    </>
   );
 };
