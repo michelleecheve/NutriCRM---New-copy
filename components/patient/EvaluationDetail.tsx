@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Pencil, Save, Trash2, Utensils, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, Pencil, Save, Trash2, Utensils, ArrowLeft, Calculator, Microscope, Image as ImageIcon, BookOpen } from 'lucide-react';
 import { store } from '../../services/store';
 import { DietaryCard } from './DietaryCard';
 import { DietaryForm } from './DietaryForm';
+import { NewMeasurementForm } from './NewMeasurementForm';
+import { FileGallery } from './FileGallery';
+import { MenuAddRead } from './MenuAddRead';
 import type { DietaryEvaluation, Patient, PatientEvaluation } from '../../types';
 
 type Draft = {
@@ -70,6 +73,10 @@ export const EvaluationDetail: React.FC<{
     foodFrequencyOthers: ''
   });
 
+  // ✅ menu state (embed MenuAddRead)
+  const [menuView, setMenuView] = useState<'card' | 'edit'>('card');
+  const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
+
   const selected = useMemo(() => store.getEvaluationById(evaluationId) ?? null, [evaluationId]);
 
   const patientEvaluations: PatientEvaluation[] = useMemo(
@@ -81,6 +88,31 @@ export const EvaluationDetail: React.FC<{
     if (!selected) return null;
     return patient.dietaryEvaluations.find(d => d.date === selected.date) ?? null;
   }, [patient.dietaryEvaluations, selected?.date]);
+
+  // ✅ vincular labs/fotos por fecha
+  const linkedLabs = useMemo(() => {
+    if (!selected) return [];
+    return (patient.labs || []).filter((f: any) => f?.date === selected.date);
+  }, [patient.labs, selected?.date]);
+
+  const linkedPhotos = useMemo(() => {
+    if (!selected) return [];
+    return (patient.photos || []).filter((f: any) => f?.date === selected.date);
+  }, [patient.photos, selected?.date]);
+
+  // ✅ vincular menú por fecha (preferencia: linkedEvaluationId, fallback por basedOnMeasurementDate)
+  const linkedMenu = useMemo(() => {
+    if (!selected) return null;
+    const allMenus: any[] = [...(patient.menus || []), ...(patient.dietary?.menus || [])];
+
+    // 1) preferir menu.linkedEvaluationId
+    const byEvalId = allMenus.find(m => (m as any)?.linkedEvaluationId === selected.id);
+    if (byEvalId) return byEvalId;
+
+    // 2) fallback por fecha
+    const byDate = allMenus.find(m => (m as any)?.basedOnMeasurementDate === selected.date);
+    return byDate ?? null;
+  }, [patient.menus, patient.dietary?.menus, selected?.id, selected?.date]);
 
   useEffect(() => {
     if (!selected) {
@@ -113,7 +145,11 @@ export const EvaluationDetail: React.FC<{
         foodFrequencyOthers: ''
       });
     }
-  }, [selected?.id]);
+
+    // ✅ init menu section
+    setMenuView('card');
+    setEditingMenuId(linkedMenu?.id ?? null);
+  }, [selected?.id, linkedMenu?.id]);
 
   const hasChanges = useMemo(() => {
     if (!selected || !draft) return false;
@@ -146,16 +182,10 @@ export const EvaluationDetail: React.FC<{
 
   const handleSaveDietary = () => {
     if (!selected) return;
-    if (!formEvaluationId) {
-      alert('Primero selecciona una evaluación.');
-      return;
-    }
+    if (!formEvaluationId) return;
 
     const ev = store.getEvaluationById(formEvaluationId);
-    if (!ev) {
-      alert('Evaluación no encontrada.');
-      return;
-    }
+    if (!ev) return;
 
     const normalizedForm: DietaryEvaluation = { ...dietaryFormData, date: ev.date };
 
@@ -170,6 +200,27 @@ export const EvaluationDetail: React.FC<{
 
     setDietaryView('card');
     setEvalSelectorOpen(false);
+  };
+
+  // ✅ Persistencia correcta: fusionar "archivos de esta fecha" con "archivos de otras fechas"
+  const handleUpdateLabsForThisEvaluation = (newFilesForThisDate: any[]) => {
+    if (!selected) return;
+
+    const rest = (patient.labs || []).filter((f: any) => f?.date !== selected.date);
+    const updatedPatient: Patient = { ...patient, labs: [...newFilesForThisDate, ...rest] };
+
+    onUpdate(updatedPatient);
+    store.updatePatient(updatedPatient);
+  };
+
+  const handleUpdatePhotosForThisEvaluation = (newFilesForThisDate: any[]) => {
+    if (!selected) return;
+
+    const rest = (patient.photos || []).filter((f: any) => f?.date !== selected.date);
+    const updatedPatient: Patient = { ...patient, photos: [...newFilesForThisDate, ...rest] };
+
+    onUpdate(updatedPatient);
+    store.updatePatient(updatedPatient);
   };
 
   if (!selected || !draft) {
@@ -254,7 +305,6 @@ export const EvaluationDetail: React.FC<{
             </div>
           )}
 
-          {/* separador visible */}
           <div className="mt-6 pt-6 border-t-2 border-slate-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
@@ -321,6 +371,151 @@ export const EvaluationDetail: React.FC<{
               No hay evaluación dietética para esta fecha. Presiona <span className="font-bold">Crear</span> para agregarla.
             </div>
           )}
+        </div>
+
+        {/* Card 3: Antropometría */}
+        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-50 p-2 rounded-lg">
+                <Calculator className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-slate-900">Medidas antropométricas</p>
+                <p className="text-xs text-slate-500">
+                  Vinculadas por fecha: <span className="font-mono font-bold">{selected.date}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <NewMeasurementForm
+            patient={patient}
+            onUpdate={onUpdate}
+            onViewChange={() => {}}
+            showDelete={false}
+          />
+        </div>
+
+        {/* ✅ Card 4: Menú (debajo de medidas) */}
+        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-50 p-2 rounded-lg">
+                <BookOpen className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-slate-900">Menú</p>
+                <p className="text-xs text-slate-500">
+                  Vinculado por fecha: <span className="font-mono font-bold">{selected.date}</span>
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditingMenuId(linkedMenu?.id ?? null);
+                setMenuView('edit');
+              }}
+              className="px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
+            >
+              {linkedMenu ? 'Editar' : 'Crear'}
+            </button>
+          </div>
+
+          {menuView === 'edit' ? (
+            <MenuAddRead
+              patient={patient}
+              onUpdate={onUpdate}
+              editingMenuId={editingMenuId}
+              onClose={() => {
+                setMenuView('card');
+                // refrescar id en base al store/patient (se recalcula en memo en el siguiente render)
+              }}
+            />
+          ) : linkedMenu ? (
+            <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-extrabold text-slate-900 truncate">
+                    {linkedMenu.name ?? 'Menú'}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Fecha: <span className="font-mono font-bold">{(linkedMenu as any).basedOnMeasurementDate ?? selected.date}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingMenuId(linkedMenu.id);
+                    setMenuView('edit');
+                  }}
+                  className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors"
+                >
+                  Ver / Editar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-slate-500 text-sm">
+              No hay menú para esta fecha. Presiona <span className="font-bold">Crear</span> para agregarlo.
+            </div>
+          )}
+        </div>
+
+        {/* Card 5: Labs */}
+        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-50 p-2 rounded-lg">
+                <Microscope className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-slate-900">Laboratorios</p>
+                <p className="text-xs text-slate-500">
+                  Vinculados por fecha: <span className="font-mono font-bold">{selected.date}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <FileGallery
+            patientId={patient.id}
+            files={linkedLabs}
+            onUpdate={handleUpdateLabsForThisEvaluation}
+            title="Resultados de Laboratorio"
+            icon={Microscope}
+            accept="application/pdf,image/*"
+            showDelete={false}
+          />
+        </div>
+
+        {/* Card 6: Fotos */}
+        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-50 p-2 rounded-lg">
+                <ImageIcon className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-slate-900">Fotos de progreso</p>
+                <p className="text-xs text-slate-500">
+                  Vinculadas por fecha: <span className="font-mono font-bold">{selected.date}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <FileGallery
+            patientId={patient.id}
+            files={linkedPhotos}
+            onUpdate={handleUpdatePhotosForThisEvaluation}
+            title="Galería de Progreso"
+            icon={ImageIcon}
+            accept="image/*"
+            showDelete={false}
+          />
         </div>
       </div>
     </>
