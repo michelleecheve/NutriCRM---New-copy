@@ -1,6 +1,3 @@
-// NOTE: Este archivo fue tomado del repo y se le agregó PatientEvaluation (al final).
-// Si tú ya lo modificaste antes con otros cambios, avísame y lo ajusto para no pisarte cosas.
-
 export interface MealEntry {
   mealTime: string;
   time: string;
@@ -80,7 +77,6 @@ export interface Measurement {
   thighRight?: number;
   thighLeft?: number;
   gender?: string;
-  // muchos campos más pueden existir; el repo ya los usa “flexible”
   [key: string]: any;
 }
 
@@ -262,32 +258,27 @@ export interface AppUser {
 
 /**
  * PatientEvaluation
- * - date: representa "la evaluación del día" (clave 1 por día por paciente)
- * - createdAt: auditoría (ISO datetime, no editable)
- * - createdDate: lo que se muestra en UI en "Creada" y se puede editar (solo fecha)
- * - title: nombre/título editable
+ * - date:      YYYY-MM-DD — único campo de fecha, editable por el usuario
+ * - title:     nombre/título editable
+ * - createdAt: ISO datetime — solo auditoría técnica, nunca se muestra como fecha
  */
 export interface PatientEvaluation {
-  id: string;             // evaluationId
+  id: string;
   patientId: string;
-
-  date: string;           // YYYY-MM-DD (1 por día por paciente)
-
-  title?: string;         // editable (ej: "Seguimiento", "Primera consulta", etc.)
-  createdDate: string;    // YYYY-MM-DD (editable en UI)
-
-  createdAt: string;      // ISO (auditoría técnica)
+  date: string;      // YYYY-MM-DD — la fecha que el usuario ve y puede editar
+  title?: string;
+  createdAt: string; // ISO — solo auditoría
 }
 
 export enum AppRoute {
-  LOGIN            = 'login',
-  MAIN             = 'main',
+  LOGIN             = 'login',
+  MAIN              = 'main',
   MAIN_RECEPTIONIST = 'main-receptionist',
-  DASHBOARD        = 'dashboard',
-  PATIENT_DETAIL   = 'patient-detail',
-  CALENDAR         = 'calendar',
-  PAYMENTS         = 'payments',
-  PROFILE          = 'profile',
-  MENUS            = 'menus',
-  ADMIN            = 'admin',
+  DASHBOARD         = 'dashboard',
+  PATIENT_DETAIL    = 'patient-detail',
+  CALENDAR          = 'calendar',
+  PAYMENTS          = 'payments',
+  PROFILE           = 'profile',
+  MENUS             = 'menus',
+  ADMIN             = 'admin',
 }

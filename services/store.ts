@@ -1,19 +1,15 @@
 import { Patient, Invoice, UserProfile, Appointment, PatientEvaluation } from '../types';
 
-// ─── Storage Keys ──────────────────────────────────────────────────────────────
 const KEYS = {
   patients:     'nutriflow_patients_v1',
   invoices:     'nutriflow_invoices_v1',
   appointments: 'nutriflow_appointments_v1',
   user:         'nutriflow_user_v1',
   statuses:     'nutriflow_statuses_v1',
-
-  // ✅ Evaluaciones (nuevo)
   evaluations:  'nutriflow_patient_evaluations_v1',
   evalSelected: 'nutriflow_patient_selected_evaluation_v1',
 };
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
 function load<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
@@ -32,17 +28,13 @@ function save<T>(key: string, value: T): void {
 }
 
 function formatSpanishLongDate(yyyyMmDd: string): string {
-  // Evita desfase por zona horaria: fuerza hora medio día.
   const d = new Date(`${yyyyMmDd}T12:00:00`);
   const day = d.getDate();
   const month = d.toLocaleDateString('es-ES', { month: 'long' });
   const year = d.getFullYear();
-
   const monthCap = month.charAt(0).toUpperCase() + month.slice(1);
   return `${day} ${monthCap}, ${year}`;
 }
-
-// ─── Seed Data (solo se usa la PRIMERA vez que no hay nada en localStorage) ───
 
 const SEED_PATIENTS: Patient[] = [
   {
@@ -90,11 +82,11 @@ const SEED_PATIENTS: Patient[] = [
         mealsPerDay: 5,
         excludedFoods: 'aguacate',
         recall: [
-          { mealTime: 'Desayuno',   time: '07:00', place: 'Casa',    description: 'Huevos revueltos, 1 pan integral' },
-          { mealTime: 'Refacción',  time: '10:00', place: 'Oficina', description: 'Manzana verde' },
-          { mealTime: 'Almuerzo',   time: '13:00', place: 'Oficina', description: 'Pollo a la plancha, arroz, ensalada' },
-          { mealTime: 'Refacción',  time: '16:00', place: 'Oficina', description: 'Yogurt griego' },
-          { mealTime: 'Cena',       time: '20:00', place: 'Casa',    description: 'Licuado de proteína' },
+          { mealTime: 'Desayuno',  time: '07:00', place: 'Casa',    description: 'Huevos revueltos, 1 pan integral' },
+          { mealTime: 'Refacción', time: '10:00', place: 'Oficina', description: 'Manzana verde' },
+          { mealTime: 'Almuerzo',  time: '13:00', place: 'Oficina', description: 'Pollo a la plancha, arroz, ensalada' },
+          { mealTime: 'Refacción', time: '16:00', place: 'Oficina', description: 'Yogurt griego' },
+          { mealTime: 'Cena',      time: '20:00', place: 'Casa',    description: 'Licuado de proteína' },
         ],
         foodFrequency: {
           'Carne, Pollo, Cerdo': 'Diario',
@@ -195,11 +187,8 @@ const SEED_USER: UserProfile = {
 
 const SEED_STATUSES: string[] = ['Cita Agendada', 'Cita Cancelada', 'Menú Pendiente', 'Menú Entregado'];
 
-// ✅ seed vacío para evaluaciones (no queremos crear evaluaciones automáticamente)
 const SEED_EVALUATIONS: PatientEvaluation[] = [];
 const SEED_SELECTED: Record<string, string> = {};
-
-// ─── Store Class ───────────────────────────────────────────────────────────────
 
 class Store {
   private patients:     Patient[]     = load(KEYS.patients,     SEED_PATIENTS);
@@ -212,18 +201,28 @@ class Store {
   private selectedEvaluationByPatient: Record<string, string> = load(KEYS.evalSelected, SEED_SELECTED);
 
   constructor() {
+    // Migración: si alguna evaluación guardada tiene createdDate, usar ese valor como date y eliminarlo
+    this.evaluations = this.evaluations.map(e => {
+      const legacy = e as any;
+      if (legacy.createdDate) {
+        const { createdDate, ...rest } = legacy;
+        return { ...rest, date: createdDate } as PatientEvaluation;
+      }
+      return e;
+    });
+
     this.patients = this.patients.map(p => {
       if (p.firstName === 'Michelle' && p.lastName === 'Echeverria') {
         return { ...p, menus: p.menus.filter(m => !m.id.startsWith('menu-hist-')) };
       }
       return p;
     });
+
     save(KEYS.patients, this.patients);
+    save(KEYS.evaluations, this.evaluations);
   }
 
-  getPatients(): Patient[] {
-    return this.patients;
-  }
+  getPatients(): Patient[] { return this.patients; }
 
   getPatient(id: string): Patient | undefined {
     return this.patients.find(p => p.id === id);
@@ -238,7 +237,6 @@ class Store {
       const m = today.getMonth() - birth.getMonth();
       if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
     }
-
     const newPatient: Patient = {
       id: Math.random().toString(36).substring(2, 9),
       firstName: basicInfo.firstName,
@@ -274,9 +272,7 @@ class Store {
     save(KEYS.patients, this.patients);
   }
 
-  getInvoices(): Invoice[] {
-    return this.invoices;
-  }
+  getInvoices(): Invoice[] { return this.invoices; }
 
   addInvoice(invoice: Omit<Invoice, 'id'>): Invoice {
     const newInvoice = { ...invoice, id: `#INV-${Math.floor(1000 + Math.random() * 9000)}` };
@@ -295,9 +291,7 @@ class Store {
     save(KEYS.invoices, this.invoices);
   }
 
-  getAppointments(): Appointment[] {
-    return this.appointments;
-  }
+  getAppointments(): Appointment[] { return this.appointments; }
 
   addAppointment(appointment: Omit<Appointment, 'id'>): Appointment {
     const newAppt = { ...appointment, id: Math.random().toString(36).substring(7) };
@@ -326,72 +320,44 @@ class Store {
     return this.evaluations.find(e => e.id === id);
   }
 
-  getEvaluationByPatientAndDate(patientId: string, date: string): PatientEvaluation | undefined {
-    return this.evaluations.find(e => e.patientId === patientId && e.date === date);
-  }
-
   addEvaluation(patientId: string, date: string): PatientEvaluation {
-    const existing = this.getEvaluationByPatientAndDate(patientId, date);
-    if (existing) {
-      this.selectedEvaluationByPatient[patientId] = existing.id;
-      save(KEYS.evalSelected, this.selectedEvaluationByPatient);
-      return existing;
-    }
-
-    const nowIso = new Date().toISOString();
-
     const ev: PatientEvaluation = {
       id: `EVAL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
       patientId,
       date,
-      title: `Evaluación ${formatSpanishLongDate(date)}`, // ✅ default como pediste
-      createdDate: date,
-      createdAt: nowIso,
+      title: `Evaluación ${formatSpanishLongDate(date)}`,
+      createdAt: new Date().toISOString(),
     };
-
     this.evaluations = [ev, ...this.evaluations];
     save(KEYS.evaluations, this.evaluations);
-
     this.selectedEvaluationByPatient[patientId] = ev.id;
     save(KEYS.evalSelected, this.selectedEvaluationByPatient);
-
     return ev;
   }
 
-  updateEvaluation(evaluationId: string, patch: Partial<PatientEvaluation>): PatientEvaluation | null {
+  updateEvaluation(evaluationId: string, patch: Partial<Omit<PatientEvaluation, 'id' | 'patientId' | 'createdAt'>>): PatientEvaluation | null {
     const current = this.getEvaluationById(evaluationId);
     if (!current) return null;
-
-    const { createdAt, ...safePatch } = patch as any;
-
-    if (safePatch.date && safePatch.date !== current.date) {
-      const conflict = this.getEvaluationByPatientAndDate(current.patientId, safePatch.date);
-      if (conflict && conflict.id !== current.id) {
-        throw new Error('Ya existe una evaluación para esa fecha en este paciente.');
-      }
-    }
-
-    const updated: PatientEvaluation = {
-      ...current,
-      ...safePatch,
-    };
-
+    const updated: PatientEvaluation = { ...current, ...patch };
     this.evaluations = this.evaluations.map(e => e.id === evaluationId ? updated : e);
     save(KEYS.evaluations, this.evaluations);
-
     return updated;
   }
 
   deleteEvaluation(evaluationId: string): void {
     const ev = this.getEvaluationById(evaluationId);
     if (!ev) return;
-
+    const pid = ev.patientId;
     this.evaluations = this.evaluations.filter(e => e.id !== evaluationId);
     save(KEYS.evaluations, this.evaluations);
-
-    const pid = ev.patientId;
     if (this.selectedEvaluationByPatient[pid] === evaluationId) {
       delete this.selectedEvaluationByPatient[pid];
+      const remaining = this.evaluations
+        .filter(e => e.patientId === pid)
+        .sort((a, b) => b.date.localeCompare(a.date));
+      if (remaining.length > 0) {
+        this.selectedEvaluationByPatient[pid] = remaining[0].id;
+      }
       save(KEYS.evalSelected, this.selectedEvaluationByPatient);
     }
   }
@@ -409,18 +375,14 @@ class Store {
     save(KEYS.evalSelected, this.selectedEvaluationByPatient);
   }
 
-  getUserProfile(): UserProfile {
-    return this.user;
-  }
+  getUserProfile(): UserProfile { return this.user; }
 
   updateUserProfile(profile: UserProfile): void {
     this.user = profile;
     save(KEYS.user, this.user);
   }
 
-  getPatientStatuses(): string[] {
-    return this.statuses;
-  }
+  getPatientStatuses(): string[] { return this.statuses; }
 
   updatePatientStatuses(statuses: string[]): void {
     this.statuses = statuses;
