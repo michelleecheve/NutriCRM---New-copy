@@ -246,9 +246,6 @@ export const EvaluationsTab: React.FC<{ patientId: string }> = ({ patientId }) =
                       onChange={(e) => setDraft({ ...draft, date: e.target.value })}
                       className="mt-2 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200"
                     />
-                    <p className="mt-2 text-[11px] text-slate-400 font-mono break-all">
-                      createdAt (auditoría): {selected.createdAt}
-                    </p>
                   </div>
 
                   <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
