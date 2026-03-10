@@ -113,7 +113,9 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack 
         {activeTab === 'clinical' && <ClinicalTab patient={patient} onUpdate={handleUpdatePatient} />}
 
         {/* ✅ Aquí cambia el tab */}
-        {activeTab === 'appointments' && <EvaluationsTab patientId={patient.id} />}
+        {activeTab === 'appointments' && (
+          <EvaluationsTab patientId={patient.id} patient={patient} onUpdate={handleUpdatePatient} />
+        )}
 
         {activeTab === 'dietary' && <DietaryTab patient={patient} onUpdate={handleUpdatePatient} />}
         {activeTab === 'measurements' && <MeasurementsTab patient={patient} onUpdate={handleUpdatePatient} />}
