@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DietaryEvaluation, MealEntry, PatientEvaluation } from '../../types';
-import { Utensils, Plus, X, Save, Pencil } from 'lucide-react';
+import { Utensils, Plus, X, Save, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 import { GridInput, ModernTextArea } from './SharedComponents';
 import { store } from '../../services/store';
 
@@ -11,6 +11,41 @@ const FOOD_GROUPS = [
 ];
 const FREQUENCIES = ['Diario', 'Semanal', 'Mensual', 'Rara vez', 'Nunca'];
 const MEAL_TYPES = ['Desayuno', 'Refacción', 'Almuerzo', 'Cena'];
+
+const ConfirmModal: React.FC<{
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ title, message, onConfirm, onCancel }) => (
+  <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40">
+    <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 max-w-sm w-full mx-4">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+          <AlertTriangle className="w-5 h-5 text-red-600" />
+        </div>
+        <p className="font-extrabold text-slate-900 text-lg">{title}</p>
+      </div>
+      <p className="text-sm text-slate-500 mb-6">{message}</p>
+      <div className="flex gap-3 justify-end">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors"
+        >
+          Sí, eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 export const DietaryForm: React.FC<{
   formData: DietaryEvaluation;
@@ -26,6 +61,12 @@ export const DietaryForm: React.FC<{
 
   onCancel: () => void;
   onSave: () => void;
+
+  // ✅ ahora opcional
+  onDelete?: () => void;
+
+  // ✅ NUEVO: permite ocultar eliminar (por ejemplo en EvaluationDetail)
+  showDelete?: boolean;
 }> = ({
   formData,
   setFormData,
@@ -36,10 +77,13 @@ export const DietaryForm: React.FC<{
   setEvalSelectorOpen,
   onCancel,
   onSave,
+  onDelete,
+  showDelete = true,
 }) => {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
   const formEvaluation = formEvaluationId ? store.getEvaluationById(formEvaluationId) : null;
 
-  // Cuando el usuario cambia la evaluación asignada, jalar su date
   const handleChangeFormEvaluation = (evId: string) => {
     const ev = store.getEvaluationById(evId);
     setFormEvaluationId(evId || null);
@@ -72,25 +116,60 @@ export const DietaryForm: React.FC<{
     }
   };
 
+  const canDeleteHere = showDelete && !!onDelete;
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20">
-      <div className="flex items-center justify-between mb-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="bg-emerald-50 p-2 rounded-lg">
-            <Utensils className="w-6 h-6 text-emerald-600" />
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
+      {confirmOpen && canDeleteHere && (
+        <ConfirmModal
+          title="Eliminar evaluación dietética"
+          message="¿Seguro que deseas eliminar este registro? Esta acción no se puede deshacer."
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={() => {
+            setConfirmOpen(false);
+            onDelete?.();
+          }}
+        />
+      )}
+
+      {/* Barra superior */}
+      <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="bg-emerald-50 p-2 rounded-lg">
+              <Utensils className="w-6 h-6 text-emerald-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Registro Dietético</h2>
+              <p className="text-xs text-emerald-600 font-bold tracking-wide uppercase">Evaluación Dietética</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">Registro Dietético</h2>
-            <p className="text-xs text-emerald-600 font-bold tracking-wide uppercase">Evaluación Dietética</p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={onSave}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
+            >
+              <Save className="w-4 h-4" /> Guardar
+            </button>
+
+            <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full text-slate-400" title="Cerrar">
+              <X className="w-6 h-6" />
+            </button>
           </div>
         </div>
-        <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full text-slate-400">
-          <X className="w-6 h-6" />
-        </button>
       </div>
 
+      {/* (resto del form igual que antes; lo dejo intacto) */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        {/* Evaluación asignada — discreta */}
         <div className="mb-6">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Evaluación asignada</p>
           {!evalSelectorOpen ? (
@@ -206,6 +285,7 @@ export const DietaryForm: React.FC<{
               ))}
             </tbody>
           </table>
+
           {formData.recall.length === 0 && (
             <div className="p-8 text-center text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl mt-4">
               No hay comidas registradas.
@@ -234,7 +314,11 @@ export const DietaryForm: React.FC<{
                   {FOOD_GROUPS.map(group => {
                     const isSelected = formData.foodFrequency[group] === freq;
                     return (
-                      <td key={group} className={`p-2 text-center cursor-pointer transition-colors ${isSelected ? 'bg-emerald-50/30' : 'hover:bg-slate-50'}`} onClick={() => updateFrequency(group, freq)}>
+                      <td
+                        key={group}
+                        className={`p-2 text-center cursor-pointer transition-colors ${isSelected ? 'bg-emerald-50/30' : 'hover:bg-slate-50'}`}
+                        onClick={() => updateFrequency(group, freq)}
+                      >
                         <div className="flex justify-center items-center h-8">
                           {isSelected ? (
                             <span className="text-emerald-500 font-bold text-lg leading-none transform scale-125">
@@ -263,13 +347,45 @@ export const DietaryForm: React.FC<{
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 sticky bottom-6 z-20">
-        <button onClick={onCancel} className="px-6 py-3 bg-white text-slate-500 font-bold rounded-full shadow-lg border border-slate-100 hover:bg-slate-50 transition-colors">
-          Cancelar
-        </button>
-        <button onClick={onSave} className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-full shadow-xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all flex items-center gap-2">
-          <Save className="w-4 h-4" /> Guardar Evaluación
-        </button>
+      {/* Barra inferior: solo mostrar Eliminar si aplica */}
+      <div className="flex items-center justify-between pt-2">
+        {showDelete ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (!canDeleteHere) return; // si no hay handler, no hace nada
+              setConfirmOpen(true);
+            }}
+            className={`inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold shadow-lg transition-colors ${
+              canDeleteHere
+                ? 'bg-red-50 text-red-700 border border-red-100 hover:bg-red-100'
+                : 'bg-slate-100 text-slate-400 border border-slate-100'
+            }`}
+            title={!canDeleteHere ? 'Eliminar no disponible en esta vista.' : 'Eliminar'}
+          >
+            <Trash2 className="w-4 h-4" />
+            Eliminar
+          </button>
+        ) : (
+          <div />
+        )}
+
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-6 py-3 bg-white text-slate-500 font-bold rounded-full shadow-lg border border-slate-100 hover:bg-slate-50 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-full shadow-xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" /> Guardar Evaluación
+          </button>
+        </div>
       </div>
     </div>
   );

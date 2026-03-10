@@ -1,11 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Calendar, Plus, Check } from 'lucide-react';
+import { Calendar, Plus, Check, ChevronRight } from 'lucide-react';
 import { store } from '../../services/store';
 import { SectionHeader } from './SharedComponents';
 import type { Patient, PatientEvaluation } from '../../types';
 import { EvaluationDetail } from './EvaluationDetail';
-
-const todayStr = () => new Date().toISOString().split('T')[0];
 
 export const EvaluationsTab: React.FC<{
   patientId: string;
@@ -16,14 +14,12 @@ export const EvaluationsTab: React.FC<{
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = () => {
-    const list = store.getEvaluations(patientId);
-    setEvaluations(list);
-    const sel = store.getSelectedEvaluationId(patientId);
-    setSelectedId(sel);
+    setEvaluations(store.getEvaluations(patientId));
   };
 
   useEffect(() => {
     load();
+    setSelectedId(null);
   }, [patientId]);
 
   const selected = useMemo(() => {
@@ -32,47 +28,36 @@ export const EvaluationsTab: React.FC<{
   }, [selectedId]);
 
   const handleCreateToday = () => {
-    store.addEvaluation(patientId, todayStr());
+    store.addEvaluation(patientId, store.getTodayStr());
     load();
   };
 
-  const handleSelect = (evId: string) => {
+  const handleOpenDetail = (evId: string) => {
     store.setSelectedEvaluationId(patientId, evId);
     setSelectedId(evId);
   };
 
-  // “navegación” interna: si hay seleccionada -> vista detalle completa
   if (selected) {
     return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <SectionHeader icon={Calendar} title="Evaluaciones" />
-            <button
-              type="button"
-              onClick={handleCreateToday}
-              className="flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Crear evaluación de hoy
-            </button>
-          </div>
-        </div>
-
+      <div className="pb-10">
         <EvaluationDetail
           patient={patient}
           patientId={patientId}
           evaluationId={selected.id}
           onUpdate={onUpdate}
-          onBack={() => setSelectedId(null)}
+          onBack={() => {
+            setSelectedId(null);
+            load();
+          }}
         />
       </div>
     );
   }
 
-  // Vista historial/lista
+  const lastSelectedId = store.getSelectedEvaluationId(patientId);
+
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500 min-h-[400px]">
+    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <SectionHeader icon={Calendar} title="Evaluaciones" />
         <button
@@ -86,40 +71,70 @@ export const EvaluationsTab: React.FC<{
       </div>
 
       <div className="mt-6">
-        <div className="space-y-3">
-          {evaluations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-400 border border-dashed border-slate-200 rounded-2xl">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                <Calendar className="w-8 h-8 text-slate-300" />
-              </div>
-              <p className="italic">No hay evaluaciones todavía.</p>
-              <p className="text-sm mt-2">Crea una evaluación para poder registrar mediciones, menús, etc.</p>
+        {evaluations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-slate-400 border border-dashed border-slate-200 rounded-2xl">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <Calendar className="w-8 h-8 text-slate-300" />
             </div>
-          ) : (
-            evaluations.map(ev => (
-              <button
-                key={ev.id}
-                type="button"
-                onClick={() => handleSelect(ev.id)}
-                className="w-full text-left p-4 rounded-2xl border transition-colors border-slate-100 hover:bg-slate-50"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-extrabold text-slate-800 truncate">{ev.title ?? ev.date}</p>
-                    <p className="text-[11px] text-slate-400 font-mono truncate">{ev.date} · {ev.id}</p>
-                  </div>
+            <p className="italic">No hay evaluaciones todavía.</p>
+            <p className="text-sm mt-2">Crea una evaluación para poder registrar mediciones, menús, etc.</p>
+          </div>
+        ) : (
+          <div className="border border-slate-200 rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-white text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200">
+              <div className="col-span-6">Evaluación</div>
+              <div className="col-span-3">Fecha</div>
+              <div className="col-span-2">ID</div>
+              <div className="col-span-1" />
+            </div>
 
-                  {/* indicador opcional si este era el “selected” guardado en store */}
-                  {store.getSelectedEvaluationId(patientId) === ev.id && (
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
-                      <Check className="w-3.5 h-3.5" /> Última seleccionada
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))
-          )}
-        </div>
+            <div className="divide-y divide-slate-100">
+              {evaluations.map(ev => {
+                const isLast = lastSelectedId === ev.id;
+                return (
+                  <button
+                    key={ev.id}
+                    type="button"
+                    onClick={() => handleOpenDetail(ev.id)}
+                    className="w-full text-left grid grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-50 transition-colors items-center"
+                  >
+                    <div className="col-span-6 flex items-center gap-4 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                        <Calendar className="w-5 h-5 text-slate-400" />
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="text-sm font-bold text-slate-900 truncate">
+                            {ev.title ?? `Evaluación ${ev.date}`}
+                          </p>
+                          {isLast && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full shrink-0">
+                              <Check className="w-3.5 h-3.5" />
+                              Última
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-span-3">
+                      <p className="text-sm font-bold text-slate-700">{ev.date}</p>
+                    </div>
+
+                    <div className="col-span-2 min-w-0">
+                      <p className="text-xs font-mono text-slate-400 truncate">{ev.id}</p>
+                    </div>
+
+                    <div className="col-span-1 flex justify-end text-slate-300">
+                      <ChevronRight className="w-5 h-5" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

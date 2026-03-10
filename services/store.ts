@@ -36,6 +36,45 @@ function formatSpanishLongDate(yyyyMmDd: string): string {
   return `${day} ${monthCap}, ${year}`;
 }
 
+/**
+ * ✅ Timezone helpers
+ * Tu app guarda tz como "UTC-06:00", "UTC+03:30" o "UTC±00:00".
+ * Intl.DateTimeFormat NO acepta ese formato como timeZone; por eso calculamos por offset.
+ */
+function parseUtcOffsetToMinutes(tz: string): number {
+  if (!tz) return 0;
+  if (tz === 'UTC' || tz === 'UTC±00:00') return 0;
+
+  const m = tz.match(/^UTC([+-])(\d{2}):(\d{2})$/);
+  if (!m) return 0;
+
+  const sign = m[1] === '-' ? -1 : 1;
+  const hh = parseInt(m[2], 10);
+  const mm = parseInt(m[3], 10);
+  return sign * (hh * 60 + mm);
+}
+
+function ymdFromShiftedUtcDate(shifted: Date): string {
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(shifted.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getTodayYMDInUserTimezone(userTz: string): string {
+  const offsetMin = parseUtcOffsetToMinutes(userTz);
+  const now = Date.now();
+  const shifted = new Date(now + offsetMin * 60_000);
+  return ymdFromShiftedUtcDate(shifted);
+}
+
+function addDaysYmdInUserTimezone(userTz: string, daysToAdd: number): string {
+  const offsetMin = parseUtcOffsetToMinutes(userTz);
+  const now = Date.now();
+  const shifted = new Date(now + offsetMin * 60_000 + daysToAdd * 86_400_000);
+  return ymdFromShiftedUtcDate(shifted);
+}
+
 const SEED_PATIENTS: Patient[] = [
   {
     id: '1',
@@ -164,11 +203,6 @@ const SEED_INVOICES: Invoice[] = [
   { id: '#INV-4496', patientId: '',  patientName: 'Carlos Ruiz',         date: '2026-02-10', amount: 300.00, status: 'Pagado',   method: 'Tarjeta' },
 ];
 
-const SEED_APPOINTMENTS: Appointment[] = [
-  { id: 'appt-1', patientId: '1', patientName: 'Michelle Echeverria', date: new Date().toISOString().split('T')[0],                      time: '15:00', duration: 60, type: 'Seguimiento', modality: 'Presencial', status: 'Programada' },
-  { id: 'appt-2', patientId: '2', patientName: 'Juan Perez',          date: new Date(Date.now() + 86400000).toISOString().split('T')[0], time: '10:00', duration: 45, type: 'Seguimiento', modality: 'Video',      status: 'Programada' },
-];
-
 const SEED_USER: UserProfile = {
   professionalTitle: 'Lic.',
   name: 'Blanca Morales',
@@ -184,6 +218,12 @@ const SEED_USER: UserProfile = {
   avatar: 'https://user3047.na.imgto.link/public/20260225/isotipo-beige-fondo-verde-circular.avif',
   timezone: 'UTC-06:00',
 };
+
+// ✅ Seed appointments usando TZ del perfil (evita salto por UTC)
+const SEED_APPOINTMENTS: Appointment[] = [
+  { id: 'appt-1', patientId: '1', patientName: 'Michelle Echeverria', date: getTodayYMDInUserTimezone(SEED_USER.timezone),                      time: '15:00', duration: 60, type: 'Seguimiento', modality: 'Presencial', status: 'Programada' },
+  { id: 'appt-2', patientId: '2', patientName: 'Juan Perez',          date: addDaysYmdInUserTimezone(SEED_USER.timezone, 1),                   time: '10:00', duration: 45, type: 'Seguimiento', modality: 'Video',      status: 'Programada' },
+];
 
 const SEED_STATUSES: string[] = ['Cita Agendada', 'Cita Cancelada', 'Menú Pendiente', 'Menú Entregado'];
 
@@ -201,7 +241,6 @@ class Store {
   private selectedEvaluationByPatient: Record<string, string> = load(KEYS.evalSelected, SEED_SELECTED);
 
   constructor() {
-    // Migración: si alguna evaluación guardada tiene createdDate, usar ese valor como date y eliminarlo
     this.evaluations = this.evaluations.map(e => {
       const legacy = e as any;
       if (legacy.createdDate) {
@@ -222,6 +261,11 @@ class Store {
     save(KEYS.evaluations, this.evaluations);
   }
 
+  // ✅ útil global
+  getTodayStr(): string {
+    return getTodayYMDInUserTimezone(this.user?.timezone || 'UTC±00:00');
+  }
+
   getPatients(): Patient[] { return this.patients; }
 
   getPatient(id: string): Patient | undefined {
@@ -239,9 +283,10 @@ class Store {
     }
     const newPatient: Patient = {
       id: Math.random().toString(36).substring(2, 9),
+      // ✅ antes era ISO UTC, ahora respeta TZ del perfil
+      registeredAt: this.getTodayStr(),
       firstName: basicInfo.firstName,
       lastName:  basicInfo.lastName,
-      registeredAt: new Date().toISOString().split('T')[0],
       clinical: {
         status: (basicInfo.status as any) || 'Cita Agendada',
         dob: basicInfo.dob || '',

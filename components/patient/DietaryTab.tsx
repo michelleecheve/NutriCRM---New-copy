@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Patient, DietaryEvaluation, MealEntry, PatientEvaluation } from '../../types';
+import { Patient, DietaryEvaluation, PatientEvaluation } from '../../types';
 import { store } from '../../services/store';
 import { Utensils, Plus } from 'lucide-react';
 import { SectionHeader, ModernTextArea } from './SharedComponents';
@@ -12,8 +12,20 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
   const [formEvaluationId, setFormEvaluationId] = useState<string | null>(null);
   const [evalSelectorOpen, setEvalSelectorOpen] = useState(false);
 
-  const patientEvaluations: PatientEvaluation[] = useMemo(() => store.getEvaluations(patient.id), [patient.id]);
-  const selectedEvaluationId = store.getSelectedEvaluationId(patient.id);
+  const patientEvaluations: PatientEvaluation[] = useMemo(
+    () => store.getEvaluations(patient.id),
+    [patient.id]
+  );
+
+  // ✅ Estado React para que el dropdown se actualice inmediatamente
+  const [selectedEvaluationId, setSelectedEvaluationId] = useState<string | null>(
+    store.getSelectedEvaluationId(patient.id)
+  );
+
+  // Si cambias de paciente, sincroniza el estado con el store
+  useEffect(() => {
+    setSelectedEvaluationId(store.getSelectedEvaluationId(patient.id));
+  }, [patient.id]);
 
   const selectedEvaluation = useMemo(() => {
     if (!selectedEvaluationId) return null;
@@ -33,17 +45,20 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
     foodFrequencyOthers: ''
   });
 
+  // Mantener el form sincronizado con modo (nuevo/editar) y evaluación seleccionada
   useEffect(() => {
     if (editingId) {
       const existing = patient.dietaryEvaluations.find(e => e.id === editingId);
       if (existing) {
         setFormData(existing);
+
         // Buscar a qué evaluación pertenece por fecha
         const matchingEval = patientEvaluations.find(ev => ev.date === existing.date);
         setFormEvaluationId(matchingEval?.id ?? selectedEvaluationId);
       }
       return;
     }
+
     setFormEvaluationId(selectedEvaluationId);
     setEvalSelectorOpen(false);
     setFormData({
@@ -56,7 +71,7 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
       foodFrequency: {},
       foodFrequencyOthers: ''
     });
-  }, [editingId, patient.dietaryEvaluations, selectedEvaluation?.date]);
+  }, [editingId, patient.dietaryEvaluations, selectedEvaluation?.date, patientEvaluations, selectedEvaluationId]);
 
   const updateDietary = (field: string, value: any) => {
     onUpdate({ ...patient, dietary: { ...patient.dietary, [field]: value } });
@@ -72,23 +87,46 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
       alert('Evaluación no encontrada.');
       return;
     }
+
+    // Normalizar la fecha a la evaluación seleccionada
     const normalizedForm: DietaryEvaluation = { ...formData, date: ev.date };
+
     let updatedEvaluations = [...patient.dietaryEvaluations];
     if (editingId) {
-      updatedEvaluations = updatedEvaluations.map(e => e.id === editingId ? normalizedForm : e);
+      updatedEvaluations = updatedEvaluations.map(e => (e.id === editingId ? normalizedForm : e));
     } else {
       updatedEvaluations = [normalizedForm, ...updatedEvaluations];
     }
+
     onUpdate({ ...patient, dietaryEvaluations: updatedEvaluations });
     store.updatePatient({ ...patient, dietaryEvaluations: updatedEvaluations });
+
+    setView('list');
+    setEditingId(null);
+    setEvalSelectorOpen(false);
+  };
+
+  // ✅ Eliminar SIEMPRE disponible: si no hay registro guardado, no rompe (avisa)
+  const handleDelete = () => {
+    if (!editingId) {
+      alert('No hay un registro guardado para eliminar (estás creando uno nuevo).');
+      return;
+    }
+
+    const updatedEvaluations = patient.dietaryEvaluations.filter(e => e.id !== editingId);
+
+    onUpdate({ ...patient, dietaryEvaluations: updatedEvaluations });
+    store.updatePatient({ ...patient, dietaryEvaluations: updatedEvaluations });
+
     setView('list');
     setEditingId(null);
     setEvalSelectorOpen(false);
   };
 
   const handleSelectEvaluationFromDropdown = (evId: string) => {
-    store.setSelectedEvaluationId(patient.id, evId || null);
-    setView(v => v);
+    const next = evId || null;
+    store.setSelectedEvaluationId(patient.id, next);
+    setSelectedEvaluationId(next);
   };
 
   if (view === 'list') {
@@ -97,8 +135,18 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <SectionHeader icon={Utensils} title="Perfil Dietético Actual" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ModernTextArea label="Preferencias y Aversiones" value={patient.dietary.preferences} onChange={(e: any) => updateDietary('preferences', e.target.value)} rows={4} />
-            <ModernTextArea label="Notas Adicionales" value={patient.dietary.notes} onChange={(e: any) => updateDietary('notes', e.target.value)} rows={4} />
+            <ModernTextArea
+              label="Preferencias y Aversiones"
+              value={patient.dietary.preferences}
+              onChange={(e: any) => updateDietary('preferences', e.target.value)}
+              rows={4}
+            />
+            <ModernTextArea
+              label="Notas Adicionales"
+              value={patient.dietary.notes}
+              onChange={(e: any) => updateDietary('notes', e.target.value)}
+              rows={4}
+            />
           </div>
         </div>
 
@@ -127,7 +175,9 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
                     <>
                       <option value="">Seleccionar...</option>
                       {patientEvaluations.map(ev => (
-                        <option key={ev.id} value={ev.id}>{ev.title ?? ev.date} — {ev.date}</option>
+                        <option key={ev.id} value={ev.id}>
+                          {ev.title ?? ev.date} — {ev.date}
+                        </option>
                       ))}
                     </>
                   )}
@@ -182,6 +232,7 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
       setEvalSelectorOpen={setEvalSelectorOpen}
       onCancel={() => setView('list')}
       onSave={handleSave}
+      onDelete={handleDelete}
     />
   );
 };

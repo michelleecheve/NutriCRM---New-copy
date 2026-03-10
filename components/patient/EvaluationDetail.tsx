@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, Pencil, Save, Trash2, Utensils, ArrowLeft } from 'lucide-react';
+import { AlertTriangle, Pencil, Save, Trash2, Utensils, ArrowLeft } from 'lucide-react';
 import { store } from '../../services/store';
 import { DietaryCard } from './DietaryCard';
 import { DietaryForm } from './DietaryForm';
@@ -48,19 +48,14 @@ const ConfirmModal: React.FC<{
 export const EvaluationDetail: React.FC<{
   patient: Patient;
   evaluationId: string;
-
-  // para mantener EXACTA la mecánica de selección por pacienteId que ya usas
   patientId: string;
-
   onUpdate: (p: Patient) => void;
-
   onBack: () => void;
 }> = ({ patient, evaluationId, patientId, onUpdate, onBack }) => {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // Dietética embebida
   const [dietaryView, setDietaryView] = useState<'card' | 'edit'>('card');
   const [formEvaluationId, setFormEvaluationId] = useState<string | null>(null);
   const [evalSelectorOpen, setEvalSelectorOpen] = useState(false);
@@ -77,7 +72,10 @@ export const EvaluationDetail: React.FC<{
 
   const selected = useMemo(() => store.getEvaluationById(evaluationId) ?? null, [evaluationId]);
 
-  const patientEvaluations: PatientEvaluation[] = useMemo(() => store.getEvaluations(patient.id), [patient.id]);
+  const patientEvaluations: PatientEvaluation[] = useMemo(
+    () => store.getEvaluations(patient.id),
+    [patient.id]
+  );
 
   const linkedDietary = useMemo(() => {
     if (!selected) return null;
@@ -142,7 +140,6 @@ export const EvaluationDetail: React.FC<{
     setConfirmOpen(false);
     setDraft(null);
     setErrorMsg('');
-    // limpiamos la selección (mismo comportamiento que antes al borrar)
     store.setSelectedEvaluationId(patientId, null);
     onBack();
   };
@@ -202,92 +199,95 @@ export const EvaluationDetail: React.FC<{
         />
       )}
 
-      <div className="border border-slate-200 rounded-2xl bg-white p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <button
-              type="button"
-              onClick={onBack}
-              className="mb-3 inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-700"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Volver al historial
-            </button>
+      <div className="space-y-6">
+        {/* Card 1 */}
+        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <button
+                type="button"
+                onClick={onBack}
+                className="mb-4 inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-700"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Volver al historial
+              </button>
 
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide flex items-center gap-2">
-              <Check className="w-4 h-4 text-emerald-500" />
-              Evaluación seleccionada
-            </p>
+              <div className="flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-slate-300 shrink-0" />
+                <input
+                  value={draft.title}
+                  onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                  placeholder="Título de la evaluación"
+                  className="w-full text-xl font-bold text-slate-900 bg-transparent outline-none border-b border-slate-100 focus:border-slate-300 transition-colors"
+                />
+              </div>
+            </div>
 
-            <div className="mt-2 flex items-center gap-2">
-              <Pencil className="w-4 h-4 text-slate-300 shrink-0" />
-              <input
-                value={draft.title}
-                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                placeholder="Título de la evaluación"
-                className="w-full text-xl font-extrabold text-slate-900 bg-transparent outline-none border-b border-transparent focus:border-slate-200"
-              />
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(true)}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-100 bg-red-50 text-red-700 font-bold text-sm hover:bg-red-100 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Eliminar
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={!hasChanges}
+                className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl font-bold text-sm transition-colors ${
+                  hasChanges ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <Save className="w-4 h-4" />
+                Guardar
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setConfirmOpen(true)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-100 bg-red-50 text-red-700 font-bold text-sm hover:bg-red-100 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Eliminar
-            </button>
+          {errorMsg && (
+            <div className="mt-4 p-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm font-bold">
+              {errorMsg}
+            </div>
+          )}
 
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={!hasChanges}
-              className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl font-bold text-sm transition-colors ${
-                hasChanges ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-              }`}
-            >
-              <Save className="w-4 h-4" />
-              Guardar
-            </button>
+          {/* separador visible */}
+          <div className="mt-6 pt-6 border-t-2 border-slate-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Fecha</p>
+                <input
+                  type="date"
+                  value={draft.date}
+                  onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+                  className="mt-2 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200"
+                />
+              </div>
+
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Evaluation ID</p>
+                <p className="mt-2 font-mono text-sm font-bold text-slate-700 break-all border border-slate-200 rounded-xl px-3 py-2 bg-white">
+                  {selected.id}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {errorMsg && (
-          <div className="mt-4 p-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm font-bold">
-            {errorMsg}
-          </div>
-        )}
-
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Fecha</p>
-            <input
-              type="date"
-              value={draft.date}
-              onChange={(e) => setDraft({ ...draft, date: e.target.value })}
-              className="mt-2 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200"
-            />
-          </div>
-
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Evaluation ID</p>
-            <p className="mt-1 font-mono text-sm font-bold text-slate-800 break-all">{selected.id}</p>
-          </div>
-        </div>
-
-        {/* ✅ Dietética */}
-        <div className="mt-6 border-t border-slate-100 pt-6">
-          <div className="flex items-center justify-between gap-4 mb-4">
+        {/* Card 2 */}
+        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-50 p-2 rounded-lg">
                 <Utensils className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Evaluación dietética</p>
-                <p className="text-[12px] text-slate-400">
-                  Se vincula por fecha: <span className="font-mono font-bold">{selected.date}</span>
+                <p className="text-lg font-bold text-slate-900">Evaluación dietética</p>
+                <p className="text-xs text-slate-500">
+                  Vinculada por fecha: <span className="font-mono font-bold">{selected.date}</span>
                 </p>
               </div>
             </div>
@@ -312,18 +312,15 @@ export const EvaluationDetail: React.FC<{
               setEvalSelectorOpen={setEvalSelectorOpen}
               onCancel={() => setDietaryView('card')}
               onSave={handleSaveDietary}
+              showDelete={false}
             />
           ) : linkedDietary ? (
             <DietaryCard evalItem={linkedDietary} onClick={() => setDietaryView('edit')} />
           ) : (
-            <div className="p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-slate-400 text-sm">
+            <div className="p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-slate-500 text-sm">
               No hay evaluación dietética para esta fecha. Presiona <span className="font-bold">Crear</span> para agregarla.
             </div>
           )}
-        </div>
-
-        <div className="mt-6 text-xs text-slate-400">
-          Cada registro de las otras pestañas deberá guardarse con este <span className="font-mono">evaluationId</span>.
         </div>
       </div>
     </>
