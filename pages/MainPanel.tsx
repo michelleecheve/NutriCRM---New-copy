@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { store } from '../services/store';
+import { authStore } from '../services/authStore';
 import { Patient, Appointment, Invoice } from '../types';
-import { CreditCard, Calendar, ChefHat, TrendingUp, Clock, ChevronRight, AlertCircle, CalendarDays, User, Users } from 'lucide-react';
+import { CreditCard, Calendar, ChefHat, TrendingUp, Clock, ChevronRight, AlertCircle, CalendarDays, Users } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getTodayStr } from '../src/utils/dateUtils';
 import { CalendarAppointmentModal } from '../components/calendar_components/CalendarAppointmentModal';
@@ -11,7 +12,8 @@ interface MainPanelProps {
 }
 
 export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
-  const [user] = useState(store.getUserProfile());
+  const currentUser = authStore.getCurrentUser();
+  const [user] = useState(currentUser?.profile || store.getUserProfile());
   const todayStr = getTodayStr(user.timezone);
   const [currentYear, currentMonth] = todayStr.split('-').map(Number);
 
@@ -33,14 +35,8 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   const isInPeriod = (dateString: string) =>
     !!dateString && dateString >= dateRange.start && dateString <= dateRange.end;
 
-  // KPI: Active Patients
-  const activePatientIds = new Set<string>();
-  appointments.forEach(a => { if (a.status !== 'Cancelada' && isInPeriod(a.date)) activePatientIds.add(a.patientId); });
-  patients.forEach(p => {
-    if (isInPeriod(p.registeredAt)) activePatientIds.add(p.id);
-    p.measurements.forEach(m => { if (isInPeriod(m.date)) activePatientIds.add(p.id); });
-  });
-  const activePatientsCount = activePatientIds.size;
+  // KPI: Total de pacientes (sin filtro)
+  const totalPatients = patients.length;
 
   const totalIncome = invoices
     .filter(inv => inv.status === 'Pagado' && isInPeriod(inv.date))
@@ -123,32 +119,60 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Tarjeta Pacientes - TOTAL SIN FILTRO */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-indigo-200 transition-all">
           <div className="flex justify-between items-start mb-4">
-            <div className="bg-indigo-100 p-3 rounded-xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors"><Users className="w-6 h-6" /></div>
-            <span className={`text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1 ${activePatientsCount > 0 ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-50 text-slate-400'}`}><TrendingUp className="w-3 h-3" /> Activos</span>
+            <div className="bg-indigo-100 p-3 rounded-xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+              <Users className="w-6 h-6" />
+            </div>
           </div>
-          <div><span className="text-slate-400 text-sm font-medium block mb-1">Pacientes (Periodo)</span><span className="text-3xl font-bold text-slate-900">{activePatientsCount}</span></div>
+          <div>
+            <span className="text-slate-400 text-sm font-medium block mb-1">Total Pacientes</span>
+            <span className="text-3xl font-bold text-slate-900">{totalPatients}</span>
+          </div>
         </div>
+
+        {/* Tarjeta Ingresos */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-emerald-200 transition-all">
           <div className="flex justify-between items-start mb-4">
-            <div className="bg-emerald-100 p-3 rounded-xl text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors"><CreditCard className="w-6 h-6" /></div>
-            <span className={`text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1 ${totalIncome > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-400'}`}><TrendingUp className="w-3 h-3" /> Reporte</span>
+            <div className="bg-emerald-100 p-3 rounded-xl text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+              <CreditCard className="w-6 h-6" />
+            </div>
+            <span className={`text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1 ${totalIncome > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-50 text-slate-400'}`}>
+              <TrendingUp className="w-3 h-3" /> Reporte
+            </span>
           </div>
-          <div><span className="text-slate-400 text-sm font-medium block mb-1">Ingresos (Periodo)</span><span className="text-3xl font-bold text-slate-900">Q{totalIncome.toLocaleString()}</span></div>
+          <div>
+            <span className="text-slate-400 text-sm font-medium block mb-1">Ingresos (Periodo)</span>
+            <span className="text-3xl font-bold text-slate-900">Q{totalIncome.toLocaleString()}</span>
+          </div>
         </div>
+
+        {/* Tarjeta Citas */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-blue-200 transition-all">
           <div className="flex justify-between items-start mb-4">
-            <div className="bg-blue-100 p-3 rounded-xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors"><Calendar className="w-6 h-6" /></div>
+            <div className="bg-blue-100 p-3 rounded-xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <Calendar className="w-6 h-6" />
+            </div>
           </div>
-          <div><span className="text-slate-400 text-sm font-medium block mb-1">Citas Agendadas (Periodo)</span><span className="text-3xl font-bold text-slate-900">{appointmentsCount}</span></div>
+          <div>
+            <span className="text-slate-400 text-sm font-medium block mb-1">Citas Agendadas</span>
+            <span className="text-3xl font-bold text-slate-900">{appointmentsCount}</span>
+          </div>
         </div>
+
+        {/* Tarjeta Menús Pendientes */}
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-2xl border border-amber-100 shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-start mb-4">
-            <div className="bg-white p-3 rounded-xl text-amber-500 shadow-sm"><ChefHat className="w-6 h-6" /></div>
+            <div className="bg-white p-3 rounded-xl text-amber-500 shadow-sm">
+              <ChefHat className="w-6 h-6" />
+            </div>
             <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
           </div>
-          <div><span className="text-amber-800/70 text-sm font-bold block mb-1">Menús Pendientes (Total)</span><span className="text-3xl font-bold text-amber-900">{pendingMenusCount}</span></div>
+          <div>
+            <span className="text-amber-800/70 text-sm font-bold block mb-1">Menús Pendientes</span>
+            <span className="text-3xl font-bold text-amber-900">{pendingMenusCount}</span>
+          </div>
         </div>
       </div>
 

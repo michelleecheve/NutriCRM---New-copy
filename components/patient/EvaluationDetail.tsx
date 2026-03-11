@@ -375,12 +375,8 @@ export const EvaluationDetail: React.FC<{
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button type="button" onClick={() => setConfirmOpen(true)}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-100 bg-red-50 text-red-700 font-bold text-sm hover:bg-red-100 transition-colors">
-                <Trash2 className="w-4 h-4" />
-                Eliminar
-              </button>
               <button type="button" onClick={handleSave} disabled={!hasChanges}
+                title="Se Activa Guardar Si Cambias Nombre o Fecha de Evaluación"
                 className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl font-bold text-sm transition-colors ${
                   hasChanges ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                 }`}>
@@ -562,7 +558,7 @@ export const EvaluationDetail: React.FC<{
                 <BookOpen className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-lg font-bold text-slate-900">Menú(s)</p>
+                <p className="text-lg font-bold text-slate-900">Menú</p>
                 <p className="text-xs text-slate-500">
                   Vinculados por fecha: <span className="font-mono font-bold">{selected.date}</span>
                 </p>
@@ -669,6 +665,16 @@ export const EvaluationDetail: React.FC<{
             hideHeader
           />
         </div>
+
+        {/* Delete evaluation — bottom of page */}
+        <div className="flex justify-end">
+          <button type="button" onClick={() => setConfirmOpen(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-100 bg-red-50 text-red-700 font-bold text-sm hover:bg-red-100 transition-colors">
+            <Trash2 className="w-4 h-4" />
+            Eliminar Evaluación
+          </button>
+        </div>
+
       </div>
     </>
   );

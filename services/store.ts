@@ -238,7 +238,7 @@ const SEED_INVOICES: Invoice[] = [
   { id: '#INV-4496', patientId: '',  patientName: 'Carlos Ruiz',         date: '2026-02-10', amount: 300.00, status: 'Pagado',   method: 'Tarjeta' },
 ];
 
-const SEED_STATUSES: string[] = ['Cita Agendada', 'Cita Cancelada', 'Menú Pendiente', 'Menú Entregado'];
+const SEED_STATUSES: string[] = ['-', 'Menú Pendiente', 'Menú Entregado'];
 const SEED_EVALUATIONS: PatientEvaluation[] = [];
 const SEED_SELECTED: Record<string, string> = {};
 
@@ -349,7 +349,7 @@ class Store {
       firstName: basicInfo.firstName,
       lastName:  basicInfo.lastName,
       clinical: {
-        status: (basicInfo.status as any) || 'Cita Agendada',
+        status: (basicInfo.status as any) || '-',
         dob: basicInfo.dob || '',
         age,
         sex: '', occupation: '', phone: basicInfo.phone, email: basicInfo.email,

@@ -88,10 +88,22 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
              <GridInput label="Edad" type="number" value={patient.clinical.age} onChange={() => {}} readOnly={true} />
            </div>
 
-           {/* ROW 2 */}
-           <div className="lg:col-span-2">
-             <GridInput label="Género" value={patient.clinical.sex} onChange={(e: any) => updateClinical('sex', e.target.value)} />
-           </div>
+            {/* ROW 2 */}
+            <div className="lg:col-span-2">
+              <div className="flex flex-col">
+                <label className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Género</label>
+                <select 
+                  value={patient.clinical.sex || ''}
+                  onChange={(e) => updateClinical('sex', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all cursor-pointer"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="Femenino">Mujer</option>
+                  <option value="Masculino">Hombre</option>
+                  <option value="Otro">Otros</option>
+                </select>
+              </div>
+            </div>
            <div className="lg:col-span-4">
              <GridInput label="Email" value={patient.clinical.email} onChange={(e: any) => updateClinical('email', e.target.value)} />
            </div>
