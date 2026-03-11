@@ -6,6 +6,7 @@ import { MenuReferences } from '../components/menus_components/MenuReferences';
 import { MenuHistory } from '../components/menus_components/MenuHistory';
 import { MenuExportPDF } from '../components/menus_components/MenuExportPDF';
 import { MenuPreview } from '../components/menus_components/MenuPreview';
+import { MenuAIConfigurator } from '../components/menus_components/MenuAIConfigurator';
 
 // ─── Keys de storage para la Plantilla Base ───────────────────────────────────
 const MENU_TEMPLATE_HEADER_MODE_KEY = 'nutricrm_menu_template_header_mode_v1';
@@ -348,6 +349,8 @@ export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => v
       </div>
 
       <PlantillaBaseSection />
+
+      <MenuAIConfigurator />
 
       <MenuReferences />
 

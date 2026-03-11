@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Pencil,
@@ -11,18 +11,23 @@ import {
   Image as ImageIcon,
   BookOpen,
   Plus,
-  Crosshair
+  Crosshair,
+  Download,
+  X
 } from 'lucide-react';
 import { store } from '../../services/store';
 import { DietaryCard } from './DietaryCard';
 import { DietaryForm } from './DietaryForm';
 import { NewMeasurementForm } from './NewMeasurementForm';
 import { FileGallery } from './FileGallery';
+import type { FileGalleryHandle } from './FileGallery';
 import { MenuAddRead } from './MenuAddRead';
 import { MenuCard } from './MenuCard';
-import type { DietaryEvaluation, Patient, PatientEvaluation, Measurement } from '../../types';
+import type { DietaryEvaluation, Patient, PatientEvaluation, Measurement, SomatotypeRecord } from '../../types';
 import { MeasurementsHistory } from './MeasurementsHistory';
-import { SomatocartaModule } from './SomatocartaModule';
+import { SomatocartaCard } from './SomatocartaCard';
+import { SomatocartaForm } from './SomatocartaForm';
+import { SomatocartaLogic } from './SomatocartaLogic';
 
 type Draft = {
   title: string;
@@ -64,6 +69,11 @@ const ConfirmModal: React.FC<{
   </div>
 );
 
+const formatSomatoDate = (yyyyMmDd: string) => {
+  const d = new Date(`${yyyyMmDd}T12:00:00`);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
 export const EvaluationDetail: React.FC<{
   patient: Patient;
   evaluationId: string;
@@ -76,29 +86,22 @@ export const EvaluationDetail: React.FC<{
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [dietaryView, setDietaryView] = useState<'card' | 'edit'>('card');
-  const [formEvaluationId, setFormEvaluationId] = useState<string | null>(null);
-  const [evalSelectorOpen, setEvalSelectorOpen] = useState(false);
-  const [dietaryFormData, setDietaryFormData] = useState<DietaryEvaluation>({
-    id: '',
-    date: new Date().toISOString().split('T')[0],
-    mealsPerDay: 5,
-    excludedFoods: '',
-    notes: '',
-    recall: [],
-    foodFrequency: {},
-    foodFrequencyOthers: ''
-  });
+  const [dietaryEditingId, setDietaryEditingId] = useState<string | null>(null);
 
-  // ✅ menu section state (list/cards + editor)
   const [menuView, setMenuView] = useState<'card' | 'edit'>('card');
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
 
-  // ✅ measurements editor in this page
   const [measView, setMeasView] = useState<'card' | 'edit'>('card');
   const [measEditingId, setMeasEditingId] = useState<string | null>(null);
 
-  // ✅ somatocarta section state (card vs module)
-  const [somatoView, setSomatoView] = useState<'card' | 'edit'>('card');
+  const [somatoView, setSomatoView] = useState<'card' | 'view' | 'edit'>('card');
+  const [somatoEditingId, setSomatoEditingId] = useState<string | null>(null);
+  const [viewingChart, setViewingChart] = useState<SomatotypeRecord | null>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  // ✅ refs para abrir el modal de subida desde el header del card
+  const labsGalleryRef = useRef<FileGalleryHandle>(null);
+  const photosGalleryRef = useRef<FileGalleryHandle>(null);
 
   const selected = useMemo(() => store.getEvaluationById(evaluationId) ?? null, [evaluationId]);
 
@@ -107,12 +110,11 @@ export const EvaluationDetail: React.FC<{
     [patient.id]
   );
 
-  const linkedDietary = useMemo(() => {
-    if (!selected) return null;
-    return patient.dietaryEvaluations.find(d => d.date === selected.date) ?? null;
+  const linkedDietaryEvaluations = useMemo(() => {
+    if (!selected) return [];
+    return patient.dietaryEvaluations.filter(d => d.date === selected.date);
   }, [patient.dietaryEvaluations, selected?.date]);
 
-  // ✅ vincular labs/fotos por fecha
   const linkedLabs = useMemo(() => {
     if (!selected) return [];
     return (patient.labs || []).filter((f: any) => f?.date === selected.date);
@@ -123,17 +125,14 @@ export const EvaluationDetail: React.FC<{
     return (patient.photos || []).filter((f: any) => f?.date === selected.date);
   }, [patient.photos, selected?.date]);
 
-  // ✅ somatocarta vinculada por fecha
-  const linkedSomatotypes = useMemo(() => {
+  const linkedSomatotypes: SomatotypeRecord[] = useMemo(() => {
     if (!selected) return [];
     return (patient.somatotypes || []).filter((s: any) => s?.date === selected.date);
   }, [patient.somatotypes, selected?.date]);
 
-  // ✅ menús vinculados a ESTA evaluación (plural)
   const linkedMenus = useMemo(() => {
     if (!selected) return [];
     const allMenus: any[] = [...(patient.menus || []), ...(patient.dietary?.menus || [])];
-
     return allMenus
       .filter(m => {
         const byEvalId = (m as any)?.linkedEvaluationId === selected.id;
@@ -143,10 +142,9 @@ export const EvaluationDetail: React.FC<{
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [patient.menus, patient.dietary?.menus, selected?.id, selected?.date]);
 
-  // ✅ Measurement linked to this evaluation date (0..1)
-  const linkedMeasurement = useMemo(() => {
-    if (!selected) return null;
-    return patient.measurements.find(m => m.date === selected.date) ?? null;
+  const linkedMeasurements = useMemo(() => {
+    if (!selected) return [];
+    return patient.measurements.filter(m => m.date === selected.date);
   }, [patient.measurements, selected?.date]);
 
   useEffect(() => {
@@ -155,43 +153,20 @@ export const EvaluationDetail: React.FC<{
       setErrorMsg('');
       return;
     }
-
     setDraft({
       title: selected.title ?? `Evaluación ${selected.date}`,
       date: selected.date,
     });
     setErrorMsg('');
-
-    // dietary init
     setDietaryView('card');
-    setEvalSelectorOpen(false);
-    setFormEvaluationId(selected.id);
-
-    if (linkedDietary) {
-      setDietaryFormData(linkedDietary);
-    } else {
-      setDietaryFormData({
-        id: Math.random().toString(36).substring(7),
-        date: selected.date,
-        mealsPerDay: 5,
-        excludedFoods: '',
-        notes: '',
-        recall: [],
-        foodFrequency: {},
-        foodFrequencyOthers: ''
-      });
-    }
-
-    // menu init
+    setDietaryEditingId(null);
     setMenuView('card');
     setEditingMenuId(null);
-
-    // measurement init
     setMeasView('card');
     setMeasEditingId(null);
-
-    // somatocarta init
     setSomatoView('card');
+    setSomatoEditingId(null);
+    setViewingChart(null);
   }, [selected?.id]);
 
   const hasChanges = useMemo(() => {
@@ -223,69 +198,57 @@ export const EvaluationDetail: React.FC<{
     onBack();
   };
 
-  const handleSaveDietary = () => {
-    if (!selected) return;
-    if (!formEvaluationId) return;
-
-    const ev = store.getEvaluationById(formEvaluationId);
-    if (!ev) return;
-
-    const normalizedForm: DietaryEvaluation = { ...dietaryFormData, date: ev.date };
-
-    const exists = patient.dietaryEvaluations.some(d => d.date === ev.date);
-    const updatedDietaryEvaluations = exists
-      ? patient.dietaryEvaluations.map(d => (d.date === ev.date ? normalizedForm : d))
-      : [normalizedForm, ...patient.dietaryEvaluations];
-
-    const updatedPatient: Patient = { ...patient, dietaryEvaluations: updatedDietaryEvaluations };
-    onUpdate(updatedPatient);
-    store.updatePatient(updatedPatient);
-
-    setDietaryView('card');
-    setEvalSelectorOpen(false);
-  };
-
-  // ✅ Persistencia correcta: fusionar "archivos de esta fecha" con "archivos de otras fechas"
   const handleUpdateLabsForThisEvaluation = (newFilesForThisDate: any[]) => {
     if (!selected) return;
-
     const rest = (patient.labs || []).filter((f: any) => f?.date !== selected.date);
     const updatedPatient: Patient = { ...patient, labs: [...newFilesForThisDate, ...rest] };
-
     onUpdate(updatedPatient);
     store.updatePatient(updatedPatient);
   };
 
   const handleUpdatePhotosForThisEvaluation = (newFilesForThisDate: any[]) => {
     if (!selected) return;
-
     const rest = (patient.photos || []).filter((f: any) => f?.date !== selected.date);
     const updatedPatient: Patient = { ...patient, photos: [...newFilesForThisDate, ...rest] };
-
     onUpdate(updatedPatient);
     store.updatePatient(updatedPatient);
-  };
-
-  // ✅ Persistencia correcta: fusionar "somatotypes de esta fecha" con "somatotypes de otras fechas"
-  const handleUpdateSomatocartaForThisEvaluation = (updatedPatientFromModule: Patient) => {
-    if (!selected) return;
-
-    const newRecordsForThisDate = (updatedPatientFromModule.somatotypes || []).filter(s => s.date === selected.date);
-    const rest = (patient.somatotypes || []).filter(s => s.date !== selected.date);
-
-    const updatedPatient: Patient = { ...patient, somatotypes: [...newRecordsForThisDate, ...rest] };
-    onUpdate(updatedPatient);
-    store.updatePatient(updatedPatient);
-
-    setSomatoView('card');
   };
 
   const handleEditLinkedMeasurement = (m: Measurement) => {
-    setMeasEditingId(m.date);
+    setMeasEditingId(m.id ?? m.date);
     setMeasView('edit');
     setTimeout(() => {
       document.getElementById('evaluation-measurements')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 50);
+  };
+
+  const downloadChartAsImage = () => {
+    if (!chartContainerRef.current) return;
+    const svg = chartContainerRef.current.querySelector('svg');
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    canvas.width = 1000;
+    canvas.height = 1000;
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    img.onload = () => {
+      if (!ctx) return;
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const pngUrl = canvas.toDataURL('image/png');
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      downloadLink.download = `somatocarta-${viewingChart?.date || 'chart'}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
   };
 
   if (!selected || !draft) {
@@ -315,8 +278,39 @@ export const EvaluationDetail: React.FC<{
         />
       )}
 
+      {viewingChart && (
+        <div
+          className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setViewingChart(null)}
+        >
+          <div className="bg-white rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div>
+                <h3 className="font-bold text-lg text-slate-900">Somatocarta</h3>
+                <p className="text-sm text-slate-500">Fecha: {formatSomatoDate(viewingChart.date)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={downloadChartAsImage}
+                  className="p-2 hover:bg-emerald-100 rounded-full text-emerald-600 transition-colors flex items-center gap-2 px-4 font-bold text-sm"
+                >
+                  <Download className="w-5 h-5" />
+                  Descargar PNG
+                </button>
+                <button onClick={() => setViewingChart(null)} className="p-2 hover:bg-slate-200 rounded-full text-slate-500">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            <div ref={chartContainerRef} className="p-8 h-[600px] flex items-center justify-center bg-white">
+              <SomatocartaLogic x={viewingChart.x} y={viewingChart.y} />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-6">
-        {/* Card 1 */}
+        {/* Card 1: Header */}
         <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
@@ -406,39 +400,47 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
-
             <button
               type="button"
-              onClick={() => setDietaryView('edit')}
-              className="px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
+              onClick={() => { setDietaryEditingId(null); setDietaryView('edit'); }}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
             >
-              {linkedDietary ? 'Editar' : 'Crear'}
+              <Plus className="w-4 h-4" /> Crear
             </button>
           </div>
 
           {dietaryView === 'edit' ? (
             <DietaryForm
-              formData={dietaryFormData}
-              setFormData={setDietaryFormData}
+              patient={patient}
               patientEvaluations={patientEvaluations}
-              formEvaluationId={formEvaluationId}
-              setFormEvaluationId={setFormEvaluationId}
-              evalSelectorOpen={evalSelectorOpen}
-              setEvalSelectorOpen={setEvalSelectorOpen}
-              onCancel={() => setDietaryView('card')}
-              onSave={handleSaveDietary}
+              editingId={dietaryEditingId}
+              onSavePatient={(updated) => {
+                onUpdate(updated);
+                store.updatePatient(updated);
+                setDietaryView('card');
+                setDietaryEditingId(null);
+              }}
+              onCancel={() => { setDietaryView('card'); setDietaryEditingId(null); }}
               showDelete={false}
             />
-          ) : linkedDietary ? (
-            <DietaryCard evalItem={linkedDietary} onClick={() => setDietaryView('edit')} />
+          ) : linkedDietaryEvaluations.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {linkedDietaryEvaluations.map(d => (
+                <DietaryCard
+                  key={d.id}
+                  evalItem={d}
+                  onClick={() => { setDietaryEditingId(d.id); setDietaryView('edit'); }}
+                />
+              ))}
+            </div>
           ) : (
             <div className="p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-slate-500 text-sm">
-              No hay evaluación dietética para esta fecha. Presiona <span className="font-bold">Crear</span> para agregarla.
+              No hay evaluaciones dietéticas para esta fecha. Presiona <span className="font-bold">Crear</span> para agregar una.
             </div>
           )}
         </div>
 
-        {/* Card 3: Measurements (linked by date) */}
+        {/* Card 3: Measurements */}
         <div id="evaluation-measurements" className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
@@ -452,17 +454,13 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
-
             <button
               type="button"
-              onClick={() => {
-                setMeasEditingId(linkedMeasurement?.date ?? null);
-                setMeasView('edit');
-              }}
+              onClick={() => { setMeasEditingId(null); setMeasView('edit'); }}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              {linkedMeasurement ? 'Editar' : 'Crear'}
+              Crear
             </button>
           </div>
 
@@ -470,27 +468,23 @@ export const EvaluationDetail: React.FC<{
             <NewMeasurementForm
               patient={patient}
               onUpdate={onUpdate}
-              mode={measEditingId ? 'detail' : 'new'}
               editingId={measEditingId}
-              onClose={() => {
-                setMeasView('card');
-                setMeasEditingId(null);
-              }}
+              onClose={() => { setMeasView('card'); setMeasEditingId(null); }}
               showDelete={false}
             />
-          ) : linkedMeasurement ? (
+          ) : linkedMeasurements.length > 0 ? (
             <MeasurementsHistory
-              patient={{ ...patient, measurements: [linkedMeasurement] }}
+              patient={{ ...patient, measurements: linkedMeasurements }}
               onEdit={handleEditLinkedMeasurement}
             />
           ) : (
             <div className="p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-slate-500 text-sm">
-              No hay registro antropométrico para esta fecha. Presiona <span className="font-bold">Crear</span> para agregarlo.
+              No hay registros antropométricos para esta fecha. Presiona <span className="font-bold">Crear</span> para agregar uno.
             </div>
           )}
         </div>
 
-        {/* Card 4: Somatocarta (linked by date) */}
+        {/* Card 4: Somatocarta */}
         <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
@@ -504,37 +498,50 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
-
             <button
               type="button"
-              onClick={() => setSomatoView('edit')}
+              onClick={() => { setSomatoEditingId(null); setSomatoView('edit'); }}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Crear Somatotipo
+              Crear
             </button>
           </div>
 
           {somatoView === 'edit' ? (
-            <SomatocartaModule
+            <SomatocartaForm
               patient={patient}
-              onUpdate={handleUpdateSomatocartaForThisEvaluation}
-              showDelete={false}
+              patientEvaluations={patientEvaluations}
+              editingId={somatoEditingId}
+              onCancel={() => { setSomatoView('card'); setSomatoEditingId(null); }}
+              onSavePatient={(updated) => {
+                onUpdate(updated);
+                store.updatePatient(updated);
+                setSomatoView('card');
+                setSomatoEditingId(null);
+              }}
             />
           ) : linkedSomatotypes.length > 0 ? (
-            <SomatocartaModule
-              patient={{ ...patient, somatotypes: linkedSomatotypes }}
-              onUpdate={() => {}}
-              showDelete={false}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {linkedSomatotypes.map(rec => (
+                <SomatocartaCard
+                  key={rec.id}
+                  record={rec}
+                  onView={() => setViewingChart(rec)}
+                  onEdit={() => { setSomatoEditingId(rec.id); setSomatoView('edit'); }}
+                  onLink={() => { setSomatoEditingId(rec.id); setSomatoView('edit'); }}
+                  showDelete={false}
+                />
+              ))}
+            </div>
           ) : (
             <div className="p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-slate-500 text-sm">
-              No hay registros de somatotipo para esta fecha. Presiona <span className="font-bold">Crear Somatotipo</span> para agregar uno.
+              No hay registros de somatotipo para esta fecha. Presiona <span className="font-bold">Crear</span> para agregar uno.
             </div>
           )}
         </div>
 
-        {/* Card 5: Menus (plural) */}
+        {/* Card 5: Menus */}
         <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
@@ -548,13 +555,9 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
-
             <button
               type="button"
-              onClick={() => {
-                setEditingMenuId(null);
-                setMenuView('edit');
-              }}
+              onClick={() => { setEditingMenuId(null); setMenuView('edit'); }}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -567,10 +570,7 @@ export const EvaluationDetail: React.FC<{
               patient={patient}
               onUpdate={onUpdate}
               editingMenuId={editingMenuId}
-              onClose={() => {
-                setMenuView('card');
-                setEditingMenuId(null);
-              }}
+              onClose={() => { setMenuView('card'); setEditingMenuId(null); }}
             />
           ) : linkedMenus.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -578,10 +578,7 @@ export const EvaluationDetail: React.FC<{
                 <MenuCard
                   key={menu.id}
                   menu={menu}
-                  onClick={() => {
-                    setEditingMenuId(menu.id);
-                    setMenuView('edit');
-                  }}
+                  onClick={() => { setEditingMenuId(menu.id); setMenuView('edit'); }}
                 />
               ))}
             </div>
@@ -606,9 +603,19 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
+            {/* ✅ botón en header del card — dispara modal interno de FileGallery via ref */}
+            <button
+              type="button"
+              onClick={() => labsGalleryRef.current?.openUpload()}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Subir
+            </button>
           </div>
 
           <FileGallery
+            ref={labsGalleryRef}
             patientId={patient.id}
             files={linkedLabs}
             onUpdate={handleUpdateLabsForThisEvaluation}
@@ -616,6 +623,7 @@ export const EvaluationDetail: React.FC<{
             icon={Microscope}
             accept="application/pdf,image/*"
             showDelete={false}
+            hideHeader
           />
         </div>
 
@@ -633,9 +641,19 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
+            {/* ✅ botón en header del card — dispara modal interno de FileGallery via ref */}
+            <button
+              type="button"
+              onClick={() => photosGalleryRef.current?.openUpload()}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Subir
+            </button>
           </div>
 
           <FileGallery
+            ref={photosGalleryRef}
             patientId={patient.id}
             files={linkedPhotos}
             onUpdate={handleUpdatePhotosForThisEvaluation}
@@ -643,6 +661,7 @@ export const EvaluationDetail: React.FC<{
             icon={ImageIcon}
             accept="image/*"
             showDelete={false}
+            hideHeader
           />
         </div>
       </div>

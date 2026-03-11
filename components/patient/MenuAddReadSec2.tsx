@@ -15,7 +15,7 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
   selectedReferenceIds,
   setSelectedReferenceIds
 }) => {
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [showSelector, setShowSelector] = useState(false);
   const [tempSelectedIds, setTempSelectedIds] = useState<string[]>([]);
 

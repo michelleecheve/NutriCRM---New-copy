@@ -3,6 +3,10 @@ import { Patient, Measurement } from "../types";
 import { MenuPlanData } from "../components/menus_components/MenuDesignTemplates";
 import type { MenuReferenceData } from "../components/menus_components/Menu_References_Components/MenuReferencesStorage";
 import { WEEKDAY_KEYS, calcPortionsTotal } from "../components/menus_components/Menu_References_Components/MenuReferencesStorage";
+import {
+  loadMenuAIConfig, buildFoodIdeasContext, DEFAULT_MENU_PROMPT_SUFFIX,
+  type PatientDataFields
+} from "../components/menus_components/MenuAIConfigurator";
 
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
@@ -10,8 +14,8 @@ const ai = new GoogleGenAI({ apiKey });
 // ─── Internal AI response shape ───────────────────────────────────────────────
 
 interface AIMealEntry {
-  id:    string;   // e.g. "desayuno", "refaccion_1"
-  label: string;   // e.g. "Desayuno", "Refacción"
+  id:    string;
+  label: string;
   portions: {
     lacteos: number; vegetales: number; frutas: number;
     cereales: number; carnes: number; grasas: number;
@@ -86,7 +90,7 @@ function transformToMenuPlanData(ai: AIResponse, nutritionist: any): MenuPlanDat
   };
 }
 
-// ─── Build reference context from MenuReferenceData ───────────────────────────
+// ─── Build reference context ──────────────────────────────────────────────────
 
 function buildRefContext(references: { title: string; data: MenuReferenceData }[]): string {
   if (references.length === 0) {
@@ -97,7 +101,6 @@ function buildRefContext(references: { title: string; data: MenuReferenceData }[
     const { data } = ref;
     const totals = calcPortionsTotal(data.meals);
 
-    // Portions table — each row shows slot label + semantic type
     const portionsLines = data.meals.map((slot, i) => {
       const p = slot.portions;
       const labelWithIndex = `${slot.label} ${i + 1 > 1 && data.meals.filter(s => s.label === slot.label).length > 1 ? `(#${data.meals.filter((s, si) => s.label === slot.label && si <= i).length})` : ''}`.trim();
@@ -106,7 +109,6 @@ function buildRefContext(references: { title: string; data: MenuReferenceData }[
 
     const totalsLine = `  TOTAL: lácteos ${totals.lacteos} | vegetales ${totals.vegetales} | frutas ${totals.frutas} | cereales ${totals.cereales} | carnes ${totals.carnes} | grasas ${totals.grasas}`;
 
-    // Weekly menu — look up text by slotId
     const weekLines = WEEKDAY_KEYS.map(dayKey => {
       const day = data.weeklyMenu[dayKey];
       const meals = data.meals.map((slot, i) => {
@@ -119,14 +121,11 @@ function buildRefContext(references: { title: string; data: MenuReferenceData }[
     }).filter(Boolean).join("\n");
 
     const domingoNote = data.weeklyMenu.domingo?.note?.trim()
-      ? `  DOMINGO (nota): ${data.weeklyMenu.domingo.note}`
-      : "";
+      ? `  DOMINGO (nota): ${data.weeklyMenu.domingo.note}` : "";
 
     const notesText = data.notes?.length
-      ? `NOTAS:\n${data.notes.map(n => `  - ${n}`).join("\n")}`
-      : "";
+      ? `NOTAS:\n${data.notes.map(n => `  - ${n}`).join("\n")}` : "";
 
-    // Slot structure summary — tells Gemini what time structure this reference uses
     const slotSummary = data.meals.map((s, i) => `${i + 1}. ${s.label}`).join(" → ");
 
     return `REFERENCIA [${ref.title}]:
@@ -141,6 +140,119 @@ ${weekLines}
 ${domingoNote}
 ${notesText}`.trim();
   }).join("\n\n---\n\n");
+}
+
+// ─── Build patient context respecting field toggles ───────────────────────────
+
+function buildPatientContext(
+  patient:      Patient,
+  vetData:      any,
+  portions:     any,
+  fields:       PatientDataFields,
+  linkedDate?:  string   // date of the evaluation assigned to the menu
+): string {
+  const lines: string[] = [];
+  const totalLac    = (portions.lec || 0) + (portions.lecDesc || 0);
+  const totalCarnes = (portions.carMagra || 0) + (portions.carSemi || 0) + (portions.carAlta || 0);
+
+  // Always include name
+  lines.push(`- Nombre: ${patient.firstName} ${patient.lastName}`);
+
+  if (fields.datosClinicos) {
+    lines.push(`- Edad: ${patient.clinical.age} años | Sexo: ${patient.clinical.sex}`);
+  }
+
+  if (fields.deporteEntrenamiento) {
+    lines.push(`- Deporte: ${patient.clinical.sport} | Frecuencia: ${patient.clinical.trainingFrequency} (${patient.clinical.daysPerWeek} días/semana, ${patient.clinical.hoursPerDay} h/día)`);
+  }
+
+  if (fields.meta) {
+    lines.push(`- Meta: ${patient.clinical.goals}`);
+  }
+
+  if (fields.alergias) {
+    lines.push(`- Alergias: ${patient.clinical.allergies || 'Ninguna'}`);
+  }
+
+  if (fields.diagnostico) {
+    lines.push(`- Diagnóstico: ${patient.clinical.diagnosis || 'No especificado'}`);
+  }
+
+  if (fields.historialFamiliar) {
+    lines.push(`- Historial familiar: ${patient.clinical.familyHistory || 'No especificado'}`);
+  }
+
+  if (fields.medicamentos) {
+    lines.push(`- Medicamentos: ${patient.clinical.medications || 'Ninguno'}`);
+  }
+
+  // evaluación dietética ──
+    // Sin fecha — perfil dietético general
+  if (fields.evaluacionDietetica) {
+    if (patient.dietary.preferences) lines.push(`- Preferencias y Aversiones: ${patient.dietary.preferences}`);
+    if (patient.dietary.notes)       lines.push(`- Notas Dietéticas Generales: ${patient.dietary.notes}`);
+  }
+
+  // Con fecha — evaluación vinculada
+  if (fields.evaluacionDieteticaFecha) {
+    const dietEval = linkedDate
+      ? patient.dietaryEvaluations?.find(d => d.date === linkedDate)
+      : patient.dietaryEvaluations?.[0];
+
+    if (dietEval) {
+      if (dietEval.mealsPerDay)   lines.push(`- Tiempos de Comida al Día: ${dietEval.mealsPerDay}`);
+      if (dietEval.excludedFoods) lines.push(`- Alimentos que Evita: ${dietEval.excludedFoods}`);
+      if (dietEval.notes)         lines.push(`- Notas de Evaluación: ${dietEval.notes}`);
+
+      if (dietEval.recall?.length > 0) {
+        lines.push(`- Recordatorio 24h:`);
+        dietEval.recall.forEach(r => {
+          lines.push(`  · ${r.mealTime} (${r.time}): ${r.description}`);
+        });
+      }
+
+      const freqEntries = Object.entries(dietEval.foodFrequency || {}).filter(([, v]) => v && v !== 'Nunca');
+      if (freqEntries.length > 0) {
+        lines.push(`- Frecuencia de Consumo: ${freqEntries.map(([k, v]) => `${k}: ${v}`).join(' | ')}`);
+      }
+    }
+  }
+
+  // ── Date-scoped: medidas antropométricas ──
+  if (fields.medidasAntropometricas) {
+    const measurement = linkedDate
+      ? patient.measurements?.find(m => m.date === linkedDate)
+      : patient.measurements?.[patient.measurements.length - 1];
+
+    if (measurement) {
+      const parts: string[] = [];
+      if (measurement.weight)      parts.push(`Peso ${measurement.weight} kg`);
+      if (measurement.height)      parts.push(`Talla ${measurement.height} cm`);
+      if (measurement.imc)         parts.push(`IMC ${measurement.imc.toFixed(1)}`);
+      if (measurement.bodyFat)     parts.push(`% Grasa ${measurement.bodyFat.toFixed(1)}%`);
+      if (measurement.fatKg)       parts.push(`Grasa ${measurement.fatKg.toFixed(1)} kg`);
+      if (measurement.muscleKg)    parts.push(`Músculo ${measurement.muscleKg.toFixed(1)} kg`);
+      if (measurement.leanMassKg)  parts.push(`Masa Libre de Grasa ${measurement.leanMassKg.toFixed(1)} kg`);
+    }
+  }
+
+  // ── Date-scoped: laboratorios ──
+  if (fields.laboratorios) {
+    const labs = linkedDate
+      ? (patient.labs || []).filter((l: any) => l?.date === linkedDate && l?.labInterpretation?.trim())
+      : (patient.labs || []).filter((l: any) => l?.labInterpretation?.trim());
+
+    if (labs.length > 0) {
+      lines.push('');
+      lines.push('RESULTADOS DE LABORATORIO:');
+      labs.forEach((l: any) => {
+        lines.push(`  [${l.name}${l.date ? ` — ${l.date}` : ''}]`);
+        lines.push(`  ${l.labInterpretation.trim().split('\n').join('\n  ')}`);
+      });
+    }
+  }
+
+  return lines.join('\n');
 }
 
 // ─── Schema helpers ───────────────────────────────────────────────────────────
@@ -161,23 +273,28 @@ export const generateStructuredMenu = async (
   vetData:      any,
   portions:     any,
   references:   { title: string; data: MenuReferenceData }[],
-  nutritionist: any
+  nutritionist: any,
+  linkedDate?:  string  // evaluation date assigned to this menu
 ): Promise<{ plan: MenuPlanData; rationale: string }> => {
   if (!apiKey) throw new Error("API Key not found.");
 
-  const refContext  = buildRefContext(references);
-  const totalLac    = (portions.lec || 0) + (portions.lecDesc || 0);
-  const totalCarnes = (portions.carMagra || 0) + (portions.carSemi || 0) + (portions.carAlta || 0);
+  // ── Load AI config ───────────────────────────────────────────────────────
+  const aiConfig       = loadMenuAIConfig();
+  const foodIdeasCtx   = buildFoodIdeasContext(aiConfig.ideas);
+  const promptSuffix   = (aiConfig.prompt || DEFAULT_MENU_PROMPT_SUFFIX)
+    .replace('{foodIdeas}', foodIdeasCtx);
+
+  // ── Build contexts ───────────────────────────────────────────────────────
+  const refContext     = buildRefContext(references);
+  const patientCtx     = buildPatientContext(patient, vetData, portions, aiConfig.fields, linkedDate);
+  const totalLac       = (portions.lec || 0) + (portions.lecDesc || 0);
+  const totalCarnes    = (portions.carMagra || 0) + (portions.carSemi || 0) + (portions.carAlta || 0);
 
   const prompt = `
 Eres un nutricionista deportivo experto. Genera un plan de alimentación semanal estructurado.
 
 ═══ DATOS DEL PACIENTE ═══
-- Nombre: ${patient.firstName} ${patient.lastName}
-- Edad: ${patient.clinical.age} años | Peso: ${patient.clinical.initialWeight} kg | Talla: ${patient.clinical.initialHeight} cm
-- Sexo: ${patient.clinical.sex} | Deporte: ${patient.clinical.sport} (${patient.clinical.daysPerWeek} días/semana)
-- Meta: ${patient.clinical.goals}
-- Alergias: ${patient.clinical.allergies || 'Ninguna'}
+${patientCtx}
 
 ═══ METAS NUTRICIONALES DIARIAS ═══
 - Calorías objetivo: ${vetData.kcalToWork} kcal
@@ -206,6 +323,7 @@ ${refContext}
 4. RATIONALE: 2-3 oraciones sobre el criterio nutricional en español.
 
 Devuelve SOLO JSON válido, sin texto adicional.
+${promptSuffix}
 `;
 
   const response = await ai.models.generateContent({
@@ -277,7 +395,7 @@ Devuelve SOLO JSON válido, sin texto adicional.
   }
 };
 
-// ─── generateDietaryAdvice (sin cambios) ─────────────────────────────────────
+// ─── generateDietaryAdvice ────────────────────────────────────────────────────
 
 export const generateDietaryAdvice = async (patient: Patient): Promise<string> => {
   if (!apiKey) return "API Key not found.";
@@ -303,7 +421,7 @@ export const generateDietaryAdvice = async (patient: Patient): Promise<string> =
   }
 };
 
-// ─── generateMenuFromMeasurements (sin cambios) ───────────────────────────────
+// ─── generateMenuFromMeasurements ────────────────────────────────────────────
 
 export const generateMenuFromMeasurements = async (patient: Patient, measurement: Measurement): Promise<string> => {
   if (!apiKey) return "API Key no encontrada.";

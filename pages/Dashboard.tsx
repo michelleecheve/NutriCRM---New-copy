@@ -356,12 +356,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
                   {statusList.map((status) => (
                     <div key={status} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group hover:border-emerald-200 transition-all">
                       <span className="text-sm font-medium text-slate-700">{status}</span>
-                      <button 
-                        onClick={() => handleRemoveStatus(status)}
-                        className="text-slate-300 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!['Menú Pendiente', 'Menú Entregado'].includes(status) ? (
+                        <button 
+                          onClick={() => handleRemoveStatus(status)}
+                          className="text-slate-300 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wide">Base</span>
+                      )}
                     </div>
                   ))}
                   {statusList.length === 0 && (

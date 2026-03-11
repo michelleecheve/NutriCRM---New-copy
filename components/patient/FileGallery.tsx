@@ -1,7 +1,8 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { Trash2, Download, Eye, FileText, Image as ImageIcon, File, X, Link2, UploadCloud, Pencil, AlertTriangle } from 'lucide-react';
+import React, { useMemo, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import { Trash2, Download, Eye, FileText, Image as ImageIcon, File, X, Link2, UploadCloud, AlertTriangle } from 'lucide-react';
 import { compressImage, fileToBase64 } from "../../src/utils/fileUtils";
 import { store } from '../../services/store';
+import { EvaluationLink } from './EvaluationLink';
 import type { PatientEvaluation } from '../../types';
 
 interface FileGalleryProps {
@@ -11,7 +12,13 @@ interface FileGalleryProps {
   title: string;
   icon: any;
   accept?: string;
-  showDelete?: boolean; // ✅ para ocultar al usar dentro de EvaluationDetail
+  showDelete?: boolean;
+  hideHeader?: boolean; // ✅ oculta título+ícono+botón; el padre pone su propio header
+}
+
+// ✅ handle para que el padre pueda abrir el modal de subida via ref
+export interface FileGalleryHandle {
+  openUpload: () => void;
 }
 
 const ConfirmModal: React.FC<{
@@ -38,18 +45,10 @@ const ConfirmModal: React.FC<{
       <div className="p-5">
         <p className="text-sm text-slate-600">{message}</p>
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50"
-          >
+          <button type="button" onClick={onCancel} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50">
             {cancelText}
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700"
-          >
+          <button type="button" onClick={onConfirm} className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700">
             {confirmText}
           </button>
         </div>
@@ -74,11 +73,7 @@ const InfoModal: React.FC<{
       <div className="p-5">
         <p className="text-sm text-slate-600">{message}</p>
         <div className="mt-5 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800"
-          >
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800">
             Entendido
           </button>
         </div>
@@ -87,118 +82,90 @@ const InfoModal: React.FC<{
   </div>
 );
 
-export const FileGallery: React.FC<FileGalleryProps> = ({
+export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(({
   patientId,
   files,
   onUpdate,
   title,
   icon: Icon,
   accept = "*/*",
-  showDelete = true
-}) => {
+  showDelete = true,
+  hideHeader = false
+}, ref) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [previewFile, setPreviewFile] = useState<any | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-  // ✅ upload modal (drag&drop)
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-
-  // ✅ modales (para sandbox)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
-  // ✅ evaluaciones disponibles
+  // ✅ exponer openUpload al padre cuando hideHeader=true
+  useImperativeHandle(ref, () => ({
+    openUpload: () => setUploadModalOpen(true),
+  }));
+
   const patientEvaluations: PatientEvaluation[] = useMemo(
     () => store.getEvaluations(patientId),
     [patientId]
   );
 
-  // ✅ vinculación "por defecto para el upload" (config inicial dentro del modal)
-  const [uploadEvalSelectorOpen, setUploadEvalSelectorOpen] = useState(false);
+  // ✅ EvaluationLink state — modal upload
   const [uploadEvaluationId, setUploadEvaluationId] = useState<string | null>(
-    store.getSelectedEvaluationId(patientId)
+    () => store.getSelectedEvaluationId(patientId)
   );
   const uploadEvaluation = useMemo(() => {
     if (!uploadEvaluationId) return null;
     return store.getEvaluationById(uploadEvaluationId) ?? null;
   }, [uploadEvaluationId]);
-
   const uploadLinkedDate =
     uploadEvaluation?.date ??
     (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
 
-  const handleChangeUploadEvaluation = (evId: string) => {
-    const ev = store.getEvaluationById(evId);
-    setUploadEvaluationId(evId || null);
-    if (ev) store.setSelectedEvaluationId(patientId, ev.id);
-    setUploadEvalSelectorOpen(false);
-  };
-
-  // ✅ vinculación "por archivo" (icono en cada tarjeta)
+  // ✅ EvaluationLink state — modal vincular por archivo
   const [fileLinkModalOpen, setFileLinkModalOpen] = useState(false);
   const [linkingFileId, setLinkingFileId] = useState<string | null>(null);
-  const [fileEvalSelectorOpen, setFileEvalSelectorOpen] = useState(false);
   const [fileEvaluationId, setFileEvaluationId] = useState<string | null>(null);
-
   const fileEvaluation = useMemo(() => {
     if (!fileEvaluationId) return null;
     return store.getEvaluationById(fileEvaluationId) ?? null;
   }, [fileEvaluationId]);
-
   const fileLinkedDate =
     fileEvaluation?.date ??
     (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
 
   const openFileLinkModal = (file: any) => {
     setLinkingFileId(file.id);
-
     const currentLinkedEvalId = file.linkedEvaluationId as string | undefined;
     if (currentLinkedEvalId && store.getEvaluationById(currentLinkedEvalId)) {
       setFileEvaluationId(currentLinkedEvalId);
     } else {
-      // fallback: intentar match por date
       const match = patientEvaluations.find(e => e.date === file.date);
       setFileEvaluationId(match?.id ?? store.getSelectedEvaluationId(patientId));
     }
-
-    setFileEvalSelectorOpen(false);
     setFileLinkModalOpen(true);
   };
 
   const applyFileLink = () => {
     if (!linkingFileId) return;
-
-    const nextDate = fileLinkedDate;
-
-    onUpdate(files.map(f => {
-      if (f.id !== linkingFileId) return f;
-      return {
-        ...f,
-        date: nextDate,
-        linkedEvaluationId: fileEvaluationId ?? null
-      };
-    }));
-
+    onUpdate(files.map(f =>
+      f.id !== linkingFileId ? f : { ...f, date: fileLinkedDate, linkedEvaluationId: fileEvaluationId ?? null }
+    ));
     setFileLinkModalOpen(false);
     setLinkingFileId(null);
-    setFileEvalSelectorOpen(false);
   };
 
   const uploadFileObject = async (file: File) => {
     const isImage = file.type.startsWith('image/');
-
     if (!isImage && file.size > 500 * 1024) {
       setInfoModal({ title: 'Archivo muy grande', message: 'El archivo supera el límite de 500 KB.' });
       return;
     }
-
     setIsUploading(true);
     try {
       let fileUrl = '';
       let type: 'image' | 'pdf' | 'other' = 'other';
-
       if (isImage) {
         fileUrl = await compressImage(file);
         type = 'image';
@@ -206,18 +173,15 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
         fileUrl = await fileToBase64(file);
         if (file.type === 'application/pdf') type = 'pdf';
       }
-
-      const newFile = {
+      onUpdate([...files, {
         id: Math.random().toString(36).substring(7),
         name: file.name,
         date: uploadLinkedDate,
         linkedEvaluationId: uploadEvaluationId ?? null,
         url: fileUrl,
-        type: type,
+        type,
         description: ''
-      };
-
-      onUpdate([...files, newFile]);
+      }]);
     } catch (error) {
       console.error('Error uploading file:', error);
       setInfoModal({ title: 'Error', message: 'Error al subir el archivo.' });
@@ -248,19 +212,13 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
     }
   };
 
-  // ✅ delete flow sin confirm()
-  const requestDelete = (id: string) => {
-    setDeleteTargetId(id);
-    setConfirmDeleteOpen(true);
-  };
-
+  const requestDelete = (id: string) => { setDeleteTargetId(id); setConfirmDeleteOpen(true); };
   const confirmDelete = () => {
     if (!deleteTargetId) return;
     onUpdate(files.filter(f => f.id !== deleteTargetId));
     setConfirmDeleteOpen(false);
     setDeleteTargetId(null);
   };
-
   const handleDownload = (file: any) => {
     const link = document.createElement('a');
     link.href = file.url;
@@ -269,41 +227,27 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
     link.click();
     document.body.removeChild(link);
   };
-
-  const handleRename = (id: string, newName: string) => {
+  const handleRename = (id: string, newName: string) =>
     onUpdate(files.map(f => f.id === id ? { ...f, name: newName } : f));
-  };
 
   const getFileIcon = (type: string) => {
-    switch (type) {
-      case 'image': return <ImageIcon className="w-6 h-6 text-blue-500" />;
-      case 'pdf': return <FileText className="w-6 h-6 text-red-500" />;
-      default: return <File className="w-6 h-6 text-slate-400" />;
-    }
+    if (type === 'image') return <ImageIcon className="w-6 h-6 text-blue-500" />;
+    if (type === 'pdf')   return <FileText className="w-6 h-6 text-red-500" />;
+    return <File className="w-6 h-6 text-slate-400" />;
   };
 
-  // Drag & drop en el modal de upload
-  const [isDragOver, setIsDragOver] = useState(false);
   const onDrop = async (ev: React.DragEvent) => {
     ev.preventDefault();
     setIsDragOver(false);
     const file = ev.dataTransfer.files?.[0];
-    if (file) {
-      await uploadFileObject(file);
-      setUploadModalOpen(false);
-    }
+    if (file) { await uploadFileObject(file); setUploadModalOpen(false); }
   };
 
   return (
     <>
       {infoModal && (
-        <InfoModal
-          title={infoModal.title}
-          message={infoModal.message}
-          onClose={() => setInfoModal(null)}
-        />
+        <InfoModal title={infoModal.title} message={infoModal.message} onClose={() => setInfoModal(null)} />
       )}
-
       {confirmDeleteOpen && (
         <ConfirmModal
           title="Eliminar archivo"
@@ -313,33 +257,29 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
         />
       )}
 
+      {/* input siempre presente */}
+      <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept={accept} className="hidden" />
+
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="bg-emerald-50 p-2 rounded-lg text-emerald-600">
-              <Icon className="w-5 h-5" />
+        {/* Header — solo cuando hideHeader=false (uso standalone) */}
+        {!hideHeader && (
+          <div className="flex justify-between items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="bg-emerald-50 p-2 rounded-lg text-emerald-600">
+                <Icon className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 truncate">{title}</h3>
             </div>
-            <h3 className="text-lg font-bold text-slate-900 truncate">{title}</h3>
+            <button
+              type="button"
+              onClick={() => setUploadModalOpen(true)}
+              disabled={isUploading}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 disabled:opacity-50 shrink-0"
+            >
+              {isUploading ? 'Subiendo...' : '+ Subir Archivo'}
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setUploadModalOpen(true)}
-            disabled={isUploading}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 disabled:opacity-50 shrink-0"
-          >
-            {isUploading ? 'Subiendo...' : '+ Subir Archivo'}
-          </button>
-
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept={accept}
-            className="hidden"
-          />
-        </div>
+        )}
 
         {/* Empty / Grid */}
         {files.length === 0 ? (
@@ -357,18 +297,12 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
                 >
                   {file.type === 'image' && (
                     <div className="w-full h-40 rounded-lg overflow-hidden bg-white border border-slate-100 shadow-sm">
-                      <img
-                        src={file.url}
-                        alt={file.name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500"
-                      />
+                      <img src={file.url} alt={file.name} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" />
                     </div>
                   )}
                   <div className="flex items-start gap-3">
                     {file.type !== 'image' && (
-                      <div className="bg-white p-3 rounded-lg shadow-sm">
-                        {getFileIcon(file.type)}
-                      </div>
+                      <div className="bg-white p-3 rounded-lg shadow-sm">{getFileIcon(file.type)}</div>
                     )}
                     <div className="flex-1 min-w-0">
                       <input
@@ -383,9 +317,7 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-slate-200/50">
-                  {/* vincular POR ARCHIVO */}
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); openFileLinkModal(file); }}
@@ -394,7 +326,6 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
                   >
                     <Link2 className="w-4 h-4" />
                   </button>
-
                   {(file.type === 'image' || file.type === 'pdf') && (
                     <button
                       onClick={(e) => { e.stopPropagation(); handlePreview(file); }}
@@ -404,7 +335,6 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
                       <Eye className="w-4 h-4" />
                     </button>
                   )}
-
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDownload(file); }}
                     className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
@@ -412,7 +342,6 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
                   >
                     <Download className="w-4 h-4" />
                   </button>
-
                   {showDelete && (
                     <button
                       onClick={(e) => { e.stopPropagation(); requestDelete(file.id); }}
@@ -428,7 +357,7 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
           </div>
         )}
 
-        {/* File link modal (por archivo) */}
+        {/* ✅ Modal: vincular por archivo — EvaluationLink reemplaza selector inline */}
         {fileLinkModalOpen && (
           <div className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
@@ -438,87 +367,23 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
                   <h3 className="font-bold text-slate-900">Vincular archivo a evaluación</h3>
                 </div>
                 <button
-                  onClick={() => {
-                    setFileLinkModalOpen(false);
-                    setLinkingFileId(null);
-                    setFileEvalSelectorOpen(false);
-                  }}
+                  onClick={() => { setFileLinkModalOpen(false); setLinkingFileId(null); }}
                   className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-all"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <div className="p-5 space-y-4">
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Evaluación asignada</p>
-
-                  {!fileEvalSelectorOpen ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-700">
-                        {fileEvaluation ? `${fileEvaluation.title ?? fileEvaluation.date} — ${fileEvaluation.date}` : '—'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setFileEvalSelectorOpen(true)}
-                        className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
-                        title="Cambiar evaluación asignada"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={fileEvaluationId ?? ''}
-                        onChange={(e) => { setFileEvaluationId(e.target.value || null); setFileEvalSelectorOpen(false); }}
-                        className="text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200 w-full"
-                        autoFocus
-                        disabled={patientEvaluations.length === 0}
-                      >
-                        {patientEvaluations.length === 0 ? (
-                          <option value="">Crea una evaluación primero</option>
-                        ) : (
-                          <>
-                            <option value="">Seleccionar...</option>
-                            {patientEvaluations.map(ev => (
-                              <option key={ev.id} value={ev.id}>
-                                {ev.title ?? ev.date} — {ev.date}
-                              </option>
-                            ))}
-                          </>
-                        )}
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() => setFileEvalSelectorOpen(false)}
-                        className="p-2 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Fecha de evaluación</p>
-                  <input
-                    type="date"
-                    value={fileLinkedDate}
-                    disabled
-                    readOnly
-                    className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-600 outline-none cursor-not-allowed"
-                  />
-                </div>
-
+                <EvaluationLink
+                  patientId={patientId}
+                  patientEvaluations={patientEvaluations}
+                  evaluationId={fileEvaluationId}
+                  onChangeEvaluationId={setFileEvaluationId}
+                />
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setFileLinkModalOpen(false);
-                      setLinkingFileId(null);
-                      setFileEvalSelectorOpen(false);
-                    }}
+                    onClick={() => { setFileLinkModalOpen(false); setLinkingFileId(null); }}
                     className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors"
                   >
                     Cancelar
@@ -536,7 +401,7 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
           </div>
         )}
 
-        {/* Upload modal */}
+        {/* ✅ Modal: subir archivo — EvaluationLink reemplaza selector inline */}
         {uploadModalOpen && (
           <div className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-xl rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
@@ -546,81 +411,19 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
                   <h3 className="font-bold text-slate-900">Subir archivo</h3>
                 </div>
                 <button
-                  onClick={() => {
-                    setUploadModalOpen(false);
-                    setUploadEvalSelectorOpen(false);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
+                  onClick={() => { setUploadModalOpen(false); if (fileInputRef.current) fileInputRef.current.value = ''; }}
                   className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-all"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <div className="p-5 space-y-5">
-                <div className="bg-slate-50 rounded-2xl border border-slate-100 p-4 space-y-3">
-                  <div>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Evaluación asignada</p>
-
-                    {!uploadEvalSelectorOpen ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-700">
-                          {uploadEvaluation ? `${uploadEvaluation.title ?? uploadEvaluation.date} — ${uploadEvaluation.date}` : '—'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setUploadEvalSelectorOpen(true)}
-                          className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
-                          title="Cambiar evaluación asignada"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={uploadEvaluationId ?? ''}
-                          onChange={(e) => handleChangeUploadEvaluation(e.target.value)}
-                          className="text-sm bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200 w-full"
-                          autoFocus
-                          disabled={patientEvaluations.length === 0}
-                        >
-                          {patientEvaluations.length === 0 ? (
-                            <option value="">Crea una evaluación primero</option>
-                          ) : (
-                            <>
-                              <option value="">Seleccionar...</option>
-                              {patientEvaluations.map(ev => (
-                                <option key={ev.id} value={ev.id}>
-                                  {ev.title ?? ev.date} — {ev.date}
-                                </option>
-                              ))}
-                            </>
-                          )}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => setUploadEvalSelectorOpen(false)}
-                          className="p-2 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Fecha de evaluación</p>
-                    <input
-                      type="date"
-                      value={uploadLinkedDate}
-                      disabled
-                      readOnly
-                      className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-600 outline-none cursor-not-allowed"
-                    />
-                  </div>
-                </div>
-
+                <EvaluationLink
+                  patientId={patientId}
+                  patientEvaluations={patientEvaluations}
+                  evaluationId={uploadEvaluationId}
+                  onChangeEvaluationId={setUploadEvaluationId}
+                />
                 <div
                   onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                   onDragLeave={() => setIsDragOver(false)}
@@ -632,7 +435,6 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
                   <UploadCloud className="w-10 h-10 mx-auto text-slate-300 mb-3" />
                   <p className="text-sm font-bold text-slate-700">Arrastra el archivo aquí</p>
                   <p className="text-xs text-slate-400 mt-1">o</p>
-
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
@@ -641,7 +443,6 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
                   >
                     {isUploading ? 'Subiendo...' : 'Subir archivo'}
                   </button>
-
                   <p className="text-[10px] text-slate-400 mt-3">
                     Límite: 500 KB (imágenes se comprimen automáticamente).
                   </p>
@@ -673,4 +474,6 @@ export const FileGallery: React.FC<FileGalleryProps> = ({
       </div>
     </>
   );
-};
+});
+
+FileGallery.displayName = 'FileGallery';

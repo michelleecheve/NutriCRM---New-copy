@@ -3,9 +3,10 @@ import { Patient, Measurement, PatientEvaluation } from '../../types';
 import { store } from '../../services/store';
 import {
   Save, Trash2, ChevronRight, Calculator, Info,
-  Star, Pencil, X, AlertTriangle
+  Star, X, AlertTriangle
 } from 'lucide-react';
 import { GridInput } from './SharedComponents';
+import { EvaluationLink } from './EvaluationLink';
 import { calculateAnthropometry } from '../../services/MeasurementsFormulas';
 
 const DIAGNOSTIC_OPTIONS = [
@@ -114,11 +115,9 @@ const FORM_SECTIONS: any[] = [
 const ConfirmModal: React.FC<{
   title: string;
   message: string;
-  confirmText?: string;
-  cancelText?: string;
   onConfirm: () => void;
   onCancel: () => void;
-}> = ({ title, message, confirmText = 'Sí, eliminar', cancelText = 'Cancelar', onConfirm, onCancel }) => (
+}> = ({ title, message, onConfirm, onCancel }) => (
   <div className="fixed inset-0 z-[80] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div className="bg-white w-full max-w-md rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
       <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -135,19 +134,11 @@ const ConfirmModal: React.FC<{
       <div className="p-5">
         <p className="text-sm text-slate-600">{message}</p>
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50"
-          >
-            {cancelText}
+          <button type="button" onClick={onCancel} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50">
+            Cancelar
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700"
-          >
-            {confirmText}
+          <button type="button" onClick={onConfirm} className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700">
+            Sí, eliminar
           </button>
         </div>
       </div>
@@ -171,11 +162,7 @@ const InfoModal: React.FC<{
       <div className="p-5">
         <p className="text-sm text-slate-600">{message}</p>
         <div className="mt-5 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800"
-          >
+          <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800">
             Entendido
           </button>
         </div>
@@ -187,116 +174,144 @@ const InfoModal: React.FC<{
 export const NewMeasurementForm: React.FC<{
   patient: Patient;
   onUpdate: (p: Patient) => void;
-
-  mode: 'detail' | 'new';
+  // ✅ editingId ahora es el id del Measurement (no la fecha)
+  // null = crear nuevo
   editingId: string | null;
   onClose: () => void;
+  showDelete?: boolean;
+}> = ({ patient, onUpdate, editingId, onClose, showDelete = true }) => {
 
-  showDelete?: boolean; // por si lo usas en EvaluationDetail
-}> = ({ patient, onUpdate, mode, editingId, onClose, showDelete = true }) => {
-  // ✅ Evaluación asignada
   const patientEvaluations: PatientEvaluation[] = useMemo(
     () => store.getEvaluations(patient.id),
     [patient.id]
   );
 
-  const [formEvaluationId, setFormEvaluationId] = useState<string | null>(
-    store.getSelectedEvaluationId(patient.id)
-  );
-  const [evalSelectorOpen, setEvalSelectorOpen] = useState(false);
+  // ✅ resolver record existente — busca por id primero, fallback a date para registros legacy
+  const existingRecord = useMemo<Measurement | null>(() => {
+    if (!editingId) return null;
+    return (
+      patient.measurements.find(m => m.id === editingId) ??
+      patient.measurements.find(m => m.date === editingId) ??
+      null
+    );
+  }, [editingId, patient.measurements]);
 
-  const formEvaluation = useMemo(() => {
-    if (!formEvaluationId) return null;
-    return store.getEvaluationById(formEvaluationId) ?? null;
-  }, [formEvaluationId]);
+  const isEditing = !!existingRecord;
 
-  const initialFormData: Measurement = useMemo(() => {
-    if (mode === 'detail' && editingId) {
-      const found = patient.measurements.find(m => m.date === editingId);
-      if (found) return found;
+  // ✅ evaluación vinculada — inicializar desde el record si existe
+  const [evaluationId, setEvaluationId] = useState<string | null>(() => {
+    if (existingRecord) {
+      const match = patientEvaluations.find(e => e.date === existingRecord.date);
+      return match?.id ?? store.getSelectedEvaluationId(patient.id);
     }
+    return store.getSelectedEvaluationId(patient.id);
+  });
 
-    const defaultEvalId = store.getSelectedEvaluationId(patient.id);
-    const defaultEval = defaultEvalId ? store.getEvaluationById(defaultEvalId) : null;
+  const evaluation = useMemo(() => {
+    if (!evaluationId) return null;
+    return store.getEvaluationById(evaluationId) ?? null;
+  }, [evaluationId]);
 
-    return {
-      date: defaultEval?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]),
-      metaComplied: false,
-      weight: 0,
-      height: 0
-    };
-  }, [patient.id, patient.measurements, mode, editingId]);
+  const linkedDate =
+    evaluation?.date ??
+    (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
 
-  const [formData, setFormData] = useState<Measurement>(initialFormData);
+  // ✅ form data
+  const buildDefault = (): Measurement => ({
+    id: Math.random().toString(36).substring(7),
+    date: linkedDate,
+    metaComplied: false,
+    weight: 0,
+    height: 0,
+  });
 
-  // cuando cambias de registro (editingId), sincroniza el form
+  const [formData, setFormData] = useState<Measurement>(() =>
+    existingRecord ? { ...existingRecord } : buildDefault()
+  );
+
+  // re-inicializar si cambia editingId
   useEffect(() => {
-    setFormData(initialFormData);
+    const rec = editingId
+      ? (patient.measurements.find(m => m.id === editingId) ??
+         patient.measurements.find(m => m.date === editingId) ??
+         null)
+      : null;
 
-    // set evaluación asociada si matchea por fecha
-    const match = patientEvaluations.find(e => e.date === initialFormData.date);
-    setFormEvaluationId(match?.id ?? store.getSelectedEvaluationId(patient.id));
-    setEvalSelectorOpen(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialFormData.date]);
+    if (rec) {
+      setFormData({ ...rec });
+      const match = patientEvaluations.find(e => e.date === rec.date);
+      setEvaluationId(match?.id ?? store.getSelectedEvaluationId(patient.id));
+    } else {
+      const selId = store.getSelectedEvaluationId(patient.id);
+      const selEv = selId ? store.getEvaluationById(selId) : null;
+      setFormData({
+        id: Math.random().toString(36).substring(7),
+        date: selEv?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]),
+        metaComplied: false,
+        weight: 0,
+        height: 0,
+      });
+      setEvaluationId(selId);
+    }
+  }, [editingId]);
 
-  // Si cambia la evaluación asignada, arrastrar su date al measurement
+  // cuando cambia la evaluación asignada → actualizar fecha en formData
   useEffect(() => {
-    if (!formEvaluation) return;
-    setFormData(prev => calculateAnthropometry({ ...prev, date: formEvaluation.date }));
-  }, [formEvaluation?.date]);
+    if (!evaluation) return;
+    setFormData(prev => calculateAnthropometry({ ...prev, date: evaluation.date }));
+  }, [evaluation?.date]);
 
-  // ✅ Modales
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
 
   const handleFieldChange = (key: keyof Measurement, value: any) => {
-    const updated = { ...formData, [key]: value };
-    setFormData(calculateAnthropometry(updated));
+    setFormData(prev => calculateAnthropometry({ ...prev, [key]: value }));
   };
 
   const handleSave = () => {
-    if (!formEvaluationId) {
+    if (!evaluationId) {
       setInfoModal({ title: 'Falta evaluación', message: 'Primero selecciona una evaluación.' });
       return;
     }
-    const ev = store.getEvaluationById(formEvaluationId);
+    const ev = store.getEvaluationById(evaluationId);
     if (!ev) {
       setInfoModal({ title: 'Evaluación no encontrada', message: 'La evaluación seleccionada no existe o fue eliminada.' });
       return;
     }
 
-    const normalized: Measurement = calculateAnthropometry({ ...formData, date: ev.date });
+    const normalized: Measurement = calculateAnthropometry({
+      ...formData,
+      date: ev.date,
+      // garantizar que siempre tenga id
+      id: formData.id || Math.random().toString(36).substring(7),
+    });
 
-    let newMeasurements = [...patient.measurements];
-    if (mode === 'detail' && editingId) {
-      newMeasurements = newMeasurements.map(m => (m.date === editingId ? normalized : m));
+    let updatedMeasurements: Measurement[];
+
+    if (isEditing) {
+      // ✅ editar — reemplaza por id
+      updatedMeasurements = patient.measurements.map(m =>
+        m.id === editingId ? normalized : m
+      );
     } else {
-      newMeasurements.push(normalized);
+      // ✅ crear nuevo — siempre agrega, nunca sobreescribe
+      updatedMeasurements = [normalized, ...patient.measurements];
     }
 
-    const updatedPatient = { ...patient, measurements: newMeasurements };
+    const updatedPatient = { ...patient, measurements: updatedMeasurements };
     onUpdate(updatedPatient);
     store.updatePatient(updatedPatient);
-
     onClose();
   };
 
   const handleDeleteConfirmed = () => {
     if (!editingId) return;
-    const newMeasurements = patient.measurements.filter(m => m.date !== editingId);
-    const updatedPatient = { ...patient, measurements: newMeasurements };
+    const updatedMeasurements = patient.measurements.filter(m => m.id !== editingId && m.date !== editingId);
+    const updatedPatient = { ...patient, measurements: updatedMeasurements };
     onUpdate(updatedPatient);
     store.updatePatient(updatedPatient);
     setConfirmDeleteOpen(false);
     onClose();
-  };
-
-  const handleChangeFormEvaluation = (evId: string) => {
-    const ev = store.getEvaluationById(evId);
-    setFormEvaluationId(evId || null);
-    if (ev) setFormData(prev => calculateAnthropometry({ ...prev, date: ev.date }));
-    setEvalSelectorOpen(false);
   };
 
   return (
@@ -319,7 +334,8 @@ export const NewMeasurementForm: React.FC<{
       )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 mb-6 animate-in fade-in slide-in-from-right-4 duration-500">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white z-10 rounded-t-2xl">
+        {/* Header */}
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white rounded-t-2xl">
           <div className="flex items-center gap-4">
             <button
               onClick={onClose}
@@ -333,7 +349,7 @@ export const NewMeasurementForm: React.FC<{
                 <Calculator className="w-5 h-5 text-emerald-600" />
               </div>
               <h3 className="font-bold text-lg text-slate-800">
-                {mode === 'detail' ? 'Detalle del Registro' : 'Nuevo Registro Antropométrico'}
+                {isEditing ? 'Editar Registro Antropométrico' : 'Nuevo Registro Antropométrico'}
               </h3>
             </div>
           </div>
@@ -348,77 +364,20 @@ export const NewMeasurementForm: React.FC<{
         </div>
 
         <div className="p-6 space-y-8">
-          {/* Vinculación */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div className="mb-6">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Evaluación asignada</p>
-
-              {!evalSelectorOpen ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-slate-600">
-                    {formEvaluation ? `${formEvaluation.title ?? formEvaluation.date} — ${formEvaluation.date}` : '—'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setEvalSelectorOpen(true)}
-                    className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
-                    title="Cambiar evaluación asignada"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <select
-                    value={formEvaluationId ?? ''}
-                    onChange={(e) => handleChangeFormEvaluation(e.target.value)}
-                    className="text-sm bg-white border border-slate-200 rounded-xl px-3 py-1.5 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200"
-                    autoFocus
-                    disabled={patientEvaluations.length === 0}
-                  >
-                    {patientEvaluations.length === 0 ? (
-                      <option value="">Crea una evaluación primero</option>
-                    ) : (
-                      <>
-                        <option value="">Seleccionar...</option>
-                        {patientEvaluations.map(ev => (
-                          <option key={ev.id} value={ev.id}>
-                            {ev.title ?? ev.date} — {ev.date}
-                          </option>
-                        ))}
-                      </>
-                    )}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => setEvalSelectorOpen(false)}
-                    className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              <div className="md:col-span-3">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide">Fecha</label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  disabled
-                  readOnly
-                  className="mt-2 w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-600 outline-none cursor-not-allowed"
-                />
-              </div>
-              <div className="md:col-span-9">
-                <p className="text-xs text-slate-400 mt-8">
-                  La fecha se toma automáticamente de la evaluación asignada.
-                </p>
-              </div>
-            </div>
+          {/* ✅ EvaluationLink — mismo componente que Somatocarta y Menu */}
+          <div className="space-y-3">
+            <EvaluationLink
+              patientId={patient.id}
+              patientEvaluations={patientEvaluations}
+              evaluationId={evaluationId}
+              onChangeEvaluationId={setEvaluationId}
+            />
+            <p className="text-xs text-slate-400 px-1">
+              La fecha del registro se toma automáticamente de la evaluación asignada.
+            </p>
           </div>
 
+          {/* Secciones del form */}
           {FORM_SECTIONS.map((section, sIdx) => (
             <div key={sIdx} className="space-y-4">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
@@ -496,16 +455,17 @@ export const NewMeasurementForm: React.FC<{
           ))}
         </div>
 
+        {/* Footer */}
         <div className="p-6 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex justify-between items-center">
-          {mode === 'detail' && showDelete ? (
+          {isEditing && showDelete ? (
             <button
               type="button"
               onClick={() => setConfirmDeleteOpen(true)}
-              className="flex items-center gap-2 text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition-colors ml-auto md:ml-0"
+              className="flex items-center gap-2 text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition-colors"
             >
               <Trash2 className="w-4 h-4" /> Eliminar Registro
             </button>
-          ) : <div></div>}
+          ) : <div />}
 
           <div className="flex gap-3">
             <button onClick={onClose} className="px-4 py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg transition-colors">

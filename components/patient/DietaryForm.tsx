@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { DietaryEvaluation, MealEntry, PatientEvaluation } from '../../types';
-import { Utensils, Plus, X, Save, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { DietaryEvaluation, MealEntry, Patient, PatientEvaluation } from '../../types';
+import { Utensils, Plus, X, Save, Trash2, AlertTriangle } from 'lucide-react';
 import { GridInput, ModernTextArea } from './SharedComponents';
+import { EvaluationLink } from './EvaluationLink';
 import { store } from '../../services/store';
 
 const FOOD_GROUPS = [
@@ -28,18 +29,10 @@ const ConfirmModal: React.FC<{
       </div>
       <p className="text-sm text-slate-500 mb-6">{message}</p>
       <div className="flex gap-3 justify-end">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors"
-        >
+        <button type="button" onClick={onCancel} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors">
           Cancelar
         </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors"
-        >
+        <button type="button" onClick={onConfirm} className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors">
           Sí, eliminar
         </button>
       </div>
@@ -48,52 +41,88 @@ const ConfirmModal: React.FC<{
 );
 
 export const DietaryForm: React.FC<{
-  formData: DietaryEvaluation;
-  setFormData: React.Dispatch<React.SetStateAction<DietaryEvaluation>>;
-
+  patient: Patient;
   patientEvaluations: PatientEvaluation[];
-
-  formEvaluationId: string | null;
-  setFormEvaluationId: React.Dispatch<React.SetStateAction<string | null>>;
-
-  evalSelectorOpen: boolean;
-  setEvalSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
-
+  editingId: string | null;
+  onSavePatient: (updated: Patient) => void;
   onCancel: () => void;
-  onSave: () => void;
-
-  // ✅ ahora opcional
   onDelete?: () => void;
-
-  // ✅ NUEVO: permite ocultar eliminar (por ejemplo en EvaluationDetail)
   showDelete?: boolean;
-}> = ({
-  formData,
-  setFormData,
-  patientEvaluations,
-  formEvaluationId,
-  setFormEvaluationId,
-  evalSelectorOpen,
-  setEvalSelectorOpen,
-  onCancel,
-  onSave,
-  onDelete,
-  showDelete = true,
-}) => {
+}> = ({ patient, patientEvaluations, editingId, onSavePatient, onCancel, onDelete, showDelete = true }) => {
+
+  const existingRecord = useMemo<DietaryEvaluation | null>(() => {
+    if (!editingId) return null;
+    return patient.dietaryEvaluations.find(d => d.id === editingId) ?? null;
+  }, [editingId, patient.dietaryEvaluations]);
+
+  const isEditing = !!existingRecord;
+
+  const [evaluationId, setEvaluationId] = useState<string | null>(() => {
+    if (existingRecord) {
+      const match = patientEvaluations.find(e => e.date === existingRecord.date);
+      return match?.id ?? store.getSelectedEvaluationId(patient.id);
+    }
+    return store.getSelectedEvaluationId(patient.id);
+  });
+
+  const evaluation = useMemo(() => {
+    if (!evaluationId) return null;
+    return store.getEvaluationById(evaluationId) ?? null;
+  }, [evaluationId]);
+
+  const linkedDate =
+    evaluation?.date ??
+    (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
+
+  const [formData, setFormData] = useState<DietaryEvaluation>(() =>
+    existingRecord ? { ...existingRecord } : {
+      id: Math.random().toString(36).substring(7),
+      date: linkedDate,
+      mealsPerDay: 5,
+      excludedFoods: '',
+      notes: '',
+      recall: [],
+      foodFrequency: {},
+      foodFrequencyOthers: '',
+    }
+  );
+
+  useEffect(() => {
+    const rec = editingId
+      ? patient.dietaryEvaluations.find(d => d.id === editingId) ?? null
+      : null;
+
+    if (rec) {
+      setFormData({ ...rec });
+      const match = patientEvaluations.find(e => e.date === rec.date);
+      setEvaluationId(match?.id ?? store.getSelectedEvaluationId(patient.id));
+    } else {
+      const selId = store.getSelectedEvaluationId(patient.id);
+      const selEv = selId ? store.getEvaluationById(selId) : null;
+      setFormData({
+        id: Math.random().toString(36).substring(7),
+        date: selEv?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]),
+        mealsPerDay: 5,
+        excludedFoods: '',
+        notes: '',
+        recall: [],
+        foodFrequency: {},
+        foodFrequencyOthers: '',
+      });
+      setEvaluationId(selId);
+    }
+  }, [editingId]);
+
+  useEffect(() => {
+    if (!evaluation) return;
+    setFormData(prev => ({ ...prev, date: evaluation.date }));
+  }, [evaluation?.date]);
+
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const canDelete = showDelete && !!onDelete;
 
-  const formEvaluation = formEvaluationId ? store.getEvaluationById(formEvaluationId) : null;
-
-  const handleChangeFormEvaluation = (evId: string) => {
-    const ev = store.getEvaluationById(evId);
-    setFormEvaluationId(evId || null);
-    if (ev) setFormData(prev => ({ ...prev, date: ev.date }));
-    setEvalSelectorOpen(false);
-  };
-
-  const addMeal = () => {
+  const addMeal = () =>
     setFormData({ ...formData, recall: [...formData.recall, { mealTime: 'Desayuno', time: '', place: '', description: '' }] });
-  };
 
   const updateMeal = (idx: number, field: keyof MealEntry, val: string) => {
     const newRecall = [...formData.recall];
@@ -101,9 +130,8 @@ export const DietaryForm: React.FC<{
     setFormData({ ...formData, recall: newRecall });
   };
 
-  const removeMeal = (idx: number) => {
+  const removeMeal = (idx: number) =>
     setFormData({ ...formData, recall: formData.recall.filter((_, i) => i !== idx) });
-  };
 
   const updateFrequency = (food: string, freq: string) => {
     const current = formData.foodFrequency[food];
@@ -116,19 +144,28 @@ export const DietaryForm: React.FC<{
     }
   };
 
-  const canDeleteHere = showDelete && !!onDelete;
+  const handleSave = () => {
+    if (!evaluationId) return;
+    const ev = store.getEvaluationById(evaluationId);
+    if (!ev) return;
+
+    const normalized: DietaryEvaluation = { ...formData, date: ev.date };
+
+    const updatedEvaluations = isEditing
+      ? patient.dietaryEvaluations.map(d => d.id === editingId ? normalized : d)
+      : [normalized, ...patient.dietaryEvaluations];
+
+    onSavePatient({ ...patient, dietaryEvaluations: updatedEvaluations });
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
-      {confirmOpen && canDeleteHere && (
+      {confirmOpen && canDelete && (
         <ConfirmModal
           title="Eliminar evaluación dietética"
           message="¿Seguro que deseas eliminar este registro? Esta acción no se puede deshacer."
           onCancel={() => setConfirmOpen(false)}
-          onConfirm={() => {
-            setConfirmOpen(false);
-            onDelete?.();
-          }}
+          onConfirm={() => { setConfirmOpen(false); onDelete?.(); }}
         />
       )}
 
@@ -144,88 +181,46 @@ export const DietaryForm: React.FC<{
               <p className="text-xs text-emerald-600 font-bold tracking-wide uppercase">Evaluación Dietética</p>
             </div>
           </div>
-
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="px-5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors"
-            >
+            <button type="button" onClick={onCancel} className="px-5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors">
               Cancelar
             </button>
-            <button
-              type="button"
-              onClick={onSave}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
-            >
+            <button type="button" onClick={handleSave} className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
               <Save className="w-4 h-4" /> Guardar
             </button>
-
-            <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full text-slate-400" title="Cerrar">
+            <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full text-slate-400">
               <X className="w-6 h-6" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* (resto del form igual que antes; lo dejo intacto) */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="mb-6">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Evaluación asignada</p>
-          {!evalSelectorOpen ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-slate-600">
-                {formEvaluation ? `${formEvaluation.title ?? formEvaluation.date} — ${formEvaluation.date}` : '—'}
-              </span>
-              <button
-                type="button"
-                onClick={() => setEvalSelectorOpen(true)}
-                className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
-                title="Cambiar evaluación asignada"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <select
-                value={formEvaluationId ?? ''}
-                onChange={(e) => handleChangeFormEvaluation(e.target.value)}
-                className="text-sm bg-white border border-slate-200 rounded-xl px-3 py-1.5 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200"
-                autoFocus
-              >
-                <option value="">Seleccionar...</option>
-                {patientEvaluations.map(ev => (
-                  <option key={ev.id} value={ev.id}>{ev.title ?? ev.date} — {ev.date}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => setEvalSelectorOpen(false)}
-                className="p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
+      {/* ✅ EvaluationLink — mismo componente que Somatocarta, Measurements y Menu */}
+      <EvaluationLink
+        patientId={patient.id}
+        patientEvaluations={patientEvaluations}
+        evaluationId={evaluationId}
+        onChangeEvaluationId={setEvaluationId}
+      />
 
+      {/* Datos generales */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <div className="md:col-span-2">
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide">Fecha</label>
-            <input
-              type="date"
-              value={formData.date}
-              disabled
-              readOnly
-              className="mt-2 w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-600 outline-none cursor-not-allowed"
+            <GridInput
+              label="Comidas al día"
+              type="number"
+              value={formData.mealsPerDay}
+              onChange={(e: any) => setFormData({ ...formData, mealsPerDay: parseInt(e.target.value) })}
             />
           </div>
-          <div className="md:col-span-2">
-            <GridInput label="Comidas al día" type="number" value={formData.mealsPerDay} onChange={(e: any) => setFormData({ ...formData, mealsPerDay: parseInt(e.target.value) })} />
-          </div>
-          <div className="md:col-span-8">
-            <GridInput label="Alimentos que evita" placeholder="Ej: Lácteos, mariscos..." value={formData.excludedFoods} onChange={(e: any) => setFormData({ ...formData, excludedFoods: e.target.value })} />
+          <div className="md:col-span-10">
+            <GridInput
+              label="Alimentos que evita"
+              placeholder="Ej: Lácteos, mariscos..."
+              value={formData.excludedFoods}
+              onChange={(e: any) => setFormData({ ...formData, excludedFoods: e.target.value })}
+            />
           </div>
           <div className="md:col-span-12">
             <ModernTextArea
@@ -285,7 +280,6 @@ export const DietaryForm: React.FC<{
               ))}
             </tbody>
           </table>
-
           {formData.recall.length === 0 && (
             <div className="p-8 text-center text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl mt-4">
               No hay comidas registradas.
@@ -347,42 +341,23 @@ export const DietaryForm: React.FC<{
         </div>
       </div>
 
-      {/* Barra inferior: solo mostrar Eliminar si aplica */}
+      {/* Barra inferior */}
       <div className="flex items-center justify-between pt-2">
-        {showDelete ? (
+        {canDelete ? (
           <button
             type="button"
-            onClick={() => {
-              if (!canDeleteHere) return; // si no hay handler, no hace nada
-              setConfirmOpen(true);
-            }}
-            className={`inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold shadow-lg transition-colors ${
-              canDeleteHere
-                ? 'bg-red-50 text-red-700 border border-red-100 hover:bg-red-100'
-                : 'bg-slate-100 text-slate-400 border border-slate-100'
-            }`}
-            title={!canDeleteHere ? 'Eliminar no disponible en esta vista.' : 'Eliminar'}
+            onClick={() => setConfirmOpen(true)}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold shadow-lg transition-colors bg-red-50 text-red-700 border border-red-100 hover:bg-red-100"
           >
-            <Trash2 className="w-4 h-4" />
-            Eliminar
+            <Trash2 className="w-4 h-4" /> Eliminar
           </button>
-        ) : (
-          <div />
-        )}
+        ) : <div />}
 
         <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-6 py-3 bg-white text-slate-500 font-bold rounded-full shadow-lg border border-slate-100 hover:bg-slate-50 transition-colors"
-          >
+          <button type="button" onClick={onCancel} className="px-6 py-3 bg-white text-slate-500 font-bold rounded-full shadow-lg border border-slate-100 hover:bg-slate-50 transition-colors">
             Cancelar
           </button>
-          <button
-            type="button"
-            onClick={onSave}
-            className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-full shadow-xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all flex items-center gap-2"
-          >
+          <button type="button" onClick={handleSave} className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-full shadow-xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all flex items-center gap-2">
             <Save className="w-4 h-4" /> Guardar Evaluación
           </button>
         </div>

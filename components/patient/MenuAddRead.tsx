@@ -90,7 +90,7 @@ const InfoModal: React.FC<{
 export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, editingMenuId, onClose }) => {
   const [menuName, setMenuName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
-  const [isCalculationVisible, setIsCalculationVisible] = useState(true);
+  const [isCalculationVisible, setIsCalculationVisible] = useState(false);
 
   // ✅ Evaluaciones del paciente (para vinculación)
   const patientEvaluations: PatientEvaluation[] = useMemo(
@@ -359,18 +359,6 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           </div>
 
           <div className="flex items-center gap-3">
-            {/* ✅ botón eliminar solo si estamos editando */}
-            {editingMenuId && (
-              <button
-                type="button"
-                onClick={() => setConfirmDeleteOpen(true)}
-                className="px-4 py-2 rounded-xl border border-red-100 bg-red-50 text-red-700 font-bold text-sm hover:bg-red-100 transition-colors flex items-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                Eliminar
-              </button>
-            )}
-
             <button
               onClick={onClose}
               className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
@@ -450,29 +438,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
               />
             </div>
           </div>
-
-          {/* Row 1: Menu Details */}
-          <div className="grid grid-cols-1 gap-8">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nombre del Menú</label>
-              <input
-                type="text"
-                value={menuName}
-                onChange={(e) => setMenuName(e.target.value)}
-                className="w-full text-sm font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
-              />
-            </div>
-          </div>
-
-          {/* Row 2: Patient Details */}
-          <div className="pt-6 border-t border-slate-100">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Menu para:</label>
-              <div className="text-sm font-bold text-slate-700 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 inline-block min-w-[300px]">
-                {patient.firstName} {patient.lastName}
-              </div>
-            </div>
-          </div>
+          
         </section>
 
         <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -526,6 +492,31 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           zoom={zoom}
           setZoom={setZoom}
         />
+
+        {/* Bottom action bar */}
+        <div className="flex items-center justify-between pt-4">
+          {editingMenuId ? (
+            <button
+              type="button"
+              onClick={() => setConfirmDeleteOpen(true)}
+              className="px-4 py-2 rounded-xl border border-red-100 bg-red-50 text-red-700 font-bold text-sm hover:bg-red-100 transition-colors flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Eliminar menú
+            </button>
+          ) : (
+            <div />
+          )}
+
+          <button
+            onClick={handleSaveAndClose}
+            className="bg-emerald-600 text-white font-bold px-8 py-3 rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+          >
+            Guardar y Cerrar
+          </button>
+        </div>
+
+
       </div>
     </>
   );

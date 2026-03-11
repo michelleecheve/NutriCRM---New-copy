@@ -45,6 +45,7 @@ export interface ClinicalRecord {
 }
 
 export interface Measurement {
+  id: string;          // ✅ nuevo — identificador único
   date: string;
   metaComplied?: boolean;
   age?: number;
@@ -77,6 +78,17 @@ export interface Measurement {
   thighRight?: number;
   thighLeft?: number;
   gender?: string;
+  leanMassKg?: number;
+  leanMassPct?: number;
+  boneMass?: number;
+  residualMass?: number;
+  endomorfo?: number;
+  mesomorfo?: number;
+  ectomorfo?: number;
+  x?: number;
+  y?: number;
+  diagnosticN?: string;
+  subjectiveValuation?: number;
   [key: string]: any;
 }
 
@@ -177,6 +189,7 @@ export interface LabResult {
   url: string;
   type: 'image' | 'pdf' | 'other';
   description?: string;
+  labInterpretation?: string;
 }
 
 export interface Photo {
@@ -256,18 +269,12 @@ export interface AppUser {
   linkCode?: string;
 }
 
-/**
- * PatientEvaluation
- * - date:      YYYY-MM-DD — único campo de fecha, editable por el usuario
- * - title:     nombre/título editable
- * - createdAt: ISO datetime — solo auditoría técnica, nunca se muestra como fecha
- */
 export interface PatientEvaluation {
   id: string;
   patientId: string;
-  date: string;      // YYYY-MM-DD — la fecha que el usuario ve y puede editar
+  date: string;
   title?: string;
-  createdAt: string; // ISO — solo auditoría
+  createdAt: string;
 }
 
 export enum AppRoute {

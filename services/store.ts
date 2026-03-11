@@ -36,18 +36,11 @@ function formatSpanishLongDate(yyyyMmDd: string): string {
   return `${day} ${monthCap}, ${year}`;
 }
 
-/**
- * ✅ Timezone helpers
- * Tu app guarda tz como "UTC-06:00", "UTC+03:30" o "UTC±00:00".
- * Intl.DateTimeFormat NO acepta ese formato como timeZone; por eso calculamos por offset.
- */
 function parseUtcOffsetToMinutes(tz: string): number {
   if (!tz) return 0;
   if (tz === 'UTC' || tz === 'UTC±00:00') return 0;
-
   const m = tz.match(/^UTC([+-])(\d{2}):(\d{2})$/);
   if (!m) return 0;
-
   const sign = m[1] === '-' ? -1 : 1;
   const hh = parseInt(m[2], 10);
   const mm = parseInt(m[3], 10);
@@ -135,10 +128,10 @@ const SEED_PATIENTS: Patient[] = [
       },
     ],
     measurements: [
-      { date: '2025-07-01', metaComplied: false, age: 25, weight: 70, height: 170, imc: 24.2, bodyFat: 18, fatKg: 12.6, aks: 1.2, muscleKg: 32, biceps: 5, triceps: 10, subscapular: 12, supraspinal: 15, abdomen: 20, thigh: 15, calf: 10, iliacCrest: 18, skinfoldSum: 102, wrist: 6, humerus: 7, femur: 10, armRelaxed: 30, armContracted: 32, calfGirth: 35, waist: 80, umbilical: 85, hip: 95, abdominalLow: 88, thighRight: 55, thighLeft: 55 },
-      { date: '2025-09-08', metaComplied: true,  age: 25, weight: 68, height: 170, imc: 23.5, bodyFat: 17, fatKg: 11.5, aks: 1.3, muscleKg: 33, biceps: 4, triceps: 9,  subscapular: 11, supraspinal: 14, abdomen: 18, thigh: 14, calf: 9,  iliacCrest: 17, skinfoldSum: 96,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 29, armContracted: 31, calfGirth: 34, waist: 78, umbilical: 83, hip: 94, abdominalLow: 86, thighRight: 54, thighLeft: 54 },
-      { date: '2026-01-01', metaComplied: true,  age: 26, weight: 67, height: 170, imc: 23.1, bodyFat: 16, fatKg: 10.7, aks: 1.4, muscleKg: 34, biceps: 4, triceps: 8,  subscapular: 10, supraspinal: 13, abdomen: 16, thigh: 13, calf: 8,  iliacCrest: 16, skinfoldSum: 88,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 29, armContracted: 31, calfGirth: 34, waist: 76, umbilical: 81, hip: 93, abdominalLow: 84, thighRight: 53, thighLeft: 53 },
-      { date: '2026-02-16', metaComplied: false, age: 26, weight: 66, height: 170, imc: 22.8, bodyFat: 15, fatKg: 9.9,  aks: 1.5, muscleKg: 35, biceps: 3, triceps: 7,  subscapular: 9,  supraspinal: 12, abdomen: 14, thigh: 12, calf: 7,  iliacCrest: 15, skinfoldSum: 79,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 28, armContracted: 30, calfGirth: 33, waist: 74, umbilical: 79, hip: 92, abdominalLow: 82, thighRight: 52, thighLeft: 52 },
+      { id: 'meas-1', date: '2025-07-01', metaComplied: false, age: 25, weight: 70, height: 170, imc: 24.2, bodyFat: 18, fatKg: 12.6, aks: 1.2, muscleKg: 32, biceps: 5, triceps: 10, subscapular: 12, supraspinal: 15, abdomen: 20, thigh: 15, calf: 10, iliacCrest: 18, skinfoldSum: 102, wrist: 6, humerus: 7, femur: 10, armRelaxed: 30, armContracted: 32, calfGirth: 35, waist: 80, umbilical: 85, hip: 95, abdominalLow: 88, thighRight: 55, thighLeft: 55 },
+      { id: 'meas-2', date: '2025-09-08', metaComplied: true,  age: 25, weight: 68, height: 170, imc: 23.5, bodyFat: 17, fatKg: 11.5, aks: 1.3, muscleKg: 33, biceps: 4, triceps: 9,  subscapular: 11, supraspinal: 14, abdomen: 18, thigh: 14, calf: 9,  iliacCrest: 17, skinfoldSum: 96,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 29, armContracted: 31, calfGirth: 34, waist: 78, umbilical: 83, hip: 94, abdominalLow: 86, thighRight: 54, thighLeft: 54 },
+      { id: 'meas-3', date: '2026-01-01', metaComplied: true,  age: 26, weight: 67, height: 170, imc: 23.1, bodyFat: 16, fatKg: 10.7, aks: 1.4, muscleKg: 34, biceps: 4, triceps: 8,  subscapular: 10, supraspinal: 13, abdomen: 16, thigh: 13, calf: 8,  iliacCrest: 16, skinfoldSum: 88,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 29, armContracted: 31, calfGirth: 34, waist: 76, umbilical: 81, hip: 93, abdominalLow: 84, thighRight: 53, thighLeft: 53 },
+      { id: 'meas-4', date: '2026-02-16', metaComplied: false, age: 26, weight: 66, height: 170, imc: 22.8, bodyFat: 15, fatKg: 9.9,  aks: 1.5, muscleKg: 35, biceps: 3, triceps: 7,  subscapular: 9,  supraspinal: 12, abdomen: 14, thigh: 12, calf: 7,  iliacCrest: 15, skinfoldSum: 79,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 28, armContracted: 30, calfGirth: 33, waist: 74, umbilical: 79, hip: 92, abdominalLow: 82, thighRight: 52, thighLeft: 52 },
     ],
     somatotypes: [
       { id: '1', date: '2025-07-01', x: 2, y: 4 },
@@ -188,7 +181,7 @@ const SEED_PATIENTS: Patient[] = [
     },
     dietaryEvaluations: [],
     measurements: [
-      { date: '2024-01-10', metaComplied: false, age: 38, weight: 90, height: 180, imc: 27.8, bodyFat: 30, fatKg: 27 },
+      { id: 'meas-5', date: '2024-01-10', metaComplied: false, age: 38, weight: 90, height: 180, imc: 27.8, bodyFat: 30, fatKg: 27 },
     ],
     somatotypes: [],
     menus: [],
@@ -219,10 +212,9 @@ const SEED_USER: UserProfile = {
   timezone: 'UTC-06:00',
 };
 
-// ✅ Seed appointments usando TZ del perfil (evita salto por UTC)
 const SEED_APPOINTMENTS: Appointment[] = [
-  { id: 'appt-1', patientId: '1', patientName: 'Michelle Echeverria', date: getTodayYMDInUserTimezone(SEED_USER.timezone),                      time: '15:00', duration: 60, type: 'Seguimiento', modality: 'Presencial', status: 'Programada' },
-  { id: 'appt-2', patientId: '2', patientName: 'Juan Perez',          date: addDaysYmdInUserTimezone(SEED_USER.timezone, 1),                   time: '10:00', duration: 45, type: 'Seguimiento', modality: 'Video',      status: 'Programada' },
+  { id: 'appt-1', patientId: '1', patientName: 'Michelle Echeverria', date: getTodayYMDInUserTimezone(SEED_USER.timezone),        time: '15:00', duration: 60, type: 'Seguimiento', modality: 'Presencial', status: 'Programada' },
+  { id: 'appt-2', patientId: '2', patientName: 'Juan Perez',          date: addDaysYmdInUserTimezone(SEED_USER.timezone, 1),      time: '10:00', duration: 45, type: 'Seguimiento', modality: 'Video',      status: 'Programada' },
 ];
 
 const SEED_STATUSES: string[] = ['Cita Agendada', 'Cita Cancelada', 'Menú Pendiente', 'Menú Entregado'];
@@ -241,6 +233,7 @@ class Store {
   private selectedEvaluationByPatient: Record<string, string> = load(KEYS.evalSelected, SEED_SELECTED);
 
   constructor() {
+    // ✅ Migración: evaluations legacy (createdDate → date)
     this.evaluations = this.evaluations.map(e => {
       const legacy = e as any;
       if (legacy.createdDate) {
@@ -250,6 +243,7 @@ class Store {
       return e;
     });
 
+    // ✅ Migración: patients (limpiar menus históricos seed)
     this.patients = this.patients.map(p => {
       if (p.firstName === 'Michelle' && p.lastName === 'Echeverria') {
         return { ...p, menus: p.menus.filter(m => !m.id.startsWith('menu-hist-')) };
@@ -257,11 +251,18 @@ class Store {
       return p;
     });
 
+    // ✅ Migración: measurements sin id — asignarles uno único basado en date+patientId
+    this.patients = this.patients.map(p => ({
+      ...p,
+      measurements: p.measurements.map(m =>
+        m.id ? m : { ...m, id: `meas-${p.id}-${m.date}-${Math.random().toString(36).substring(2, 6)}` }
+      ),
+    }));
+
     save(KEYS.patients, this.patients);
     save(KEYS.evaluations, this.evaluations);
   }
 
-  // ✅ útil global
   getTodayStr(): string {
     return getTodayYMDInUserTimezone(this.user?.timezone || 'UTC±00:00');
   }
@@ -283,7 +284,6 @@ class Store {
     }
     const newPatient: Patient = {
       id: Math.random().toString(36).substring(2, 9),
-      // ✅ antes era ISO UTC, ahora respeta TZ del perfil
       registeredAt: this.getTodayStr(),
       firstName: basicInfo.firstName,
       lastName:  basicInfo.lastName,

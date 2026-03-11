@@ -1,8 +1,10 @@
 // Esta es la logica del somatocarta chart.
 
+// Esta es la logica del somatocarta chart.
+
 import React from 'react';
 
-export const SomatocartaGraph: React.FC<{ x: number; y: number }> = ({ x, y }) => {
+export const SomatocartaLogic: React.FC<{ x: number; y: number }> = ({ x, y }) => {
   // Internal coordinate system for viewBox
   const W = 500;
   const H = 500;

@@ -7,27 +7,26 @@ import { NewMeasurementForm } from './NewMeasurementForm';
 import { MeasurementsHistory } from './MeasurementsHistory';
 
 export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void }> = ({ patient, onUpdate }) => {
-  const [view, setView] = useState<'list' | 'detail' | 'new'>('list');
+  const [view, setView] = useState<'list' | 'edit'>('list');
+  // ✅ editingId es ahora m.id (string) — null = crear nuevo
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleAdd = () => {
     setEditingId(null);
-    setView('new');
+    setView('edit');
   };
 
   const handleEdit = (m: Measurement) => {
-    setEditingId(m.date);
-    setView('detail');
+    setEditingId(m.id ?? null);
+    setView('edit');
   };
 
-  // ✅ Cuando estás en form, se comporta como “página individual”
-  if (view === 'new' || view === 'detail') {
+  if (view === 'edit') {
     return (
       <div className="space-y-8">
         <NewMeasurementForm
           patient={patient}
           onUpdate={onUpdate}
-          mode={view}
           editingId={editingId}
           onClose={() => {
             setView('list');
@@ -38,10 +37,8 @@ export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient
     );
   }
 
-  // ✅ Vista normal (list)
   return (
     <div className="space-y-8">
-      {/* Botón agregar arriba */}
       <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="bg-emerald-50 p-2 rounded-lg">
@@ -61,19 +58,15 @@ export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient
         </button>
       </div>
 
-      {/* 2) Tabla antropométrica */}
       <AnthropometryTable patient={patient} onUpdate={onUpdate} />
 
-      {/* 3) Somatocarta */}
       <SomatocartaModule patient={patient} onUpdate={onUpdate} />
 
-      {/* 4) Historial al final (cards) */}
       <div className="space-y-4">
         <div className="px-1">
           <h3 className="font-bold text-lg text-slate-800">Historial de Registros</h3>
           <p className="text-xs text-slate-400">Haga clic en un registro para ver detalles</p>
         </div>
-
         <MeasurementsHistory patient={patient} onEdit={handleEdit} />
       </div>
     </div>
