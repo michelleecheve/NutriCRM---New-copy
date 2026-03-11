@@ -7,6 +7,7 @@ export interface MealEntry {
 
 export interface DietaryEvaluation {
   id: string;
+  linkedEvaluationId: string;  // AGREGADO - Foreign key con evaluations
   date: string;
   mealsPerDay: number;
   excludedFoods: string;
@@ -45,7 +46,8 @@ export interface ClinicalRecord {
 }
 
 export interface Measurement {
-  id: string;          // ✅ nuevo — identificador único
+  id: string;
+  linkedEvaluationId: string;  // AGREGADO - Foreign key con evaluations
   date: string;
   metaComplied?: boolean;
   age?: number;
@@ -94,6 +96,7 @@ export interface Measurement {
 
 export interface SomatotypeRecord {
   id: string;
+  linkedEvaluationId: string; // AGREGADO - Foreign key con evaluations
   date: string;
   x: number;
   y: number;
@@ -139,30 +142,25 @@ export interface PortionsRecord {
 }
 
 export interface GeneratedMenu {
-  id: string;
-  createdAt: string;
-  basedOnMeasurementDate: string;
+  id: string;                          // Usar IDs cortos (ej: "menu-1", "menu-2")
+  linkedEvaluationId: string;          // Foreign key con evaluations
+  date: string;                        // RENOMBRADO (era basedOnMeasurementDate) - Sacar de linkedEvaluationId
   content: string;
   vet?: VetCalculation;
   macros?: MacrosRecord;
   portions?: PortionsRecord;
   name?: string;
   selectedTemplateId?: string;
-  selectedReferenceIds?: string[];
+  selectedReferenceIds?: string[];     // Usar IDs cortos (ej: ["ref-1", "ref-2"])
   aiRationale?: string;
   menuPreviewData?: any;
 }
 
+// SIMPLIFICADO - Eliminados: currentDiet, dailyCaloriesTarget, menus
 export interface DietaryRecord {
-  currentDiet: string;
   preferences: string;
-  dailyCaloriesTarget: number;
   notes: string;
   lastAiSuggestion?: string;
-  vet?: VetCalculation;
-  macros?: MacrosRecord;
-  portions?: PortionsRecord;
-  menus?: GeneratedMenu[];
 }
 
 export interface Appointment {
@@ -186,6 +184,7 @@ export interface LabResult {
   id: string;
   name: string;
   date: string;
+  linkedEvaluationId: string;
   url: string;
   type: 'image' | 'pdf' | 'other';
   description?: string;
@@ -196,6 +195,7 @@ export interface Photo {
   id: string;
   name: string;
   date: string;
+  linkedEvaluationId?: string;  // Opcional porque puede ser foto general
   url: string;
   type: 'image' | 'pdf' | 'other';
   description?: string;
@@ -205,7 +205,6 @@ export interface Patient {
   id: string;
   firstName: string;
   lastName: string;
-  avatar?: string;
   registeredAt: string;
   clinical: ClinicalRecord;
   dietary: DietaryRecord;
