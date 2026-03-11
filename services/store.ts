@@ -504,6 +504,20 @@ class Store {
     this.statuses = statuses;
     save(this.K.statuses, this.statuses);
   }
+
+  // ── Appointments de otras nutricionistas (para recepcionistas/admin) ─────
+
+  getAppointmentsForNutritionist(nutritionistId: string): Appointment[] {
+    // Cargar appointments de otra nutricionista específica
+    const keys = makeKeys(nutritionistId);
+    return load(keys.appointments, []);
+  }
+
+  getPatientsForNutritionist(nutritionistId: string): Patient[] {
+    // Cargar pacientes de otra nutricionista específica
+    const keys = makeKeys(nutritionistId);
+    return load(keys.patients, []);
+  }
 }
 
 export const store = new Store();

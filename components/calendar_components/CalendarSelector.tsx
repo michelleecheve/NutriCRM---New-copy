@@ -1,21 +1,26 @@
 import React, { useState } from 'react';
 import { CalendarDays, ChevronDown, Check } from 'lucide-react';
-import { authStore } from '../../services/authStore';
+import { AppUser } from '../../types';
 
-export const CalendarSelector: React.FC = () => {
+interface CalendarSelectorProps {
+  linkedNutritionists: AppUser[];
+  selectedNutritionistId: string;
+  onNutritionistChange: (nutritionistId: string) => void;
+}
+
+export const CalendarSelector: React.FC<CalendarSelectorProps> = ({
+  linkedNutritionists,
+  selectedNutritionistId,
+  onNutritionistChange,
+}) => {
   const [open, setOpen] = useState(false);
 
-  // Solo visible para recepcionista
-  if (!authStore.canAccessModule('calendar', 'calendar-selector')) return null;
+  if (linkedNutritionists.length === 0) return null;
 
-  const linkedNutris = authStore.getLinkedNutritionists();
-  if (linkedNutris.length === 0) return null;
-
-  const selectedId   = authStore.getSelectedNutritionistId();
-  const selected     = linkedNutris.find(n => n.id === selectedId) ?? linkedNutris[0];
+  const selected = linkedNutritionists.find(n => n.id === selectedNutritionistId) ?? linkedNutritionists[0];
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl px-5 py-4 mb-6 flex items-center gap-4 flex-wrap shadow-sm">
+    <div className="bg-white border border-slate-200 rounded-2xl px-5 py-4 flex items-center gap-4 flex-wrap shadow-sm">
       {/* Icon + info */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -49,13 +54,13 @@ export const CalendarSelector: React.FC = () => {
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 pt-3 pb-2">
                 Nutricionistas Vinculadas
               </p>
-              {linkedNutris.map(nutri => {
-                const isSelected = nutri.id === selectedId;
+              {linkedNutritionists.map(nutri => {
+                const isSelected = nutri.id === selectedNutritionistId;
                 return (
                   <button
                     key={nutri.id}
                     onClick={() => {
-                      authStore.setSelectedNutritionistId(nutri.id);
+                      onNutritionistChange(nutri.id);
                       setOpen(false);
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors
@@ -65,8 +70,8 @@ export const CalendarSelector: React.FC = () => {
                       {nutri.profile.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-slate-800 truncate">{nutri.profile.name}</p>
-                      <p className="text-xs text-slate-400 truncate">{nutri.profile.specialty}</p>
+                      <p className="font-bold text-slate-800 text-sm truncate">{nutri.profile.name}</p>
+                      <p className="text-xs text-slate-500">{nutri.profile.specialty}</p>
                     </div>
                     {isSelected && <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />}
                   </button>
