@@ -5,9 +5,9 @@ export const MenuCard: React.FC<{
   menu: any;
   onClick: () => void;
 }> = ({ menu, onClick }) => {
-  const createdAt = menu?.createdAt ? new Date(menu.createdAt) : null;
-  const createdAtLabel = createdAt && !isNaN(createdAt.getTime())
-    ? createdAt.toLocaleDateString()
+  const date = menu?.date ? new Date(menu.date) : null;
+  const dateLabel = date && !isNaN(date.getTime())
+    ? date.toLocaleDateString()
     : '';
 
   return (
@@ -19,9 +19,9 @@ export const MenuCard: React.FC<{
         <div className="bg-emerald-100 p-2 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
           <Calculator className="w-5 h-5" />
         </div>
-        {createdAtLabel && (
+        {dateLabel && (
           <span className="text-[10px] font-bold text-slate-400 uppercase">
-            {createdAtLabel}
+            {dateLabel}
           </span>
         )}
       </div>

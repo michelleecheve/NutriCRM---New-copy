@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { Download, Upload, Settings, Save, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Patient } from '../../types';
@@ -16,7 +15,105 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleExport = () => {
-    const dataStr = JSON.stringify(patient, null, 2);
+    // 1. Obtener las evaluaciones vinculadas (los "links")
+    const evaluations = store.getEvaluations(patient.id);
+
+    // 2. Preparar el objeto con el orden deseado
+    // El usuario solicitó un orden específico y quitar campos que no se usen
+    const exportData = {
+      id: patient.id,
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      registeredAt: patient.registeredAt,
+      clinical: {
+        status: patient.clinical.status,
+        cui: patient.clinical.cui,
+        birthdate: patient.clinical.birthdate,
+        age: patient.clinical.age,
+        sex: patient.clinical.sex,
+        email: patient.clinical.email,
+        phone: patient.clinical.phone,
+        occupation: patient.clinical.occupation,
+        study: patient.clinical.study,
+        consultmotive: patient.clinical.consultmotive,
+        clinicalbackground: patient.clinical.clinicalbackground,
+        diagnosis: patient.clinical.diagnosis,
+        familyHistory: patient.clinical.familyHistory,
+        medications: patient.clinical.medications,
+        supplements: patient.clinical.supplements,
+        allergies: patient.clinical.allergies,
+        regularPeriod: patient.clinical.regularPeriod,
+        periodDuration: patient.clinical.periodDuration,
+        firstperiodage: patient.clinical.firstperiodage,
+        menstrualOthers: patient.clinical.menstrualOthers,
+        sportsProfile: patient.sportsProfile
+      },
+      evaluations: evaluations.map(({ id, patientId, date, title }) => ({
+        id,
+        patientId,
+        date,
+        title
+      })),
+      dietary: {
+        preferences: patient.dietary.preferences
+      },
+      dietaryEvaluations: patient.dietaryEvaluations.map(({ id, linkedEvaluationId, date, mealsPerDay, excludedFoods, notes, recall, foodFrequency, foodFrequencyOthers }) => ({
+        id,
+        linkedEvaluationId,
+        date,
+        mealsPerDay,
+        excludedFoods,
+        notes,
+        recall,
+        foodFrequency,
+        foodFrequencyOthers
+      })),
+      measurements: patient.measurements.map(({ id, linkedEvaluationId, ...rest }) => ({
+        id,
+        linkedEvaluationId,
+        ...rest
+      })),
+      somatotypes: patient.somatotypes.map(({ id, linkedEvaluationId, date, x, y }) => ({
+        id,
+        linkedEvaluationId,
+        date,
+        x,
+        y
+      })),
+      menus: patient.menus.map(({ id, linkedEvaluationId, date, content, vet, macros, portions, name, selectedTemplateId, selectedReferenceIds, aiRationale, menuPreviewData }) => ({
+        id,
+        linkedEvaluationId,
+        date,
+        content,
+        vet,
+        macros,
+        portions,
+        name,
+        selectedTemplateId,
+        selectedReferenceIds,
+        aiRationale,
+        menuPreviewData
+      })),
+      labs: patient.labs.map(({ id, linkedEvaluationId, name, date, url, type, labInterpretation }) => ({
+        id,
+        linkedEvaluationId,
+        name,
+        date,
+        url,
+        type,
+        labInterpretation
+      })),
+      photos: patient.photos.map(({ id, linkedEvaluationId, name, date, url, type }) => ({
+        id,
+        linkedEvaluationId,
+        name,
+        date,
+        url,
+        type
+      }))
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
     
     const user = store.getUserProfile();
@@ -40,25 +137,26 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const importedPatient = JSON.parse(content) as Patient;
+        const importedData = JSON.parse(content);
 
         // Basic validation
-        if (!importedPatient.id || !importedPatient.firstName || !importedPatient.lastName) {
+        if (!importedData.id || !importedData.firstName || !importedData.lastName) {
           throw new Error('El archivo no tiene un formato de paciente válido.');
         }
 
-        // Ensure the ID matches or handle as update for current patient
-        // Usually, we want to update the CURRENT patient with the data from the file
-        // but keep the current patient's ID if they differ? 
-        // Or just overwrite everything. The user said "import this same format".
-        
-        const updatedPatient = {
-          ...importedPatient,
-          id: patient.id // Keep current ID to ensure we are updating the same record in store
+        // Mantener el ID del paciente actual para evitar duplicados o errores de consistencia
+        const dataToImport = {
+          ...importedData,
+          id: patient.id
         };
 
-        onUpdate(updatedPatient);
+        // Usar el nuevo método del store que maneja también las evaluaciones vinculadas
+        store.importPatientData(dataToImport);
+        
         setImportStatus('success');
+        
+        // Notificar al padre para actualizar el estado local
+        onUpdate(store.getPatient(patient.id)!);
         
         // Auto-reload after a short delay to show success
         setTimeout(() => {
@@ -99,7 +197,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
                 <h4 className="font-bold text-slate-800">Exportar Datos</h4>
               </div>
               <p className="text-sm text-slate-600 leading-relaxed">
-                Descarga una copia completa de toda la información de este paciente (clínica, menús, medidas, laboratorios, etc.) en formato JSON.
+                Descarga una copia completa y ordenada de toda la información de este paciente (clínica, evaluaciones, menús, laboratorios, etc.) en formato JSON.
               </p>
               <button
                 onClick={handleExport}

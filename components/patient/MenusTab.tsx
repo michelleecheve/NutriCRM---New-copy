@@ -10,13 +10,8 @@ export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => vo
 
   const menus = useMemo(() => {
     const rootMenus = patient.menus || [];
-    const dietaryMenus = patient.dietary?.menus || [];
-    const uniqueMenus = new Map<string, any>();
-    [...rootMenus, ...dietaryMenus].forEach(m => {
-      if (m && m.id) uniqueMenus.set(m.id, m);
-    });
-    return Array.from(uniqueMenus.values()).sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return [...rootMenus].sort((a, b) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
     );
   }, [patient]);
 

@@ -57,13 +57,17 @@ function buildBlankMenuPlanData(patient: Patient, vetData: VetCalculation): Menu
     return day;
   };
 
+  const lastMeas = patient.measurements && patient.measurements.length > 0 
+    ? [...patient.measurements].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+    : null;
+
   return {
     patient: {
       name: `${patient.firstName} ${patient.lastName}`,
       age: patient.clinical?.age || 0,
-      weight: parseFloat(patient.clinical?.initialWeight || '0') || 0,
-      height: parseFloat(patient.clinical?.initialHeight || '0') || 0,
-      fatPct: 0,
+      weight: lastMeas?.weight || 0,
+      height: lastMeas?.height || 0,
+      fatPct: lastMeas?.bodyFat || 0,
     },
     kcal: vetData.kcalToWork || 0,
     portions: {
@@ -161,14 +165,18 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     const plan = MenuReferenceParsertoMenuData(ref.data);
 
     // Override patient info with the actual patient
+    const lastMeas = patient.measurements && patient.measurements.length > 0 
+      ? [...patient.measurements].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+      : null;
+
     const withPatient: MenuPlanData = {
       ...plan,
       patient: {
         name: `${patient.firstName} ${patient.lastName}`,
         age: patient.clinical?.age || 0,
-        weight: parseFloat(patient.clinical?.initialWeight || '0') || 0,
-        height: parseFloat(patient.clinical?.initialHeight || '0') || 0,
-        fatPct: 0,
+        weight: lastMeas?.weight || 0,
+        height: lastMeas?.height || 0,
+        fatPct: lastMeas?.bodyFat || 0,
       },
       kcal: vetData.kcalToWork || plan.kcal,
     };

@@ -74,13 +74,14 @@ export const SomatocartaForm: React.FC<{
       // ✅ EDITAR — reemplaza solo el record con ese id
       updatedSomatotypes = (patient.somatotypes || []).map(s =>
         s.id === existingRecord.id
-          ? { ...existingRecord, date: linkedDate, x: xVal, y: yVal }
+          ? { ...existingRecord, linkedEvaluationId: evaluationId || '', date: linkedDate, x: xVal, y: yVal }
           : s
       );
     } else {
       // ✅ CREAR NUEVO — siempre agrega, nunca sobreescribe
       const newRecord: SomatotypeRecord = {
         id: Math.random().toString(36).substring(7),
+        linkedEvaluationId: evaluationId || '',
         date: linkedDate,
         x: xVal,
         y: yVal,
@@ -100,17 +101,7 @@ export const SomatocartaForm: React.FC<{
         onChangeEvaluationId={setEvaluationId}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-        <div>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Fecha</p>
-          <input
-            type="date"
-            value={linkedDate}
-            disabled
-            readOnly
-            className="mt-2 w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-600 outline-none cursor-not-allowed"
-          />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
         <GridInput
           label="Coordenada X"
           type="number"

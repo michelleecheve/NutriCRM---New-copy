@@ -156,7 +156,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
   };
 
   useEffect(() => {
-    const allMenus = [...(patient.menus || []), ...(patient.dietary?.menus || [])];
+    const allMenus = patient.menus || [];
     const menu = editingMenuId ? allMenus.find(m => m.id === editingMenuId) : null;
 
     if (menu) {
@@ -218,35 +218,30 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     // ✅ La fecha del menú es la fecha de la evaluación
     const normalizedDate = ev.date;
 
-    const rootMenus = patient.menus || [];
-    const dietaryMenus = patient.dietary?.menus || [];
-
-    const uniqueMenus = new Map<string, any>();
-    [...rootMenus, ...dietaryMenus].forEach(m => {
-      if (m && m.id) uniqueMenus.set(m.id, m);
-    });
-
-    let updatedMenus = Array.from(uniqueMenus.values());
+    const updatedMenus = [...(patient.menus || [])];
 
     if (editingMenuId) {
-      updatedMenus = updatedMenus.map(m => m.id === editingMenuId ? {
-        ...m,
-        date: normalizedDate, // ✅ Solo "date"
-        linkedEvaluationId: formEvaluationId,
-        vet: vetData,
-        macros: macros,
-        portions: portions,
-        name: menuName || `Menú ${vetData.kcalToWork} kcal`,
-        selectedTemplateId,
-        selectedReferenceIds,
-        content: aiDraftText,
-        aiRationale,
-        menuPreviewData
-      } : m);
+      const idx = updatedMenus.findIndex(m => m.id === editingMenuId);
+      if (idx !== -1) {
+        updatedMenus[idx] = {
+          ...updatedMenus[idx],
+          date: normalizedDate,
+          linkedEvaluationId: formEvaluationId,
+          vet: vetData,
+          macros: macros,
+          portions: portions,
+          name: menuName || `Menú ${vetData.kcalToWork} kcal`,
+          selectedTemplateId,
+          selectedReferenceIds,
+          content: aiDraftText,
+          aiRationale,
+          menuPreviewData
+        };
+      }
     } else {
       updatedMenus.push({
         id: crypto.randomUUID(),
-        date: normalizedDate, // ✅ Solo "date" (YYYY-MM-DD)
+        date: normalizedDate,
         linkedEvaluationId: formEvaluationId,
         content: aiDraftText,
         vet: vetData,
@@ -279,15 +274,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       return;
     }
 
-    const rootMenus = patient.menus || [];
-    const dietaryMenus = patient.dietary?.menus || [];
-
-    const uniqueMenus = new Map<string, any>();
-    [...rootMenus, ...dietaryMenus].forEach(m => {
-      if (m && m.id) uniqueMenus.set(m.id, m);
-    });
-
-    const updatedMenus = Array.from(uniqueMenus.values()).filter(m => m.id !== editingMenuId);
+    const updatedMenus = (patient.menus || []).filter(m => m.id !== editingMenuId);
 
     const updatedPatient = {
       ...patient,

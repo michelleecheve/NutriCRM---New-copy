@@ -219,6 +219,7 @@ export const NewMeasurementForm: React.FC<{
   // ✅ form data
   const buildDefault = (): Measurement => ({
     id: Math.random().toString(36).substring(7),
+    linkedEvaluationId: evaluationId || '',
     date: linkedDate,
     metaComplied: false,
     weight: 0,
@@ -246,6 +247,7 @@ export const NewMeasurementForm: React.FC<{
       const selEv = selId ? store.getEvaluationById(selId) : null;
       setFormData({
         id: Math.random().toString(36).substring(7),
+        linkedEvaluationId: selId || '',
         date: selEv?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]),
         metaComplied: false,
         weight: 0,
@@ -282,6 +284,7 @@ export const NewMeasurementForm: React.FC<{
     const normalized: Measurement = calculateAnthropometry({
       ...formData,
       date: ev.date,
+      linkedEvaluationId: evaluationId || '',
       // garantizar que siempre tenga id
       id: formData.id || Math.random().toString(36).substring(7),
     });

@@ -13,25 +13,34 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
   };
 
   const addSport = () => {
-    const current = patient.clinical.sportsProfile || [];
-    updateClinical('sportsProfile', [...current, { sport: '', daysPerWeek: '', schedule: '', hoursPerDay: '' }]);
+    const current = patient.sportsProfile || [];
+    const newEntry = { 
+      id: Math.random().toString(36).substring(7),
+      patientId: patient.id,
+      sport: '', 
+      daysPerWeek: '', 
+      schedule: '', 
+      hoursPerDay: '' 
+    };
+    onUpdate({ ...patient, sportsProfile: [...current, newEntry] });
   };
 
-  const removeSport = (index: number) => {
-    const current = patient.clinical.sportsProfile || [];
-    updateClinical('sportsProfile', current.filter((_, i: number) => i !== index));
+  const removeSport = (id: string) => {
+    const current = patient.sportsProfile || [];
+    onUpdate({ ...patient, sportsProfile: current.filter(s => s.id !== id) });
   };
 
-  const updateSport = (index: number, field: string, value: string) => {
-    const current = [...(patient.clinical.sportsProfile || [])];
-    current[index] = { ...current[index], [field]: value };
-    updateClinical('sportsProfile', current);
+  const updateSport = (id: string, field: string, value: string) => {
+    const current = (patient.sportsProfile || []).map(s => 
+      s.id === id ? { ...s, [field]: value } : s
+    );
+    onUpdate({ ...patient, sportsProfile: current });
   };
 
   useEffect(() => {
-    if (patient.clinical.dob) {
+    if (patient.clinical.birthdate) {
       const today = new Date();
-      const birth = new Date(patient.clinical.dob);
+      const birth = new Date(patient.clinical.birthdate);
       let age = today.getFullYear() - birth.getFullYear();
       const monthDiff = today.getMonth() - birth.getMonth();
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
@@ -39,7 +48,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
       }
       updateClinical('age', age);
     }
-  }, [patient.clinical.dob]);
+  }, [patient.clinical.birthdate]);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
@@ -82,7 +91,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
              <GridInput label="CUI/DPI" value={patient.clinical.cui} onChange={(e: any) => updateClinical('cui', e.target.value)} />
            </div>
            <div className="lg:col-span-2">
-             <GridInput label="Fecha de Nacimiento" type="date" value={patient.clinical.dob} onChange={(e: any) => updateClinical('dob', e.target.value)} />
+             <GridInput label="Fecha de Nacimiento" type="date" value={patient.clinical.birthdate} onChange={(e: any) => updateClinical('birthdate', e.target.value)} />
            </div>
            <div className="lg:col-span-1">
              <GridInput label="Edad" type="number" value={patient.clinical.age} onChange={() => {}} readOnly={true} />
@@ -121,15 +130,15 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
            <div className="md:col-span-2 lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
              <ModernTextArea 
                label="Motivos de Consulta" 
-               value={patient.clinical.goals} 
-               onChange={(e: any) => updateClinical('goals', e.target.value)} 
+               value={patient.clinical.consultmotive} 
+               onChange={(e: any) => updateClinical('consultmotive', e.target.value)} 
                rows={4}
                placeholder="Ej. Reducir porcentaje de grasa y aumentar masa muscular..."
              />
              <ModernTextArea 
                label="Antecedentes" 
-               value={patient.clinical.antecedentes} 
-               onChange={(e: any) => updateClinical('antecedentes', e.target.value)} 
+               value={patient.clinical.clinicalbackground} 
+               onChange={(e: any) => updateClinical('clinicalbackground', e.target.value)} 
                rows={4}
                placeholder="Historia clínica detallada..."
              />
@@ -172,13 +181,13 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
               </tr>
             </thead>
             <tbody>
-              {(patient.clinical.sportsProfile || []).map((entry, idx) => (
-                <tr key={idx} className="border-b border-slate-50 group">
+              {(patient.sportsProfile || []).map((entry) => (
+                <tr key={entry.id} className="border-b border-slate-50 group">
                   <td className="py-3 px-2 align-top">
                     <input 
                       type="text"
                       value={entry.sport}
-                      onChange={(e) => updateSport(idx, 'sport', e.target.value)}
+                      onChange={(e) => updateSport(entry.id, 'sport', e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                       placeholder="Ej. Natación"
                     />
@@ -187,7 +196,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
                     <input 
                       type="text"
                       value={entry.daysPerWeek}
-                      onChange={(e) => updateSport(idx, 'daysPerWeek', e.target.value)}
+                      onChange={(e) => updateSport(entry.id, 'daysPerWeek', e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                       placeholder="Ej. 3"
                     />
@@ -195,7 +204,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
                   <td className="py-3 px-2 align-top">
                     <textarea 
                       value={entry.schedule}
-                      onChange={(e) => updateSport(idx, 'schedule', e.target.value)}
+                      onChange={(e) => updateSport(entry.id, 'schedule', e.target.value)}
                       rows={3}
                       className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none"
                       placeholder="Ej. Lunes, Miércoles y Viernes de 18:00 a 20:00..."
@@ -205,14 +214,14 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
                     <input 
                       type="text"
                       value={entry.hoursPerDay}
-                      onChange={(e) => updateSport(idx, 'hoursPerDay', e.target.value)}
+                      onChange={(e) => updateSport(entry.id, 'hoursPerDay', e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                       placeholder="Ej. 2"
                     />
                   </td>
                   <td className="py-3 px-2 align-top">
                     <button 
-                      onClick={() => removeSport(idx)}
+                      onClick={() => removeSport(entry.id)}
                       className="text-slate-300 hover:text-rose-500 transition-colors p-2 mt-1"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -222,7 +231,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
               ))}
             </tbody>
           </table>
-          {(patient.clinical.sportsProfile || []).length === 0 && (
+          {(patient.sportsProfile || []).length === 0 && (
             <div className="text-center py-8 text-slate-400 text-sm italic">
               No hay deportes o actividades físicas registradas. Haga clic en el botón superior para agregar uno.
             </div>
@@ -247,7 +256,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                <GridInput label="Periodo Menstrual regular" value={patient.clinical.regularPeriod} onChange={(e: any) => updateClinical('regularPeriod', e.target.value)} />
                <GridInput label="Duración" value={patient.clinical.periodDuration} onChange={(e: any) => updateClinical('periodDuration', e.target.value)} />
-               <GridInput label="Fecha y/o edad de primera menstruación" value={patient.clinical.menarcheAge} onChange={(e: any) => updateClinical('menarcheAge', e.target.value)} />
+               <GridInput label="Fecha y/o edad de primera menstruación" value={patient.clinical.firstperiodage} onChange={(e: any) => updateClinical('firstperiodage', e.target.value)} />
              </div>
              <div className="mt-6">
                <ModernTextArea label="Otros" value={patient.clinical.menstrualOthers} onChange={(e: any) => updateClinical('menstrualOthers', e.target.value)} rows={2} placeholder="Otros detalles del periodo menstrual..." />

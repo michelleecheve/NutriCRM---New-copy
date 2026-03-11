@@ -23,24 +23,16 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient }) => 
     const entries: HistoryEntry[] = [];
     
     patients.forEach(patient => {
-      // Check both root menus and dietary.menus due to data model transition
       const rootMenus = patient.menus || [];
-      const dietaryMenus = patient.dietary?.menus || [];
       
-      // Use a Map to avoid duplicates if a menu exists in both places
-      const uniqueMenus = new Map<string, GeneratedMenu>();
-      [...rootMenus, ...dietaryMenus].forEach(m => {
-        if (m && m.id) uniqueMenus.set(m.id, m);
-      });
-
-      uniqueMenus.forEach(menu => {
+      rootMenus.forEach(menu => {
         entries.push({ patient, menu });
       });
     });
 
     // Sort by date descending
     return entries.sort((a, b) => 
-      new Date(b.menu.createdAt).getTime() - new Date(a.menu.createdAt).getTime()
+      new Date(b.menu.date).getTime() - new Date(a.menu.date).getTime()
     );
   })();
 
@@ -117,7 +109,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient }) => 
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-slate-600">
                       <Calendar className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm">{new Date(entry.menu.createdAt).toLocaleDateString()}</span>
+                      <span className="text-sm">{new Date(entry.menu.date).toLocaleDateString()}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -169,12 +161,12 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient }) => 
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>
                 <h3 className="text-xl font-bold text-slate-900">Vista Previa del Menú</h3>
-                <p className="text-sm text-slate-500">Paciente: {selectedEntry.patient.firstName} {selectedEntry.patient.lastName} · {new Date(selectedEntry.menu.createdAt).toLocaleDateString()}</p>
+                <p className="text-sm text-slate-500">Paciente: {selectedEntry.patient.firstName} {selectedEntry.patient.lastName} · {new Date(selectedEntry.menu.date).toLocaleDateString()}</p>
               </div>
               <div className="flex items-center gap-3">
                 <MenuExportPDF
                   elementId={`menu-history-${selectedEntry.menu.id}`}
-                  filename={`Menu_${selectedEntry.patient.firstName}_${selectedEntry.patient.lastName}_${selectedEntry.menu.createdAt}`}
+                  filename={`Menu_${selectedEntry.patient.firstName}_${selectedEntry.patient.lastName}_${selectedEntry.menu.date}`}
                   className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm shadow-emerald-600/20"
                 />
                 <button

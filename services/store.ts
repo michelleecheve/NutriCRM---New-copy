@@ -1,4 +1,4 @@
-import { Patient, Invoice, UserProfile, Appointment, PatientEvaluation } from '../types';
+import { Patient, Invoice, UserProfile, Appointment, PatientEvaluation, ClinicalRecord } from '../types';
 
 // ─── Read current userId directly from localStorage (no circular import) ──────
 const SESSION_KEY = 'nutricrm_session_v1';
@@ -118,67 +118,58 @@ const SEED_PATIENTS: Patient[] = [
     registeredAt: '2025-01-07',
     clinical: {
       status: 'Menú Pendiente',
-      dob: '1997-05-12',
-      age: 27,
+      cui: '3003647250101',
+      birthdate: '1997-05-12',
+      age: 28,
       sex: 'Femenino',
-      occupation: 'Arquitecta',
-      phone: '555-0123',
       email: 'michelleecheve@gmail.com',
-      initialWeight: '70',
-      initialHeight: '170',
-      sport: 'Crossfit',
-      category: 'Amateur',
-      sportsAge: '3 años',
-      otherSports: 'Running ocasional',
-      trainingFrequency: 'Alta',
-      daysPerWeek: '5',
-      hoursPerDay: '1.5',
-      goals: 'Aumentar masa muscular',
-      consultationReason: 'Mejorar rendimiento y composición corporal',
+      phone: '555-0123',
+      occupation: 'Arquitecta',
+      study: 'Análisis de Datos',
+      consultmotive: 'Aumentar masa muscular',
+      clinicalbackground: 'prueba de antecedentes',
       diagnosis: 'Ninguno diagnosticado',
       familyHistory: 'Madre hipertensa',
       medications: 'Multivitamínico',
-      allergies: 'Ninguna',
-      menarcheAge: '13',
+      supplements: 'prueba de suplementeos',
+      allergies: 'prueba de alergias',
       regularPeriod: 'Si',
       periodDuration: '28 días',
+      firstperiodage: '13',
+      menstrualOthers: 'prueba de campo otros en periodo mensturla'
     },
     dietary: {
-      currentDiet: 'Alta en proteínas',
       preferences: 'Le gusta el pollo, no le gusta el pescado',
-      dailyCaloriesTarget: 2200,
-      notes: 'Dificultad con los desayunos.',
     },
     dietaryEvaluations: [
       {
         id: 'eval-1',
+        linkedEvaluationId: 'meas-4', // Vinculado a la última evaluación
         date: '2026-02-18',
         mealsPerDay: 5,
         excludedFoods: 'aguacate',
         recall: [
-          { mealTime: 'Desayuno',  time: '07:00', place: 'Casa',    description: 'Huevos revueltos, 1 pan integral' },
-          { mealTime: 'Refacción', time: '10:00', place: 'Oficina', description: 'Manzana verde' },
-          { mealTime: 'Almuerzo',  time: '13:00', place: 'Oficina', description: 'Pollo a la plancha, arroz, ensalada' },
-          { mealTime: 'Refacción', time: '16:00', place: 'Oficina', description: 'Yogurt griego' },
-          { mealTime: 'Cena',      time: '20:00', place: 'Casa',    description: 'Licuado de proteína' },
+          { id: 'r1', dietaryEvaluationId: 'eval-1', mealTime: 'Desayuno',  time: '07:00', place: 'Casa',    description: 'Huevos revueltos, 1 pan integral' },
+          { id: 'r2', dietaryEvaluationId: 'eval-1', mealTime: 'Refacción', time: '10:00', place: 'Oficina', description: 'Manzana verde' },
+          { id: 'r3', dietaryEvaluationId: 'eval-1', mealTime: 'Almuerzo',  time: '13:00', place: 'Oficina', description: 'Pollo a la plancha, arroz, ensalada' },
+          { id: 'r4', dietaryEvaluationId: 'eval-1', mealTime: 'Refacción', time: '16:00', place: 'Oficina', description: 'Yogurt griego' },
+          { id: 'r5', dietaryEvaluationId: 'eval-1', mealTime: 'Cena',      time: '20:00', place: 'Casa',    description: 'Licuado de proteína' },
         ],
-        foodFrequency: {
-          'Carne, Pollo, Cerdo': 'Diario',
-          'Vegetales': 'Diario',
-          'Frutas': 'Semanal',
-        },
+        foodFrequency: [
+          { id: 'f1', dietaryEvaluationId: 'eval-1', category: 'Carne, Pollo, Cerdo', frequency: 'Diario' },
+          { id: 'f2', dietaryEvaluationId: 'eval-1', category: 'Vegetales', frequency: 'Diario' },
+          { id: 'f3', dietaryEvaluationId: 'eval-1', category: 'Frutas', frequency: 'Semanal' },
+        ],
       },
     ],
     measurements: [
-      { id: 'meas-1', date: '2025-07-01', metaComplied: false, age: 25, weight: 70, height: 170, imc: 24.2, bodyFat: 18, fatKg: 12.6, aks: 1.2, muscleKg: 32, biceps: 5, triceps: 10, subscapular: 12, supraspinal: 15, abdomen: 20, thigh: 15, calf: 10, iliacCrest: 18, skinfoldSum: 102, wrist: 6, humerus: 7, femur: 10, armRelaxed: 30, armContracted: 32, calfGirth: 35, waist: 80, umbilical: 85, hip: 95, abdominalLow: 88, thighRight: 55, thighLeft: 55 },
-      { id: 'meas-2', date: '2025-09-08', metaComplied: true,  age: 25, weight: 68, height: 170, imc: 23.5, bodyFat: 17, fatKg: 11.5, aks: 1.3, muscleKg: 33, biceps: 4, triceps: 9,  subscapular: 11, supraspinal: 14, abdomen: 18, thigh: 14, calf: 9,  iliacCrest: 17, skinfoldSum: 96,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 29, armContracted: 31, calfGirth: 34, waist: 78, umbilical: 83, hip: 94, abdominalLow: 86, thighRight: 54, thighLeft: 54 },
-      { id: 'meas-3', date: '2026-01-01', metaComplied: true,  age: 26, weight: 67, height: 170, imc: 23.1, bodyFat: 16, fatKg: 10.7, aks: 1.4, muscleKg: 34, biceps: 4, triceps: 8,  subscapular: 10, supraspinal: 13, abdomen: 16, thigh: 13, calf: 8,  iliacCrest: 16, skinfoldSum: 88,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 29, armContracted: 31, calfGirth: 34, waist: 76, umbilical: 81, hip: 93, abdominalLow: 84, thighRight: 53, thighLeft: 53 },
-      { id: 'meas-4', date: '2026-02-16', metaComplied: false, age: 26, weight: 66, height: 170, imc: 22.8, bodyFat: 15, fatKg: 9.9,  aks: 1.5, muscleKg: 35, biceps: 3, triceps: 7,  subscapular: 9,  supraspinal: 12, abdomen: 14, thigh: 12, calf: 7,  iliacCrest: 15, skinfoldSum: 79,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 28, armContracted: 30, calfGirth: 33, waist: 74, umbilical: 79, hip: 92, abdominalLow: 82, thighRight: 52, thighLeft: 52 },
+      { id: 'meas-1', linkedEvaluationId: 'meas-1', date: '2025-07-01', metaComplied: false, age: 25, weight: 70, height: 170, imc: 24.2, bodyFat: 18, fatKg: 12.6, aks: 1.2, muscleKg: 32, biceps: 5, triceps: 10, subscapular: 12, supraspinal: 15, abdomen: 20, thigh: 15, calf: 10, iliacCrest: 18, skinfoldSum: 102, wrist: 6, humerus: 7, femur: 10, armRelaxed: 30, armContracted: 32, calfGirth: 35, waist: 80, umbilical: 85, hip: 95, abdominalLow: 88, thighRight: 55, thighLeft: 55 },
+      { id: 'meas-2', linkedEvaluationId: 'meas-2', date: '2025-09-08', metaComplied: true,  age: 25, weight: 68, height: 170, imc: 23.5, bodyFat: 17, fatKg: 11.5, aks: 1.3, muscleKg: 33, biceps: 4, triceps: 9,  subscapular: 11, supraspinal: 14, abdomen: 18, thigh: 14, calf: 9,  iliacCrest: 17, skinfoldSum: 96,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 29, armContracted: 31, calfGirth: 34, waist: 78, umbilical: 83, hip: 94, abdominalLow: 86, thighRight: 54, thighLeft: 54 },
+      { id: 'meas-3', linkedEvaluationId: 'meas-3', date: '2026-01-01', metaComplied: true,  age: 26, weight: 67, height: 170, imc: 23.1, bodyFat: 16, fatKg: 10.7, aks: 1.4, muscleKg: 34, biceps: 4, triceps: 8,  subscapular: 10, supraspinal: 13, abdomen: 16, thigh: 13, calf: 8,  iliacCrest: 16, skinfoldSum: 88,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 29, armContracted: 31, calfGirth: 34, waist: 76, umbilical: 81, hip: 93, abdominalLow: 84, thighRight: 53, thighLeft: 53 },
+      { id: 'meas-4', linkedEvaluationId: 'meas-4', date: '2026-02-16', metaComplied: false, age: 26, weight: 66, height: 170, imc: 22.8, bodyFat: 15, fatKg: 9.9,  aks: 1.5, muscleKg: 35, biceps: 3, triceps: 7,  subscapular: 9,  supraspinal: 12, abdomen: 14, thigh: 12, calf: 7,  iliacCrest: 15, skinfoldSum: 79,  wrist: 6, humerus: 7, femur: 10, armRelaxed: 28, armContracted: 30, calfGirth: 33, waist: 74, umbilical: 79, hip: 92, abdominalLow: 82, thighRight: 52, thighLeft: 52 },
     ],
-    somatotypes: [
-      { id: '1', date: '2025-07-01', x: 2, y: 4 },
-      { id: '2', date: '2025-09-08', x: 1, y: 5 },
-    ],
+    somatotypes: [],
+    sportsProfile: [],
     menus: [],
     labs: [],
     photos: [],
@@ -190,42 +181,35 @@ const SEED_PATIENTS: Patient[] = [
     registeredAt: '2024-01-10',
     clinical: {
       status: 'Cita Agendada',
-      dob: '1985-08-20',
+      cui: '',
+      birthdate: '1985-08-20',
       age: 38,
       sex: 'Masculino',
       occupation: 'Ingeniero',
+      study: '',
       phone: '555-9876',
       email: 'juan.perez@example.com',
-      initialWeight: '90',
-      initialHeight: '180',
-      sport: 'Running',
-      category: 'Recreativo',
-      sportsAge: '1 año',
-      otherSports: '-',
-      trainingFrequency: 'Media',
-      daysPerWeek: '3',
-      hoursPerDay: '1',
-      goals: 'Bajar de peso',
-      consultationReason: 'Bajar porcentaje de grasa',
+      consultmotive: 'Bajar de peso',
+      clinicalbackground: 'Bajar porcentaje de grasa',
       diagnosis: 'Sobrepeso',
       familyHistory: 'Diabetes tipo 2 paterna',
       medications: 'Ninguno',
+      supplements: '',
       allergies: 'Penicilina',
-      menarcheAge: '',
+      firstperiodage: '',
       regularPeriod: '',
       periodDuration: '',
+      menstrualOthers: '',
     },
     dietary: {
-      currentDiet: 'Estándar',
       preferences: 'Vegetariano flexible',
-      dailyCaloriesTarget: 1800,
-      notes: 'Beber más agua.',
     },
     dietaryEvaluations: [],
     measurements: [
-      { id: 'meas-5', date: '2024-01-10', metaComplied: false, age: 38, weight: 90, height: 180, imc: 27.8, bodyFat: 30, fatKg: 27 },
+      { id: 'meas-5', linkedEvaluationId: 'meas-5', date: '2024-01-10', metaComplied: false, age: 38, weight: 90, height: 180, imc: 27.8, bodyFat: 30, fatKg: 27 },
     ],
     somatotypes: [],
+    sportsProfile: [],
     menus: [],
     labs: [],
     photos: [],
@@ -302,12 +286,79 @@ class Store {
       return e;
     });
 
-    // patients: limpiar menus históricos seed
+    // patients: limpiar campos obsoletos y migrar a nueva estructura clinical
     this.patients = this.patients.map(p => {
+      // Migración de campos antiguos a nuevos nombres
+      const clinical = p.clinical as any;
+      const newClinical: ClinicalRecord = {
+        status: clinical.status || '-',
+        cui: clinical.cui || '',
+        birthdate: clinical.birthdate || clinical.dob || '',
+        age: clinical.age || 0,
+        sex: clinical.sex || '',
+        email: clinical.email || '',
+        phone: clinical.phone || '',
+        occupation: clinical.occupation || '',
+        study: clinical.study || '',
+        consultmotive: clinical.consultmotive || clinical.goals || '',
+        clinicalbackground: clinical.clinicalbackground || clinical.antecedentes || '',
+        diagnosis: clinical.diagnosis || '',
+        familyHistory: clinical.familyHistory || '',
+        medications: clinical.medications || '',
+        supplements: clinical.supplements || '',
+        allergies: clinical.allergies || '',
+        regularPeriod: clinical.regularPeriod || '',
+        periodDuration: clinical.periodDuration || '',
+        firstperiodage: clinical.firstperiodage || clinical.menarcheAge || '',
+        menstrualOthers: clinical.menstrualOthers || '',
+      };
+
+      // Vincular registros huérfanos a evaluaciones por fecha
+      const patientEvals = this.evaluations.filter(e => e.patientId === p.id);
+      
+      const linkByDate = (record: any) => {
+        if (record.linkedEvaluationId) return record;
+        const match = patientEvals.find(e => e.date === record.date);
+        return { ...record, linkedEvaluationId: match?.id || '' };
+      };
+
+      const updatedPatient = { 
+        ...p, 
+        clinical: newClinical,
+        measurements: (p.measurements || []).map(linkByDate),
+        dietaryEvaluations: (p.dietaryEvaluations || []).map(linkByDate),
+        somatotypes: (p.somatotypes || []).map(linkByDate),
+        menus: (p.menus || []).map(linkByDate),
+        labs: (p.labs || []).map(linkByDate),
+        photos: (p.photos || []).map(linkByDate),
+      };
+
       if (p.firstName === 'Michelle' && p.lastName === 'Echeverria') {
-        return { ...p, menus: p.menus.filter(m => !m.id.startsWith('menu-hist-')) };
+        updatedPatient.menus = p.menus.filter(m => !m.id.startsWith('menu-hist-'));
       }
-      return p;
+
+      // Migración de foodFrequency y recall
+      updatedPatient.dietaryEvaluations = (updatedPatient.dietaryEvaluations || []).map(de => {
+        if (de.foodFrequency && !Array.isArray(de.foodFrequency)) {
+          const oldFreq = de.foodFrequency as any;
+          de.foodFrequency = Object.entries(oldFreq).map(([category, frequency]) => ({
+            id: Math.random().toString(36).substring(7),
+            dietaryEvaluationId: de.id,
+            category,
+            frequency: frequency as string
+          }));
+        }
+        if (de.recall) {
+          de.recall = de.recall.map((m, idx) => ({
+            id: m.id || `recall-${de.id}-${idx}`,
+            dietaryEvaluationId: de.id,
+            ...m
+          }));
+        }
+        return de;
+      });
+
+      return updatedPatient;
     });
 
     // measurements sin id
@@ -327,11 +378,54 @@ class Store {
   }
 
   // ── Patients ───────────────────────────────────────────────────────────────
-
+  
   getPatients(): Patient[] { return this.patients; }
 
   getPatient(id: string): Patient | undefined {
     return this.patients.find(p => p.id === id);
+  }
+
+  /**
+   * Importa un objeto de paciente completo, incluyendo sus evaluaciones vinculadas si están presentes.
+   */
+  importPatientData(data: Patient & { evaluations?: PatientEvaluation[] }): void {
+    const { evaluations, ...patient } = data;
+    
+    // Asegurar que sportsProfile existe para evitar errores en la UI
+    // Si sportsProfile viene dentro de clinical (como en el export solicitado)
+    if ((patient.clinical as any).sportsProfile && (!patient.sportsProfile || patient.sportsProfile.length === 0)) {
+      patient.sportsProfile = (patient.clinical as any).sportsProfile;
+      // No borramos de clinical por si acaso, pero el store prefiere patient.sportsProfile
+    }
+    
+    if (!patient.sportsProfile) {
+      patient.sportsProfile = [];
+    }
+
+    // Migración de menús: basedOnMeasurementDate -> date
+    if (patient.menus) {
+      patient.menus = patient.menus.map(m => {
+        if ((m as any).basedOnMeasurementDate && !m.date) {
+          return { ...m, date: (m as any).basedOnMeasurementDate };
+        }
+        return m;
+      });
+    }
+
+    // 1. Actualizar el paciente en la lista
+    this.updatePatient(patient);
+
+    // 2. Si hay evaluaciones, importarlas (reemplazando las existentes para este paciente)
+    if (evaluations && Array.isArray(evaluations)) {
+      // Filtrar evaluaciones de otros pacientes
+      const otherEvaluations = this.evaluations.filter(e => e.patientId !== patient.id);
+      
+      // Asegurar que todas las evaluaciones importadas tengan el patientId correcto
+      const newEvaluations = evaluations.map(e => ({ ...e, patientId: patient.id }));
+      
+      this.evaluations = [...otherEvaluations, ...newEvaluations];
+      save(this.K.evaluations, this.evaluations);
+    }
   }
 
   addPatient(basicInfo: { firstName: string; lastName: string; email: string; phone: string; status?: string; dob?: string }): Patient {
@@ -350,20 +444,31 @@ class Store {
       lastName:  basicInfo.lastName,
       clinical: {
         status: (basicInfo.status as any) || '-',
-        dob: basicInfo.dob || '',
+        cui: '',
+        birthdate: basicInfo.dob || '',
         age,
-        sex: '', occupation: '', phone: basicInfo.phone, email: basicInfo.email,
-        initialWeight: '', initialHeight: '',
-        sport: '', category: '', sportsAge: '', otherSports: '',
-        trainingFrequency: '', daysPerWeek: '', hoursPerDay: '', goals: '',
-        consultationReason: '', diagnosis: '', familyHistory: '',
-        medications: '', allergies: '',
-        menarcheAge: '', regularPeriod: '', periodDuration: '',
+        sex: '', 
+        email: basicInfo.email,
+        phone: basicInfo.phone, 
+        occupation: '', 
+        study: '',
+        consultmotive: '',
+        clinicalbackground: '',
+        diagnosis: '', 
+        familyHistory: '',
+        medications: '', 
+        supplements: '',
+        allergies: '',
+        regularPeriod: '', 
+        periodDuration: '',
+        firstperiodage: '',
+        menstrualOthers: '',
       },
-      dietary: { currentDiet: '', preferences: '', dailyCaloriesTarget: 2000, notes: '' },
+      dietary: { preferences: '' },
       dietaryEvaluations: [],
       measurements: [],
       somatotypes: [],
+      sportsProfile: [],
       menus: [],
       labs: [],
       photos: [],
@@ -438,7 +543,6 @@ class Store {
       patientId,
       date,
       title: `Evaluación ${formatSpanishLongDate(date)}`,
-      createdAt: new Date().toISOString(),
     };
     this.evaluations = [ev, ...this.evaluations];
     save(this.K.evaluations, this.evaluations);
@@ -447,7 +551,7 @@ class Store {
     return ev;
   }
 
-  updateEvaluation(evaluationId: string, patch: Partial<Omit<PatientEvaluation, 'id' | 'patientId' | 'createdAt'>>): PatientEvaluation | null {
+  updateEvaluation(evaluationId: string, patch: Partial<Omit<PatientEvaluation, 'id' | 'patientId'>>): PatientEvaluation | null {
     const current = this.getEvaluationById(evaluationId);
     if (!current) return null;
     const updated: PatientEvaluation = { ...current, ...patch };

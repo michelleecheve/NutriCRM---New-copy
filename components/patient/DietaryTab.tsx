@@ -54,17 +54,11 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
       {/* Perfil dietético */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <SectionHeader icon={Utensils} title="Perfil Dietético Actual" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <ModernTextArea
             label="Preferencias y Aversiones"
             value={patient.dietary.preferences}
             onChange={(e: any) => updateDietary('preferences', e.target.value)}
-            rows={4}
-          />
-          <ModernTextArea
-            label="Notas Adicionales"
-            value={patient.dietary.notes}
-            onChange={(e: any) => updateDietary('notes', e.target.value)}
             rows={4}
           />
         </div>

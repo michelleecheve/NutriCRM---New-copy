@@ -163,11 +163,12 @@ function buildPatientContext(
   }
 
   if (fields.deporteEntrenamiento) {
-    lines.push(`- Deporte: ${patient.clinical.sport} | Frecuencia: ${patient.clinical.trainingFrequency} (${patient.clinical.daysPerWeek} días/semana, ${patient.clinical.hoursPerDay} h/día)`);
+    const sports = (patient.sportsProfile || []).map(s => `${s.sport} (${s.daysPerWeek} d/sem, ${s.hoursPerDay} h/d)`).join(' | ') || 'No especificado';
+    lines.push(`- Deporte: ${sports}`);
   }
 
   if (fields.meta) {
-    lines.push(`- Meta: ${patient.clinical.goals}`);
+    lines.push(`- Meta: ${patient.clinical.consultmotive}`);
   }
 
   if (fields.alergias) {
@@ -190,7 +191,6 @@ function buildPatientContext(
     // Sin fecha — perfil dietético general
   if (fields.evaluacionDietetica) {
     if (patient.dietary.preferences) lines.push(`- Preferencias y Aversiones: ${patient.dietary.preferences}`);
-    if (patient.dietary.notes)       lines.push(`- Notas Dietéticas Generales: ${patient.dietary.notes}`);
   }
 
   // Con fecha — evaluación vinculada
@@ -211,9 +211,9 @@ function buildPatientContext(
         });
       }
 
-      const freqEntries = Object.entries(dietEval.foodFrequency || {}).filter(([, v]) => v && v !== 'Nunca');
+      const freqEntries = (dietEval.foodFrequency || []).filter(f => f.frequency && f.frequency !== 'Nunca');
       if (freqEntries.length > 0) {
-        lines.push(`- Frecuencia de Consumo: ${freqEntries.map(([k, v]) => `${k}: ${v}`).join(' | ')}`);
+        lines.push(`- Frecuencia de Consumo: ${freqEntries.map(f => `${f.category}: ${f.frequency}`).join(' | ')}`);
       }
     }
   }
@@ -399,16 +399,15 @@ ${promptSuffix}
 
 export const generateDietaryAdvice = async (patient: Patient): Promise<string> => {
   if (!apiKey) return "API Key not found.";
+  const sports = (patient.sportsProfile || []).map(s => `${s.sport} (${s.daysPerWeek} d/sem)`).join(' | ') || 'No especificado';
   const prompt = `
     Actúa como un asistente nutricionista experto. 
     Analiza el perfil del paciente y proporciona recomendaciones dietéticas con un plan de comidas de muestra para 1 día.
     Nombre: ${patient.firstName} ${patient.lastName}
-    Objetivos: ${patient.clinical.goals}
-    Deporte: ${patient.clinical.sport} (${patient.clinical.trainingFrequency})
+    Objetivos: ${patient.clinical.consultmotive}
+    Deporte: ${sports}
     Alergias: ${patient.clinical.allergies}
-    Dieta actual: ${patient.dietary.currentDiet}
     Preferencias: ${patient.dietary.preferences}
-    Calorías objetivo: ${patient.dietary.dailyCaloriesTarget}
     Diagnóstico: ${patient.clinical.diagnosis} | Historial familiar: ${patient.clinical.familyHistory} | Medicamentos: ${patient.clinical.medications}
     Responde en Markdown limpio, tono alentador y profesional en Español.
   `;
@@ -425,11 +424,12 @@ export const generateDietaryAdvice = async (patient: Patient): Promise<string> =
 
 export const generateMenuFromMeasurements = async (patient: Patient, measurement: Measurement): Promise<string> => {
   if (!apiKey) return "API Key no encontrada.";
+  const sports = (patient.sportsProfile || []).map(s => `${s.sport} (${s.daysPerWeek} d/sem)`).join(' | ') || 'No especificado';
   const stats = `Peso: ${measurement.weight}kg | Talla: ${measurement.height}cm | IMC: ${measurement.imc?.toFixed(1)} | % Grasa: ${measurement.bodyFat?.toFixed(1)}% | Músculo: ${measurement.muscleKg?.toFixed(1)}kg`;
   const prompt = `
     Nutricionista deportivo experto. Crea un menú modelo para 1 día adaptado a las medidas del paciente.
     Paciente: ${patient.firstName} ${patient.lastName} | ${patient.clinical.age} años | ${patient.clinical.sex}
-    Deporte: ${patient.clinical.sport} (${patient.clinical.trainingFrequency}) | Meta: ${patient.clinical.goals}
+    Deporte: ${sports} | Meta: ${patient.clinical.consultmotive}
     Alergias: ${patient.clinical.allergies} | Alimentos a evitar: ${patient.dietaryEvaluations?.[0]?.excludedFoods || 'Ninguno'}
     Medidas: ${stats}
     Reglas: español, tono motivador, medidas caseras (no gramos), bullets para alimentos, negritas para tiempos.

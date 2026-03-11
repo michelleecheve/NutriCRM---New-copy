@@ -1,8 +1,17 @@
 export interface MealEntry {
+  id?: string;
+  dietaryEvaluationId?: string;
   mealTime: string;
   time: string;
   place: string;
   description: string;
+}
+
+export interface FoodFrequencyEntry {
+  id: string;
+  dietaryEvaluationId: string;
+  category: string;
+  frequency: string;
 }
 
 export interface DietaryEvaluation {
@@ -13,36 +22,31 @@ export interface DietaryEvaluation {
   excludedFoods: string;
   notes?: string;
   recall: MealEntry[];
-  foodFrequency: Record<string, string>;
+  foodFrequency: FoodFrequencyEntry[];
   foodFrequencyOthers?: string;
 }
 
 export interface ClinicalRecord {
   status: string;
-  dob: string;
+  cui: string;
+  birthdate: string;
   age: number;
   sex: string;
-  occupation: string;
-  phone: string;
   email: string;
-  initialWeight: string;
-  initialHeight: string;
-  sport: string;
-  category: string;
-  sportsAge: string;
-  otherSports: string;
-  trainingFrequency: string;
-  daysPerWeek: string;
-  hoursPerDay: string;
-  goals: string;
-  consultationReason: string;
+  phone: string;
+  occupation: string;
+  study: string;
+  consultmotive: string;
+  clinicalbackground: string;
   diagnosis: string;
   familyHistory: string;
   medications: string;
+  supplements: string;
   allergies: string;
-  menarcheAge: string;
   regularPeriod: string;
   periodDuration: string;
+  firstperiodage: string;
+  menstrualOthers: string;
 }
 
 export interface Measurement {
@@ -156,10 +160,9 @@ export interface GeneratedMenu {
   menuPreviewData?: any;
 }
 
-// SIMPLIFICADO - Eliminados: currentDiet, dailyCaloriesTarget, menus
+// SIMPLIFICADO - Eliminados: currentDiet, dailyCaloriesTarget, menus, notes
 export interface DietaryRecord {
   preferences: string;
-  notes: string;
   lastAiSuggestion?: string;
 }
 
@@ -187,7 +190,6 @@ export interface LabResult {
   linkedEvaluationId: string;
   url: string;
   type: 'image' | 'pdf' | 'other';
-  description?: string;
   labInterpretation?: string;
 }
 
@@ -198,7 +200,15 @@ export interface Photo {
   linkedEvaluationId?: string;  // Opcional porque puede ser foto general
   url: string;
   type: 'image' | 'pdf' | 'other';
-  description?: string;
+}
+
+export interface SportsProfile {
+  id: string;
+  patientId: string;
+  sport: string;
+  daysPerWeek: string;
+  schedule: string;
+  hoursPerDay: string;
 }
 
 export interface Patient {
@@ -211,9 +221,11 @@ export interface Patient {
   dietaryEvaluations: DietaryEvaluation[];
   measurements: Measurement[];
   somatotypes: SomatotypeRecord[];
+  sportsProfile: SportsProfile[]; // AGREGADO
   menus: GeneratedMenu[];
   labs: LabResult[];
   photos: Photo[];
+  evaluations?: PatientEvaluation[]; // Para export/import
 }
 
 export interface Invoice {
@@ -273,7 +285,6 @@ export interface PatientEvaluation {
   patientId: string;
   date: string;
   title?: string;
-  createdAt: string;
 }
 
 export enum AppRoute {

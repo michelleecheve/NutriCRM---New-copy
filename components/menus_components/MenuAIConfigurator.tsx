@@ -322,8 +322,8 @@ export const MenuAIConfigurator: React.FC = () => {
     setFields({ ...DEFAULT_PATIENT_FIELDS });
   };
 
-  const totalIdeas   = Object.values(ideas).reduce((sum, arr) => sum + arr.length, 0);
-  const activeFields = Object.values(fields).filter(Boolean).length;
+  const totalIdeas   = (Object.values(ideas) as FoodIdea[][]).reduce((sum, arr) => sum + arr.length, 0);
+  const activeFields = (Object.values(fields) as boolean[]).filter(Boolean).length;
   const totalFields  = Object.keys(fields).length;
   const generalDefs  = FIELD_DEFS.filter(f => f.group === 'general');
   const fechaDefs    = FIELD_DEFS.filter(f => f.group === 'fecha');

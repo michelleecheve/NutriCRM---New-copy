@@ -82,7 +82,7 @@ export const DietaryForm: React.FC<{
       excludedFoods: '',
       notes: '',
       recall: [],
-      foodFrequency: {},
+      foodFrequency: [],
       foodFrequencyOthers: '',
     }
   );
@@ -122,7 +122,20 @@ export const DietaryForm: React.FC<{
   const canDelete = showDelete && !!onDelete;
 
   const addMeal = () =>
-    setFormData({ ...formData, recall: [...formData.recall, { mealTime: 'Desayuno', time: '', place: '', description: '' }] });
+    setFormData({ 
+      ...formData, 
+      recall: [
+        ...formData.recall, 
+        { 
+          id: Math.random().toString(36).substring(7), 
+          dietaryEvaluationId: formData.id, 
+          mealTime: 'Desayuno', 
+          time: '', 
+          place: '', 
+          description: '' 
+        }
+      ] 
+    });
 
   const updateMeal = (idx: number, field: keyof MealEntry, val: string) => {
     const newRecall = [...formData.recall];
@@ -134,13 +147,27 @@ export const DietaryForm: React.FC<{
     setFormData({ ...formData, recall: formData.recall.filter((_, i) => i !== idx) });
 
   const updateFrequency = (food: string, freq: string) => {
-    const current = formData.foodFrequency[food];
-    if (current === freq) {
-      const newFreq = { ...formData.foodFrequency };
-      delete newFreq[food];
-      setFormData({ ...formData, foodFrequency: newFreq });
+    const existingIndex = formData.foodFrequency.findIndex(f => f.category === food);
+    if (existingIndex > -1) {
+      const current = formData.foodFrequency[existingIndex];
+      if (current.frequency === freq) {
+        // Remove if same
+        setFormData({ ...formData, foodFrequency: formData.foodFrequency.filter(f => f.category !== food) });
+      } else {
+        // Update frequency
+        const newFreq = [...formData.foodFrequency];
+        newFreq[existingIndex] = { ...newFreq[existingIndex], frequency: freq };
+        setFormData({ ...formData, foodFrequency: newFreq });
+      }
     } else {
-      setFormData({ ...formData, foodFrequency: { ...formData.foodFrequency, [food]: freq } });
+      // Add new
+      setFormData({ 
+        ...formData, 
+        foodFrequency: [
+          ...formData.foodFrequency, 
+          { id: Math.random().toString(36).substring(7), dietaryEvaluationId: formData.id, category: food, frequency: freq }
+        ] 
+      });
     }
   };
 
@@ -149,7 +176,11 @@ export const DietaryForm: React.FC<{
     const ev = store.getEvaluationById(evaluationId);
     if (!ev) return;
 
-    const normalized: DietaryEvaluation = { ...formData, date: ev.date };
+    const normalized: DietaryEvaluation = { 
+      ...formData, 
+      date: ev.date, 
+      linkedEvaluationId: evaluationId || '' 
+    };
 
     const updatedEvaluations = isEditing
       ? patient.dietaryEvaluations.map(d => d.id === editingId ? normalized : d)
@@ -306,7 +337,7 @@ export const DietaryForm: React.FC<{
                 <tr key={freq} className="hover:bg-slate-50/50">
                   <td className="p-4 font-bold text-slate-600 text-xs uppercase sticky left-0 bg-white z-10 border-r border-slate-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{freq}</td>
                   {FOOD_GROUPS.map(group => {
-                    const isSelected = formData.foodFrequency[group] === freq;
+                    const isSelected = formData.foodFrequency.find(f => f.category === group)?.frequency === freq;
                     return (
                       <td
                         key={group}
