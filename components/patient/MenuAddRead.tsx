@@ -92,7 +92,6 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
   const [isEditingName, setIsEditingName] = useState(false);
   const [isCalculationVisible, setIsCalculationVisible] = useState(false);
 
-  // ✅ Evaluaciones del paciente (para vinculación)
   const patientEvaluations: PatientEvaluation[] = useMemo(
     () => store.getEvaluations(patient.id),
     [patient.id]
@@ -131,10 +130,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
   const [menuPreviewData, setMenuPreviewData] = useState<MenuPlanData | null>(null);
   const [zoom, setZoom] = useState<number>(1);
 
-  // ✅ linking states
+  // ✅ Estados de vinculación
   const [formEvaluationId, setFormEvaluationId] = useState<string | null>(store.getSelectedEvaluationId(patient.id));
   const [evalSelectorOpen, setEvalSelectorOpen] = useState(false);
-  const [basedOnMeasurementDate, setBasedOnMeasurementDate] = useState<string>(
+  const [menuDate, setMenuDate] = useState<string>(
     store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]
   );
 
@@ -143,7 +142,6 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     return store.getEvaluationById(formEvaluationId) ?? null;
   }, [formEvaluationId]);
 
-  // ✅ modales (sin alert/confirm nativos)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
 
@@ -151,8 +149,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     const ev = store.getEvaluationById(evId);
     setFormEvaluationId(evId || null);
     if (ev) {
-      setBasedOnMeasurementDate(ev.date);
-      store.setSelectedEvaluationId(patient.id, ev.id); // consistencia con otras tabs
+      setMenuDate(ev.date); // La fecha del menú es la de la evaluación
+      store.setSelectedEvaluationId(patient.id, ev.id);
     }
     setEvalSelectorOpen(false);
   };
@@ -172,24 +170,24 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       setAiRationale(menu.aiRationale || "");
       setMenuPreviewData(menu.menuPreviewData || null);
 
-      // ✅ precarga vínculo: preferimos linkedEvaluationId si existe; si no, intentamos por basedOnMeasurementDate
+      // ✅ Precarga de vinculación: prioridad a linkedEvaluationId, luego date
       const linkedEvalId = (menu as any).linkedEvaluationId as string | undefined;
-      const menuEvalDate = (menu as any).basedOnMeasurementDate as string | undefined;
+      const menuDateValue = (menu as any).date as string | undefined;
 
       if (linkedEvalId && store.getEvaluationById(linkedEvalId)) {
         setFormEvaluationId(linkedEvalId);
         const ev = store.getEvaluationById(linkedEvalId);
-        if (ev) setBasedOnMeasurementDate(ev.date);
-      } else if (menuEvalDate) {
-        setBasedOnMeasurementDate(menuEvalDate);
-        const match = patientEvaluations.find(e => e.date === menuEvalDate);
+        if (ev) setMenuDate(ev.date);
+      } else if (menuDateValue) {
+        setMenuDate(menuDateValue);
+        const match = patientEvaluations.find(e => e.date === menuDateValue);
         setFormEvaluationId(match?.id ?? store.getSelectedEvaluationId(patient.id));
       } else {
         setFormEvaluationId(store.getSelectedEvaluationId(patient.id));
         const ev = store.getSelectedEvaluationId(patient.id)
           ? store.getEvaluationById(store.getSelectedEvaluationId(patient.id) as string)
           : null;
-        setBasedOnMeasurementDate(ev?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]));
+        setMenuDate(ev?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]));
       }
     } else {
       setVetData(defaultVet);
@@ -197,11 +195,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       setPortions(defaultPortions);
       setMenuName(`Menú para ${patient.firstName} ${new Date().toLocaleDateString()}`);
 
-      // ✅ default: evaluación seleccionada, si no hay → hoy según UTC del perfil
       const selected = store.getSelectedEvaluationId(patient.id);
       const ev = selected ? store.getEvaluationById(selected) : null;
       setFormEvaluationId(selected ?? null);
-      setBasedOnMeasurementDate(ev?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]));
+      setMenuDate(ev?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]));
     }
 
     setEvalSelectorOpen(false);
@@ -218,8 +215,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       return;
     }
 
-    // ✅ normalizar SIEMPRE a la fecha de la evaluación
-    const normalizedEvalDate = ev.date;
+    // ✅ La fecha del menú es la fecha de la evaluación
+    const normalizedDate = ev.date;
 
     const rootMenus = patient.menus || [];
     const dietaryMenus = patient.dietary?.menus || [];
@@ -234,6 +231,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     if (editingMenuId) {
       updatedMenus = updatedMenus.map(m => m.id === editingMenuId ? {
         ...m,
+        date: normalizedDate, // ✅ Solo "date"
+        linkedEvaluationId: formEvaluationId,
         vet: vetData,
         macros: macros,
         portions: portions,
@@ -242,15 +241,12 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         selectedReferenceIds,
         content: aiDraftText,
         aiRationale,
-        menuPreviewData,
-        basedOnMeasurementDate: normalizedEvalDate,
-        linkedEvaluationId: formEvaluationId
+        menuPreviewData
       } : m);
     } else {
       updatedMenus.push({
         id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(), // timestamp está bien en ISO
-        basedOnMeasurementDate: normalizedEvalDate, // ✅ ahora es YYYY-MM-DD de evaluación
+        date: normalizedDate, // ✅ Solo "date" (YYYY-MM-DD)
         linkedEvaluationId: formEvaluationId,
         content: aiDraftText,
         vet: vetData,
@@ -428,10 +424,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
             )}
 
             <div className="pt-3">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha de evaluación</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha del menú</label>
               <input
                 type="date"
-                value={basedOnMeasurementDate}
+                value={menuDate}
                 disabled
                 readOnly
                 className="mt-1.5 w-full text-sm font-bold text-slate-600 bg-slate-100 px-3 py-2 rounded-xl border border-slate-200 cursor-not-allowed"
