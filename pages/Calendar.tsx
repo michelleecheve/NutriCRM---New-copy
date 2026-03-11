@@ -166,6 +166,8 @@ export const CalendarPage: React.FC = () => {
           currentYear={year}
           currentMonth={month + 1}
           todayStr={todayStr}
+          targetNutritionistId={targetNutritionistId}
+          isManagingForOtherNutritionist={targetNutritionistId !== currentAppUser?.id}
           onEditClick={handleEditAppointment}
           onRefresh={handleRefresh}
         />
@@ -176,6 +178,8 @@ export const CalendarPage: React.FC = () => {
             mode={modalMode}
             appointment={selectedAppointment}
             patients={patients}
+            targetNutritionistId={targetNutritionistId}
+            isManagingForOtherNutritionist={targetNutritionistId !== currentAppUser?.id}
             onClose={() => setIsModalOpen(false)}
             onSaved={handleRefresh}
           />

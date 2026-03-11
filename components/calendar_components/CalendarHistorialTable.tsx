@@ -9,6 +9,8 @@ interface CalendarHistorialTableProps {
   currentYear: number;
   currentMonth: number;
   todayStr: string;
+  targetNutritionistId?: string;
+  isManagingForOtherNutritionist?: boolean;
   onEditClick: (appt: Appointment) => void;
   onRefresh: () => void;
 }
@@ -24,15 +26,21 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
   currentYear,
   currentMonth,
   todayStr,
+  targetNutritionistId,
+  isManagingForOtherNutritionist = false,
   onEditClick,
   onRefresh,
-}) => {
+  }) => {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [deletingAppt, setDeletingAppt] = useState<Appointment | null>(null);
 
   const handleDelete = () => {
     if (deletingAppt) {
-      store.deleteAppointment(deletingAppt.id);
+      if (isManagingForOtherNutritionist && targetNutritionistId) {
+        store.deleteAppointmentForNutritionist(targetNutritionistId, deletingAppt.id);
+      } else {
+        store.deleteAppointment(deletingAppt.id);
+      }
       setDeletingAppt(null);
       onRefresh();
     }

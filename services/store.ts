@@ -505,18 +505,39 @@ class Store {
     save(this.K.statuses, this.statuses);
   }
 
-  // ── Appointments de otras nutricionistas (para recepcionistas/admin) ─────
+  // ── Cross-user operations (para recepcionistas/admin) ────────────────────
 
   getAppointmentsForNutritionist(nutritionistId: string): Appointment[] {
-    // Cargar appointments de otra nutricionista específica
     const keys = makeKeys(nutritionistId);
     return load(keys.appointments, []);
   }
 
   getPatientsForNutritionist(nutritionistId: string): Patient[] {
-    // Cargar pacientes de otra nutricionista específica
     const keys = makeKeys(nutritionistId);
     return load(keys.patients, []);
+  }
+
+  addAppointmentForNutritionist(nutritionistId: string, appointment: Omit<Appointment, 'id'>): Appointment {
+    const keys = makeKeys(nutritionistId);
+    const existingAppointments = load<Appointment[]>(keys.appointments, []);
+    const newAppt = { ...appointment, id: Math.random().toString(36).substring(7) };
+    const updated = [...existingAppointments, newAppt];
+    save(keys.appointments, updated);
+    return newAppt;
+  }
+
+  updateAppointmentForNutritionist(nutritionistId: string, updatedAppointment: Appointment): void {
+    const keys = makeKeys(nutritionistId);
+    const existingAppointments = load<Appointment[]>(keys.appointments, []);
+    const updated = existingAppointments.map(a => a.id === updatedAppointment.id ? updatedAppointment : a);
+    save(keys.appointments, updated);
+  }
+
+  deleteAppointmentForNutritionist(nutritionistId: string, appointmentId: string): void {
+    const keys = makeKeys(nutritionistId);
+    const existingAppointments = load<Appointment[]>(keys.appointments, []);
+    const updated = existingAppointments.filter(a => a.id !== appointmentId);
+    save(keys.appointments, updated);
   }
 }
 

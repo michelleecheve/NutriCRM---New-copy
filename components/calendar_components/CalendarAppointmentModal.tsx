@@ -19,6 +19,8 @@ interface CalendarAppointmentModalProps {
   mode:        'create' | 'edit';
   appointment: Partial<Appointment>;
   patients?:   Patient[];
+  targetNutritionistId?: string;
+  isManagingForOtherNutritionist?: boolean;
   onClose:     () => void;
   onSaved:     () => void;
 }
@@ -37,9 +39,11 @@ export const CalendarAppointmentModal: React.FC<CalendarAppointmentModalProps> =
   mode,
   appointment,
   patients = [],
+  targetNutritionistId,
+  isManagingForOtherNutritionist = false,
   onClose,
   onSaved,
-}) => {
+  }) => {
   const [formData, setFormData] = useState<Partial<Appointment>>({ ...appointment });
   const [manualPatientName, setManualPatientName] = useState(appointment.patientName || '');
   const [tempPhone, setTempPhone] = useState('');
@@ -55,10 +59,26 @@ export const CalendarAppointmentModal: React.FC<CalendarAppointmentModalProps> =
     const now = new Date().toISOString();
     const patientName = manualPatientName.trim();
 
-    if (isEdit) {
-      store.updateAppointment({ ...formData as Appointment, patientName, updatedAt: now } as any);
+    // Determinar si estamos manejando citas de otra nutricionista
+    if (isManagingForOtherNutritionist && targetNutritionistId) {
+      if (isEdit) {
+        store.updateAppointmentForNutritionist(
+          targetNutritionistId,
+          { ...formData as Appointment, patientName, updatedAt: now } as any
+        );
+      } else {
+        store.addAppointmentForNutritionist(
+          targetNutritionistId,
+          { ...formData as any, patientName, createdAt: now, updatedAt: now }
+        );
+      }
     } else {
-      store.addAppointment({ ...formData as any, patientName, createdAt: now, updatedAt: now });
+      // Operaciones normales (propias citas)
+      if (isEdit) {
+        store.updateAppointment({ ...formData as Appointment, patientName, updatedAt: now } as any);
+      } else {
+        store.addAppointment({ ...formData as any, patientName, createdAt: now, updatedAt: now });
+      }
     }
 
     onSaved();
