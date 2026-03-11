@@ -114,7 +114,10 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   setZoom
 }) => {
   const [isVisible, setIsVisible] = useState(true);
-  const [isLocked, setIsLocked] = useState(false);
+  const [isLocked, setIsLocked] = useState<boolean>(() => {
+  try { return localStorage.getItem('nutriflow_menu_locked') === 'true'; }
+  catch { return false; }
+  });
   const [showRationale, setShowRationale] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -745,7 +748,11 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         </div>
         {/* Lock toggle — siempre visible en el header */}
         <button
-          onClick={() => setIsLocked(!isLocked)}
+          onClick={() => {
+            const next = !isLocked;
+            setIsLocked(next);
+            try { localStorage.setItem('nutriflow_menu_locked', String(next)); } catch {}
+          }}
           title={isLocked ? 'Desbloquear botones de generación' : 'Bloquear botones de generación para evitar cambios accidentales'}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
             isLocked

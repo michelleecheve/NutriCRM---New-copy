@@ -1,14 +1,61 @@
 import { Patient, Invoice, UserProfile, Appointment, PatientEvaluation } from '../types';
 
-const KEYS = {
-  patients:     'nutriflow_patients_v1',
-  invoices:     'nutriflow_invoices_v1',
-  appointments: 'nutriflow_appointments_v1',
-  user:         'nutriflow_user_v1',
-  statuses:     'nutriflow_statuses_v1',
-  evaluations:  'nutriflow_patient_evaluations_v1',
-  evalSelected: 'nutriflow_patient_selected_evaluation_v1',
-};
+// ─── Read current userId directly from localStorage (no circular import) ──────
+const SESSION_KEY = 'nutricrm_session_v1';
+
+function getCurrentUserId(): string {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return 'guest';
+    const user = JSON.parse(raw);
+    return user?.id ?? 'guest';
+  } catch {
+    return 'guest';
+  }
+}
+
+// ─── Per-user scoped keys ─────────────────────────────────────────────────────
+function makeKeys(uid: string) {
+  return {
+    patients:     `nutriflow_patients_v1_${uid}`,
+    invoices:     `nutriflow_invoices_v1_${uid}`,
+    appointments: `nutriflow_appointments_v1_${uid}`,
+    user:         `nutriflow_user_v1_${uid}`,
+    statuses:     `nutriflow_statuses_v1_${uid}`,
+    evaluations:  `nutriflow_patient_evaluations_v1_${uid}`,
+    evalSelected: `nutriflow_patient_selected_evaluation_v1_${uid}`,
+  };
+}
+
+// ─── One-time migration: move legacy global keys → scoped keys for userId ─────
+function migrateGlobalDataToUser(userId: string) {
+  const MIGRATION_FLAG = `nutriflow_migrated_v1_${userId}`;
+  if (localStorage.getItem(MIGRATION_FLAG)) return;
+
+  const OLD_TO_NEW: [string, string][] = [
+    ['nutriflow_patients_v1',                    `nutriflow_patients_v1_${userId}`],
+    ['nutriflow_invoices_v1',                    `nutriflow_invoices_v1_${userId}`],
+    ['nutriflow_appointments_v1',                `nutriflow_appointments_v1_${userId}`],
+    ['nutriflow_user_v1',                        `nutriflow_user_v1_${userId}`],
+    ['nutriflow_statuses_v1',                    `nutriflow_statuses_v1_${userId}`],
+    ['nutriflow_patient_evaluations_v1',         `nutriflow_patient_evaluations_v1_${userId}`],
+    ['nutriflow_patient_selected_evaluation_v1', `nutriflow_patient_selected_evaluation_v1_${userId}`],
+  ];
+
+  for (const [oldKey, newKey] of OLD_TO_NEW) {
+    const existing = localStorage.getItem(oldKey);
+    if (existing !== null) {
+      if (!localStorage.getItem(newKey)) {
+        localStorage.setItem(newKey, existing);
+      }
+      localStorage.removeItem(oldKey);
+    }
+  }
+
+  localStorage.setItem(MIGRATION_FLAG, '1');
+}
+
+// ─── Generic load/save ────────────────────────────────────────────────────────
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -26,6 +73,8 @@ function save<T>(key: string, value: T): void {
     console.warn('nutriflow: localStorage save failed', key, e);
   }
 }
+
+// ─── Date helpers ─────────────────────────────────────────────────────────────
 
 function formatSpanishLongDate(yyyyMmDd: string): string {
   const d = new Date(`${yyyyMmDd}T12:00:00`);
@@ -67,6 +116,24 @@ function addDaysYmdInUserTimezone(userTz: string, daysToAdd: number): string {
   const shifted = new Date(now + offsetMin * 60_000 + daysToAdd * 86_400_000);
   return ymdFromShiftedUtcDate(shifted);
 }
+
+// ─── Seeds ────────────────────────────────────────────────────────────────────
+
+const SEED_USER: UserProfile = {
+  professionalTitle: 'Lic.',
+  name: 'Blanca Morales',
+  specialty: 'Nutricionista Deportiva',
+  licenseNumber: '123456',
+  email: 'blancamoralesc96@gmail.com',
+  contactEmail: 'blancamoralesc96@gmail.com',
+  phone: '+502 30508872',
+  personalPhone: '+502 50178353',
+  instagramHandle: 'blancamoorales',
+  address: 'Edificio Medika 10, Clínica Vascure Nivel 12 - 1211, 6a Avenida 04-01, Zona 10, Ciudad de Guatemala',
+  website: 'blancamoralesnutricion.com',
+  avatar: 'https://user3047.na.imgto.link/public/20260225/isotipo-beige-fondo-verde-circular.avif',
+  timezone: 'UTC-06:00',
+};
 
 const SEED_PATIENTS: Patient[] = [
   {
@@ -196,44 +263,57 @@ const SEED_INVOICES: Invoice[] = [
   { id: '#INV-4496', patientId: '',  patientName: 'Carlos Ruiz',         date: '2026-02-10', amount: 300.00, status: 'Pagado',   method: 'Tarjeta' },
 ];
 
-const SEED_USER: UserProfile = {
-  professionalTitle: 'Lic.',
-  name: 'Blanca Morales',
-  specialty: 'Nutricionista Deportiva',
-  licenseNumber: '123456',
-  email: 'blancamoralesc96@gmail.com',
-  contactEmail: 'blancamoralesc96@gmail.com',
-  phone: '+502 30508872',
-  personalPhone: '+502 50178353',
-  instagramHandle: 'blancamoorales',
-  address: 'Edificio Medika 10, Clínica Vascure Nivel 12 - 1211, 6a Avenida 04-01, Zona 10, Ciudad de Guatemala',
-  website: 'blancamoralesnutricion.com',
-  avatar: 'https://user3047.na.imgto.link/public/20260225/isotipo-beige-fondo-verde-circular.avif',
-  timezone: 'UTC-06:00',
-};
-
-const SEED_APPOINTMENTS: Appointment[] = [
-  { id: 'appt-1', patientId: '1', patientName: 'Michelle Echeverria', date: getTodayYMDInUserTimezone(SEED_USER.timezone),        time: '15:00', duration: 60, type: 'Seguimiento', modality: 'Presencial', status: 'Programada' },
-  { id: 'appt-2', patientId: '2', patientName: 'Juan Perez',          date: addDaysYmdInUserTimezone(SEED_USER.timezone, 1),      time: '10:00', duration: 45, type: 'Seguimiento', modality: 'Video',      status: 'Programada' },
-];
-
 const SEED_STATUSES: string[] = ['Cita Agendada', 'Cita Cancelada', 'Menú Pendiente', 'Menú Entregado'];
-
 const SEED_EVALUATIONS: PatientEvaluation[] = [];
 const SEED_SELECTED: Record<string, string> = {};
 
-class Store {
-  private patients:     Patient[]     = load(KEYS.patients,     SEED_PATIENTS);
-  private invoices:     Invoice[]     = load(KEYS.invoices,     SEED_INVOICES);
-  private appointments: Appointment[] = load(KEYS.appointments, SEED_APPOINTMENTS);
-  private user:         UserProfile   = load(KEYS.user,         SEED_USER);
-  private statuses:     string[]      = load(KEYS.statuses,     SEED_STATUSES);
+// ─── Store Class ──────────────────────────────────────────────────────────────
 
-  private evaluations: PatientEvaluation[] = load(KEYS.evaluations, SEED_EVALUATIONS);
-  private selectedEvaluationByPatient: Record<string, string> = load(KEYS.evalSelected, SEED_SELECTED);
+class Store {
+  private uid: string = 'guest';
+  private K = makeKeys('guest');
+
+  private patients:     Patient[]     = [];
+  private invoices:     Invoice[]     = [];
+  private appointments: Appointment[] = [];
+  private user:         UserProfile   = SEED_USER;
+  private statuses:     string[]      = SEED_STATUSES;
+  private evaluations:  PatientEvaluation[] = [];
+  private selectedEvaluationByPatient: Record<string, string> = {};
 
   constructor() {
-    // ✅ Migración: evaluations legacy (createdDate → date)
+    // Read userId from session synchronously — no circular import
+    const uid = getCurrentUserId();
+    this.initForUser(uid);
+  }
+
+  // ── Called on login / logout to reload data for the new user ──────────────
+  initForUser(userId: string): void {
+    this.uid = userId;
+    this.K   = makeKeys(userId);
+
+    // Migrate legacy global keys → this user's scoped keys (runs once)
+    if (userId !== 'guest') {
+      migrateGlobalDataToUser(userId);
+    }
+
+    // Load all data for this user
+    const seedAppointments: Appointment[] = [
+      { id: 'appt-1', patientId: '1', patientName: 'Michelle Echeverria', date: getTodayYMDInUserTimezone(SEED_USER.timezone),      time: '15:00', duration: 60, type: 'Seguimiento', modality: 'Presencial', status: 'Programada' },
+      { id: 'appt-2', patientId: '2', patientName: 'Juan Perez',          date: addDaysYmdInUserTimezone(SEED_USER.timezone, 1),    time: '10:00', duration: 45, type: 'Seguimiento', modality: 'Video',      status: 'Programada' },
+    ];
+
+    this.patients     = load(this.K.patients,     SEED_PATIENTS);
+    this.invoices     = load(this.K.invoices,     SEED_INVOICES);
+    this.appointments = load(this.K.appointments, seedAppointments);
+    this.user         = load(this.K.user,         SEED_USER);
+    this.statuses     = load(this.K.statuses,     SEED_STATUSES);
+    this.evaluations  = load(this.K.evaluations,  SEED_EVALUATIONS);
+    this.selectedEvaluationByPatient = load(this.K.evalSelected, SEED_SELECTED);
+
+    // ── Migrations ──────────────────────────────────────────────────────────
+
+    // evaluations legacy (createdDate → date)
     this.evaluations = this.evaluations.map(e => {
       const legacy = e as any;
       if (legacy.createdDate) {
@@ -243,7 +323,7 @@ class Store {
       return e;
     });
 
-    // ✅ Migración: patients (limpiar menus históricos seed)
+    // patients: limpiar menus históricos seed
     this.patients = this.patients.map(p => {
       if (p.firstName === 'Michelle' && p.lastName === 'Echeverria') {
         return { ...p, menus: p.menus.filter(m => !m.id.startsWith('menu-hist-')) };
@@ -251,7 +331,7 @@ class Store {
       return p;
     });
 
-    // ✅ Migración: measurements sin id — asignarles uno único basado en date+patientId
+    // measurements sin id
     this.patients = this.patients.map(p => ({
       ...p,
       measurements: p.measurements.map(m =>
@@ -259,13 +339,15 @@ class Store {
       ),
     }));
 
-    save(KEYS.patients, this.patients);
-    save(KEYS.evaluations, this.evaluations);
+    save(this.K.patients,    this.patients);
+    save(this.K.evaluations, this.evaluations);
   }
 
   getTodayStr(): string {
     return getTodayYMDInUserTimezone(this.user?.timezone || 'UTC±00:00');
   }
+
+  // ── Patients ───────────────────────────────────────────────────────────────
 
   getPatients(): Patient[] { return this.patients; }
 
@@ -308,52 +390,58 @@ class Store {
       photos: [],
     };
     this.patients = [newPatient, ...this.patients];
-    save(KEYS.patients, this.patients);
+    save(this.K.patients, this.patients);
     return newPatient;
   }
 
   updatePatient(updatedPatient: Patient): void {
     this.patients = this.patients.map(p => p.id === updatedPatient.id ? updatedPatient : p);
-    save(KEYS.patients, this.patients);
+    save(this.K.patients, this.patients);
   }
+
+  // ── Invoices ───────────────────────────────────────────────────────────────
 
   getInvoices(): Invoice[] { return this.invoices; }
 
   addInvoice(invoice: Omit<Invoice, 'id'>): Invoice {
     const newInvoice = { ...invoice, id: `#INV-${Math.floor(1000 + Math.random() * 9000)}` };
     this.invoices = [newInvoice, ...this.invoices];
-    save(KEYS.invoices, this.invoices);
+    save(this.K.invoices, this.invoices);
     return newInvoice;
   }
 
   updateInvoice(updatedInvoice: Invoice): void {
     this.invoices = this.invoices.map(i => i.id === updatedInvoice.id ? updatedInvoice : i);
-    save(KEYS.invoices, this.invoices);
+    save(this.K.invoices, this.invoices);
   }
 
   deleteInvoice(id: string): void {
     this.invoices = this.invoices.filter(i => i.id !== id);
-    save(KEYS.invoices, this.invoices);
+    save(this.K.invoices, this.invoices);
   }
+
+  // ── Appointments ───────────────────────────────────────────────────────────
 
   getAppointments(): Appointment[] { return this.appointments; }
 
   addAppointment(appointment: Omit<Appointment, 'id'>): Appointment {
     const newAppt = { ...appointment, id: Math.random().toString(36).substring(7) };
     this.appointments = [...this.appointments, newAppt];
-    save(KEYS.appointments, this.appointments);
+    save(this.K.appointments, this.appointments);
     return newAppt;
   }
 
   updateAppointment(updatedAppointment: Appointment): void {
     this.appointments = this.appointments.map(a => a.id === updatedAppointment.id ? updatedAppointment : a);
-    save(KEYS.appointments, this.appointments);
+    save(this.K.appointments, this.appointments);
   }
 
   deleteAppointment(id: string): void {
     this.appointments = this.appointments.filter(a => a.id !== id);
-    save(KEYS.appointments, this.appointments);
+    save(this.K.appointments, this.appointments);
   }
+
+  // ── Evaluations ────────────────────────────────────────────────────────────
 
   getEvaluations(patientId: string): PatientEvaluation[] {
     return this.evaluations
@@ -374,9 +462,9 @@ class Store {
       createdAt: new Date().toISOString(),
     };
     this.evaluations = [ev, ...this.evaluations];
-    save(KEYS.evaluations, this.evaluations);
+    save(this.K.evaluations, this.evaluations);
     this.selectedEvaluationByPatient[patientId] = ev.id;
-    save(KEYS.evalSelected, this.selectedEvaluationByPatient);
+    save(this.K.evalSelected, this.selectedEvaluationByPatient);
     return ev;
   }
 
@@ -385,7 +473,7 @@ class Store {
     if (!current) return null;
     const updated: PatientEvaluation = { ...current, ...patch };
     this.evaluations = this.evaluations.map(e => e.id === evaluationId ? updated : e);
-    save(KEYS.evaluations, this.evaluations);
+    save(this.K.evaluations, this.evaluations);
     return updated;
   }
 
@@ -394,7 +482,7 @@ class Store {
     if (!ev) return;
     const pid = ev.patientId;
     this.evaluations = this.evaluations.filter(e => e.id !== evaluationId);
-    save(KEYS.evaluations, this.evaluations);
+    save(this.K.evaluations, this.evaluations);
     if (this.selectedEvaluationByPatient[pid] === evaluationId) {
       delete this.selectedEvaluationByPatient[pid];
       const remaining = this.evaluations
@@ -403,7 +491,7 @@ class Store {
       if (remaining.length > 0) {
         this.selectedEvaluationByPatient[pid] = remaining[0].id;
       }
-      save(KEYS.evalSelected, this.selectedEvaluationByPatient);
+      save(this.K.evalSelected, this.selectedEvaluationByPatient);
     }
   }
 
@@ -417,21 +505,25 @@ class Store {
     } else {
       this.selectedEvaluationByPatient[patientId] = evaluationId;
     }
-    save(KEYS.evalSelected, this.selectedEvaluationByPatient);
+    save(this.K.evalSelected, this.selectedEvaluationByPatient);
   }
+
+  // ── User profile ───────────────────────────────────────────────────────────
 
   getUserProfile(): UserProfile { return this.user; }
 
   updateUserProfile(profile: UserProfile): void {
     this.user = profile;
-    save(KEYS.user, this.user);
+    save(this.K.user, this.user);
   }
+
+  // ── Statuses ───────────────────────────────────────────────────────────────
 
   getPatientStatuses(): string[] { return this.statuses; }
 
   updatePatientStatuses(statuses: string[]): void {
     this.statuses = statuses;
-    save(KEYS.statuses, this.statuses);
+    save(this.K.statuses, this.statuses);
   }
 }
 

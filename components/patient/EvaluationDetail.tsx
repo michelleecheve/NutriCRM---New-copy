@@ -13,7 +13,8 @@ import {
   Plus,
   Crosshair,
   Download,
-  X
+  X,
+  Sparkles,
 } from 'lucide-react';
 import { store } from '../../services/store';
 import { DietaryCard } from './DietaryCard';
@@ -28,6 +29,12 @@ import { MeasurementsHistory } from './MeasurementsHistory';
 import { SomatocartaCard } from './SomatocartaCard';
 import { SomatocartaForm } from './SomatocartaForm';
 import { SomatocartaLogic } from './SomatocartaLogic';
+import {
+  LabInterpretationPanel,
+  DEFAULT_PROMPT,
+  loadSavedPrompt,
+  savePromptToStorage,
+} from './LabsTab';
 
 type Draft = {
   title: string;
@@ -50,18 +57,12 @@ const ConfirmModal: React.FC<{
       </div>
       <p className="text-sm text-slate-500 mb-6">{message}</p>
       <div className="flex gap-3 justify-end">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors"
-        >
+        <button type="button" onClick={onCancel}
+          className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors">
           Cancelar
         </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors"
-        >
+        <button type="button" onClick={onConfirm}
+          className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors">
           Sí, eliminar
         </button>
       </div>
@@ -74,6 +75,68 @@ const formatSomatoDate = (yyyyMmDd: string) => {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
+// ─── Labs Interpretation Section (date-scoped) ────────────────────────────────
+const LabsInterpretationSection: React.FC<{
+  linkedLabs: any[];
+  patient: Patient;
+  onUpdate: (p: Patient) => void;
+}> = ({ linkedLabs, patient, onUpdate }) => {
+  const [customPrompt, setCustomPrompt] = useState<string>(loadSavedPrompt());
+  const [isPromptCustom, setIsPromptCustom] = useState(loadSavedPrompt() !== DEFAULT_PROMPT);
+
+  const handleSavePrompt = (p: string) => {
+    setCustomPrompt(p);
+    setIsPromptCustom(p !== DEFAULT_PROMPT);
+    savePromptToStorage(p);
+  };
+
+  const handleResetPrompt = () => {
+    setCustomPrompt(DEFAULT_PROMPT);
+    setIsPromptCustom(false);
+    savePromptToStorage(DEFAULT_PROMPT);
+  };
+
+  const handleSaveInterpretation = (fileId: string, interpretation: string) => {
+    const updatedLabs = (patient.labs || []).map((f: any) =>
+      f.id === fileId ? { ...f, labInterpretation: interpretation } : f
+    );
+    const updated = { ...patient, labs: updatedLabs };
+    onUpdate(updated);
+    store.updatePatient(updated);
+  };
+
+  return (
+    <div className="mt-6 rounded-2xl border border-slate-200 overflow-hidden">
+      <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+        <div className="bg-indigo-100 p-2 rounded-xl">
+          <Sparkles className="w-4 h-4 text-indigo-600" />
+        </div>
+        <div>
+          <h3 className="text-sm font-bold text-slate-800">Interpretación de Laboratorios</h3>
+          <p className="text-xs text-slate-400 font-medium mt-0.5">
+            Análisis clínico por archivo — manual o asistido por IA (Gemini)
+          </p>
+        </div>
+      </div>
+      <div className="p-5 space-y-3">
+        {linkedLabs.map((file: any) => (
+          <LabInterpretationPanel
+            key={file.id}
+            file={file}
+            patientName={`${patient.firstName} ${patient.lastName}`}
+            customPrompt={customPrompt}
+            isPromptCustom={isPromptCustom}
+            onSavePrompt={handleSavePrompt}
+            onResetPrompt={handleResetPrompt}
+            onSave={handleSaveInterpretation}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── Main EvaluationDetail ────────────────────────────────────────────────────
 export const EvaluationDetail: React.FC<{
   patient: Patient;
   evaluationId: string;
@@ -99,7 +162,6 @@ export const EvaluationDetail: React.FC<{
   const [viewingChart, setViewingChart] = useState<SomatotypeRecord | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  // ✅ refs para abrir el modal de subida desde el header del card
   const labsGalleryRef = useRef<FileGalleryHandle>(null);
   const photosGalleryRef = useRef<FileGalleryHandle>(null);
 
@@ -136,7 +198,7 @@ export const EvaluationDetail: React.FC<{
     return allMenus
       .filter(m => {
         const byEvalId = (m as any)?.linkedEvaluationId === selected.id;
-        const byDate = (m as any)?.basedOnMeasurementDate === selected.date;
+        const byDate   = (m as any)?.basedOnMeasurementDate === selected.date;
         return byEvalId || byDate;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -148,24 +210,13 @@ export const EvaluationDetail: React.FC<{
   }, [patient.measurements, selected?.date]);
 
   useEffect(() => {
-    if (!selected) {
-      setDraft(null);
-      setErrorMsg('');
-      return;
-    }
-    setDraft({
-      title: selected.title ?? `Evaluación ${selected.date}`,
-      date: selected.date,
-    });
+    if (!selected) { setDraft(null); setErrorMsg(''); return; }
+    setDraft({ title: selected.title ?? `Evaluación ${selected.date}`, date: selected.date });
     setErrorMsg('');
-    setDietaryView('card');
-    setDietaryEditingId(null);
-    setMenuView('card');
-    setEditingMenuId(null);
-    setMeasView('card');
-    setMeasEditingId(null);
-    setSomatoView('card');
-    setSomatoEditingId(null);
+    setDietaryView('card'); setDietaryEditingId(null);
+    setMenuView('card'); setEditingMenuId(null);
+    setMeasView('card'); setMeasEditingId(null);
+    setSomatoView('card'); setSomatoEditingId(null);
     setViewingChart(null);
   }, [selected?.id]);
 
@@ -230,8 +281,7 @@ export const EvaluationDetail: React.FC<{
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    canvas.width = 1000;
-    canvas.height = 1000;
+    canvas.width = 1000; canvas.height = 1000;
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
     img.onload = () => {
@@ -255,11 +305,8 @@ export const EvaluationDetail: React.FC<{
     return (
       <div className="h-full min-h-[220px] border border-slate-100 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-slate-400 p-8">
         <p className="font-bold">Evaluación no encontrada</p>
-        <button
-          type="button"
-          onClick={onBack}
-          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50"
-        >
+        <button type="button" onClick={onBack}
+          className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50">
           <ArrowLeft className="w-4 h-4" />
           Volver
         </button>
@@ -290,10 +337,8 @@ export const EvaluationDetail: React.FC<{
                 <p className="text-sm text-slate-500">Fecha: {formatSomatoDate(viewingChart.date)}</p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={downloadChartAsImage}
-                  className="p-2 hover:bg-emerald-100 rounded-full text-emerald-600 transition-colors flex items-center gap-2 px-4 font-bold text-sm"
-                >
+                <button onClick={downloadChartAsImage}
+                  className="p-2 hover:bg-emerald-100 rounded-full text-emerald-600 transition-colors flex items-center gap-2 px-4 font-bold text-sm">
                   <Download className="w-5 h-5" />
                   Descargar PNG
                 </button>
@@ -314,15 +359,11 @@ export const EvaluationDetail: React.FC<{
         <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <button
-                type="button"
-                onClick={onBack}
-                className="mb-4 inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-700"
-              >
+              <button type="button" onClick={onBack}
+                className="mb-4 inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-700">
                 <ArrowLeft className="w-4 h-4" />
                 Volver al historial
               </button>
-
               <div className="flex items-center gap-2">
                 <Pencil className="w-4 h-4 text-slate-300 shrink-0" />
                 <input
@@ -333,25 +374,16 @@ export const EvaluationDetail: React.FC<{
                 />
               </div>
             </div>
-
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setConfirmOpen(true)}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-100 bg-red-50 text-red-700 font-bold text-sm hover:bg-red-100 transition-colors"
-              >
+              <button type="button" onClick={() => setConfirmOpen(true)}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-100 bg-red-50 text-red-700 font-bold text-sm hover:bg-red-100 transition-colors">
                 <Trash2 className="w-4 h-4" />
                 Eliminar
               </button>
-
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={!hasChanges}
+              <button type="button" onClick={handleSave} disabled={!hasChanges}
                 className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl font-bold text-sm transition-colors ${
                   hasChanges ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                }`}
-              >
+                }`}>
                 <Save className="w-4 h-4" />
                 Guardar
               </button>
@@ -368,14 +400,11 @@ export const EvaluationDetail: React.FC<{
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Fecha</p>
-                <input
-                  type="date"
-                  value={draft.date}
+                <input type="date" value={draft.date}
                   onChange={(e) => setDraft({ ...draft, date: e.target.value })}
                   className="mt-2 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200"
                 />
               </div>
-
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Evaluation ID</p>
                 <p className="mt-2 font-mono text-sm font-bold text-slate-700 break-all border border-slate-200 rounded-xl px-3 py-2 bg-white">
@@ -400,11 +429,8 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => { setDietaryEditingId(null); setDietaryView('edit'); }}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
-            >
+            <button type="button" onClick={() => { setDietaryEditingId(null); setDietaryView('edit'); }}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
               <Plus className="w-4 h-4" /> Crear
             </button>
           </div>
@@ -426,11 +452,8 @@ export const EvaluationDetail: React.FC<{
           ) : linkedDietaryEvaluations.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {linkedDietaryEvaluations.map(d => (
-                <DietaryCard
-                  key={d.id}
-                  evalItem={d}
-                  onClick={() => { setDietaryEditingId(d.id); setDietaryView('edit'); }}
-                />
+                <DietaryCard key={d.id} evalItem={d}
+                  onClick={() => { setDietaryEditingId(d.id); setDietaryView('edit'); }} />
               ))}
             </div>
           ) : (
@@ -454,13 +477,9 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => { setMeasEditingId(null); setMeasView('edit'); }}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Crear
+            <button type="button" onClick={() => { setMeasEditingId(null); setMeasView('edit'); }}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
+              <Plus className="w-4 h-4" /> Crear
             </button>
           </div>
 
@@ -498,13 +517,9 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => { setSomatoEditingId(null); setSomatoView('edit'); }}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Crear
+            <button type="button" onClick={() => { setSomatoEditingId(null); setSomatoView('edit'); }}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
+              <Plus className="w-4 h-4" /> Crear
             </button>
           </div>
 
@@ -524,9 +539,7 @@ export const EvaluationDetail: React.FC<{
           ) : linkedSomatotypes.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {linkedSomatotypes.map(rec => (
-                <SomatocartaCard
-                  key={rec.id}
-                  record={rec}
+                <SomatocartaCard key={rec.id} record={rec}
                   onView={() => setViewingChart(rec)}
                   onEdit={() => { setSomatoEditingId(rec.id); setSomatoView('edit'); }}
                   onLink={() => { setSomatoEditingId(rec.id); setSomatoView('edit'); }}
@@ -555,13 +568,9 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => { setEditingMenuId(null); setMenuView('edit'); }}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Crear
+            <button type="button" onClick={() => { setEditingMenuId(null); setMenuView('edit'); }}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
+              <Plus className="w-4 h-4" /> Crear
             </button>
           </div>
 
@@ -575,11 +584,8 @@ export const EvaluationDetail: React.FC<{
           ) : linkedMenus.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {linkedMenus.map(menu => (
-                <MenuCard
-                  key={menu.id}
-                  menu={menu}
-                  onClick={() => { setEditingMenuId(menu.id); setMenuView('edit'); }}
-                />
+                <MenuCard key={menu.id} menu={menu}
+                  onClick={() => { setEditingMenuId(menu.id); setMenuView('edit'); }} />
               ))}
             </div>
           ) : (
@@ -603,14 +609,9 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
-            {/* ✅ botón en header del card — dispara modal interno de FileGallery via ref */}
-            <button
-              type="button"
-              onClick={() => labsGalleryRef.current?.openUpload()}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Subir
+            <button type="button" onClick={() => labsGalleryRef.current?.openUpload()}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
+              <Plus className="w-4 h-4" /> Subir
             </button>
           </div>
 
@@ -625,6 +626,15 @@ export const EvaluationDetail: React.FC<{
             showDelete={false}
             hideHeader
           />
+
+          {/* Interpretaciones — filtradas por fecha via linkedLabs */}
+          {linkedLabs.length > 0 && (
+            <LabsInterpretationSection
+              linkedLabs={linkedLabs}
+              patient={patient}
+              onUpdate={onUpdate}
+            />
+          )}
         </div>
 
         {/* Card 7: Photos */}
@@ -641,14 +651,9 @@ export const EvaluationDetail: React.FC<{
                 </p>
               </div>
             </div>
-            {/* ✅ botón en header del card — dispara modal interno de FileGallery via ref */}
-            <button
-              type="button"
-              onClick={() => photosGalleryRef.current?.openUpload()}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Subir
+            <button type="button" onClick={() => photosGalleryRef.current?.openUpload()}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
+              <Plus className="w-4 h-4" /> Subir
             </button>
           </div>
 

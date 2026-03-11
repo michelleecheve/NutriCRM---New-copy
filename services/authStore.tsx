@@ -1,4 +1,5 @@
 import { AppUser, PagePermission, UserProfile } from '../types';
+import { store } from './store';
 
 // ─── Seed Users (base) ────────────────────────────────────────────────────────
 
@@ -294,18 +295,22 @@ class AuthStore {
 
   // ── Auth ────────────────────────────────────────────────────────────────
 
+  // En login():
   login(email: string, password: string): AppUser | null {
     const user = this.users.find(u => u.email === email && u.password === password);
     if (!user) return null;
     this.currentUser = user;
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    store.initForUser(user.id);  // ← AGREGA ESTA LÍNEA
     return user;
   }
 
+  // En logout():
   logout(): void {
     this.currentUser = null;
     this.selectedNutritionistId = null;
     localStorage.removeItem(SESSION_KEY);
+    store.initForUser('guest');  // ← AGREGA ESTA LÍNEA
   }
 
   getCurrentUser(): AppUser | null {

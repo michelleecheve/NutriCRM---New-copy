@@ -13,7 +13,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 // ─── Storage key for custom prompt ────────────────────────────────────────────
 const PROMPT_STORAGE_KEY = 'nutriflow_labs_ai_prompt_v1';
 
-const DEFAULT_PROMPT = `Eres un asistente clínico experto en interpretación de laboratorios médicos.
+export const DEFAULT_PROMPT = `Eres un asistente clínico experto en interpretación de laboratorios médicos.
 Analiza los resultados de laboratorio del paciente "{patientName}".
 
 Proporciona en español:
@@ -24,11 +24,12 @@ Proporciona en español:
 
 Usa lenguaje profesional pero claro. Organiza con los títulos de cada sección.`;
 
-function loadSavedPrompt(): string {
+export function loadSavedPrompt(): string {
   try { return localStorage.getItem(PROMPT_STORAGE_KEY) || DEFAULT_PROMPT; }
   catch { return DEFAULT_PROMPT; }
 }
-function savePromptToStorage(p: string) {
+
+export function savePromptToStorage(p: string) {
   try { localStorage.setItem(PROMPT_STORAGE_KEY, p); } catch {}
 }
 
@@ -78,10 +79,8 @@ const AIConfigPopup: React.FC<{
   const popupRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
-  // Sync draft when prompt changes externally (e.g. reset)
   useEffect(() => { setDraft(initialPrompt); }, [initialPrompt]);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -94,20 +93,11 @@ const AIConfigPopup: React.FC<{
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const handleSave = () => {
-    onSave(draft);
-    setOpen(false);
-  };
-
-  const handleReset = () => {
-    setDraft(DEFAULT_PROMPT);
-    onReset();
-    setOpen(false);
-  };
+  const handleSave = () => { onSave(draft); setOpen(false); };
+  const handleReset = () => { setDraft(DEFAULT_PROMPT); onReset(); setOpen(false); };
 
   return (
     <div className="relative">
-      {/* Trigger button */}
       <button
         ref={btnRef}
         onClick={() => setOpen(!open)}
@@ -121,14 +111,12 @@ const AIConfigPopup: React.FC<{
         <Settings className="w-3.5 h-3.5" />
       </button>
 
-      {/* Centered modal */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
           <div
             ref={popupRef}
             className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl animate-in zoom-in-95 duration-150"
           >
-            {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/80 rounded-t-2xl">
               <div className="flex items-center gap-2">
                 <Settings className="w-4 h-4 text-slate-500" />
@@ -139,15 +127,11 @@ const AIConfigPopup: React.FC<{
                   </span>
                 )}
               </div>
-              <button
-                onClick={() => setOpen(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-              >
+              <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Body */}
             <div className="p-5 space-y-4">
               <p className="text-[11px] text-slate-400 font-medium">
                 Usa <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600 font-mono">{'{patientName}'}</code> para insertar el nombre del paciente automáticamente.
@@ -160,26 +144,16 @@ const AIConfigPopup: React.FC<{
               />
             </div>
 
-            {/* Footer */}
             <div className="flex items-center justify-between px-5 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl">
-              <button
-                onClick={handleReset}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-500 border border-slate-200 hover:bg-slate-100 transition-all"
-              >
+              <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-500 border border-slate-200 hover:bg-slate-100 transition-all">
                 <RotateCcw className="w-3 h-3" />
                 Restaurar por defecto
               </button>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all"
-                >
+                <button onClick={() => setOpen(false)} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-all">
                   Cancelar
                 </button>
-                <button
-                  onClick={handleSave}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 transition-all shadow-sm"
-                >
+                <button onClick={handleSave} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 transition-all shadow-sm">
                   <Save className="w-3 h-3" />
                   Guardar prompt
                 </button>
@@ -192,8 +166,8 @@ const AIConfigPopup: React.FC<{
   );
 };
 
-// ─── Per-file Interpretation Panel ────────────────────────────────────────────
-const LabInterpretationPanel: React.FC<{
+// ─── Per-file Interpretation Panel (exported for reuse in EvaluationDetail) ───
+export const LabInterpretationPanel: React.FC<{
   file: any;
   patientName: string;
   customPrompt: string;
@@ -223,10 +197,7 @@ const LabInterpretationPanel: React.FC<{
     }
   };
 
-  const handleSave = () => {
-    onSave(file.id, interpretation);
-    setIsDirty(false);
-  };
+  const handleSave = () => { onSave(file.id, interpretation); setIsDirty(false); };
 
   const fileIcon = file.type === 'pdf'
     ? <FileText className="w-4 h-4 text-red-500 flex-shrink-0" />
@@ -238,7 +209,6 @@ const LabInterpretationPanel: React.FC<{
     <div className={`border rounded-2xl overflow-hidden transition-all ${
       isOpen ? 'border-indigo-200 shadow-sm' : 'border-slate-200'
     }`}>
-      {/* Header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-4 bg-slate-50/80 hover:bg-slate-100/60 transition-colors text-left"
@@ -261,17 +231,13 @@ const LabInterpretationPanel: React.FC<{
         </div>
       </button>
 
-      {/* Body */}
       {isOpen && (
         <div className="p-5 space-y-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-200">
-
-          {/* Top row: label + buttons */}
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
               Interpretación / Notas clínicas
             </p>
             <div className="flex items-center gap-1.5">
-              {/* Analyze button */}
               <button
                 onClick={handleAnalyzeWithAI}
                 disabled={isAnalyzing || file.type === 'other'}
@@ -285,8 +251,6 @@ const LabInterpretationPanel: React.FC<{
                 <Sparkles className={`w-3.5 h-3.5 ${isAnalyzing ? 'animate-pulse' : ''}`} />
                 {isAnalyzing ? 'Analizando...' : 'Analizar con AI'}
               </button>
-
-              {/* Config popup button */}
               <AIConfigPopup
                 prompt={customPrompt}
                 isCustom={isPromptCustom}
@@ -296,7 +260,6 @@ const LabInterpretationPanel: React.FC<{
             </div>
           </div>
 
-          {/* Error */}
           {error && (
             <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 font-medium">
               <span className="mt-0.5 flex-shrink-0">⚠️</span>
@@ -304,7 +267,6 @@ const LabInterpretationPanel: React.FC<{
             </div>
           )}
 
-          {/* Textarea */}
           <textarea
             value={interpretation}
             onChange={(e) => { setInterpretation(e.target.value); setIsDirty(true); }}
@@ -317,7 +279,6 @@ const LabInterpretationPanel: React.FC<{
             className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-700 font-medium leading-relaxed focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 outline-none transition-all resize-y placeholder:text-slate-300"
           />
 
-          {/* Save */}
           <div className="flex justify-end">
             <button
               onClick={handleSave}
@@ -343,9 +304,7 @@ export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate }) => {
   const labs = patient.labs || [];
 
   const [customPrompt, setCustomPrompt] = useState<string>(loadSavedPrompt);
-  const [isPromptCustom, setIsPromptCustom] = useState(
-    loadSavedPrompt() !== DEFAULT_PROMPT
-  );
+  const [isPromptCustom, setIsPromptCustom] = useState(loadSavedPrompt() !== DEFAULT_PROMPT);
 
   const handleSavePrompt = (p: string) => {
     setCustomPrompt(p);
@@ -376,7 +335,6 @@ export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate }) => {
 
   return (
     <div className="space-y-6">
-      {/* File Gallery */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <FileGallery
           patientId={patient.id}
@@ -388,7 +346,6 @@ export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate }) => {
         />
       </div>
 
-      {/* Interpretation section */}
       {labs.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
@@ -402,7 +359,6 @@ export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate }) => {
               </p>
             </div>
           </div>
-
           <div className="p-5 space-y-3">
             {labs.map(file => (
               <LabInterpretationPanel
