@@ -3,6 +3,9 @@ import { Patient, Invoice, UserProfile, Appointment, PatientEvaluation } from '.
 // ─── Read current userId directly from localStorage (no circular import) ──────
 const SESSION_KEY = 'nutricrm_session_v1';
 
+// ─── ID de Blanca Morales (propietaria de los datos seed) ─────────────────────
+const BLANCA_MORALES_USER_ID = 'nutri-001';
+
 function getCurrentUserId(): string {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
@@ -25,34 +28,6 @@ function makeKeys(uid: string) {
     evaluations:  `nutriflow_patient_evaluations_v1_${uid}`,
     evalSelected: `nutriflow_patient_selected_evaluation_v1_${uid}`,
   };
-}
-
-// ─── One-time migration: move legacy global keys → scoped keys for userId ─────
-function migrateGlobalDataToUser(userId: string) {
-  const MIGRATION_FLAG = `nutriflow_migrated_v1_${userId}`;
-  if (localStorage.getItem(MIGRATION_FLAG)) return;
-
-  const OLD_TO_NEW: [string, string][] = [
-    ['nutriflow_patients_v1',                    `nutriflow_patients_v1_${userId}`],
-    ['nutriflow_invoices_v1',                    `nutriflow_invoices_v1_${userId}`],
-    ['nutriflow_appointments_v1',                `nutriflow_appointments_v1_${userId}`],
-    ['nutriflow_user_v1',                        `nutriflow_user_v1_${userId}`],
-    ['nutriflow_statuses_v1',                    `nutriflow_statuses_v1_${userId}`],
-    ['nutriflow_patient_evaluations_v1',         `nutriflow_patient_evaluations_v1_${userId}`],
-    ['nutriflow_patient_selected_evaluation_v1', `nutriflow_patient_selected_evaluation_v1_${userId}`],
-  ];
-
-  for (const [oldKey, newKey] of OLD_TO_NEW) {
-    const existing = localStorage.getItem(oldKey);
-    if (existing !== null) {
-      if (!localStorage.getItem(newKey)) {
-        localStorage.setItem(newKey, existing);
-      }
-      localStorage.removeItem(oldKey);
-    }
-  }
-
-  localStorage.setItem(MIGRATION_FLAG, '1');
 }
 
 // ─── Generic load/save ────────────────────────────────────────────────────────
@@ -117,7 +92,7 @@ function addDaysYmdInUserTimezone(userTz: string, daysToAdd: number): string {
   return ymdFromShiftedUtcDate(shifted);
 }
 
-// ─── Seeds ────────────────────────────────────────────────────────────────────
+// ─── Seeds (solo para Blanca Morales) ────────────────────────────────────────
 
 const SEED_USER: UserProfile = {
   professionalTitle: 'Lic.',
@@ -282,7 +257,6 @@ class Store {
   private selectedEvaluationByPatient: Record<string, string> = {};
 
   constructor() {
-    // Read userId from session synchronously — no circular import
     const uid = getCurrentUserId();
     this.initForUser(uid);
   }
@@ -292,24 +266,29 @@ class Store {
     this.uid = userId;
     this.K   = makeKeys(userId);
 
-    // Migrate legacy global keys → this user's scoped keys (runs once)
-    if (userId !== 'guest') {
-      migrateGlobalDataToUser(userId);
-    }
+    // ── Determinar fallbacks según el usuario ─────────────────────────────────
+    // Solo Blanca Morales tiene datos seed; otros usuarios empiezan vacíos
+    const isBlancaMorales = userId === BLANCA_MORALES_USER_ID;
 
-    // Load all data for this user
-    const seedAppointments: Appointment[] = [
+    const fallbackPatients     = isBlancaMorales ? SEED_PATIENTS     : [];
+    const fallbackInvoices     = isBlancaMorales ? SEED_INVOICES     : [];
+    const fallbackEvaluations  = isBlancaMorales ? SEED_EVALUATIONS  : [];
+    const fallbackSelected     = isBlancaMorales ? SEED_SELECTED     : {};
+
+    // Appointments siempre se generan dinámicamente solo para Blanca
+    const seedAppointments: Appointment[] = isBlancaMorales ? [
       { id: 'appt-1', patientId: '1', patientName: 'Michelle Echeverria', date: getTodayYMDInUserTimezone(SEED_USER.timezone),      time: '15:00', duration: 60, type: 'Seguimiento', modality: 'Presencial', status: 'Programada' },
       { id: 'appt-2', patientId: '2', patientName: 'Juan Perez',          date: addDaysYmdInUserTimezone(SEED_USER.timezone, 1),    time: '10:00', duration: 45, type: 'Seguimiento', modality: 'Video',      status: 'Programada' },
-    ];
+    ] : [];
 
-    this.patients     = load(this.K.patients,     SEED_PATIENTS);
-    this.invoices     = load(this.K.invoices,     SEED_INVOICES);
+    // Load all data for this user
+    this.patients     = load(this.K.patients,     fallbackPatients);
+    this.invoices     = load(this.K.invoices,     fallbackInvoices);
     this.appointments = load(this.K.appointments, seedAppointments);
     this.user         = load(this.K.user,         SEED_USER);
     this.statuses     = load(this.K.statuses,     SEED_STATUSES);
-    this.evaluations  = load(this.K.evaluations,  SEED_EVALUATIONS);
-    this.selectedEvaluationByPatient = load(this.K.evalSelected, SEED_SELECTED);
+    this.evaluations  = load(this.K.evaluations,  fallbackEvaluations);
+    this.selectedEvaluationByPatient = load(this.K.evalSelected, fallbackSelected);
 
     // ── Migrations ──────────────────────────────────────────────────────────
 
