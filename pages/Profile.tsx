@@ -3,8 +3,7 @@ import { authStore } from '../services/authStore';
 import { UserProfile } from '../types';
 import {
   Save, User, Mail, Phone, Award, Camera, Check, Loader2,
-  MapPin, Globe, Lock, Key, ExternalLink, Instagram,
-  ChevronDown, Clock, Link2, UserPlus, Trash2, Copy, Users
+  MapPin, Globe, ChevronDown, Clock, Link2, UserPlus, Trash2, Copy, Users, AlertTriangle
 } from 'lucide-react';
 
 const InputField = ({ label, icon: Icon, value, onChange, type = "text", readOnly = false, placeholder = "" }: any) => (
@@ -68,7 +67,9 @@ const getLocalTimezone = () => {
   return `UTC${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
 
-const VinculacionNutricionista: React.FC = () => {
+const VinculacionNutricionista: React.FC<{
+  onUnlinkRequest: (id: string, name: string, type: 'receptionist') => void;
+}> = ({ onUnlinkRequest }) => {
   const currentUser: any = authStore.getCurrentUser();
   const [linkCode, setLinkCode] = useState('');
   const [copied, setCopied] = useState(false);
@@ -95,14 +96,6 @@ const VinculacionNutricionista: React.FC = () => {
       setLinkCode('');
       setRefreshKey(x => x + 1);
     }
-    setTimeout(() => setMsg(null), 3000);
-  };
-
-  const handleUnlink = (receptionistId: string, receptionistName: string) => {
-    if (!confirm(`¿Desvincular a ${receptionistName}?`)) return;
-    const res = authStore.unlinkReceptionistFromNutritionist(receptionistId);
-    setMsg({ type: res.ok ? 'ok' : 'err', text: res.message });
-    if (res.ok) setRefreshKey(x => x + 1);
     setTimeout(() => setMsg(null), 3000);
   };
 
@@ -146,7 +139,9 @@ const VinculacionNutricionista: React.FC = () => {
         <label className="text-sm font-bold text-slate-700 block">Vincular recepcionista por código</label>
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400">
+              <Copy className="w-5 h-5" />
+            </div>
             <input
               type="text"
               value={linkCode}
@@ -197,7 +192,7 @@ const VinculacionNutricionista: React.FC = () => {
               </span>
               <button
                 type="button"
-                onClick={() => handleUnlink(recep.id, recep.profile.name)}
+                onClick={() => onUnlinkRequest(recep.id, recep.profile.name, 'receptionist')}
                 className="w-8 h-8 flex items-center justify-center bg-white border border-red-100 text-red-400 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -210,7 +205,9 @@ const VinculacionNutricionista: React.FC = () => {
   );
 };
 
-const VinculacionRecepcionista: React.FC = () => {
+const VinculacionRecepcionista: React.FC<{
+  onUnlinkRequest: (id: string, name: string, type: 'nutritionist') => void;
+}> = ({ onUnlinkRequest }) => {
   const currentUser: any = authStore.getCurrentUser();
   const [linkCode, setLinkCode] = useState('');
   const [copied, setCopied] = useState(false);
@@ -237,14 +234,6 @@ const VinculacionRecepcionista: React.FC = () => {
       setLinkCode('');
       setRefreshKey(x => x + 1);
     }
-    setTimeout(() => setMsg(null), 3000);
-  };
-
-  const handleUnlink = (nutritionistId: string, nutritionistName: string) => {
-    if (!confirm(`¿Desvincular a ${nutritionistName}?`)) return;
-    const res = authStore.unlinkNutritionistFromReceptionist(nutritionistId);
-    setMsg({ type: res.ok ? 'ok' : 'err', text: res.message });
-    if (res.ok) setRefreshKey(x => x + 1);
     setTimeout(() => setMsg(null), 3000);
   };
 
@@ -288,7 +277,9 @@ const VinculacionRecepcionista: React.FC = () => {
         <label className="text-sm font-bold text-slate-700 block">Vincular nutricionista por código</label>
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400">
+              <Copy className="w-5 h-5" />
+            </div>
             <input
               type="text"
               value={linkCode}
@@ -339,7 +330,7 @@ const VinculacionRecepcionista: React.FC = () => {
               </span>
               <button
                 type="button"
-                onClick={() => handleUnlink(nutri.id, nutri.profile.name)}
+                onClick={() => onUnlinkRequest(nutri.id, nutri.profile.name, 'nutritionist')}
                 className="w-8 h-8 flex items-center justify-center bg-white border border-red-100 text-red-400 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -366,6 +357,10 @@ export const Profile: React.FC = () => {
   const [isProcessingImg, setIsProcessingImg] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Estados para modal de desvinculación
+  const [isUnlinkModalOpen, setIsUnlinkModalOpen] = useState(false);
+  const [unlinkTarget, setUnlinkTarget] = useState<{ id: string; name: string; type: 'receptionist' | 'nutritionist' } | null>(null);
+
   useEffect(() => {
     if (!formData.timezone || formData.timezone.includes('/') || !UTC_TIMEZONES.includes(formData.timezone)) {
       const localTz = getLocalTimezone();
@@ -381,6 +376,26 @@ export const Profile: React.FC = () => {
     authStore.updateCurrentUserProfile(formData);
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
+  };
+
+  const handleUnlinkRequest = (id: string, name: string, type: 'receptionist' | 'nutritionist') => {
+    setUnlinkTarget({ id, name, type });
+    setIsUnlinkModalOpen(true);
+  };
+
+  const confirmUnlink = () => {
+    if (!unlinkTarget) return;
+
+    if (unlinkTarget.type === 'receptionist') {
+      const result = authStore.unlinkReceptionistFromNutritionist(unlinkTarget.id);
+      alert(result.message);
+    } else {
+      const result = authStore.unlinkNutritionistFromReceptionist(unlinkTarget.id);
+      alert(result.message);
+    }
+
+    setIsUnlinkModalOpen(false);
+    setUnlinkTarget(null);
   };
 
   const processImage = (file: File) => {
@@ -502,7 +517,7 @@ export const Profile: React.FC = () => {
 
                 {showNutriFields && (
                   <>
-                    <InputField label="Usuario Instagram" icon={Instagram} value={formData.instagramHandle || ''} placeholder="blancamoorales" onChange={(e: any) => setFormData({ ...formData, instagramHandle: e.target.value })} />
+                    <InputField label="Usuario Instagram" icon={User} value={formData.instagramHandle || ''} placeholder="blancamoorales" onChange={(e: any) => setFormData({ ...formData, instagramHandle: e.target.value })} />
                     <InputField label="Página Web" icon={Globe} value={formData.website || ''} onChange={(e: any) => setFormData({ ...formData, website: e.target.value })} />
                   </>
                 )}
@@ -511,8 +526,8 @@ export const Profile: React.FC = () => {
               <TextAreaField label="Dirección" icon={MapPin} value={formData.address || ''} onChange={(e: any) => setFormData({ ...formData, address: e.target.value })} placeholder="Ingresa la dirección de tu clínica..." rows={3} />
             </div>
 
-            {showVinculacionRecepcionistas && <VinculacionNutricionista />}
-            {showVinculacionNutricionistas && <VinculacionRecepcionista />}
+            {showVinculacionRecepcionistas && <VinculacionNutricionista onUnlinkRequest={handleUnlinkRequest} />}
+            {showVinculacionNutricionistas && <VinculacionRecepcionista onUnlinkRequest={handleUnlinkRequest} />}
 
             {showSistema && (
               <div className="space-y-6">
@@ -553,6 +568,40 @@ export const Profile: React.FC = () => {
           </form>
         </div>
       </div>
+
+      {/* Unlink Confirmation Modal */}
+      {isUnlinkModalOpen && unlinkTarget && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">¿Confirmar desvinculación?</h3>
+              <p className="text-slate-500 mb-6">
+                ¿Estás segura que quieres desvincular a <strong>{unlinkTarget.name}</strong>? Esta acción no es reversible.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setIsUnlinkModalOpen(false);
+                    setUnlinkTarget(null);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmUnlink}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20"
+                >
+                  Desvincular
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
