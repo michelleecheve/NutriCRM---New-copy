@@ -83,26 +83,34 @@ export const Payments: React.FC = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (invoiceToDelete) {
-      store.deleteInvoice(invoiceToDelete);
-      setInvoices(store.getInvoices());
-      setIsDeleteModalOpen(false);
-      setInvoiceToDelete(null);
+      try {
+        await store.deleteInvoice(invoiceToDelete);
+        setInvoices(store.getInvoices());
+        setIsDeleteModalOpen(false);
+        setInvoiceToDelete(null);
+      } catch (error) {
+        console.error('Error deleting invoice:', error);
+      }
     }
   };
 
-  const handleSaveInvoice = (e: React.FormEvent) => {
+  const handleSaveInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (currentInvoice.id) {
-        // Edit
-        store.updateInvoice(currentInvoice as Invoice);
-    } else {
-        // Create
-        store.addInvoice(currentInvoice as Omit<Invoice, 'id'>);
+    try {
+      if (currentInvoice.id) {
+          // Edit
+          await store.updateInvoice(currentInvoice as Invoice);
+      } else {
+          // Create
+          await store.addInvoice(currentInvoice as Omit<Invoice, 'id'>);
+      }
+      setInvoices(store.getInvoices());
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Error saving invoice:', error);
     }
-    setInvoices(store.getInvoices());
-    setIsModalOpen(false);
   };
 
   // Handle Dropdown Selection

@@ -106,7 +106,7 @@ export const DietaryForm: React.FC<{
         excludedFoods: '',
         notes: '',
         recall: [],
-        foodFrequency: {},
+        foodFrequency: [],
         foodFrequencyOthers: '',
       });
       setEvaluationId(selId);
@@ -147,15 +147,17 @@ export const DietaryForm: React.FC<{
     setFormData({ ...formData, recall: formData.recall.filter((_, i) => i !== idx) });
 
   const updateFrequency = (food: string, freq: string) => {
-    const existingIndex = formData.foodFrequency.findIndex(f => f.category === food);
+    const frequencyArray = Array.isArray(formData.foodFrequency) ? formData.foodFrequency : [];
+    const existingIndex = frequencyArray.findIndex(f => f.category === food);
+    
     if (existingIndex > -1) {
-      const current = formData.foodFrequency[existingIndex];
+      const current = frequencyArray[existingIndex];
       if (current.frequency === freq) {
         // Remove if same
-        setFormData({ ...formData, foodFrequency: formData.foodFrequency.filter(f => f.category !== food) });
+        setFormData({ ...formData, foodFrequency: frequencyArray.filter(f => f.category !== food) });
       } else {
         // Update frequency
-        const newFreq = [...formData.foodFrequency];
+        const newFreq = [...frequencyArray];
         newFreq[existingIndex] = { ...newFreq[existingIndex], frequency: freq };
         setFormData({ ...formData, foodFrequency: newFreq });
       }
@@ -164,14 +166,14 @@ export const DietaryForm: React.FC<{
       setFormData({ 
         ...formData, 
         foodFrequency: [
-          ...formData.foodFrequency, 
+          ...frequencyArray, 
           { id: Math.random().toString(36).substring(7), dietaryEvaluationId: formData.id, category: food, frequency: freq }
         ] 
       });
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!evaluationId) return;
     const ev = store.getEvaluationById(evaluationId);
     if (!ev) return;
@@ -187,6 +189,12 @@ export const DietaryForm: React.FC<{
       : [normalized, ...patient.dietaryEvaluations];
 
     onSavePatient({ ...patient, dietaryEvaluations: updatedEvaluations });
+    
+    try {
+      await store.saveDietaryEvaluation(evaluationId, normalized);
+    } catch (error) {
+      console.error('Error saving dietary evaluation to Supabase:', error);
+    }
   };
 
   return (
@@ -337,7 +345,8 @@ export const DietaryForm: React.FC<{
                 <tr key={freq} className="hover:bg-slate-50/50">
                   <td className="p-4 font-bold text-slate-600 text-xs uppercase sticky left-0 bg-white z-10 border-r border-slate-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">{freq}</td>
                   {FOOD_GROUPS.map(group => {
-                    const isSelected = formData.foodFrequency.find(f => f.category === group)?.frequency === freq;
+                    const frequencyArray = Array.isArray(formData.foodFrequency) ? formData.foodFrequency : [];
+                    const isSelected = frequencyArray.find(f => f.category === group)?.frequency === freq;
                     return (
                       <td
                         key={group}

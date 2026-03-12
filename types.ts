@@ -98,6 +98,8 @@ export interface Measurement {
   [key: string]: any;
 }
 
+export type MeasurementRecord = Measurement;
+
 export interface SomatotypeRecord {
   id: string;
   linkedEvaluationId: string; // AGREGADO - Foreign key con evaluations
@@ -126,13 +128,32 @@ export interface MacroRecord {
 }
 
 export interface MacrosRecord {
+  id?: string;
   cho: MacroRecord;
   chon: MacroRecord;
   fat: MacroRecord;
   totalKcal: number;
 }
 
+export interface PortionRow {
+  id: string;
+  group: string;
+  portions: number;
+  kcal: number;
+  cho: number;
+  chon: number;
+  fat: number;
+}
+
 export interface PortionsRecord {
+  id?: string;
+  rows?: PortionRow[];
+  totals?: {
+    kcal: number;
+    cho: number;
+    chon: number;
+    fat: number;
+  };
   lec: number;
   lecDesc: number;
   fru: number;
@@ -146,18 +167,42 @@ export interface PortionsRecord {
 }
 
 export interface GeneratedMenu {
-  id: string;                          // Usar IDs cortos (ej: "menu-1", "menu-2")
-  linkedEvaluationId: string;          // Foreign key con evaluations
-  date: string;                        // RENOMBRADO (era basedOnMeasurementDate) - Sacar de linkedEvaluationId
-  content: string;
-  vet?: VetCalculation;
+  id: string;
+  linkedEvaluationId: string;
+  patientId?: string;
+  date: string;
+  
+  // VET Calculation Basics (Individual columns)
+  age?: number;
+  weightKg?: number;
+  heightCm?: number;
+  gender?: string;
+  
+  // VET Calculation Details (JSONB)
+  vetDetails?: {
+    activityLevel: string;
+    activityFactor: number;
+    tmbKcal: number;
+    getKcalReal: number;
+  };
+  
+  // Kcal to work (Individual column)
+  kcalToWork?: number;
+  
+  // Macros and Portions (JSONB)
   macros?: MacrosRecord;
   portions?: PortionsRecord;
+  
+  // Templates and References
+  templatesReferences?: string;
+  
+  // The actual menu (JSONB)
+  menuData?: any;
+  
+  // UI/Legacy fields
   name?: string;
-  selectedTemplateId?: string;
-  selectedReferenceIds?: string[];     // Usar IDs cortos (ej: ["ref-1", "ref-2"])
+  content?: string;
   aiRationale?: string;
-  menuPreviewData?: any;
 }
 
 // SIMPLIFICADO - Eliminados: currentDiet, dailyCaloriesTarget, menus, notes
@@ -272,7 +317,7 @@ export interface PagePermission {
 export interface AppUser {
   id: string;
   email: string;
-  password: string;
+  password?: string;
   role: 'admin' | 'nutricionista' | 'recepcionista';
   profile: UserProfile;
   linkedNutritionistIds?: string[];
@@ -289,6 +334,7 @@ export interface PatientEvaluation {
 
 export enum AppRoute {
   LOGIN             = 'login',
+  REGISTER          = 'register',
   MAIN              = 'main',
   MAIN_RECEPTIONIST = 'main-receptionist',
   DASHBOARD         = 'dashboard',

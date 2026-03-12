@@ -63,33 +63,41 @@ export const SomatocartaForm: React.FC<{
     }
   }, [editingId]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!values.x || !values.y) return;
     const xVal = parseFloat(values.x);
     const yVal = parseFloat(values.y);
 
     let updatedSomatotypes: SomatotypeRecord[];
+    let recordToSave: SomatotypeRecord;
 
     if (existingRecord) {
       // ✅ EDITAR — reemplaza solo el record con ese id
+      recordToSave = { ...existingRecord, linkedEvaluationId: evaluationId || '', date: linkedDate, x: xVal, y: yVal };
       updatedSomatotypes = (patient.somatotypes || []).map(s =>
-        s.id === existingRecord.id
-          ? { ...existingRecord, linkedEvaluationId: evaluationId || '', date: linkedDate, x: xVal, y: yVal }
-          : s
+        s.id === existingRecord.id ? recordToSave : s
       );
     } else {
       // ✅ CREAR NUEVO — siempre agrega, nunca sobreescribe
-      const newRecord: SomatotypeRecord = {
+      recordToSave = {
         id: Math.random().toString(36).substring(7),
         linkedEvaluationId: evaluationId || '',
         date: linkedDate,
         x: xVal,
         y: yVal,
       };
-      updatedSomatotypes = [newRecord, ...(patient.somatotypes || [])];
+      updatedSomatotypes = [recordToSave, ...(patient.somatotypes || [])];
     }
 
     onSavePatient({ ...patient, somatotypes: updatedSomatotypes });
+    
+    if (evaluationId) {
+      try {
+        await store.saveSomatotype(evaluationId, recordToSave);
+      } catch (error) {
+        console.error('Error saving somatotype to Supabase:', error);
+      }
+    }
   };
 
   return (

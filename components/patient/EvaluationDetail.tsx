@@ -226,11 +226,11 @@ export const EvaluationDetail: React.FC<{
     return draft.title !== t || draft.date !== selected.date;
   }, [selected, draft]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selected || !draft) return;
     setErrorMsg('');
     try {
-      store.updateEvaluation(selected.id, {
+      await store.updateEvaluation(selected.id, {
         title: draft.title?.trim() ? draft.title.trim() : undefined,
         date: draft.date,
       });
@@ -239,30 +239,42 @@ export const EvaluationDetail: React.FC<{
     }
   };
 
-  const handleDeleteConfirmed = () => {
+  const handleDeleteConfirmed = async () => {
     if (!selected) return;
-    store.deleteEvaluation(selected.id);
-    setConfirmOpen(false);
-    setDraft(null);
-    setErrorMsg('');
-    store.setSelectedEvaluationId(patientId, null);
-    onBack();
+    try {
+      await store.deleteEvaluation(selected.id);
+      setConfirmOpen(false);
+      setDraft(null);
+      setErrorMsg('');
+      store.setSelectedEvaluationId(patientId, null);
+      onBack();
+    } catch (error) {
+      console.error('Error deleting evaluation:', error);
+    }
   };
 
-  const handleUpdateLabsForThisEvaluation = (newFilesForThisDate: any[]) => {
+  const handleUpdateLabsForThisEvaluation = async (newFilesForThisDate: any[]) => {
     if (!selected) return;
     const rest = (patient.labs || []).filter((f: any) => f?.date !== selected.date);
     const updatedPatient: Patient = { ...patient, labs: [...newFilesForThisDate, ...rest] };
     onUpdate(updatedPatient);
-    store.updatePatient(updatedPatient);
+    try {
+      await store.updatePatient(updatedPatient);
+    } catch (error) {
+      console.error('Error updating patient labs:', error);
+    }
   };
 
-  const handleUpdatePhotosForThisEvaluation = (newFilesForThisDate: any[]) => {
+  const handleUpdatePhotosForThisEvaluation = async (newFilesForThisDate: any[]) => {
     if (!selected) return;
     const rest = (patient.photos || []).filter((f: any) => f?.date !== selected.date);
     const updatedPatient: Patient = { ...patient, photos: [...newFilesForThisDate, ...rest] };
     onUpdate(updatedPatient);
-    store.updatePatient(updatedPatient);
+    try {
+      await store.updatePatient(updatedPatient);
+    } catch (error) {
+      console.error('Error updating patient photos:', error);
+    }
   };
 
   const handleEditLinkedMeasurement = (m: Measurement) => {
@@ -436,11 +448,15 @@ export const EvaluationDetail: React.FC<{
               patient={patient}
               patientEvaluations={patientEvaluations}
               editingId={dietaryEditingId}
-              onSavePatient={(updated) => {
+              onSavePatient={async (updated) => {
                 onUpdate(updated);
-                store.updatePatient(updated);
-                setDietaryView('card');
-                setDietaryEditingId(null);
+                try {
+                  await store.updatePatient(updated);
+                  setDietaryView('card');
+                  setDietaryEditingId(null);
+                } catch (error) {
+                  console.error('Error updating patient dietary:', error);
+                }
               }}
               onCancel={() => { setDietaryView('card'); setDietaryEditingId(null); }}
               showDelete={false}
@@ -525,11 +541,15 @@ export const EvaluationDetail: React.FC<{
               patientEvaluations={patientEvaluations}
               editingId={somatoEditingId}
               onCancel={() => { setSomatoView('card'); setSomatoEditingId(null); }}
-              onSavePatient={(updated) => {
+              onSavePatient={async (updated) => {
                 onUpdate(updated);
-                store.updatePatient(updated);
-                setSomatoView('card');
-                setSomatoEditingId(null);
+                try {
+                  await store.updatePatient(updated);
+                  setSomatoView('card');
+                  setSomatoEditingId(null);
+                } catch (error) {
+                  console.error('Error updating patient somatotype:', error);
+                }
               }}
             />
           ) : linkedSomatotypes.length > 0 ? (

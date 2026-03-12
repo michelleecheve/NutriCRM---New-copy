@@ -34,15 +34,20 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [deletingAppt, setDeletingAppt] = useState<Appointment | null>(null);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deletingAppt) {
-      if (isManagingForOtherNutritionist && targetNutritionistId) {
-        store.deleteAppointmentForNutritionist(targetNutritionistId, deletingAppt.id);
-      } else {
-        store.deleteAppointment(deletingAppt.id);
+      try {
+        if (isManagingForOtherNutritionist && targetNutritionistId) {
+          await store.deleteAppointmentForNutritionist(targetNutritionistId, deletingAppt.id);
+        } else {
+          await store.deleteAppointment(deletingAppt.id);
+        }
+        setDeletingAppt(null);
+        onRefresh();
+      } catch (error) {
+        console.error('Error deleting appointment:', error);
+        // Optional: show error to user
       }
-      setDeletingAppt(null);
-      onRefresh();
     }
   };
 

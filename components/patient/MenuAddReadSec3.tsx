@@ -124,6 +124,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   });
   const [showRationale, setShowRationale] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
 
   // ─── Copy from Reference modal state ──────────────────────────────────────
   const [showCopyRefModal, setShowCopyRefModal] = useState(false);
@@ -222,7 +223,10 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       
     } catch (error) {
       console.error("Error generating menu:", error);
-      alert("Hubo un error al generar el menú con IA. Por favor intenta de nuevo.");
+      setInfoModal({ 
+        title: "Error de generación", 
+        message: "Hubo un error al generar el menú con IA. Por favor intenta de nuevo." 
+      });
     } finally {
       setIsGenerating(false);
     }

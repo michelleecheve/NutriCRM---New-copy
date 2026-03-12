@@ -270,7 +270,7 @@ export const NewMeasurementForm: React.FC<{
     setFormData(prev => calculateAnthropometry({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!evaluationId) {
       setInfoModal({ title: 'Falta evaluación', message: 'Primero selecciona una evaluación.' });
       return;
@@ -303,18 +303,31 @@ export const NewMeasurementForm: React.FC<{
 
     const updatedPatient = { ...patient, measurements: updatedMeasurements };
     onUpdate(updatedPatient);
-    store.updatePatient(updatedPatient);
-    onClose();
+    try {
+      await store.updatePatient(updatedPatient);
+      await store.saveMeasurement(evaluationId, normalized);
+      onClose();
+    } catch (error) {
+      console.error('Error saving measurement:', error);
+    }
   };
 
-  const handleDeleteConfirmed = () => {
+  const handleDeleteConfirmed = async () => {
     if (!editingId) return;
+    const itemToDelete = patient.measurements.find(m => m.id === editingId);
     const updatedMeasurements = patient.measurements.filter(m => m.id !== editingId && m.date !== editingId);
     const updatedPatient = { ...patient, measurements: updatedMeasurements };
     onUpdate(updatedPatient);
-    store.updatePatient(updatedPatient);
-    setConfirmDeleteOpen(false);
-    onClose();
+    try {
+      await store.updatePatient(updatedPatient);
+      if (itemToDelete?.linkedEvaluationId) {
+        await store.deleteMeasurement(itemToDelete.linkedEvaluationId);
+      }
+      setConfirmDeleteOpen(false);
+      onClose();
+    } catch (error) {
+      console.error('Error deleting measurement:', error);
+    }
   };
 
   return (

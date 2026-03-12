@@ -27,9 +27,13 @@ export const EvaluationsTab: React.FC<{
     return store.getEvaluationById(selectedId) ?? null;
   }, [selectedId]);
 
-  const handleCreateToday = () => {
-    store.addEvaluation(patientId, store.getTodayStr());
-    load();
+  const handleCreateToday = async () => {
+    try {
+      await store.addEvaluation(patientId, store.getTodayStr());
+      load();
+    } catch (error) {
+      console.error('Error creating evaluation:', error);
+    }
   };
 
   const handleOpenDetail = (evId: string) => {

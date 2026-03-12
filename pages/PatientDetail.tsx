@@ -41,9 +41,13 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack 
     setPatient(p);
   }, [patientId]);
 
-  const handleUpdatePatient = (updated: Patient) => {
+  const handleUpdatePatient = async (updated: Patient) => {
     setPatient(updated);
-    store.updatePatient(updated);
+    try {
+      await store.updatePatient(updated);
+    } catch (error) {
+      console.error('Error updating patient:', error);
+    }
   };
 
   if (!patient) {

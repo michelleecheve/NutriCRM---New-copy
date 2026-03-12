@@ -50,7 +50,7 @@ export const CalendarAppointmentModal: React.FC<CalendarAppointmentModalProps> =
 
   const isEdit = mode === 'edit';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!manualPatientName.trim()) return;
@@ -59,30 +59,41 @@ export const CalendarAppointmentModal: React.FC<CalendarAppointmentModalProps> =
     const now = new Date().toISOString();
     const patientName = manualPatientName.trim();
 
-    // Determinar si estamos manejando citas de otra nutricionista
-    if (isManagingForOtherNutritionist && targetNutritionistId) {
-      if (isEdit) {
-        store.updateAppointmentForNutritionist(
-          targetNutritionistId,
-          { ...formData as Appointment, patientName, updatedAt: now } as any
-        );
-      } else {
-        store.addAppointmentForNutritionist(
-          targetNutritionistId,
-          { ...formData as any, patientName, createdAt: now, updatedAt: now }
-        );
-      }
-    } else {
-      // Operaciones normales (propias citas)
-      if (isEdit) {
-        store.updateAppointment({ ...formData as Appointment, patientName, updatedAt: now } as any);
-      } else {
-        store.addAppointment({ ...formData as any, patientName, createdAt: now, updatedAt: now });
-      }
-    }
+    try {
+      const appointmentData = { 
+        ...formData, 
+        patientName, 
+        createdAt: now, 
+        updatedAt: now 
+      };
 
-    onSaved();
-    onClose();
+      // Determinar si estamos manejando citas de otra nutricionista
+      if (isManagingForOtherNutritionist && targetNutritionistId) {
+        if (isEdit) {
+          await store.updateAppointmentForNutritionist(
+            targetNutritionistId,
+            { ...appointmentData as Appointment } as any
+          );
+        } else {
+          await store.addAppointmentForNutritionist(
+            targetNutritionistId,
+            { ...appointmentData as any }
+          );
+        }
+      } else {
+        // Operaciones normales (propias citas)
+        if (isEdit) {
+          await store.updateAppointment({ ...appointmentData as Appointment } as any);
+        } else {
+          await store.addAppointment({ ...appointmentData as any });
+        }
+      }
+
+      onSaved();
+      onClose();
+    } catch (error) {
+      console.error('Error saving appointment:', error);
+    }
   };
 
   return (

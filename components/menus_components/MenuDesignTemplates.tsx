@@ -175,7 +175,7 @@ const Header: React.FC<{ nutritionist: MenuPlanData['nutritionist'] }> = ({ nutr
                           style={{ width: '42px', height: '42px', objectFit: 'cover', display: 'block' }} />
                       ) : (
                         <span style={{ color: '#fff', fontSize: '18px', fontWeight: 800, lineHeight: '42px' }}>
-                          {nutritionist.name.charAt(0)}
+                          {(nutritionist.name || 'N').charAt(0)}
                         </span>
                       )}
                     </div>
@@ -183,10 +183,10 @@ const Header: React.FC<{ nutritionist: MenuPlanData['nutritionist'] }> = ({ nutr
                   {/* Name + title */}
                   <td style={{ verticalAlign: 'middle' }}>
                     <div style={{ fontWeight: 900, fontSize: '20px', color: '#0f172a', letterSpacing: '-0.5px', lineHeight: 1 }}>
-                      {nutritionist.name.toUpperCase()}
+                      {(nutritionist.name || '').toUpperCase()}
                     </div>
                     <div style={{ fontSize: '8px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginTop: '3px' }}>
-                      {nutritionist.title.toUpperCase()}
+                      {(nutritionist.title || '').toUpperCase()}
                     </div>
                   </td>
                 </tr>
@@ -356,9 +356,9 @@ const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => (
 const Footer: React.FC<{ nutritionist: MenuPlanData['nutritionist'] }> = ({ nutritionist }) => (
   <div style={{ width: '100%' }}>
     <div style={{ fontWeight: 800, fontSize: '8px', color: '#1e293b', marginBottom: '2px' }}>
-      {nutritionist.title.includes('Lic') || nutritionist.title.includes('Dr')
-        ? nutritionist.title.toUpperCase() : 'LICDA.'}{' '}
-      {nutritionist.name.toUpperCase()}
+      {(nutritionist.title || '').toUpperCase().includes('LIC') || (nutritionist.title || '').toUpperCase().includes('DR')
+        ? (nutritionist.title || '').toUpperCase() : 'LICDA.'}{' '}
+      {(nutritionist.name || '').toUpperCase()}
       {nutritionist.licenseNumber && ` - NUTRICIONISTA COLEGIADO #${nutritionist.licenseNumber}`}
     </div>
     <table style={{ borderCollapse: 'collapse', fontSize: '7.5px', color: '#475569' }}>

@@ -16,7 +16,6 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
     const current = patient.sportsProfile || [];
     const newEntry = { 
       id: Math.random().toString(36).substring(7),
-      patientId: patient.id,
       sport: '', 
       daysPerWeek: '', 
       schedule: '', 

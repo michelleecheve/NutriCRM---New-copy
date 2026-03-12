@@ -48,15 +48,23 @@ export const CalendarPage: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
 
   useEffect(() => {
-    if (targetNutritionistId === currentAppUser?.id) {
-      // Cargar las propias
-      setAppointments(store.getAppointments());
-      setPatients(store.getPatients());
-    } else {
-      // Cargar las de otra nutricionista
-      setAppointments(store.getAppointmentsForNutritionist(targetNutritionistId));
-      setPatients(store.getPatientsForNutritionist(targetNutritionistId));
-    }
+    const fetchData = async () => {
+      try {
+        if (targetNutritionistId === currentAppUser?.id) {
+          // Cargar las propias
+          setAppointments(store.getAppointments());
+          setPatients(store.getPatients());
+        } else {
+          // Cargar las de otra nutricionista
+          const appts = await store.getAppointmentsForNutritionist(targetNutritionistId);
+          setAppointments(appts);
+          setPatients(store.getPatientsForNutritionist(targetNutritionistId));
+        }
+      } catch (error) {
+        console.error('Error fetching calendar data:', error);
+      }
+    };
+    fetchData();
   }, [targetNutritionistId, currentAppUser?.id]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -91,13 +99,18 @@ export const CalendarPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleRefresh = () => {
-    if (targetNutritionistId === currentAppUser?.id) {
-      setAppointments(store.getAppointments());
-      setPatients(store.getPatients());
-    } else {
-      setAppointments(store.getAppointmentsForNutritionist(targetNutritionistId));
-      setPatients(store.getPatientsForNutritionist(targetNutritionistId));
+  const handleRefresh = async () => {
+    try {
+      if (targetNutritionistId === currentAppUser?.id) {
+        setAppointments(store.getAppointments());
+        setPatients(store.getPatients());
+      } else {
+        const appts = await store.getAppointmentsForNutritionist(targetNutritionistId);
+        setAppointments(appts);
+        setPatients(store.getPatientsForNutritionist(targetNutritionistId));
+      }
+    } catch (error) {
+      console.error('Error refreshing calendar data:', error);
     }
   };
 

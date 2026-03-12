@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { History, Search, ExternalLink, Download, User, Calendar, Flame, FileText, Eye } from 'lucide-react';
 import { store } from '../../services/store';
 import { GeneratedMenu, Patient } from '../../types';
@@ -18,8 +18,20 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient }) => 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
 
-  const historyEntries = (() => {
-    const patients = store.getPatients();
+  const [patients, setPatients] = useState<Patient[]>([]);
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        setPatients(store.getPatients());
+      } catch (error) {
+        console.error('Error fetching patients for menu history:', error);
+      }
+    };
+    fetchPatients();
+  }, []);
+
+  const historyEntries = useMemo(() => {
     const entries: HistoryEntry[] = [];
     
     patients.forEach(patient => {
@@ -34,7 +46,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient }) => 
     return entries.sort((a, b) => 
       new Date(b.menu.date).getTime() - new Date(a.menu.date).getTime()
     );
-  })();
+  }, [patients]);
 
   const filteredEntries = useMemo(() => {
     if (!searchTerm.trim()) return historyEntries;

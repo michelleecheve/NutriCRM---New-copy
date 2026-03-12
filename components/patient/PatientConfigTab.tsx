@@ -80,20 +80,69 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
         x,
         y
       })),
-      menus: patient.menus.map(({ id, linkedEvaluationId, date, content, vet, macros, portions, name, selectedTemplateId, selectedReferenceIds, aiRationale, menuPreviewData }) => ({
-        id,
-        linkedEvaluationId,
-        date,
-        content,
-        vet,
-        macros,
-        portions,
-        name,
-        selectedTemplateId,
-        selectedReferenceIds,
-        aiRationale,
-        menuPreviewData
-      })),
+      menus: patient.menus.map((m) => {
+        const EXCHANGE_LIST = {
+          lec: { name: 'Lácteos Enteros', kcal: 150, cho: 12, chon: 7, fat: 8 },
+          lecDesc: { name: 'Lácteos Descremados', kcal: 90, cho: 12, chon: 7, fat: 1 },
+          fru: { name: 'Frutas', kcal: 60, cho: 15, chon: 0, fat: 0 },
+          veg: { name: 'Vegetales', kcal: 25, cho: 5, chon: 2, fat: 0 },
+          cer: { name: 'Cereales', kcal: 80, cho: 15, chon: 6, fat: 0 },
+          carMagra: { name: 'Carnes Magras', kcal: 55, cho: 0, chon: 7, fat: 3 },
+          carSemi: { name: 'Carnes Semi Grasas', kcal: 75, cho: 0, chon: 7, fat: 5 },
+          carAlta: { name: 'Carnes Altas en Grasa', kcal: 100, cho: 0, chon: 7, fat: 8 },
+          gra: { name: 'Grasas', kcal: 45, cho: 0, chon: 0, fat: 5 },
+          azu: { name: 'Azúcares', kcal: 45, cho: 12, chon: 0, fat: 0 },
+        };
+
+        const macros = m.macros ? {
+          id: m.macros.id || `macros-${m.id}`,
+          ...m.macros
+        } : undefined;
+
+        const portions = m.portions ? (() => {
+          const rows = Object.entries(EXCHANGE_LIST).map(([key, ref]) => {
+            const p = (m.portions as any)[key] || 0;
+            return {
+              id: `${key}-${m.id}`,
+              group: ref.name,
+              portions: p,
+              kcal: Math.round(p * ref.kcal),
+              cho: Math.round(p * ref.cho),
+              chon: Math.round(p * ref.chon),
+              fat: Math.round(p * ref.fat)
+            };
+          });
+
+          const totals = rows.reduce((acc, row) => ({
+            kcal: acc.kcal + row.kcal,
+            cho: acc.cho + row.cho,
+            chon: acc.chon + row.chon,
+            fat: acc.fat + row.fat
+          }), { kcal: 0, cho: 0, chon: 0, fat: 0 });
+
+          return {
+            id: m.portions.id || `portions-${m.id}`,
+            ...m.portions,
+            rows,
+            totals
+          };
+        })() : undefined;
+
+        return {
+          id: m.id,
+          linkedEvaluationId: m.linkedEvaluationId,
+          date: m.date,
+          content: m.content,
+          vet: m.vet,
+          macros,
+          portions,
+          name: m.name,
+          selectedTemplateId: m.selectedTemplateId,
+          selectedReferenceIds: m.selectedReferenceIds,
+          aiRationale: m.aiRationale,
+          menuPreviewData: m.menuPreviewData
+        };
+      }),
       labs: patient.labs.map(({ id, linkedEvaluationId, name, date, url, type, labInterpretation }) => ({
         id,
         linkedEvaluationId,

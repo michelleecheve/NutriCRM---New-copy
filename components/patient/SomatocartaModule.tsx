@@ -109,11 +109,21 @@ export const SomatocartaModule: React.FC<{
     setConfirmDeleteOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteTargetId) return;
+    const itemToDelete = (patient.somatotypes || []).find(s => s.id === deleteTargetId);
     const updatedSomatotypes = (patient.somatotypes || []).filter(s => s.id !== deleteTargetId);
     const updatedPatient = { ...patient, somatotypes: updatedSomatotypes };
     onUpdate(updatedPatient);
+    
+    if (itemToDelete?.linkedEvaluationId) {
+      try {
+        await store.deleteSomatotype(itemToDelete.linkedEvaluationId);
+      } catch (error) {
+        console.error('Error deleting somatotype from Supabase:', error);
+      }
+    }
+
     setConfirmDeleteOpen(false);
     setDeleteTargetId(null);
     if (editingId === deleteTargetId) resetForm();
@@ -132,14 +142,25 @@ export const SomatocartaModule: React.FC<{
     setLinkModalOpen(true);
   };
 
-  const applyLink = () => {
+  const applyLink = async () => {
     if (!linkingSomatoId) return;
+    let recordToSave: SomatotypeRecord | null = null;
     const updatedSomatotypes = (patient.somatotypes || []).map(s => {
       if (s.id !== linkingSomatoId) return s;
-      return { ...s, date: somatoLinkedDate, linkedEvaluationId: somatoEvaluationId ?? null } as any;
+      recordToSave = { ...s, date: somatoLinkedDate, linkedEvaluationId: somatoEvaluationId ?? '' } as any;
+      return recordToSave!;
     });
     const updatedPatient = { ...patient, somatotypes: updatedSomatotypes };
     onUpdate(updatedPatient);
+
+    if (recordToSave && somatoEvaluationId) {
+      try {
+        await store.saveSomatotype(somatoEvaluationId, recordToSave);
+      } catch (error) {
+        console.error('Error linking somatotype in Supabase:', error);
+      }
+    }
+
     setLinkModalOpen(false);
     setLinkingSomatoId(null);
     setSomatoEvalSelectorOpen(false);

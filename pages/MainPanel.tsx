@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
 import { Patient, Appointment, Invoice } from '../types';
-import { CreditCard, Calendar, ChefHat, TrendingUp, Clock, ChevronRight, AlertCircle, CalendarDays, Users } from 'lucide-react';
+import { CreditCard, Calendar, ChefHat, TrendingUp, Clock, ChevronRight, AlertCircle, CalendarDays, Users, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getTodayStr } from '../src/utils/dateUtils';
 import { CalendarAppointmentModal } from '../components/calendar_components/CalendarAppointmentModal';
@@ -13,7 +13,20 @@ interface MainPanelProps {
 
 export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   const currentUser = authStore.getCurrentUser();
-  const [user] = useState(currentUser?.profile || store.getUserProfile());
+  const user = currentUser?.profile || store.getUserProfile();
+  
+  // Guard against null user or missing timezone
+  if (!user || !user.timezone) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+          <p className="text-slate-500 font-medium">Cargando panel...</p>
+        </div>
+      </div>
+    );
+  }
+
   const todayStr = getTodayStr(user.timezone);
   const [currentYear, currentMonth] = todayStr.split('-').map(Number);
 
@@ -24,9 +37,23 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   };
 
   const [dateRange, setDateRange] = useState({ start: getFirstDay(), end: getLastDay() });
-  const [patients] = useState<Patient[]>(store.getPatients());
-  const [appointments, setAppointments] = useState<Appointment[]>(store.getAppointments());
-  const [invoices] = useState<Invoice[]>(store.getInvoices());
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+
+  // Fetch data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setPatients(store.getPatients());
+        setAppointments(store.getAppointments());
+        setInvoices(store.getInvoices());
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Modal state
   const [isApptModalOpen, setIsApptModalOpen] = useState(false);
@@ -222,7 +249,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
                       </div>
                       <div>
                         <h4 className="font-bold text-slate-800 text-sm">{patient.firstName} {patient.lastName}</h4>
-                        <p className="text-xs text-slate-400">{patient.clinical.goals || 'Sin objetivo definido'}</p>
+                        <p className="text-xs text-slate-400">{patient.clinical.consultmotive || 'Sin objetivo definido'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">

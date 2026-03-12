@@ -5,21 +5,22 @@ import { AppRoute, UserRole } from '../types';
 
 interface LoginProps {
   onLogin: (role: UserRole) => void;
+  onNavigateToRegister: () => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const user = authStore.login(email, password);
+    try {
+      const user = await authStore.login(email, password);
       setIsLoading(false);
 
       if (!user) {
@@ -28,7 +29,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       onLogin(user.role);
-    }, 800);
+    } catch (err) {
+      setIsLoading(false);
+      setError('Ocurrió un error al iniciar sesión.');
+    }
   };
 
   return (
@@ -98,30 +102,19 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </button>
           </form>
 
-          {/* Demo credentials hint */}
-          <div className="mt-6 bg-slate-50 rounded-2xl p-4 space-y-1.5">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Accesos de prueba</p>
-            {[
-              { role: 'Nutricionista',   email: 'blancamoralesc96@gmail.com', pass: 'nutri123' },
-              // ✅ Nuevo acceso rápido
-              { role: 'Nutricionista 2', email: 'nutri2@nutricrm.com',        pass: 'nutri123' },
-              { role: 'Recepcionista',   email: 'secretaria@nutricrm.com',    pass: 'recep123' },
-              { role: 'Admin',           email: 'admin@nutricrm.com',         pass: 'admin123' },
-            ].map(c => (
-              <button
-                key={c.role}
-                type="button"
-                onClick={() => { setEmail(c.email); setPassword(c.pass); setError(''); }}
-                className="w-full text-left px-3 py-2 rounded-lg hover:bg-white transition-colors group"
-              >
-                <span className="text-xs font-bold text-emerald-600">{c.role}</span>
-                <span className="text-xs text-slate-400 ml-2">{c.email}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-6 text-center">
-            <a href="#" className="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">¿Olvidaste tu contraseña?</a>
+          <div className="mt-6 text-center space-y-4">
+            <a href="#" className="block text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">¿Olvidaste tu contraseña?</a>
+            <div className="pt-4 border-t border-slate-100">
+              <p className="text-sm text-slate-500">
+                ¿No tienes una cuenta?{' '}
+                <button 
+                  onClick={onNavigateToRegister}
+                  className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
+                >
+                  Regístrate aquí
+                </button>
+              </p>
+            </div>
           </div>
         </div>
       </div>

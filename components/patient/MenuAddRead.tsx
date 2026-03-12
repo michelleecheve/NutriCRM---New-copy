@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Patient, VetCalculation, MacrosRecord, PortionsRecord, PatientEvaluation } from '../../types';
+import { Patient, VetCalculation, MacrosRecord, PortionsRecord, PatientEvaluation, GeneratedMenu } from '../../types';
 import { store } from '../../services/store';
 import { Calculator, Eye, EyeOff, ArrowLeft, Edit2, Pencil, X, Trash2, AlertTriangle } from 'lucide-react';
 import { MenuAddReadSec1 } from './MenuAddReadSec1';
@@ -160,15 +160,40 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     const menu = editingMenuId ? allMenus.find(m => m.id === editingMenuId) : null;
 
     if (menu) {
-      setVetData(menu.vet || defaultVet);
+      const loadedVet: VetCalculation = {
+        age: menu.age ?? defaultVet.age,
+        weight: menu.weightKg ?? defaultVet.weight,
+        height: menu.heightCm ?? defaultVet.height,
+        sex: (menu.gender === 'Femenino' || menu.gender === 'Masculino') ? menu.gender : defaultVet.sex,
+        activityLevel: (menu.vetDetails?.activityLevel as any) ?? defaultVet.activityLevel,
+        activityFactor: menu.vetDetails?.activityFactor ?? defaultVet.activityFactor,
+        kcal: menu.vetDetails?.tmbKcal ?? defaultVet.kcal,
+        kcalReal: menu.vetDetails?.getKcalReal ?? defaultVet.kcalReal,
+        kcalToWork: menu.kcalToWork ?? defaultVet.kcalToWork
+      };
+
+      setVetData(loadedVet);
       setMacros(menu.macros || defaultMacros);
       setPortions(menu.portions || defaultPortions);
       setMenuName(menu.name || `Menú para ${patient.firstName} ${new Date().toLocaleDateString()}`);
-      setSelectedTemplateId(menu.selectedTemplateId || "base_v1");
-      setSelectedReferenceIds(menu.selectedReferenceIds || []);
+      
+      if (menu.templatesReferences) {
+        try {
+          const parsed = JSON.parse(menu.templatesReferences);
+          setSelectedTemplateId(parsed.templateId || "base_v1");
+          setSelectedReferenceIds(parsed.referenceIds || []);
+        } catch (e) {
+          setSelectedTemplateId("base_v1");
+          setSelectedReferenceIds([]);
+        }
+      } else {
+        setSelectedTemplateId("base_v1");
+        setSelectedReferenceIds([]);
+      }
+
       setAiDraftText(menu.content || "");
       setAiRationale(menu.aiRationale || "");
-      setMenuPreviewData(menu.menuPreviewData || null);
+      setMenuPreviewData(menu.menuData || null);
 
       // ✅ Precarga de vinculación: prioridad a linkedEvaluationId, luego date
       const linkedEvalId = (menu as any).linkedEvaluationId as string | undefined;
@@ -204,7 +229,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     setEvalSelectorOpen(false);
   }, [editingMenuId, patient.id]);
 
-  const handleSaveAndClose = () => {
+  const handleSaveAndClose = async () => {
     if (!formEvaluationId) {
       setInfoModal({ title: 'Falta evaluación', message: 'Primero selecciona una evaluación.' });
       return;
@@ -218,41 +243,43 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     // ✅ La fecha del menú es la fecha de la evaluación
     const normalizedDate = ev.date;
 
+    const menuToSave: GeneratedMenu = {
+      id: editingMenuId || crypto.randomUUID(),
+      date: normalizedDate,
+      linkedEvaluationId: formEvaluationId,
+      patientId: patient.id,
+      age: vetData.age,
+      weightKg: vetData.weight,
+      heightCm: vetData.height,
+      gender: vetData.sex,
+      vetDetails: {
+        activityLevel: vetData.activityLevel,
+        activityFactor: vetData.activityFactor,
+        tmbKcal: vetData.kcal,
+        getKcalReal: vetData.kcalReal
+      },
+      kcalToWork: vetData.kcalToWork,
+      macros: macros,
+      portions: portions,
+      templatesReferences: JSON.stringify({
+        templateId: selectedTemplateId,
+        referenceIds: selectedReferenceIds
+      }),
+      menuData: menuPreviewData,
+      name: menuName || `Menú ${vetData.kcalToWork} kcal`,
+      content: aiDraftText,
+      aiRationale: aiRationale
+    };
+
     const updatedMenus = [...(patient.menus || [])];
 
     if (editingMenuId) {
       const idx = updatedMenus.findIndex(m => m.id === editingMenuId);
       if (idx !== -1) {
-        updatedMenus[idx] = {
-          ...updatedMenus[idx],
-          date: normalizedDate,
-          linkedEvaluationId: formEvaluationId,
-          vet: vetData,
-          macros: macros,
-          portions: portions,
-          name: menuName || `Menú ${vetData.kcalToWork} kcal`,
-          selectedTemplateId,
-          selectedReferenceIds,
-          content: aiDraftText,
-          aiRationale,
-          menuPreviewData
-        };
+        updatedMenus[idx] = menuToSave;
       }
     } else {
-      updatedMenus.push({
-        id: crypto.randomUUID(),
-        date: normalizedDate,
-        linkedEvaluationId: formEvaluationId,
-        content: aiDraftText,
-        vet: vetData,
-        macros: macros,
-        portions: portions,
-        name: menuName || `Menú ${vetData.kcalToWork} kcal`,
-        selectedTemplateId,
-        selectedReferenceIds,
-        aiRationale,
-        menuPreviewData
-      });
+      updatedMenus.push(menuToSave);
     }
 
     const updatedPatient = {
@@ -264,11 +291,15 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       }
     };
     onUpdate(updatedPatient);
-    store.updatePatient(updatedPatient);
-    onClose();
+    try {
+      await store.saveMenu(formEvaluationId, menuToSave);
+      onClose();
+    } catch (error) {
+      console.error('Error saving menu:', error);
+    }
   };
 
-  const handleDeleteMenuConfirmed = () => {
+  const handleDeleteMenuConfirmed = async () => {
     if (!editingMenuId) {
       setConfirmDeleteOpen(false);
       return;
@@ -286,9 +317,13 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     };
 
     onUpdate(updatedPatient);
-    store.updatePatient(updatedPatient);
-    setConfirmDeleteOpen(false);
-    onClose();
+    try {
+      await store.deleteMenu(editingMenuId);
+      setConfirmDeleteOpen(false);
+      onClose();
+    } catch (error) {
+      console.error('Error deleting menu:', error);
+    }
   };
 
   return (

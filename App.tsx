@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
+import { Register } from './pages/Register';
 import { MainPanel } from './pages/MainPanel';
 import { MainPanelReceptionist } from './pages/MainPanelReceptionist';
 import { Dashboard } from './pages/Dashboard';
@@ -12,13 +13,35 @@ import { Menus } from './pages/Menus';
 import { AdminPanel } from './pages/Admin';
 import { AppRoute, UserRole } from './types';
 import { authStore } from './services/authStore';
+import { supabase } from './services/supabase';
 
 function App() {
+  const [user, setUser] = useState(authStore.getCurrentUser());
   const [currentRoute, setCurrentRoute] = useState<string>(
     authStore.isAuthenticated() ? getHomeRoute(authStore.getCurrentUser()?.role) : AppRoute.LOGIN
   );
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    // Listen for auth changes to update UI
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const currentUser = authStore.getCurrentUser();
+      setUser(currentUser);
+      
+      if (!session) {
+        // Only redirect to login if we are NOT on the register page
+        if (currentRoute !== AppRoute.REGISTER) {
+          setCurrentRoute(AppRoute.LOGIN);
+          setSelectedPatientId(null);
+        }
+      } else if (currentRoute === AppRoute.LOGIN || currentRoute === AppRoute.REGISTER) {
+        setCurrentRoute(getHomeRoute(currentUser?.role));
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [currentRoute]);
 
   // Returns the home route based on role
   function getHomeRoute(role?: UserRole): string {
@@ -33,8 +56,8 @@ function App() {
     setCurrentRoute(getHomeRoute(role));
   };
 
-  const handleLogout = () => {
-    authStore.logout();
+  const handleLogout = async () => {
+    await authStore.logout();
     setCurrentRoute(AppRoute.LOGIN);
     setSelectedPatientId(null);
   };
@@ -59,7 +82,10 @@ function App() {
 
     switch (currentRoute) {
       case AppRoute.LOGIN:
-        return <Login onLogin={handleLogin} />;
+        return <Login onLogin={handleLogin} onNavigateToRegister={() => setCurrentRoute(AppRoute.REGISTER)} />;
+
+      case AppRoute.REGISTER:
+        return <Register onBack={() => setCurrentRoute(AppRoute.LOGIN)} onSuccess={() => setCurrentRoute(getHomeRoute(authStore.getCurrentUser()?.role))} />;
 
       // ── Nutricionista / Admin pages ──
       case AppRoute.MAIN:
@@ -104,7 +130,7 @@ function App() {
     }
   };
 
-  if (currentRoute === AppRoute.LOGIN) {
+  if (currentRoute === AppRoute.LOGIN || currentRoute === AppRoute.REGISTER) {
     return renderContent();
   }
 

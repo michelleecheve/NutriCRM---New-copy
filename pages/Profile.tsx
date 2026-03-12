@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { authStore } from '../services/authStore';
+import { supabaseService } from '../services/supabaseService';
+import { compressImage } from '../services/imageUtils';
 import { UserProfile } from '../types';
 import {
   Save, User, Mail, Phone, Award, Camera, Check, Loader2,
@@ -371,11 +373,15 @@ export const Profile: React.FC = () => {
     }
   }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    authStore.updateCurrentUserProfile(formData);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    try {
+      await authStore.updateCurrentUserProfile(formData);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
   };
 
   const handleUnlinkRequest = (id: string, name: string, type: 'receptionist' | 'nutritionist') => {
@@ -398,31 +404,20 @@ export const Profile: React.FC = () => {
     setUnlinkTarget(null);
   };
 
-  const processImage = (file: File) => {
+  const processImage = async (file: File) => {
     setIsProcessingImg(true);
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let { width, height } = img;
-        const MAX_SIZE = 1080;
-        if (width > height) {
-          if (width > MAX_SIZE) { height = Math.round(height * MAX_SIZE / width); width = MAX_SIZE; }
-        } else {
-          if (height > MAX_SIZE) { width = Math.round(width * MAX_SIZE / height); height = MAX_SIZE; }
-        }
-        canvas.width = width; canvas.height = height;
-        canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
-        let quality = 0.9;
-        let dataUrl = canvas.toDataURL('image/jpeg', quality);
-        while (dataUrl.length * 0.75 > 500000 && quality > 0.1) { quality -= 0.1; dataUrl = canvas.toDataURL('image/jpeg', quality); }
-        setFormData(prev => ({ ...prev, avatar: dataUrl }));
+    try {
+      const compressedFile = await compressImage(file, 500);
+      const reader = new FileReader();
+      reader.readAsDataURL(compressedFile);
+      reader.onload = (event) => {
+        setFormData(prev => ({ ...prev, avatar: event.target?.result as string }));
         setIsProcessingImg(false);
       };
-    };
+    } catch (error) {
+      console.error('Error processing image:', error);
+      setIsProcessingImg(false);
+    }
   };
 
   return (

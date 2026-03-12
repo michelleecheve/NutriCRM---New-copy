@@ -1,5 +1,6 @@
-import { AppUser, PagePermission, UserProfile } from '../types';
+import { AppUser, PagePermission, UserProfile, UserRole } from '../types';
 import { store } from './store';
+import { supabase } from './supabase';
 
 // ─── Seed Users (base) ────────────────────────────────────────────────────────
 
@@ -242,8 +243,10 @@ const saveUsers = (users: AppUser[]) => {
 };
 
 const getUserById = (users: AppUser[], id: string) => users.find(u => u.id === id);
-const getUserByLinkCode = (users: AppUser[], linkCode: string) =>
-  (users as any[]).find(u => (u.linkCode || '').toUpperCase() === linkCode.toUpperCase());
+const getUserByLinkCode = (users: AppUser[], linkCode: string) => {
+  if (!linkCode) return undefined;
+  return (users as any[]).find(u => (u.linkCode || '').toUpperCase() === linkCode.toUpperCase());
+};
 
 // ─── Auth Store ──────────────────────────────────────────────────────────────
 
@@ -257,13 +260,22 @@ class AuthStore {
   constructor() {
     this.users = loadUsers();
 
-    // Restore session
-    try {
-      const raw = localStorage.getItem(SESSION_KEY);
-      if (raw) this.currentUser = JSON.parse(raw);
-    } catch {
-      this.currentUser = null;
-    }
+    // Restore session from Supabase
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        this.handleSupabaseSession(session);
+      }
+    });
+
+    // Listen for auth changes
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        this.handleSupabaseSession(session);
+      } else {
+        this.currentUser = null;
+        localStorage.removeItem(SESSION_KEY);
+      }
+    });
 
     // Restore permissions + merge
     try {
@@ -274,6 +286,31 @@ class AuthStore {
     } catch {
       this.permissions = DEFAULT_PERMISSIONS;
     }
+  }
+
+  private async handleSupabaseSession(session: any) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+
+    const user: AppUser = {
+      id: session.user.id,
+      email: session.user.email || '',
+      role: (profile?.role as UserRole) || 'nutricionista',
+      profile: {
+        name: profile?.name || session.user.user_metadata?.name || 'Usuario',
+        email: session.user.email || '',
+        timezone: profile?.timezone || 'UTC-06:00',
+        specialty: profile?.specialty || '',
+        avatar: profile?.avatar || '',
+      } as any,
+    };
+
+    this.currentUser = user;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    await store.initForUser(user.id);
   }
 
   getAllUsers(): AppUser[] {
@@ -296,21 +333,64 @@ class AuthStore {
   // ── Auth ────────────────────────────────────────────────────────────────
 
   // En login():
-  login(email: string, password: string): AppUser | null {
-    const user = this.users.find(u => u.email === email && u.password === password);
-    if (!user) return null;
-    this.currentUser = user;
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    store.initForUser(user.id);  // ← AGREGA ESTA LÍNEA
-    return user;
+  async login(email: string, password: string): Promise<AppUser | null> {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error || !data.user) return null;
+    
+    // The session listener will handle the rest
+    return this.currentUser;
+  }
+
+  async signUp(email: string, password: string, name: string, role: UserRole, timezone: string, avatar?: string): Promise<{ ok: boolean; message?: string }> {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          role,
+        },
+      },
+    });
+
+    if (error) return { ok: false, message: error.message };
+    if (!data.user) return { ok: false, message: 'Error al crear el usuario.' };
+
+    // Create or update profile in the profiles table
+    // Using upsert handles cases where a DB trigger might have already created the profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: data.user.id,
+        name,
+        role,
+        timezone,
+        avatar: avatar || '',
+        email: email, // Ensure email is also stored
+      }, { onConflict: 'id' });
+
+    if (profileError) {
+      console.error('Error creating profile:', profileError);
+      // We might want to delete the auth user if profile creation fails, 
+      // but Supabase doesn't make this easy from the client.
+      // For now, we'll just return the error.
+      return { ok: false, message: 'Error al crear el perfil de usuario.' };
+    }
+
+    return { ok: true };
   }
 
   // En logout():
-  logout(): void {
+  async logout(): Promise<void> {
+    await supabase.auth.signOut();
     this.currentUser = null;
     this.selectedNutritionistId = null;
     localStorage.removeItem(SESSION_KEY);
-    store.initForUser('guest');  // ← AGREGA ESTA LÍNEA
+    await store.initForUser('guest');
   }
 
   getCurrentUser(): AppUser | null {

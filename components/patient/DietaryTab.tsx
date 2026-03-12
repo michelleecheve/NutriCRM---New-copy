@@ -26,12 +26,20 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
     setEditingId(null);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!editingId) return;
+    const itemToDelete = patient.dietaryEvaluations.find(e => e.id === editingId);
     const updatedEvaluations = patient.dietaryEvaluations.filter(e => e.id !== editingId);
     const updated = { ...patient, dietaryEvaluations: updatedEvaluations };
     onUpdate(updated);
-    store.updatePatient(updated);
+    try {
+      await store.updatePatient(updated);
+      if (itemToDelete?.linkedEvaluationId) {
+        await store.deleteDietaryEvaluation(itemToDelete.linkedEvaluationId);
+      }
+    } catch (error) {
+      console.error('Error deleting dietary evaluation:', error);
+    }
     setView('list');
     setEditingId(null);
   };

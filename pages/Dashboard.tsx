@@ -20,8 +20,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
   const [filterStatus, setFilterStatus] = useState<string>('Todos');
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   
-  // New Patient Form State - Added status default and dob
-  const [newPatient, setNewPatient] = useState({ firstName: '', lastName: '', email: '', phone: '', status: 'Cita Agendada', dob: '' });
+  // New Patient Form State - Added status default and birthdate
+  const [newPatient, setNewPatient] = useState({ firstName: '', lastName: '', email: '', phone: '', status: 'Cita Agendada', birthdate: '' });
 
   // Format Helper moved up for Search Logic usage
   // CHANGED: Format to dd/mm/yyyy
@@ -40,7 +40,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
     const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
     const email = p.clinical.email.toLowerCase();
     const phone = p.clinical.phone.toLowerCase();
-    const dobRaw = p.clinical.dob || '';
+    const dobRaw = p.clinical.birthdate || '';
     const dobFormatted = formatDate(dobRaw);
 
     const matchesSearch = fullName.includes(term) || 
@@ -56,13 +56,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
     return matchesSearch && matchesFilter;
   });
 
-  const handleAddPatient = (e: React.FormEvent) => {
+  const handleAddPatient = async (e: React.FormEvent) => {
     e.preventDefault();
-    const created = store.addPatient(newPatient);
-    setPatients(store.getPatients());
-    setIsModalOpen(false);
-    // Reset with default status
-    setNewPatient({ firstName: '', lastName: '', email: '', phone: '', status: statusList[0] || '-', dob: '' });
+    try {
+      await store.addPatient(newPatient);
+      setPatients(store.getPatients());
+      setIsModalOpen(false);
+      // Reset with default status
+      setNewPatient({ firstName: '', lastName: '', email: '', phone: '', status: statusList[0] || '-', birthdate: '' });
+    } catch (error) {
+      console.error('Error adding patient:', error);
+      // Optionally show a toast or error message
+    }
   };
 
   const handleAddStatus = () => {
@@ -192,17 +197,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
                                 <span>{patient.clinical.phone}</span>
                             </>
                         )}
-                        {patient.clinical.dob && (
+                        {patient.clinical.birthdate && (
                             <>
                                 <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                <span>{formatDate(patient.clinical.dob)}</span>
+                                <span>{formatDate(patient.clinical.birthdate)}</span>
                             </>
                         )}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-5">
-                    <span className="text-slate-600 font-medium text-sm">{patient.clinical.goals || 'Sin especificar'}</span>
+                    <span className="text-slate-600 font-medium text-sm">{patient.clinical.consultmotive || 'Sin especificar'}</span>
                   </td>
                   <td className="px-6 py-5">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${getStatusStyles(patient.clinical.status)}`}>
@@ -283,8 +288,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
                     <label className="block text-sm font-semibold text-slate-700 mb-2">Fecha Nacimiento (Opcional)</label>
                     <input
                       type="date"
-                      value={newPatient.dob}
-                      onChange={e => setNewPatient({...newPatient, dob: e.target.value})}
+                      value={newPatient.birthdate}
+                      onChange={e => setNewPatient({...newPatient, birthdate: e.target.value})}
                       className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-slate-900 placeholder:text-slate-300"
                     />
                  </div>
