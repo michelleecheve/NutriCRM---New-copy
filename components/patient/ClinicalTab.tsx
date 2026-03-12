@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Patient } from '../../types';
 import { store } from '../../services/store';
@@ -6,7 +5,17 @@ import { User, Activity, History as HistoryIcon, Flag, Plus, Trash2, Save } from
 import { GridInput, SectionHeader, ModernTextArea } from './SharedComponents';
 
 export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void }> = ({ patient, onUpdate }) => {
-  const statusList = store.getPatientStatuses();
+  const [statusList, setStatusList] = React.useState<string[]>(store.getPatientStatuses().filter(s => s !== 'Sin Status'));
+
+  useEffect(() => {
+    const checkInit = setInterval(() => {
+      if (store.isInitialized) {
+        setStatusList(store.getPatientStatuses().filter(s => s !== 'Sin Status'));
+        clearInterval(checkInit);
+      }
+    }, 500);
+    return () => clearInterval(checkInit);
+  }, []);
 
   const updateClinical = (field: string, value: any) => {
     onUpdate({ ...patient, clinical: { ...patient.clinical, [field]: value } });
@@ -14,12 +23,12 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
 
   const addSport = () => {
     const current = patient.sportsProfile || [];
-    const newEntry = { 
+    const newEntry = {
       id: Math.random().toString(36).substring(7),
-      sport: '', 
-      daysPerWeek: '', 
-      schedule: '', 
-      hoursPerDay: '' 
+      sport: '',
+      daysPerWeek: '',
+      schedule: '',
+      hoursPerDay: ''
     };
     onUpdate({ ...patient, sportsProfile: [...current, newEntry] });
   };
@@ -30,7 +39,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
   };
 
   const updateSport = (id: string, field: string, value: string) => {
-    const current = (patient.sportsProfile || []).map(s => 
+    const current = (patient.sportsProfile || []).map(s =>
       s.id === id ? { ...s, [field]: value } : s
     );
     onUpdate({ ...patient, sportsProfile: current });
@@ -51,24 +60,25 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
-      
+
       {/* 0. Status Section */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <SectionHeader icon={Flag} title="Status del Paciente" />
         <div className="grid grid-cols-1 md:grid-cols-2">
-            <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Status Actual</label>
-                <select 
-                  value={patient.clinical.status || '-'}
-                  onChange={(e) => updateClinical('status', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all cursor-pointer font-bold"
-                >
-                    <option value="-">-</option>
-                    {statusList.map(status => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                </select>
-            </div>
+          <div className="flex flex-col">
+            <label className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Status Actual</label>
+            <select
+              value={patient.clinical.status || 'Sin Status'}
+              onChange={(e) => updateClinical('status', e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all cursor-pointer font-bold"
+            >
+              {/* ✅ 'Sin Status' siempre primero, sin duplicar */}
+              <option value="Sin Status">Sin Status</option>
+              {statusList.map(status => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -76,76 +86,76 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <SectionHeader icon={User} title="Información Personal" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-x-6 gap-y-6">
-           {/* ROW 1 */}
-           <div className="lg:col-span-1">
-             <GridInput label="ID" value={patient.id} onChange={() => {}} readOnly={true} />
-           </div>
-           <div className="lg:col-span-3">
-             <GridInput label="Nombre" value={patient.firstName} onChange={(e: any) => onUpdate({ ...patient, firstName: e.target.value })} />
-           </div>
-           <div className="lg:col-span-3">
-             <GridInput label="Apellido" value={patient.lastName} onChange={(e: any) => onUpdate({ ...patient, lastName: e.target.value })} />
-           </div>
-           <div className="lg:col-span-2">
-             <GridInput label="CUI/DPI" value={patient.clinical.cui} onChange={(e: any) => updateClinical('cui', e.target.value)} />
-           </div>
-           <div className="lg:col-span-2">
-             <GridInput label="Fecha de Nacimiento" type="date" value={patient.clinical.birthdate} onChange={(e: any) => updateClinical('birthdate', e.target.value)} />
-           </div>
-           <div className="lg:col-span-1">
-             <GridInput label="Edad" type="number" value={patient.clinical.age} onChange={() => {}} readOnly={true} />
-           </div>
+          {/* ROW 1 */}
+          <div className="lg:col-span-1">
+            <GridInput label="ID" value={patient.id} onChange={() => {}} readOnly={true} />
+          </div>
+          <div className="lg:col-span-3">
+            <GridInput label="Nombre" value={patient.firstName} onChange={(e: any) => onUpdate({ ...patient, firstName: e.target.value })} />
+          </div>
+          <div className="lg:col-span-3">
+            <GridInput label="Apellido" value={patient.lastName} onChange={(e: any) => onUpdate({ ...patient, lastName: e.target.value })} />
+          </div>
+          <div className="lg:col-span-2">
+            <GridInput label="CUI/DPI" value={patient.clinical.cui} onChange={(e: any) => updateClinical('cui', e.target.value)} />
+          </div>
+          <div className="lg:col-span-2">
+            <GridInput label="Fecha de Nacimiento" type="date" value={patient.clinical.birthdate} onChange={(e: any) => updateClinical('birthdate', e.target.value)} />
+          </div>
+          <div className="lg:col-span-1">
+            <GridInput label="Edad" type="number" value={patient.clinical.age} onChange={() => {}} readOnly={true} />
+          </div>
 
-            {/* ROW 2 */}
-            <div className="lg:col-span-2">
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Género</label>
-                <select 
-                  value={patient.clinical.sex || ''}
-                  onChange={(e) => updateClinical('sex', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all cursor-pointer"
-                >
-                  <option value="">Seleccionar...</option>
-                  <option value="Femenino">Mujer</option>
-                  <option value="Masculino">Hombre</option>
-                  <option value="Otro">Otros</option>
-                </select>
-              </div>
+          {/* ROW 2 */}
+          <div className="lg:col-span-2">
+            <div className="flex flex-col">
+              <label className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Género</label>
+              <select
+                value={patient.clinical.sex || ''}
+                onChange={(e) => updateClinical('sex', e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all cursor-pointer"
+              >
+                <option value="">Seleccionar...</option>
+                <option value="Femenino">Mujer</option>
+                <option value="Masculino">Hombre</option>
+                <option value="Otro">Otros</option>
+              </select>
             </div>
-           <div className="lg:col-span-4">
-             <GridInput label="Email" value={patient.clinical.email} onChange={(e: any) => updateClinical('email', e.target.value)} />
-           </div>
-           <div className="lg:col-span-2">
-             <GridInput label="Teléfono" value={patient.clinical.phone} onChange={(e: any) => updateClinical('phone', e.target.value)} />
-           </div>
-           <div className="lg:col-span-2">
-             <GridInput label="Trabajo" value={patient.clinical.occupation} onChange={(e: any) => updateClinical('occupation', e.target.value)} />
-           </div>
-           <div className="lg:col-span-2">
-             <GridInput label="Estudio" value={patient.clinical.study} onChange={(e: any) => updateClinical('study', e.target.value)} />
-           </div>
+          </div>
+          <div className="lg:col-span-4">
+            <GridInput label="Email" value={patient.clinical.email} onChange={(e: any) => updateClinical('email', e.target.value)} />
+          </div>
+          <div className="lg:col-span-2">
+            <GridInput label="Teléfono" value={patient.clinical.phone} onChange={(e: any) => updateClinical('phone', e.target.value)} />
+          </div>
+          <div className="lg:col-span-2">
+            <GridInput label="Trabajo" value={patient.clinical.occupation} onChange={(e: any) => updateClinical('occupation', e.target.value)} />
+          </div>
+          <div className="lg:col-span-2">
+            <GridInput label="Estudio" value={patient.clinical.study} onChange={(e: any) => updateClinical('study', e.target.value)} />
+          </div>
 
-           {/* ADDED MOTIVOS Y ANTECEDENTES FIELD */}
-           <div className="md:col-span-2 lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
-             <ModernTextArea 
-               label="Motivos de Consulta" 
-               value={patient.clinical.consultmotive} 
-               onChange={(e: any) => updateClinical('consultmotive', e.target.value)} 
-               rows={4}
-               placeholder="Ej. Reducir porcentaje de grasa y aumentar masa muscular..."
-             />
-             <ModernTextArea 
-               label="Antecedentes" 
-               value={patient.clinical.clinicalbackground} 
-               onChange={(e: any) => updateClinical('clinicalbackground', e.target.value)} 
-               rows={4}
-               placeholder="Historia clínica detallada..."
-             />
-           </div>
+          {/* Motivos y Antecedentes */}
+          <div className="md:col-span-2 lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+            <ModernTextArea
+              label="Motivos de Consulta"
+              value={patient.clinical.consultmotive}
+              onChange={(e: any) => updateClinical('consultmotive', e.target.value)}
+              rows={4}
+              placeholder="Ej. Reducir porcentaje de grasa y aumentar masa muscular..."
+            />
+            <ModernTextArea
+              label="Antecedentes"
+              value={patient.clinical.clinicalbackground}
+              onChange={(e: any) => updateClinical('clinicalbackground', e.target.value)}
+              rows={4}
+              placeholder="Historia clínica detallada..."
+            />
+          </div>
         </div>
       </div>
 
-      {/* 2. Perfil Deportivo - CRUD Table */}
+      {/* 2. Perfil Deportivo */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-100">
           <div className="flex items-center gap-2 text-emerald-800">
@@ -153,13 +163,13 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
             <h3 className="font-bold text-base">Perfil Deportivo</h3>
           </div>
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={() => onUpdate(patient)}
               className="text-slate-600 text-xs font-bold flex items-center gap-1 hover:text-slate-700 transition-colors bg-slate-100 px-3 py-1.5 rounded-lg"
             >
               <Save className="w-3 h-3" /> Guardar Cambios
             </button>
-            <button 
+            <button
               onClick={addSport}
               className="text-emerald-600 text-xs font-bold flex items-center gap-1 hover:text-emerald-700 transition-colors bg-emerald-50 px-3 py-1.5 rounded-lg"
             >
@@ -183,7 +193,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
               {(patient.sportsProfile || []).map((entry) => (
                 <tr key={entry.id} className="border-b border-slate-50 group">
                   <td className="py-3 px-2 align-top">
-                    <input 
+                    <input
                       type="text"
                       value={entry.sport}
                       onChange={(e) => updateSport(entry.id, 'sport', e.target.value)}
@@ -192,7 +202,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
                     />
                   </td>
                   <td className="py-3 px-2 align-top">
-                    <input 
+                    <input
                       type="text"
                       value={entry.daysPerWeek}
                       onChange={(e) => updateSport(entry.id, 'daysPerWeek', e.target.value)}
@@ -201,7 +211,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
                     />
                   </td>
                   <td className="py-3 px-2 align-top">
-                    <textarea 
+                    <textarea
                       value={entry.schedule}
                       onChange={(e) => updateSport(entry.id, 'schedule', e.target.value)}
                       rows={3}
@@ -210,7 +220,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
                     />
                   </td>
                   <td className="py-3 px-2 align-top">
-                    <input 
+                    <input
                       type="text"
                       value={entry.hoursPerDay}
                       onChange={(e) => updateSport(entry.id, 'hoursPerDay', e.target.value)}
@@ -219,7 +229,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
                     />
                   </td>
                   <td className="py-3 px-2 align-top">
-                    <button 
+                    <button
                       onClick={() => removeSport(entry.id)}
                       className="text-slate-300 hover:text-rose-500 transition-colors p-2 mt-1"
                     >
@@ -238,31 +248,32 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
         </div>
       </div>
 
-      {/* 4. Historia Clínica */}
+      {/* 3. Historia Clínica */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <SectionHeader icon={HistoryIcon} title="Historia Clínica" />
         <div className="grid grid-cols-1 gap-6">
-           <ModernTextArea label="Diagnóstico médico" value={patient.clinical.diagnosis} onChange={(e: any) => updateClinical('diagnosis', e.target.value)} rows={2} />
-           <ModernTextArea label="Antecedentes familiares de enfermedades" value={patient.clinical.familyHistory} onChange={(e: any) => updateClinical('familyHistory', e.target.value)} rows={2} />
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <ModernTextArea label="Medicamentos" value={patient.clinical.medications} onChange={(e: any) => updateClinical('medications', e.target.value)} rows={2} />
-             <ModernTextArea label="Suplementos" value={patient.clinical.supplements} onChange={(e: any) => updateClinical('supplements', e.target.value)} rows={2} />
-           </div>
-           <ModernTextArea label="Alergias y/o Intolerancias" value={patient.clinical.allergies} onChange={(e: any) => updateClinical('allergies', e.target.value)} rows={2} />
-           
-           <div className="mt-4 pt-4 border-t border-slate-100">
-             <h4 className="text-sm font-bold text-emerald-800 mb-4">Periodo Menstrual (Si aplica)</h4>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <GridInput label="Periodo Menstrual regular" value={patient.clinical.regularPeriod} onChange={(e: any) => updateClinical('regularPeriod', e.target.value)} />
-               <GridInput label="Duración" value={patient.clinical.periodDuration} onChange={(e: any) => updateClinical('periodDuration', e.target.value)} />
-               <GridInput label="Fecha y/o edad de primera menstruación" value={patient.clinical.firstperiodage} onChange={(e: any) => updateClinical('firstperiodage', e.target.value)} />
-             </div>
-             <div className="mt-6">
-               <ModernTextArea label="Otros" value={patient.clinical.menstrualOthers} onChange={(e: any) => updateClinical('menstrualOthers', e.target.value)} rows={2} placeholder="Otros detalles del periodo menstrual..." />
-             </div>
-           </div>
+          <ModernTextArea label="Diagnóstico médico" value={patient.clinical.diagnosis} onChange={(e: any) => updateClinical('diagnosis', e.target.value)} rows={2} />
+          <ModernTextArea label="Antecedentes familiares de enfermedades" value={patient.clinical.familyHistory} onChange={(e: any) => updateClinical('familyHistory', e.target.value)} rows={2} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ModernTextArea label="Medicamentos" value={patient.clinical.medications} onChange={(e: any) => updateClinical('medications', e.target.value)} rows={2} />
+            <ModernTextArea label="Suplementos" value={patient.clinical.supplements} onChange={(e: any) => updateClinical('supplements', e.target.value)} rows={2} />
+          </div>
+          <ModernTextArea label="Alergias y/o Intolerancias" value={patient.clinical.allergies} onChange={(e: any) => updateClinical('allergies', e.target.value)} rows={2} />
+
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <h4 className="text-sm font-bold text-emerald-800 mb-4">Periodo Menstrual (Si aplica)</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <GridInput label="Periodo Menstrual regular" value={patient.clinical.regularPeriod} onChange={(e: any) => updateClinical('regularPeriod', e.target.value)} />
+              <GridInput label="Duración" value={patient.clinical.periodDuration} onChange={(e: any) => updateClinical('periodDuration', e.target.value)} />
+              <GridInput label="Fecha y/o edad de primera menstruación" value={patient.clinical.firstperiodage} onChange={(e: any) => updateClinical('firstperiodage', e.target.value)} />
+            </div>
+            <div className="mt-6">
+              <ModernTextArea label="Otros" value={patient.clinical.menstrualOthers} onChange={(e: any) => updateClinical('menstrualOthers', e.target.value)} rows={2} placeholder="Otros detalles del periodo menstrual..." />
+            </div>
+          </div>
         </div>
       </div>
+
     </div>
   );
 };

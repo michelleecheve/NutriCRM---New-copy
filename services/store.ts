@@ -1,12 +1,8 @@
 import { Patient, Invoice, UserProfile, Appointment, PatientEvaluation, ClinicalRecord, DietaryEvaluation, SomatotypeRecord, GeneratedMenu } from '../types';
 import { supabaseService } from './supabaseService';
 
-
 // ─── Read current userId directly from localStorage (no circular import) ──────
 const SESSION_KEY = 'nutricrm_session_v1';
-
-// ─── ID de Blanca Morales (propietaria de los datos seed) ─────────────────────
-const BLANCA_MORALES_USER_ID = 'nutri-001';
 
 function getCurrentUserId(): string {
   try {
@@ -94,31 +90,20 @@ function addDaysYmdInUserTimezone(userTz: string, daysToAdd: number): string {
   return ymdFromShiftedUtcDate(shifted);
 }
 
-// ─── Seeds (solo para Blanca Morales) ────────────────────────────────────────
+// ─── Defaults ─────────────────────────────────────────────────────────────────
+
+const DEFAULT_STATUSES = ['Sin Status', 'Menú Pendiente', 'Menú Entregado'];
 
 const SEED_USER: UserProfile = {
   professionalTitle: 'Lic.',
-  name: 'Blanca Morales',
-  specialty: 'Nutricionista Deportiva',
-  licenseNumber: '123456',
-  email: 'blancamoralesc96@gmail.com',
-  contactEmail: 'blancamoralesc96@gmail.com',
-  phone: '+502 30508872',
-  personalPhone: '+502 50178353',
-  instagramHandle: 'blancamoorales',
-  address: 'Edificio Medika 10, Clínica Vascure Nivel 12 - 1211, 6a Avenida 04-01, Zona 10, Ciudad de Guatemala',
-  website: 'blancamoralesnutricion.com',
-  avatar: 'https://user3047.na.imgto.link/public/20260225/isotipo-beige-fondo-verde-circular.avif',
-  timezone: 'UTC-06:00',
+  name: 'Nutricionista',
+  specialty: '',
+  licenseNumber: '',
+  email: '',
+  contactEmail: '',
+  phone: '',
+  timezone: 'UTC±00:00',
 };
-
-const SEED_PATIENTS: Patient[] = [];
-
-const SEED_INVOICES: Invoice[] = [];
-
-const SEED_STATUSES: string[] = ['-', 'Menú Pendiente', 'Menú Entregado'];
-const SEED_EVALUATIONS: PatientEvaluation[] = [];
-const SEED_SELECTED: Record<string, string> = {};
 
 // ─── Store Class ──────────────────────────────────────────────────────────────
 
@@ -126,13 +111,14 @@ class Store {
   private uid: string = 'guest';
   private K = makeKeys('guest');
 
-  private patients:     Patient[]     = [];
-  private invoices:     Invoice[]     = [];
-  private appointments: Appointment[] = [];
-  private user:         UserProfile   = SEED_USER;
-  private statuses:     string[]      = SEED_STATUSES;
+  private patients:     Patient[]          = [];
+  private invoices:     Invoice[]          = [];
+  private appointments: Appointment[]      = [];
+  private user:         UserProfile        = SEED_USER;
+  private statuses:     string[]           = DEFAULT_STATUSES;
   private evaluations:  PatientEvaluation[] = [];
   private selectedEvaluationByPatient: Record<string, string> = {};
+  public isInitialized: boolean = false;
 
   constructor() {
     const uid = getCurrentUserId();
@@ -145,57 +131,68 @@ class Store {
     this.K   = makeKeys(userId);
 
     if (userId === 'guest') {
-      this.patients = [];
-      this.invoices = [];
+      this.patients     = [];
+      this.invoices     = [];
       this.appointments = [];
-      this.user = null;
-      this.evaluations = [];
+      this.user         = null as any;
+      this.statuses     = DEFAULT_STATUSES;
+      this.evaluations  = [];
       return;
     }
 
-    // Fetch from Supabase
     try {
       const [patients, appointments, invoices, evaluations, profile] = await Promise.all([
         supabaseService.getPatients(),
         supabaseService.getAppointments(),
         supabaseService.getInvoices(),
         supabaseService.getEvaluations(),
-        supabaseService.getProfile(userId)
+        supabaseService.getProfile(userId),
       ]);
 
-      this.patients = patients as Patient[];
+      this.patients     = patients as Patient[];
       this.appointments = appointments as Appointment[];
-      this.invoices = invoices as Invoice[];
-      this.evaluations = evaluations as PatientEvaluation[];
-      this.user = profile ? {
-        name: profile.name,
-        email: profile.email,
-        professionalTitle: profile.professional_title,
-        specialty: profile.specialty,
-        licenseNumber: profile.license_number,
-        timezone: profile.timezone,
-        avatar: profile.avatar,
-        phone: profile.phone || ''
-      } : null as any;
+      this.invoices     = invoices as Invoice[];
+      this.evaluations  = evaluations as PatientEvaluation[];
 
-      // Local storage as fallback/cache
-      save(this.K.patients, this.patients);
+      if (profile) {
+        this.user = {
+          name:              profile.name              || '',
+          email:             profile.email             || '',
+          professionalTitle: profile.professional_title || '',
+          specialty:         profile.specialty          || '',
+          licenseNumber:     profile.license_number     || '',
+          timezone:          profile.timezone           || 'UTC±00:00',
+          avatar:            profile.avatar             || '',
+          phone:             profile.phone              || '',
+        };
+
+        // ✅ Enforce only the three requested statuses as per user request
+        this.statuses = DEFAULT_STATUSES;
+        
+        // If we wanted to keep custom ones, we would merge, but user said "solo dejes"
+        // await this.updatePatientStatuses(DEFAULT_STATUSES); // Optional: force save to Supabase
+      }
+
+      this.isInitialized = true;
+
+      // Cache local
+      save(this.K.patients,     this.patients);
       save(this.K.appointments, this.appointments);
-      save(this.K.invoices, this.invoices);
-      save(this.K.evaluations, this.evaluations);
+      save(this.K.invoices,     this.invoices);
+      save(this.K.evaluations,  this.evaluations);
+      save(this.K.statuses,     this.statuses);   // ✅ también en cache local
       if (this.user) save(this.K.user, this.user);
+
     } catch (error) {
       console.error('Error initializing store from Supabase:', error);
-      // Fallback to local storage
-      this.patients = load(this.K.patients, []);
-      this.invoices = load(this.K.invoices, []);
+      // Fallback a localStorage
+      this.patients     = load(this.K.patients,     []);
+      this.invoices     = load(this.K.invoices,     []);
       this.appointments = load(this.K.appointments, []);
-      this.user = load(this.K.user, null);
-      this.evaluations = load(this.K.evaluations, []);
+      this.user         = load(this.K.user,         null as any);
+      this.evaluations  = load(this.K.evaluations,  []);
+      this.statuses     = load(this.K.statuses,     DEFAULT_STATUSES); // ✅ fallback local
     }
-
-    // ── Migrations ──────────────────────────────────────────────────────────
-    // ... (keep migrations if needed, but Supabase should have clean data)
   }
 
   getTodayStr(): string {
@@ -203,31 +200,21 @@ class Store {
   }
 
   // ── Patients ───────────────────────────────────────────────────────────────
-  
+
   getPatients(): Patient[] { return this.patients; }
 
   getPatient(id: string): Patient | undefined {
     return this.patients.find(p => p.id === id);
   }
 
-  /**
-   * Importa un objeto de paciente completo, incluyendo sus evaluaciones vinculadas si están presentes.
-   */
   importPatientData(data: Patient & { evaluations?: PatientEvaluation[] }): void {
     const { evaluations, ...patient } = data;
-    
-    // Asegurar que sportsProfile existe para evitar errores en la UI
-    // Si sportsProfile viene dentro de clinical (como en el export solicitado)
+
     if ((patient.clinical as any).sportsProfile && (!patient.sportsProfile || patient.sportsProfile.length === 0)) {
       patient.sportsProfile = (patient.clinical as any).sportsProfile;
-      // No borramos de clinical por si acaso, pero el store prefiere patient.sportsProfile
     }
-    
-    if (!patient.sportsProfile) {
-      patient.sportsProfile = [];
-    }
+    if (!patient.sportsProfile) patient.sportsProfile = [];
 
-    // Migración de menús: basedOnMeasurementDate -> date
     if (patient.menus) {
       patient.menus = patient.menus.map(m => {
         if ((m as any).basedOnMeasurementDate && !m.date) {
@@ -237,17 +224,11 @@ class Store {
       });
     }
 
-    // 1. Actualizar el paciente en la lista
     this.updatePatient(patient);
 
-    // 2. Si hay evaluaciones, importarlas (reemplazando las existentes para este paciente)
     if (evaluations && Array.isArray(evaluations)) {
-      // Filtrar evaluaciones de otros pacientes
       const otherEvaluations = this.evaluations.filter(e => e.patientId !== patient.id);
-      
-      // Asegurar que todas las evaluaciones importadas tengan el patientId correcto
       const newEvaluations = evaluations.map(e => ({ ...e, patientId: patient.id }));
-      
       this.evaluations = [...otherEvaluations, ...newEvaluations];
       save(this.K.evaluations, this.evaluations);
     }
@@ -263,40 +244,40 @@ class Store {
       if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
     }
     const newPatient: Patient = {
-      id: '', // Will be set by Supabase
+      id: '',
       registeredAt: this.getTodayStr(),
       firstName: basicInfo.firstName,
       lastName:  basicInfo.lastName,
       clinical: {
-        status: (basicInfo.status as any) || '-',
-        cui: '',
-        birthdate: basicInfo.birthdate || '',
+        status:             (basicInfo.status as any) || 'Sin Status',
+        cui:                '',
+        birthdate:          basicInfo.birthdate || '',
         age,
-        sex: '', 
-        email: basicInfo.email,
-        phone: basicInfo.phone, 
-        occupation: '', 
-        study: '',
-        consultmotive: '',
+        sex:                '',
+        email:              basicInfo.email,
+        phone:              basicInfo.phone,
+        occupation:         '',
+        study:              '',
+        consultmotive:      '',
         clinicalbackground: '',
-        diagnosis: '', 
-        familyHistory: '',
-        medications: '', 
-        supplements: '',
-        allergies: '',
-        regularPeriod: '', 
-        periodDuration: '',
-        firstperiodage: '',
-        menstrualOthers: '',
+        diagnosis:          '',
+        familyHistory:      '',
+        medications:        '',
+        supplements:        '',
+        allergies:          '',
+        regularPeriod:      '',
+        periodDuration:     '',
+        firstperiodage:     '',
+        menstrualOthers:    '',
       },
-      dietary: { preferences: '' },
+      dietary:            { preferences: '' },
       dietaryEvaluations: [],
-      measurements: [],
-      somatotypes: [],
-      sportsProfile: [],
-      menus: [],
-      labs: [],
-      photos: [],
+      measurements:       [],
+      somatotypes:        [],
+      sportsProfile:      [],
+      menus:              [],
+      labs:               [],
+      photos:             [],
     };
 
     const savedPatient = await supabaseService.createPatient(newPatient);
@@ -313,8 +294,6 @@ class Store {
 
   async saveDietaryEvaluation(evaluationId: string, dietary: DietaryEvaluation): Promise<void> {
     await supabaseService.saveDietaryEvaluation(evaluationId, dietary);
-    // No necesitamos actualizar el store localmente aquí porque DietaryTab llama a onUpdate
-    // que refresca el estado del componente y luego llama a store.updatePatient
   }
 
   async deleteDietaryEvaluation(evaluationId: string): Promise<void> {
@@ -357,8 +336,6 @@ class Store {
   }
 
   async updateInvoice(updatedInvoice: Invoice): Promise<void> {
-    // Note: supabaseService doesn't have updateInvoice yet, but we can add it or use a generic one
-    // For now, let's assume we'll add it to supabaseService
     await supabaseService.updateInvoice(updatedInvoice.id, updatedInvoice);
     this.invoices = this.invoices.map(i => i.id === updatedInvoice.id ? updatedInvoice : i);
     save(this.K.invoices, this.invoices);
@@ -464,12 +441,12 @@ class Store {
   async updateUserProfile(profile: UserProfile): Promise<void> {
     if (this.uid && this.uid !== 'guest') {
       await supabaseService.updateProfile(this.uid, {
-        name: profile.name,
+        name:              profile.name,
         professionalTitle: profile.professionalTitle,
-        specialty: profile.specialty,
-        licenseNumber: profile.licenseNumber,
-        timezone: profile.timezone,
-        avatar: profile.avatar
+        specialty:         profile.specialty,
+        licenseNumber:     profile.licenseNumber,
+        timezone:          profile.timezone,
+        avatar:            profile.avatar,
       });
     }
     this.user = profile;
@@ -480,12 +457,20 @@ class Store {
 
   getPatientStatuses(): string[] { return this.statuses; }
 
-  updatePatientStatuses(statuses: string[]): void {
+  // ✅ Ahora async — guarda en Supabase (profiles.patient_statuses) + cache local
+  async updatePatientStatuses(statuses: string[]): Promise<void> {
     this.statuses = statuses;
     save(this.K.statuses, this.statuses);
+    if (this.uid && this.uid !== 'guest') {
+      try {
+        await supabaseService.updatePatientStatuses(this.uid, statuses);
+      } catch (err) {
+        console.error('Error guardando statuses en Supabase:', err);
+      }
+    }
   }
 
-  // ── Cross-user operations (para recepcionistas/admin) ────────────────────
+  // ── Cross-user operations ──────────────────────────────────────────────────
 
   async getAppointmentsForNutritionist(nutritionistId: string): Promise<Appointment[]> {
     const appts = await supabaseService.getAppointments(nutritionistId);
@@ -502,26 +487,23 @@ class Store {
   async addAppointmentForNutritionist(nutritionistId: string, appointment: Omit<Appointment, 'id'>): Promise<Appointment> {
     const newAppt = await supabaseService.createAppointment({ ...appointment, nutritionistId });
     const keys = makeKeys(nutritionistId);
-    const existingAppointments = load<Appointment[]>(keys.appointments, []);
-    const updated = [...existingAppointments, newAppt];
-    save(keys.appointments, updated);
+    const existing = load<Appointment[]>(keys.appointments, []);
+    save(keys.appointments, [...existing, newAppt]);
     return newAppt;
   }
 
   async updateAppointmentForNutritionist(nutritionistId: string, updatedAppointment: Appointment): Promise<void> {
     await supabaseService.updateAppointment(updatedAppointment.id, updatedAppointment);
     const keys = makeKeys(nutritionistId);
-    const existingAppointments = load<Appointment[]>(keys.appointments, []);
-    const updated = existingAppointments.map(a => a.id === updatedAppointment.id ? updatedAppointment : a);
-    save(keys.appointments, updated);
+    const existing = load<Appointment[]>(keys.appointments, []);
+    save(keys.appointments, existing.map(a => a.id === updatedAppointment.id ? updatedAppointment : a));
   }
 
   async deleteAppointmentForNutritionist(nutritionistId: string, appointmentId: string): Promise<void> {
     await supabaseService.deleteAppointment(appointmentId);
     const keys = makeKeys(nutritionistId);
-    const existingAppointments = load<Appointment[]>(keys.appointments, []);
-    const updated = existingAppointments.filter(a => a.id !== appointmentId);
-    save(keys.appointments, updated);
+    const existing = load<Appointment[]>(keys.appointments, []);
+    save(keys.appointments, existing.filter(a => a.id !== appointmentId));
   }
 }
 

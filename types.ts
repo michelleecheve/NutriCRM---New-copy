@@ -330,6 +330,7 @@ export interface PatientEvaluation {
   patientId: string;
   date: string;
   title?: string;
+  createdAt?: string;
 }
 
 export enum AppRoute {

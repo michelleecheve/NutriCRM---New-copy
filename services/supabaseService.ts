@@ -42,6 +42,15 @@ export const supabaseService = {
     return data;
   },
 
+  // ✅ Guardar statuses en profiles.patient_statuses
+  async updatePatientStatuses(userId: string, statuses: string[]): Promise<void> {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ patient_statuses: statuses })
+      .eq('id', userId);
+    if (error) throw error;
+  },
+
   // ─── Patients ──────────────────────────────────────────────────────────────
 
   async getPatients() {
@@ -575,7 +584,7 @@ export const supabaseService = {
       lastName:   dbPatient.last_name,
       registeredAt: dbPatient.registered_at,
       clinical: {
-        status:              dbPatient.status            || '',
+        status:              dbPatient.status            || 'Sin Status',
         cui:                 dbPatient.cui               || '',
         birthdate:           dbPatient.birthdate         || '',
         age:                 dbPatient.age               || 0,
