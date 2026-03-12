@@ -2,7 +2,6 @@ import React from 'react';
 import { Patient } from '../../types';
 import { Image as ImageIcon } from 'lucide-react';
 import { FileGallery } from './FileGallery';
-import { store } from '../../services/store';
 
 interface PhotosTabProps {
   patient: Patient;
@@ -11,9 +10,7 @@ interface PhotosTabProps {
 
 export const PhotosTab: React.FC<PhotosTabProps> = ({ patient, onUpdate }) => {
   const handleUpdateFiles = (newFiles: any[]) => {
-    const updated = { ...patient, photos: newFiles };
-    onUpdate(updated);
-    store.updatePatient(updated);
+    onUpdate({ ...patient, photos: newFiles });
   };
 
   return (

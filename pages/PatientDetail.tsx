@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Patient } from '../types';
 import { store } from '../services/store';
+import { supabaseService } from '../services/supabaseService'; // ✅ NUEVO IMPORT
 import {
   ArrowLeft, AlertCircle, Activity, Calendar, Utensils, ChefHat,
   Microscope, Image as ImageIcon, Settings
@@ -13,8 +14,6 @@ import { MenusTab } from '../components/patient/MenusTab';
 import { LabsTab } from '../components/patient/LabsTab';
 import { PhotosTab } from '../components/patient/PhotosTab';
 import { PatientConfigTab } from '../components/patient/PatientConfigTab';
-
-// ✅ Nuevo tab
 import { EvaluationsTab } from '../components/patient/EvaluationsTab';
 
 type TabType =
@@ -35,20 +34,56 @@ interface PatientDetailProps {
 export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack }) => {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('clinical');
+  const [loading, setLoading] = useState(true); // ✅ NUEVO: estado de carga
 
+  // ✅ ANTES:
+  // useEffect(() => {
+  //   const p = store.getPatients().find(x => x.id === patientId) || null;
+  //   setPatient(p);
+  // }, [patientId]);
+
+  // ✅ DESPUÉS: fetch completo desde Supabase con todos los registros vinculados
   useEffect(() => {
-    const p = store.getPatients().find(x => x.id === patientId) || null;
-    setPatient(p);
+    setLoading(true);
+    supabaseService.getPatientById(patientId)
+      .then(p => setPatient(p))
+      .catch(err => {
+        console.error('Error cargando paciente desde Supabase:', err);
+        // fallback al store local si falla la conexión
+        const p = store.getPatients().find(x => x.id === patientId) || null;
+        setPatient(p);
+      })
+      .finally(() => setLoading(false));
   }, [patientId]);
 
+  // ✅ ANTES:
+  // const handleUpdatePatient = (updated: Patient) => {
+  //   setPatient(updated);
+  //   store.updatePatient(updated);
+  // };
+
+  // ✅ DESPUÉS: guarda y refresca desde Supabase para tener datos completos
   const handleUpdatePatient = async (updated: Patient) => {
-    setPatient(updated);
+    setPatient(updated); // actualización optimista inmediata en la UI
     try {
       await store.updatePatient(updated);
+      // refrescar desde Supabase para tener measurements/dietary/menus actualizados
+      const fresh = await supabaseService.getPatientById(updated.id);
+      setPatient(fresh);
     } catch (error) {
-      console.error('Error updating patient:', error);
+      console.error('Error actualizando paciente:', error);
     }
   };
+
+  // ✅ NUEVO: pantalla de carga mientras trae datos de Supabase
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-sm">Cargando paciente...</p>
+      </div>
+    );
+  }
 
   if (!patient) {
     return (
@@ -64,7 +99,6 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack 
 
   const tabs = [
     { id: 'clinical', label: 'Clínica', icon: Activity },
-    // ✅ Citas -> Evaluaciones
     { id: 'appointments', label: 'Evaluaciones', icon: Calendar },
     { id: 'dietary', label: 'Evaluación Dietética', icon: Utensils },
     { id: 'measurements', label: 'Medidas', icon: Activity },
@@ -116,7 +150,6 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack 
       <div className="min-h-[500px]">
         {activeTab === 'clinical' && <ClinicalTab patient={patient} onUpdate={handleUpdatePatient} />}
 
-        {/* ✅ Aquí cambia el tab */}
         {activeTab === 'appointments' && (
           <EvaluationsTab patientId={patient.id} patient={patient} onUpdate={handleUpdatePatient} />
         )}

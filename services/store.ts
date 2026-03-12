@@ -1,6 +1,7 @@
 import { Patient, Invoice, UserProfile, Appointment, PatientEvaluation, ClinicalRecord, DietaryEvaluation, SomatotypeRecord, GeneratedMenu } from '../types';
 import { supabaseService } from './supabaseService';
 
+
 // ─── Read current userId directly from localStorage (no circular import) ──────
 const SESSION_KEY = 'nutricrm_session_v1';
 

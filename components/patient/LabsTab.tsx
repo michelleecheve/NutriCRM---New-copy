@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { FileGallery } from './FileGallery';
 import { store } from '../../services/store';
+import { supabaseService } from '../../services/supabaseService';
 import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
@@ -48,7 +49,7 @@ async function analyzeLabWithGemini(
   if (fileType === 'other') throw new Error('Solo se pueden analizar imágenes y PDFs.');
 
   const match = fileUrl.match(/^data:(.+);base64,(.+)$/);
-  if (!match) throw new Error('Formato de archivo inválido.');
+  if (!match) throw new Error('Formato de archivo inválido. Las URLs firmadas de Supabase no se pueden analizar directamente — descarga el archivo primero.');
   const [, mimeType, base64Data] = match;
 
   const contents: any[] = [
@@ -77,7 +78,7 @@ const AIConfigPopup: React.FC<{
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(initialPrompt);
   const popupRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const btnRef   = useRef<HTMLButtonElement>(null);
 
   useEffect(() => { setDraft(initialPrompt); }, [initialPrompt]);
 
@@ -86,14 +87,14 @@ const AIConfigPopup: React.FC<{
     const handler = (e: MouseEvent) => {
       if (
         popupRef.current && !popupRef.current.contains(e.target as Node) &&
-        btnRef.current && !btnRef.current.contains(e.target as Node)
+        btnRef.current   && !btnRef.current.contains(e.target as Node)
       ) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const handleSave = () => { onSave(draft); setOpen(false); };
+  const handleSave  = () => { onSave(draft); setOpen(false); };
   const handleReset = () => { setDraft(DEFAULT_PROMPT); onReset(); setOpen(false); };
 
   return (
@@ -138,7 +139,7 @@ const AIConfigPopup: React.FC<{
               </p>
               <textarea
                 value={draft}
-                onChange={(e) => setDraft(e.target.value)}
+                onChange={e => setDraft(e.target.value)}
                 rows={10}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-700 font-mono leading-relaxed focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-300 outline-none transition-all resize-y"
               />
@@ -166,7 +167,7 @@ const AIConfigPopup: React.FC<{
   );
 };
 
-// ─── Per-file Interpretation Panel (exported for reuse in EvaluationDetail) ───
+// ─── Per-file Interpretation Panel ───────────────────────────────────────────
 export const LabInterpretationPanel: React.FC<{
   file: any;
   patientName: string;
@@ -176,11 +177,17 @@ export const LabInterpretationPanel: React.FC<{
   onResetPrompt: () => void;
   onSave: (fileId: string, interpretation: string) => void;
 }> = ({ file, patientName, customPrompt, isPromptCustom, onSavePrompt, onResetPrompt, onSave }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen,         setIsOpen]         = useState(false);
   const [interpretation, setInterpretation] = useState<string>(file.labInterpretation || '');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
+  const [isAnalyzing,    setIsAnalyzing]    = useState(false);
+  const [error,          setError]          = useState<string | null>(null);
+  const [isDirty,        setIsDirty]        = useState(false);
+
+  // Sync si el file cambia desde fuera (ej: recarga desde Supabase)
+  useEffect(() => {
+    setInterpretation(file.labInterpretation || '');
+    setIsDirty(false);
+  }, [file.labInterpretation]);
 
   const handleAnalyzeWithAI = async () => {
     setError(null);
@@ -197,18 +204,19 @@ export const LabInterpretationPanel: React.FC<{
     }
   };
 
-  const handleSave = () => { onSave(file.id, interpretation); setIsDirty(false); };
+  const handleSave = () => {
+    onSave(file.id, interpretation);
+    setIsDirty(false);
+  };
 
   const fileIcon = file.type === 'pdf'
-    ? <FileText className="w-4 h-4 text-red-500 flex-shrink-0" />
+    ? <FileText  className="w-4 h-4 text-red-500  flex-shrink-0" />
     : <ImageIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />;
 
   const hasInterpretation = !!file.labInterpretation;
 
   return (
-    <div className={`border rounded-2xl overflow-hidden transition-all ${
-      isOpen ? 'border-indigo-200 shadow-sm' : 'border-slate-200'
-    }`}>
+    <div className={`border rounded-2xl overflow-hidden transition-all ${isOpen ? 'border-indigo-200 shadow-sm' : 'border-slate-200'}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-4 bg-slate-50/80 hover:bg-slate-100/60 transition-colors text-left"
@@ -241,7 +249,7 @@ export const LabInterpretationPanel: React.FC<{
               <button
                 onClick={handleAnalyzeWithAI}
                 disabled={isAnalyzing || file.type === 'other'}
-                title={file.type === 'other' ? 'Solo disponible para imágenes y PDFs' : 'Gemini leerá el archivo con el prompt configurado'}
+                title={file.type === 'other' ? 'Solo disponible para imágenes y PDFs' : 'Gemini leerá el archivo'}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                   isAnalyzing || file.type === 'other'
                     ? 'border-slate-100 text-slate-300 cursor-not-allowed bg-slate-50'
@@ -269,7 +277,7 @@ export const LabInterpretationPanel: React.FC<{
 
           <textarea
             value={interpretation}
-            onChange={(e) => { setInterpretation(e.target.value); setIsDirty(true); }}
+            onChange={e => { setInterpretation(e.target.value); setIsDirty(true); }}
             rows={9}
             placeholder={
               file.type === 'other'
@@ -303,7 +311,7 @@ export const LabInterpretationPanel: React.FC<{
 export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate }) => {
   const labs = patient.labs || [];
 
-  const [customPrompt, setCustomPrompt] = useState<string>(loadSavedPrompt);
+  const [customPrompt,   setCustomPrompt]   = useState<string>(loadSavedPrompt);
   const [isPromptCustom, setIsPromptCustom] = useState(loadSavedPrompt() !== DEFAULT_PROMPT);
 
   const handleSavePrompt = (p: string) => {
@@ -319,18 +327,21 @@ export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate }) => {
   };
 
   const handleUpdateFiles = (newFiles: any[]) => {
-    const updated = { ...patient, labs: newFiles };
-    onUpdate(updated);
-    store.updatePatient(updated);
+    onUpdate({ ...patient, labs: newFiles });
   };
 
-  const handleSaveInterpretation = (fileId: string, interpretation: string) => {
+  // ✅ Guarda la interpretación en Supabase + actualiza estado local
+  const handleSaveInterpretation = async (fileId: string, interpretation: string) => {
     const updatedLabs = labs.map(f =>
       f.id === fileId ? { ...f, labInterpretation: interpretation } : f
     );
-    const updated = { ...patient, labs: updatedLabs };
-    onUpdate(updated);
-    store.updatePatient(updated);
+    onUpdate({ ...patient, labs: updatedLabs });
+
+    try {
+      await supabaseService.updatePatientFile(fileId, { labInterpretation: interpretation });
+    } catch (err) {
+      console.error('Error guardando interpretación en Supabase:', err);
+    }
   };
 
   return (
