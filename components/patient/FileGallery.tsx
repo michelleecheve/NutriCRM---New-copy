@@ -533,7 +533,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                   >
                     {isUploading ? 'Subiendo...' : 'Seleccionar archivo'}
                   </button>
-                  <p className="text-[10px] text-slate-400 mt-3">Imágenes: comprimidas a 500 KB · PDFs: máx 1 MB</p>
+                  <p className="text-[10px] text-slate-400 mt-3"> Peso Máx por archivo/imágen: 1 mb. Imágenes se comprimen automáticamente. </p>
                 </div>
               </div>
             </div>
