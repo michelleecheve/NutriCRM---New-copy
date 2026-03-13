@@ -29,12 +29,7 @@ import { MeasurementsHistory } from './MeasurementsHistory';
 import { SomatocartaCard } from './SomatocartaCard';
 import { SomatocartaForm } from './SomatocartaForm';
 import { SomatocartaLogic } from './SomatocartaLogic';
-import {
-  LabInterpretationPanel,
-  DEFAULT_PROMPT,
-  loadSavedPrompt,
-  savePromptToStorage,
-} from './LabsTab';
+import { LabInterpretationPanel, DEFAULT_PROMPT } from './LabsTab';
 
 type Draft = {
   title: string;
@@ -81,28 +76,44 @@ const LabsInterpretationSection: React.FC<{
   patient: Patient;
   onUpdate: (p: Patient) => void;
 }> = ({ linkedLabs, patient, onUpdate }) => {
-  const [customPrompt, setCustomPrompt] = useState<string>(loadSavedPrompt());
-  const [isPromptCustom, setIsPromptCustom] = useState(loadSavedPrompt() !== DEFAULT_PROMPT);
+  const savedPrompt = store.getUserProfile()?.labAIPrompt || DEFAULT_PROMPT;
+  const [customPrompt,   setCustomPrompt]   = useState<string>(savedPrompt);
+  const [isPromptCustom, setIsPromptCustom] = useState(savedPrompt !== DEFAULT_PROMPT);
 
-  const handleSavePrompt = (p: string) => {
+  const handleSavePrompt = async (p: string) => {
     setCustomPrompt(p);
     setIsPromptCustom(p !== DEFAULT_PROMPT);
-    savePromptToStorage(p);
+    try {
+      const userId = authStore.getCurrentUser()?.id;
+      if (userId) await supabaseService.updateProfile(userId, { labAIPrompt: p });
+    } catch (err) {
+      console.error('Error guardando lab prompt:', err);
+    }
   };
 
-  const handleResetPrompt = () => {
+  const handleResetPrompt = async () => {
     setCustomPrompt(DEFAULT_PROMPT);
     setIsPromptCustom(false);
-    savePromptToStorage(DEFAULT_PROMPT);
+    try {
+      const userId = authStore.getCurrentUser()?.id;
+      if (userId) await supabaseService.updateProfile(userId, { labAIPrompt: '' });
+    } catch (err) {
+      console.error('Error reseteando lab prompt:', err);
+    }
   };
 
-  const handleSaveInterpretation = (fileId: string, interpretation: string) => {
+  const handleSaveInterpretation = async (fileId: string, interpretation: string) => {
     const updatedLabs = (patient.labs || []).map((f: any) =>
       f.id === fileId ? { ...f, labInterpretation: interpretation } : f
     );
     const updated = { ...patient, labs: updatedLabs };
     onUpdate(updated);
     store.updatePatient(updated);
+    try {
+      await supabaseService.updatePatientFile(fileId, { labInterpretation: interpretation });
+    } catch (err) {
+      console.error('Error guardando interpretación:', err);
+    }
   };
 
   return (

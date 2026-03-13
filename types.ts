@@ -223,6 +223,7 @@ export interface Appointment {
   modality: 'Presencial' | 'Video';
   status: 'Programada' | 'Completada' | 'Cancelada' | 'Reagendada';
   notes?: string;
+  ownerId?: string;        // ✅ agregado
   nutritionistId?: string;
   receptionistId?: string;
   createdBy?: string;
@@ -301,6 +302,7 @@ export interface UserProfile {
   avatar?: string;
   timezone?: string;
   menuAIConfig?: MenuAIConfig;
+  labAIPrompt?: string;
 }
 
 export type MealTimeKey = 'desayuno' | 'refaccion' | 'almuerzo' | 'merienda' | 'cena';
@@ -342,11 +344,28 @@ export interface MenuAIConfig {
 
 export interface MenuReferenceRecord {
   id: string;
-  nutritionistId: string;
+  ownerId: string;        // ✅ corregido (antes era nutritionistId)
   kcal: number;
   type: string;
   data: any;
   createdAt: string;
+}
+
+// ─── Menu Templates ────────────────────────────────────────────────────────────
+
+export type MenuTemplateDesign = 'plantilla_v1' | 'plantilla_v2';
+export type MenuHeaderMode = 'default' | 'logo';
+
+export interface MenuTemplate {
+  id: string;
+  ownerId: string;
+  name: string;
+  headerMode: MenuHeaderMode;
+  logoUrl?: string;
+  templateDesign: MenuTemplateDesign;
+  isDefault: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PageModulePermission {

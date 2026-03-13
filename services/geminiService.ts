@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Patient, Measurement } from "../types";
+import { Patient, Measurement, MenuTemplateDesign } from "../types";
 import { MenuPlanData } from "../components/menus_components/MenuDesignTemplates";
 import type { MenuReferenceData } from "../components/menus_components/Menu_References_Components/MenuReferencesStorage";
 import { WEEKDAY_KEYS, calcPortionsTotal } from "../components/menus_components/Menu_References_Components/MenuReferencesStorage";
@@ -34,14 +34,18 @@ interface AIResponse {
   rationale:     string;
   mealStructure: AIMealEntry[];
   weeklyMenu:    AIDayEntry[];
-  domingo:       { note: string; hydration: string };
+  domingo:       { note: string; hydration: string; meals?: { id: string; title: string }[] };
   patient:       { name: string; age: number; weight: number; height: number; fatPct: number };
   kcal:          number;
 }
 
 // ─── Transform AI response → MenuPlanData ────────────────────────────────────
 
-function transformToMenuPlanData(ai: AIResponse, nutritionist: any): MenuPlanData {
+function transformToMenuPlanData(
+  ai: AIResponse,
+  nutritionist: any,
+  templateDesign: MenuTemplateDesign = 'plantilla_v1'
+): MenuPlanData {
   const groups = ['lacteos','vegetales','frutas','cereales','carnes','grasas'] as const;
 
   const byMeal: Record<string, any> = {};
@@ -56,9 +60,25 @@ function transformToMenuPlanData(ai: AIResponse, nutritionist: any): MenuPlanDat
   const mealLabels: Record<string, string> = {};
   ai.mealStructure.forEach(m => { mealLabels[m.id] = m.label; });
 
-  const weeklyMenu: any = {
-    domingo: { note: ai.domingo.note, hydration: ai.domingo.hydration },
-  };
+  const weeklyMenu: any = {};
+
+  // ✅ Domingo: v1 = día libre, v2 = día con comidas
+  if (templateDesign === 'plantilla_v2' && ai.domingo.meals?.length) {
+    const domObj: any = {
+      mealsOrder: mealOrder,
+      note:       ai.domingo.note,
+      hydration:  ai.domingo.hydration,
+    };
+    ai.domingo.meals.forEach(meal => {
+      domObj[meal.id] = { title: meal.title, label: mealLabels[meal.id] || meal.id };
+    });
+    weeklyMenu.domingo = domObj;
+  } else {
+    weeklyMenu.domingo = {
+      note:      ai.domingo.note,
+      hydration: ai.domingo.hydration,
+    };
+  }
 
   ai.weeklyMenu.forEach(dayEntry => {
     const dayObj: any = { mealsOrder: mealOrder };
@@ -277,7 +297,8 @@ export const generateStructuredMenu = async (
   portions:     any,
   references:   { title: string; data: MenuReferenceData }[],
   nutritionist: any,
-  linkedDate?:  string  // evaluation date assigned to this menu
+  linkedDate?:  string,  // evaluation date assigned to this menu
+  templateDesign: MenuTemplateDesign = 'plantilla_v1'
 ): Promise<{ plan: MenuPlanData; rationale: string }> => {
   if (!apiKey) throw new Error("API Key not found.");
 
@@ -325,7 +346,9 @@ ${refContext}
    - Descripción detallada con cantidades en medidas caseras, usando \\n para separar items.
    - Inspírate en el estilo y alimentos de las REFERENCIAS.
 
-3. DOMINGO: nota motivacional breve + meta de hidratación "X.XL Agua/Día".
+3. DOMINGO: ${templateDesign === 'plantilla_v1'
+  ? 'Es día libre. Genera solo una nota motivacional breve y meta de hidratación "X.XL Agua/Día". NO generes tiempos de comida.'
+  : 'Es un día normal igual que los demás. Genera todos los tiempos de comida completos con los mismos ids que definiste en mealStructure. También incluye nota motivacional e hidratación.'}
 
 4. RATIONALE: 2-3 oraciones sobre el criterio nutricional en español.
 
@@ -383,8 +406,22 @@ ${promptSuffix}
           },
           domingo: {
             type: Type.OBJECT,
-            properties: { note: { type: Type.STRING }, hydration: { type: Type.STRING } },
-            required: ["note","hydration"],
+            properties: {
+              note:      { type: Type.STRING },
+              hydration: { type: Type.STRING },
+              meals: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id:    { type: Type.STRING },
+                    title: { type: Type.STRING },
+                  },
+                  required: ["id", "title"],
+                },
+              },
+            },
+            required: ["note", "hydration"],
           },
         },
         required: ["rationale","patient","kcal","mealStructure","weeklyMenu","domingo"],

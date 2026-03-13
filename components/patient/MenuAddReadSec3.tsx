@@ -6,13 +6,15 @@ import {
   Table as TableIcon, Calendar, FileText, Copy, Check,
   Lock, Unlock
 } from 'lucide-react';
-import { Patient, VetCalculation, MacrosRecord, PortionsRecord } from '../../types';
+import { Patient, VetCalculation, MacrosRecord, PortionsRecord, MenuTemplateDesign } from '../../types';
 import { MenuPlanData, MenuDay, DayMeal, DomingoData, MealPortions } from '../menus_components/MenuDesignTemplates';
 import { MenuReferenceParsertoMenuData } from '../menus_components/Menu_References_Components/MenuReferenceParsertoMenuData';
 import { MenuExportPDF } from '../menus_components/MenuExportPDF';
 import { MenuPreview } from '../menus_components/MenuPreview';
 import { generateStructuredMenu } from '../../services/geminiService';
 import { store } from '../../services/store';
+import { authStore } from '../../services/authStore';
+import { supabaseService } from '../../services/supabaseService';
 
 interface MenuAddReadSec3Props {
   patient: Patient;
@@ -208,12 +210,26 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         avatar: nutritionistProfile.avatar,
       };
 
+      // ✅ Cargar plantilla guardada
+      const userId = authStore.getCurrentUser()?.id;
+      let templateDesign: MenuTemplateDesign = 'plantilla_v1';
+      let logoUrl: string | undefined = undefined;
+      if (userId) {
+        const template = await supabaseService.getDefaultMenuTemplate(userId);
+        if (template) {
+          templateDesign = template.templateDesign as MenuTemplateDesign;
+          if (template.headerMode === 'logo') logoUrl = template.logoUrl;
+        }
+      }
+
       const result = await generateStructuredMenu(
         patient,
         vetData,
         portions,
         refs,
-        nutritionistData
+        { ...nutritionistData, logoUrl }, // ✅ logo aplicado
+        undefined,
+        templateDesign                    // ✅ plantilla aplicada
       );
 
       setMenuPreviewData(result.plan);

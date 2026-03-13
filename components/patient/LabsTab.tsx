@@ -7,6 +7,7 @@ import {
 import { FileGallery } from './FileGallery';
 import { store } from '../../services/store';
 import { supabaseService } from '../../services/supabaseService';
+import { authStore } from '../../services/authStore';
 import { GoogleGenAI } from '@google/genai';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
@@ -25,14 +26,7 @@ Proporciona en español:
 
 Usa lenguaje profesional pero claro. Organiza con los títulos de cada sección.`;
 
-export function loadSavedPrompt(): string {
-  try { return localStorage.getItem(PROMPT_STORAGE_KEY) || DEFAULT_PROMPT; }
-  catch { return DEFAULT_PROMPT; }
-}
 
-export function savePromptToStorage(p: string) {
-  try { localStorage.setItem(PROMPT_STORAGE_KEY, p); } catch {}
-}
 
 interface LabsTabProps {
   patient: Patient;
@@ -311,19 +305,30 @@ export const LabInterpretationPanel: React.FC<{
 export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate }) => {
   const labs = patient.labs || [];
 
-  const [customPrompt,   setCustomPrompt]   = useState<string>(loadSavedPrompt);
-  const [isPromptCustom, setIsPromptCustom] = useState(loadSavedPrompt() !== DEFAULT_PROMPT);
+  const savedPrompt = store.getUserProfile()?.labAIPrompt || DEFAULT_PROMPT;
+  const [customPrompt,   setCustomPrompt]   = useState<string>(savedPrompt);
+  const [isPromptCustom, setIsPromptCustom] = useState(savedPrompt !== DEFAULT_PROMPT);
 
-  const handleSavePrompt = (p: string) => {
+  const handleSavePrompt = async (p: string) => {
     setCustomPrompt(p);
     setIsPromptCustom(p !== DEFAULT_PROMPT);
-    savePromptToStorage(p);
+    try {
+      const userId = authStore.getCurrentUser()?.id;
+      if (userId) await supabaseService.updateProfile(userId, { labAIPrompt: p });
+    } catch (err) {
+      console.error('Error guardando lab prompt:', err);
+    }
   };
 
-  const handleResetPrompt = () => {
+  const handleResetPrompt = async () => {
     setCustomPrompt(DEFAULT_PROMPT);
     setIsPromptCustom(false);
-    savePromptToStorage(DEFAULT_PROMPT);
+    try {
+      const userId = authStore.getCurrentUser()?.id;
+      if (userId) await supabaseService.updateProfile(userId, { labAIPrompt: '' });
+    } catch (err) {
+      console.error('Error reseteando lab prompt:', err);
+    }
   };
 
   const handleUpdateFiles = (newFiles: any[]) => {

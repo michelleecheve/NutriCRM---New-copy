@@ -24,9 +24,23 @@ export interface MenuDay {
   mealsOrder?: string[];
 }
 
+// ✅ Reemplaza el DomingoData anterior
 export interface DomingoData {
   note: string;
   hydration: string;
+}
+
+// ✅ Nuevo — domingo con tiempos de comida (plantilla v2)
+export interface DomingoV2 extends MenuDay {
+  note?: string;
+  hydration?: string;
+}
+
+// ✅ Nuevo helper
+export function isDomingoV2(domingo: DomingoData | DomingoV2): domingo is DomingoV2 {
+  return 'mealsOrder' in domingo || Object.keys(domingo).some(
+    k => !['note', 'hydration'].includes(k)
+  );
 }
 
 export interface MenuPlanData {
@@ -54,7 +68,7 @@ export interface MenuPlanData {
     jueves: MenuDay;
     viernes: MenuDay;
     sabado: MenuDay;
-    domingo: DomingoData;
+    domingo: DomingoData | DomingoV2; // ✅ antes era solo DomingoData
   };
   nutritionist: {
     name: string;
@@ -450,8 +464,9 @@ const A4Wrapper: React.FC<{ id?: string; children: React.ReactNode; footer: Reac
   </div>
 );
 
-// ─── Template 1: Grid 3×2 ──────────────────────────────────────────────────────
-export const MenuBaseTemplate: React.FC<{ data: MenuPlanData }> = ({ data }) => (
+
+// ─── Plantilla V1: Domingo día libre ──────────────────────────────────────────
+export const MenuTemplateV1: React.FC<{ data: MenuPlanData }> = ({ data }) => (
   <>
     <style>{PRINT_STYLES}</style>
     <A4Wrapper footer={<Footer nutritionist={data.nutritionist} />}>
@@ -471,65 +486,91 @@ export const MenuBaseTemplate: React.FC<{ data: MenuPlanData }> = ({ data }) => 
           <DayCard key={day} label={WEEKDAY_LABELS[day]} day={data.weeklyMenu[day]} />
         )}
       </div>
-      <DomingoRow domingo={data.weeklyMenu.domingo} />
+      <DomingoRow domingo={data.weeklyMenu.domingo as DomingoData} />
     </A4Wrapper>
   </>
 );
 
-// ─── Template 2: Grid 3+4 (lunes-miércoles | jueves-domingo) ──────────────────
-export const MenuTemplate2: React.FC<{ data: MenuPlanData }> = ({ data }) => (
-  <>
-    <style>{PRINT_STYLES}</style>
-    <A4Wrapper footer={<Footer nutritionist={data.nutritionist} />}>
-      <Header nutritionist={data.nutritionist} />
-      <PatientBar patient={data.patient} kcal={data.kcal} />
-      <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
-      <div style={{ fontSize: '10px', fontWeight: 800, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
-        MENÚ SEMANAL
-      </div>
+// ─── Plantilla V2: Domingo como día normal (grid 3+4) ─────────────────────────
+export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
+  const domingo = data.weeklyMenu.domingo;
+  const domingoAsDay = isDomingoV2(domingo) ? domingo as DomingoV2 : null;
 
-      {/* Row 1: Lunes – Miércoles */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-        {(['lunes', 'martes', 'miercoles'] as WeekDayKey[]).map(day =>
-          <DayCard key={day} label={WEEKDAY_LABELS[day]} day={data.weeklyMenu[day]} />
-        )}
-      </div>
+  return (
+    <>
+      <style>{PRINT_STYLES}</style>
+      <A4Wrapper footer={<Footer nutritionist={data.nutritionist} />}>
+        <Header nutritionist={data.nutritionist} />
+        <PatientBar patient={data.patient} kcal={data.kcal} />
+        <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
+        <div style={{ fontSize: '10px', fontWeight: 800, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+          MENÚ SEMANAL
+        </div>
 
-      {/* Row 2: Jueves – Sábado + Domingo card */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-        {(['jueves', 'viernes', 'sabado'] as WeekDayKey[]).map(day =>
-          <DayCard key={day} label={WEEKDAY_LABELS[day]} day={data.weeklyMenu[day]} />
-        )}
-        {/* Domingo as 4th card */}
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', flex: 1, minWidth: 0 }}>
-          <div style={{
-            backgroundColor: '#1e293b', color: '#fff', textAlign: 'center',
-            padding: '5px 4px', fontWeight: 800, fontSize: '9px', letterSpacing: '1px',
-          }}>
-            DOMINGO
-          </div>
-          <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <div>
-              <div style={{ color: '#0f766e', fontSize: '8.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                DÍA LIBRE
+        {/* Fila 1: Lunes – Miércoles */}
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+          {(['lunes', 'martes', 'miercoles'] as WeekDayKey[]).map(day =>
+            <DayCard key={day} label={WEEKDAY_LABELS[day]} day={data.weeklyMenu[day]} />
+          )}
+        </div>
+
+        {/* Fila 2: Jueves – Sábado + Domingo como 4to card */}
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+          {(['jueves', 'viernes', 'sabado'] as WeekDayKey[]).map(day =>
+            <DayCard key={day} label={WEEKDAY_LABELS[day]} day={data.weeklyMenu[day]} />
+          )}
+          {domingoAsDay ? (
+            <DayCard label="DOMINGO" day={domingoAsDay} />
+          ) : (
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', flex: 1, minWidth: 0 }}>
+              <div style={{
+                backgroundColor: '#1e293b', color: '#fff', textAlign: 'center',
+                padding: '5px 4px', fontWeight: 800, fontSize: '9px', letterSpacing: '1px',
+              }}>
+                DOMINGO
               </div>
-              <div style={{ color: '#334155', fontSize: '8px', fontWeight: 600, lineHeight: '1.3', whiteSpace: 'pre-line' }}>
-                {data.weeklyMenu.domingo.note}
+              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <div style={{ color: '#334155', fontSize: '8px', fontWeight: 600, lineHeight: '1.3', whiteSpace: 'pre-line' }}>
+                  {(domingo as DomingoData).note}
+                </div>
               </div>
             </div>
-            {data.weeklyMenu.domingo.hydration && (
-              <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid #f1f5f9' }}>
-                <div style={{ fontSize: '7px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600, marginBottom: '2px' }}>
-                  HIDRATACIÓN
+          )}
+        </div>
+
+        {/* ✅ Barra NOTAS + Hidratación */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+          <tbody>
+            <tr>
+              <td style={{
+                backgroundColor: '#1e293b', color: '#fff',
+                padding: '10px 14px', fontWeight: 800, fontSize: '9px',
+                letterSpacing: '1px', whiteSpace: 'nowrap', verticalAlign: 'middle',
+                width: '1%',
+              }}>
+                NOTAS
+              </td>
+              <td style={{ padding: '8px 14px', verticalAlign: 'middle' }}>
+                <div style={{ fontSize: '8.5px', color: '#334155', fontWeight: 600 }}>
+                  {domingoAsDay?.note || (domingo as DomingoData).note}
+                </div>
+              </td>
+              <td style={{
+                padding: '8px 14px', textAlign: 'right', verticalAlign: 'middle',
+                borderLeft: '1px solid #f1f5f9', whiteSpace: 'nowrap', width: '1%',
+              }}>
+                <div style={{ fontSize: '7px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600, marginBottom: '3px' }}>
+                  META HIDRATACIÓN
                 </div>
                 <div style={{ fontSize: '9px', color: '#0f766e', fontWeight: 800 }}>
-                  💧 {data.weeklyMenu.domingo.hydration}
+                  💧 {domingoAsDay?.hydration || (domingo as DomingoData).hydration}
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </A4Wrapper>
-  </>
-);
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+      </A4Wrapper>
+    </>
+  );
+};

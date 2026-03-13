@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { MenuBaseTemplate, MenuTemplate2, MenuPlanData } from './MenuDesignTemplates';
+import { MenuTemplateV1, MenuTemplateV2, MenuPlanData } from './MenuDesignTemplates';
 import { Layout } from 'lucide-react';
 
 interface MenuPreviewProps {
@@ -18,12 +17,12 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
   elementId = "menu-print-area",
   zoom: externalZoom,
   setZoom: setExternalZoom,
-  selectedTemplate = "base_v1",
+  selectedTemplate = "plantilla_v1",
   onTemplateChange,
   hideTemplateSelector = false
 }) => {
   const [internalZoom, setInternalZoom] = useState(0.8);
-  const [internalTemplate, setInternalTemplate] = useState("base_v1");
+  const [internalTemplate, setInternalTemplate] = useState("plantilla_v1");
   
   const currentZoom = externalZoom !== undefined ? externalZoom : internalZoom;
   const currentTemplate = onTemplateChange ? selectedTemplate : internalTemplate;
@@ -46,11 +45,11 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
 
   const renderTemplate = () => {
     switch (currentTemplate) {
-      case 'template2':
-        return <MenuTemplate2 data={data} />;
-      case 'base_v1':
+      case 'plantilla_v2':
+        return <MenuTemplateV2 data={data} />;
+      case 'plantilla_v1':
       default:
-        return <MenuBaseTemplate data={data} />;
+        return <MenuTemplateV1 data={data} />;
     }
   };
 
@@ -63,22 +62,22 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
           {!hideTemplateSelector && (
             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
               <button 
-                onClick={() => updateTemplate('base_v1')}
+                onClick={() => updateTemplate('plantilla_v1')}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5 ${
-                  currentTemplate === 'base_v1' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  currentTemplate === 'plantilla_v1' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 <Layout className="w-3 h-3" />
-                Diseño 1
+                Plantilla V1
               </button>
               <button 
-                onClick={() => updateTemplate('template2')}
+                onClick={() => updateTemplate('plantilla_v2')}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5 ${
-                  currentTemplate === 'template2' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  currentTemplate === 'plantilla_v2' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
                 <Layout className="w-3 h-3" />
-                Diseño 2
+                Plantilla V2
               </button>
             </div>
           )}

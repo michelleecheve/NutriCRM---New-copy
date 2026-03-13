@@ -176,6 +176,7 @@ class Store {
           avatar:            profile.avatar             || '',
           phone:             profile.phone              || '',
           menuAIConfig:      profile.menu_ai_config,
+          labAIPrompt:       profile.lab_ai_prompt      || '',
         };
 
         // ✅ Enforce only the three requested statuses as per user request

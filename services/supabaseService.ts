@@ -35,6 +35,7 @@ export const supabaseService = {
     if (profile.licenseNumber)     updateData.license_number     = profile.licenseNumber;
     if (profile.avatar)            updateData.avatar             = profile.avatar;
     if (profile.menuAIConfig)      updateData.menu_ai_config     = profile.menuAIConfig;
+    if (profile.labAIPrompt !== undefined) updateData.lab_ai_prompt = profile.labAIPrompt;
 
     const { data, error } = await supabase
       .from('profiles')
@@ -614,8 +615,80 @@ export const supabaseService = {
     return { path: fileName, signedUrl: data.publicUrl };
   },
 
+  async uploadMenuLogo(userId: string, file: File): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}/menu-logo/${crypto.randomUUID()}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, file, { upsert: true });
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+    return data.publicUrl;
+  },
+
+  // ─── Menu Templates ────────────────────────────────────────────────────────
+
+  async getDefaultMenuTemplate(ownerId: string) {
+    const { data, error } = await supabase
+      .from('menu_templates')
+      .select('*')
+      .eq('owner_id', ownerId)
+      .eq('is_default', true)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+    return data || null;
+  },
+
+  async saveMenuTemplate(template: {
+    id?: string;
+    ownerId: string;
+    name?: string;
+    headerMode: 'default' | 'logo';
+    logoUrl?: string;
+    templateDesign: string;
+    isDefault?: boolean;
+  }) {
+    const payload: any = {
+      owner_id:        template.ownerId,
+      name:            template.name || 'Mi Plantilla',
+      header_mode:     template.headerMode,
+      logo_url:        template.logoUrl || null,
+      template_design: template.templateDesign,
+      is_default:      template.isDefault ?? true,
+      updated_at:      new Date().toISOString(),
+    };
+    if (template.id) payload.id = template.id;
+
+    const { data, error } = await supabase
+      .from('menu_templates')
+      .upsert(payload, { onConflict: 'id' })
+      .select()
+      .single();
+    if (error) throw error;
+    return this.mapMenuTemplateFromDb(data);
+  },
+
+  async deleteMenuTemplate(id: string) {
+    const { error } = await supabase.from('menu_templates').delete().eq('id', id);
+    if (error) throw error;
+  },
+
 
   // ─── Mappers ───────────────────────────────────────────────────────────────
+
+  mapMenuTemplateFromDb(db: any) {
+    return {
+      id:             db.id,
+      ownerId:        db.owner_id,
+      name:           db.name,
+      headerMode:     db.header_mode as 'default' | 'logo',
+      logoUrl:        db.logo_url || undefined,
+      templateDesign: db.template_design,
+      isDefault:      db.is_default,
+      createdAt:      db.created_at,
+      updatedAt:      db.updated_at,
+    };
+  },
 
   mapPatientFromDb(dbPatient: any): Patient {
     return {
