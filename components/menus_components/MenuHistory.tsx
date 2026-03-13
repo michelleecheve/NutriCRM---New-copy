@@ -21,14 +21,13 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient }) => 
   const [patients, setPatients] = useState<Patient[]>([]);
 
   useEffect(() => {
-    const fetchPatients = async () => {
-      try {
+    const checkInit = setInterval(() => {
+      if (store.isInitialized) {
         setPatients(store.getPatients());
-      } catch (error) {
-        console.error('Error fetching patients for menu history:', error);
+        clearInterval(checkInit);
       }
-    };
-    fetchPatients();
+    }, 100);
+    return () => clearInterval(checkInit);
   }, []);
 
   const historyEntries = useMemo(() => {
@@ -128,7 +127,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient }) => 
                     <div className="flex items-center gap-2 text-slate-600">
                       <Flame className="w-4 h-4 text-orange-400" />
                       <span className="text-sm font-medium">
-                        {entry.menu.menuPreviewData?.kcal || entry.menu.kcalToWork || 'N/A'} kcal
+                        {entry.menu.menuPreviewData?.kcal ?? entry.menu.kcalToWork ?? 'N/A'} kcal
                       </span>
                     </div>
                   </td>

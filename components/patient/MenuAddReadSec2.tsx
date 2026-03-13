@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BookOpen, Eye, EyeOff, Plus, X, Check } from 'lucide-react';
-import { MenuReferencesStorage, MenuReferenceRecord } from '../menus_components/Menu_References_Components/MenuReferencesStorage';
+import { MenuReferenceRecord } from '../menus_components/Menu_References_Components/MenuReferencesStorage';
+import { store } from '../../services/store';
 
 interface MenuAddReadSec2Props {
   selectedTemplateId: string;
@@ -19,7 +20,7 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
   const [showSelector, setShowSelector] = useState(false);
   const [tempSelectedIds, setTempSelectedIds] = useState<string[]>([]);
 
-  const allReferences = MenuReferencesStorage.list();
+  const allReferences = store.menuReferences;
   
   const selectedReferences = allReferences.filter(r => selectedReferenceIds.includes(r.id));
 

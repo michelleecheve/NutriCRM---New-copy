@@ -298,6 +298,53 @@ export interface UserProfile {
   website?: string;
   avatar?: string;
   timezone?: string;
+  menuAIConfig?: MenuAIConfig;
+}
+
+export type MealTimeKey = 'desayuno' | 'refaccion' | 'almuerzo' | 'merienda' | 'cena';
+
+export interface FoodIdea {
+  id: string;
+  name: string;
+  description: string;
+  category: 'ingrediente' | 'receta' | 'evitar' | 'marca';
+}
+
+export interface MealTimeIdeas {
+  desayuno:  FoodIdea[];
+  refaccion: FoodIdea[];
+  almuerzo:  FoodIdea[];
+  merienda:  FoodIdea[];
+  cena:      FoodIdea[];
+}
+
+export interface PatientDataFields {
+  datosClinicos:            boolean;
+  deporteEntrenamiento:     boolean;
+  meta:                     boolean;
+  alergias:                 boolean;
+  diagnostico:              boolean;
+  historialFamiliar:        boolean;
+  medicamentos:             boolean;
+  evaluacionDietetica:      boolean;
+  evaluacionDieteticaFecha: boolean;
+  medidasAntropometricas:   boolean;
+  laboratorios:             boolean;
+}
+
+export interface MenuAIConfig {
+  prompt: string;
+  ideas:  MealTimeIdeas;
+  fields: PatientDataFields;
+}
+
+export interface MenuReferenceRecord {
+  id: string;
+  nutritionistId: string;
+  kcal: number;
+  type: string;
+  data: any;
+  createdAt: string;
 }
 
 export interface PageModulePermission {

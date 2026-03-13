@@ -4,45 +4,10 @@ import {
   ChevronDown, ChevronUp, Coffee, Sun, UtensilsCrossed, Apple, Moon,
   ToggleLeft, ToggleRight, User, FlaskConical
 } from 'lucide-react';
+import { store } from '../../services/store';
+import { MenuAIConfig, MealTimeIdeas, PatientDataFields, FoodIdea, MealTimeKey } from '../../types';
 
-// ─── Storage keys ─────────────────────────────────────────────────────────────
-const PROMPT_KEY  = 'nutriflow_menu_ai_prompt_v1';
-const IDEAS_KEY   = 'nutriflow_menu_ai_ideas_v1';
-const FIELDS_KEY  = 'nutriflow_menu_ai_fields_v1';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-export type MealTimeKey = 'desayuno' | 'refaccion' | 'almuerzo' | 'merienda' | 'cena';
-
-export interface FoodIdea {
-  id: string;
-  name: string;
-  description: string;
-  category: 'ingrediente' | 'receta' | 'evitar' | 'marca';
-}
-
-export interface MealTimeIdeas {
-  desayuno:  FoodIdea[];
-  refaccion: FoodIdea[];
-  almuerzo:  FoodIdea[];
-  merienda:  FoodIdea[];
-  cena:      FoodIdea[];
-}
-
-// ─── Patient data field toggles ───────────────────────────────────────────────
-export interface PatientDataFields {
-  datosClinicos:            boolean; // edad, peso, talla, sexo
-  deporteEntrenamiento:     boolean; // deporte, frecuencia, días/semana
-  meta:                     boolean; // goals
-  alergias:                 boolean; // allergies
-  diagnostico:              boolean; // diagnosis
-  historialFamiliar:        boolean; // familyHistory
-  medicamentos:             boolean; // medications
-  evaluacionDietetica:      boolean; // sin fecha: preferencias, aversiones, notas generales
-  evaluacionDieteticaFecha: boolean; // con fecha: tiempos, exclusiones, recall, frecuencia
-  medidasAntropometricas:   boolean; // con fecha: IMC, % grasa, músculo
-  laboratorios:             boolean; // con fecha: interpretaciones de labs
-}
-
+// ─── Constants ────────────────────────────────────────────────────────────────────
 export const DEFAULT_PATIENT_FIELDS: PatientDataFields = {
   datosClinicos:            true,
   deporteEntrenamiento:     true,
@@ -56,12 +21,6 @@ export const DEFAULT_PATIENT_FIELDS: PatientDataFields = {
   medidasAntropometricas:   true,
   laboratorios:             true,
 };
-
-export interface MenuAIConfig {
-  prompt: string;
-  ideas:  MealTimeIdeas;
-  fields: PatientDataFields;
-}
 
 // ─── Meal time metadata ───────────────────────────────────────────────────────
 const MEAL_TIMES: { key: MealTimeKey; label: string; icon: React.ReactNode }[] = [
@@ -121,7 +80,7 @@ const FIELD_DEFS: FieldDef[] = [
 
 // ─── Default prompt suffix ────────────────────────────────────────────────────
 export const DEFAULT_MENU_PROMPT_SUFFIX = `
-═══ PREFERENCIAS E IDEAS DE COMIDAS DE LA NUTRICIONISTA ═══
+\u2550\u2550\u2550 PREFERENCIAS E IDEAS DE COMIDAS DE LA NUTRICIONISTA \u2550\u2550\u2550
 {foodIdeas}
 
 Toma en cuenta estas ideas y preferencias al construir el menú semanal.
@@ -132,27 +91,6 @@ Evita los alimentos marcados como "evitar".`;
 const emptyIdeas = (): MealTimeIdeas => ({
   desayuno: [], refaccion: [], almuerzo: [], merienda: [], cena: [],
 });
-
-export function loadMenuAIConfig(): MenuAIConfig {
-  try {
-    const prompt    = localStorage.getItem(PROMPT_KEY) || '';
-    const ideasRaw  = localStorage.getItem(IDEAS_KEY);
-    const fieldsRaw = localStorage.getItem(FIELDS_KEY);
-    const ideas:  MealTimeIdeas     = ideasRaw  ? JSON.parse(ideasRaw)  : emptyIdeas();
-    const fields: PatientDataFields = fieldsRaw ? { ...DEFAULT_PATIENT_FIELDS, ...JSON.parse(fieldsRaw) } : { ...DEFAULT_PATIENT_FIELDS };
-    return { prompt, ideas, fields };
-  } catch {
-    return { prompt: '', ideas: emptyIdeas(), fields: { ...DEFAULT_PATIENT_FIELDS } };
-  }
-}
-
-export function saveMenuAIConfig(config: MenuAIConfig) {
-  try {
-    localStorage.setItem(PROMPT_KEY,  config.prompt);
-    localStorage.setItem(IDEAS_KEY,   JSON.stringify(config.ideas));
-    localStorage.setItem(FIELDS_KEY,  JSON.stringify(config.fields));
-  } catch {}
-}
 
 // ─── Build ideas context string ───────────────────────────────────────────────
 export function buildFoodIdeasContext(ideas: MealTimeIdeas): string {
@@ -285,41 +223,73 @@ const MealTimePanel: React.FC<{
 
 // ─── Main MenuAIConfigurator ──────────────────────────────────────────────────
 export const MenuAIConfigurator: React.FC = () => {
-  const saved = loadMenuAIConfig();
+  // const store = useStore(); // Removed hook call
+  const saved = store.getUserProfile()?.menuAIConfig || { 
+    prompt: DEFAULT_MENU_PROMPT_SUFFIX, 
+    ideas: emptyIdeas(), 
+    fields: { ...DEFAULT_PATIENT_FIELDS } 
+  };
 
   const [promptSuffix, setPromptSuffix]     = useState(saved.prompt || DEFAULT_MENU_PROMPT_SUFFIX);
-  const [ideas, setIdeas]                   = useState<MealTimeIdeas>(saved.ideas);
-  const [fields, setFields]                 = useState<PatientDataFields>(saved.fields);
+  const [ideas, setIdeas]                   = useState<MealTimeIdeas>(saved.ideas || emptyIdeas());
+  const [fields, setFields]                 = useState<PatientDataFields>(saved.fields || { ...DEFAULT_PATIENT_FIELDS });
   const [activeTab, setActiveTab]           = useState<'ideas' | 'datos' | 'prompt'>('ideas');
   const [savedOk, setSavedOk]               = useState(false);
   const [isPromptCustom, setIsPromptCustom] = useState(
     !!saved.prompt && saved.prompt !== DEFAULT_MENU_PROMPT_SUFFIX
   );
 
-  // Auto-save ideas + fields on change
+  // Sync with store when store data changes (e.g. after initial load)
   useEffect(() => {
-    saveMenuAIConfig({ prompt: promptSuffix, ideas, fields });
-  }, [ideas, fields]);
+    const profile = store.getUserProfile();
+    if (profile?.menuAIConfig) {
+      const cfg = profile.menuAIConfig;
+      setPromptSuffix(cfg.prompt || DEFAULT_MENU_PROMPT_SUFFIX);
+      setIdeas(cfg.ideas || emptyIdeas());
+      setFields(cfg.fields || { ...DEFAULT_PATIENT_FIELDS });
+      setIsPromptCustom(!!cfg.prompt && cfg.prompt !== DEFAULT_MENU_PROMPT_SUFFIX);
+    }
+  }, [store.getUserProfile()?.menuAIConfig]);
+
+  // Save changes to store
+  const handleSaveAll = async (newConfig: MenuAIConfig) => {
+    try {
+      await store.updateMenuAIConfig(newConfig);
+      setSavedOk(true);
+      setTimeout(() => setSavedOk(false), 2000);
+    } catch (error) {
+      console.error("Error saving AI config:", error);
+    }
+  };
 
   const handleSavePrompt = () => {
-    saveMenuAIConfig({ prompt: promptSuffix, ideas, fields });
+    const newConfig = { prompt: promptSuffix, ideas, fields };
+    handleSaveAll(newConfig);
     setIsPromptCustom(promptSuffix !== DEFAULT_MENU_PROMPT_SUFFIX);
-    setSavedOk(true);
-    setTimeout(() => setSavedOk(false), 2000);
   };
 
   const handleResetPrompt = () => {
-    setPromptSuffix(DEFAULT_MENU_PROMPT_SUFFIX);
+    const newPrompt = DEFAULT_MENU_PROMPT_SUFFIX;
+    setPromptSuffix(newPrompt);
     setIsPromptCustom(false);
-    saveMenuAIConfig({ prompt: DEFAULT_MENU_PROMPT_SUFFIX, ideas, fields });
+    handleSaveAll({ prompt: newPrompt, ideas, fields });
   };
 
   const handleFieldToggle = (key: keyof PatientDataFields, value: boolean) => {
-    setFields(prev => ({ ...prev, [key]: value }));
+    const newFields = { ...fields, [key]: value };
+    setFields(newFields);
+    handleSaveAll({ prompt: promptSuffix, ideas, fields: newFields });
   };
 
   const handleResetFields = () => {
-    setFields({ ...DEFAULT_PATIENT_FIELDS });
+    const newFields = { ...DEFAULT_PATIENT_FIELDS };
+    setFields(newFields);
+    handleSaveAll({ prompt: promptSuffix, ideas, fields: newFields });
+  };
+
+  const handleIdeasChange = (newIdeas: MealTimeIdeas) => {
+    setIdeas(newIdeas);
+    handleSaveAll({ prompt: promptSuffix, ideas: newIdeas, fields });
   };
 
   const totalIdeas   = (Object.values(ideas) as FoodIdea[][]).reduce((sum, arr) => sum + arr.length, 0);
@@ -359,6 +329,15 @@ export const MenuAIConfigurator: React.FC = () => {
               Prompt personalizado
             </span>
           )}
+          <button onClick={handleSavePrompt}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+              savedOk
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                : 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700'
+            }`}>
+            <Save className="w-4 h-4" />
+            {savedOk ? '¡Guardado!' : 'Guardar'}
+          </button>
         </div>
       </div>
 
@@ -400,7 +379,7 @@ export const MenuAIConfigurator: React.FC = () => {
           {MEAL_TIMES.map(({ key, label, icon }) => (
             <MealTimePanel key={key} mealKey={key} label={label} icon={icon}
               ideas={ideas[key]}
-              onChange={newIdeas => setIdeas(prev => ({ ...prev, [key]: newIdeas }))}
+              onChange={newIdeas => handleIdeasChange({ ...ideas, [key]: newIdeas })}
             />
           ))}
           {totalIdeas === 0 && (
@@ -515,15 +494,6 @@ export const MenuAIConfigurator: React.FC = () => {
             <button onClick={handleResetPrompt}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-500 border border-slate-200 hover:bg-slate-50 transition-all">
               <RotateCcw className="w-3.5 h-3.5" /> Restaurar por defecto
-            </button>
-            <button onClick={handleSavePrompt}
-              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all ${
-                savedOk
-                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
-                  : 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700'
-              }`}>
-              <Save className="w-4 h-4" />
-              {savedOk ? '¡Guardado!' : 'Guardar prompt'}
             </button>
           </div>
         </div>

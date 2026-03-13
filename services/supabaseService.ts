@@ -8,7 +8,8 @@ import {
   Appointment,
   Invoice,
   UserProfile,
-  SomatotypeRecord
+  SomatotypeRecord,
+  MenuReferenceRecord
 } from '../types';
 
 export const supabaseService = {
@@ -33,6 +34,7 @@ export const supabaseService = {
     if (profile.specialty)         updateData.specialty          = profile.specialty;
     if (profile.licenseNumber)     updateData.license_number     = profile.licenseNumber;
     if (profile.avatar)            updateData.avatar             = profile.avatar;
+    if (profile.menuAIConfig)      updateData.menu_ai_config     = profile.menuAIConfig;
 
     const { data, error } = await supabase
       .from('profiles')
@@ -355,6 +357,15 @@ export const supabaseService = {
     return (data || []).map(this.mapEvaluationFromDb);
   },
 
+  async getMenus(): Promise<GeneratedMenu[]> {
+    const { data, error } = await supabase
+      .from('menus')
+      .select('*')
+      .order('date', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(this.mapMenuFromDb);
+  },
+
   // ─── Patient Files (labs & photos) ─────────────────────────────────────────
 
   async getPatientFiles(patientId: string) {
@@ -544,6 +555,41 @@ export const supabaseService = {
     if (error) throw error;
   },
 
+  // ─── Menu References ───────────────────────────────────────────────────────
+
+  async getMenuReferences(nutritionistId: string): Promise<MenuReferenceRecord[]> {
+    const { data, error } = await supabase
+      .from('menu_references')
+      .select('*')
+      .eq('nutritionist_id', nutritionistId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(this.mapMenuReferenceFromDb);
+  },
+
+  async saveMenuReference(ref: Partial<MenuReferenceRecord>) {
+    const payload: any = {
+      nutritionist_id: ref.nutritionistId,
+      kcal:            ref.kcal,
+      type:            ref.type,
+      data:            ref.data,
+    };
+    if (ref.id) payload.id = ref.id;
+
+    const { data, error } = await supabase
+      .from('menu_references')
+      .upsert(payload)
+      .select()
+      .single();
+    if (error) throw error;
+    return this.mapMenuReferenceFromDb(data);
+  },
+
+  async deleteMenuReference(id: string) {
+    const { error } = await supabase.from('menu_references').delete().eq('id', id);
+    if (error) throw error;
+  },
+
   // ─── Storage ───────────────────────────────────────────────────────────────
 
   async uploadAvatar(userId: string, file: File) {
@@ -698,25 +744,7 @@ export const supabaseService = {
 
         // Menus
         (ev.menus || []).forEach((menu: any) => {
-          patient.menus.push({
-            id:                  menu.id,
-            linkedEvaluationId:  ev.id,
-            patientId:           menu.patient_id,
-            date:                menu.date,
-            age:                 menu.age,
-            weightKg:            menu.weight_kg,
-            heightCm:            menu.height_cm,
-            gender:              menu.gender,
-            vetDetails:          menu.vet_details,
-            kcalToWork:          menu.kcal_to_work,
-            macros:              menu.macros,
-            portions:            menu.portions,
-            templatesReferences: menu.templates_references,
-            menuData:            menu.menu_data,
-            name:                menu.name,
-            content:             menu.content,
-            aiRationale:         menu.ai_rationale,
-          });
+          patient.menus.push(this.mapMenuFromDb(menu));
         });
       });
     }
@@ -737,6 +765,29 @@ export const supabaseService = {
       description:        dbFile.description        || '',
       labInterpretation:  dbFile.lab_interpretation || '',   // ✅
       linkedEvaluationId: dbFile.evaluation_id      || null,
+    };
+  },
+
+  mapMenuFromDb(menu: any): GeneratedMenu {
+    return {
+      id:                  menu.id,
+      linkedEvaluationId:  menu.evaluation_id,
+      patientId:           menu.patient_id,
+      date:                menu.date,
+      age:                 menu.age,
+      weightKg:            menu.weight_kg,
+      heightCm:            menu.height_cm,
+      gender:               menu.gender,
+      vetDetails:          menu.vet_details,
+      kcalToWork:          menu.kcal_to_work,
+      macros:              menu.macros,
+      portions:            menu.portions,
+      templatesReferences: menu.templates_references,
+      menuData:            menu.menu_data,
+      name:                menu.name,
+      content:             menu.content,
+      aiRationale:         menu.ai_rationale,
+      menuPreviewData:     menu.menu_preview_data,
     };
   },
 
@@ -778,6 +829,31 @@ export const supabaseService = {
       notes:           db.notes,
       nutritionistId:  db.nutritionist_id,
       receptionistId:  db.receptionist_id,
+    };
+  },
+
+  mapMenuReferenceFromDb(db: any): MenuReferenceRecord {
+    return {
+      id:             db.id,
+      nutritionistId: db.nutritionist_id,
+      kcal:           db.kcal,
+      type:           db.type,
+      data:           db.data,
+      createdAt:      db.created_at,
+    };
+  },
+
+  mapProfileFromDb(db: any): UserProfile {
+    return {
+      name:              db.name || '',
+      email:             db.email || '',
+      professionalTitle: db.professional_title,
+      specialty:         db.specialty || '',
+      licenseNumber:     db.license_number,
+      avatar:            db.avatar,
+      timezone:          db.timezone,
+      phone:             db.phone || '',
+      menuAIConfig:      db.menu_ai_config,
     };
   },
 };

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { authStore } from '../services/authStore';
 import { supabaseService } from '../services/supabaseService';
 import { compressImage } from '../services/imageUtils';
-import { UserProfile } from '../types';
+import { UserProfile, AppUser } from '../types';
 import {
   Save, User, Mail, Phone, Award, Camera, Check, Loader2,
   MapPin, Globe, ChevronDown, Clock, Link2, UserPlus, Trash2, Copy, Users, AlertTriangle
@@ -71,15 +71,19 @@ const getLocalTimezone = () => {
 
 const VinculacionNutricionista: React.FC<{
   onUnlinkRequest: (id: string, name: string, type: 'receptionist') => void;
-}> = ({ onUnlinkRequest }) => {
+  }> = ({ onUnlinkRequest }) => {
   const currentUser: any = authStore.getCurrentUser();
   const [linkCode, setLinkCode] = useState('');
   const [copied, setCopied] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [linkedReceptionists, setLinkedReceptionists] = useState<AppUser[]>([]);
 
   const myLinkCode = currentUser?.linkCode || '';
-  const linkedReceptionists = authStore.getLinkedReceptionists();
+
+  useEffect(() => {
+    authStore.getLinkedReceptionists().then(setLinkedReceptionists);
+  }, [refreshKey]);
 
   const handleCopyMyCode = () => {
     navigator.clipboard.writeText(myLinkCode);
@@ -87,12 +91,12 @@ const VinculacionNutricionista: React.FC<{
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleLinkReceptionist = () => {
+  const handleLinkReceptionist = async () => {
     if (!linkCode.trim()) {
       setMsg({ type: 'err', text: 'Ingresa un código de vinculación.' });
       return;
     }
-    const res = authStore.linkReceptionistToNutritionistByCode(linkCode.trim());
+    const res = await authStore.linkReceptionistToNutritionistByCode(linkCode.trim());
     setMsg({ type: res.ok ? 'ok' : 'err', text: res.message });
     if (res.ok) {
       setLinkCode('');
@@ -100,9 +104,6 @@ const VinculacionNutricionista: React.FC<{
     }
     setTimeout(() => setMsg(null), 3000);
   };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _ = refreshKey;
 
   return (
     <div className="space-y-6">
@@ -126,9 +127,7 @@ const VinculacionNutricionista: React.FC<{
             type="button"
             onClick={handleCopyMyCode}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
-              copied
-                ? 'bg-emerald-600 text-white'
-                : 'bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+              copied ? 'bg-emerald-600 text-white' : 'bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50'
             }`}
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -178,10 +177,7 @@ const VinculacionNutricionista: React.FC<{
           </div>
         ) : (
           linkedReceptionists.map(recep => (
-            <div
-              key={recep.id}
-              className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-4"
-            >
+            <div key={recep.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-4">
               <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
                 {recep.profile.name.charAt(0)}
               </div>
@@ -189,9 +185,7 @@ const VinculacionNutricionista: React.FC<{
                 <p className="text-sm font-bold text-slate-800 truncate">{recep.profile.name}</p>
                 <p className="text-xs text-slate-400 truncate">{recep.email}</p>
               </div>
-              <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">
-                Activa
-              </span>
+              <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">Activa</span>
               <button
                 type="button"
                 onClick={() => onUnlinkRequest(recep.id, recep.profile.name, 'receptionist')}
@@ -215,9 +209,13 @@ const VinculacionRecepcionista: React.FC<{
   const [copied, setCopied] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [linkedNutritionists, setLinkedNutritionists] = useState<AppUser[]>([]);
 
   const myLinkCode = currentUser?.linkCode || '';
-  const linkedNutritionists = authStore.getLinkedNutritionists();
+
+  useEffect(() => {
+    authStore.getLinkedNutritionists().then(setLinkedNutritionists);
+  }, [refreshKey]);
 
   const handleCopyMyCode = () => {
     navigator.clipboard.writeText(myLinkCode);
@@ -225,12 +223,12 @@ const VinculacionRecepcionista: React.FC<{
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleLinkNutritionist = () => {
+  const handleLinkNutritionist = async () => {
     if (!linkCode.trim()) {
       setMsg({ type: 'err', text: 'Ingresa un código de vinculación.' });
       return;
     }
-    const res = authStore.linkNutritionistToReceptionistByCode(linkCode.trim());
+    const res = await authStore.linkNutritionistToReceptionistByCode(linkCode.trim());
     setMsg({ type: res.ok ? 'ok' : 'err', text: res.message });
     if (res.ok) {
       setLinkCode('');
@@ -238,9 +236,6 @@ const VinculacionRecepcionista: React.FC<{
     }
     setTimeout(() => setMsg(null), 3000);
   };
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _ = refreshKey;
 
   return (
     <div className="space-y-6">
@@ -264,9 +259,7 @@ const VinculacionRecepcionista: React.FC<{
             type="button"
             onClick={handleCopyMyCode}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
-              copied
-                ? 'bg-blue-600 text-white'
-                : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
+              copied ? 'bg-blue-600 text-white' : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
             }`}
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -316,10 +309,7 @@ const VinculacionRecepcionista: React.FC<{
           </div>
         ) : (
           linkedNutritionists.map(nutri => (
-            <div
-              key={nutri.id}
-              className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-4"
-            >
+            <div key={nutri.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-4">
               <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm flex-shrink-0">
                 {nutri.profile.name.charAt(0)}
               </div>
@@ -327,9 +317,7 @@ const VinculacionRecepcionista: React.FC<{
                 <p className="text-sm font-bold text-slate-800 truncate">{nutri.profile.name}</p>
                 <p className="text-xs text-slate-400 truncate">{nutri.email}</p>
               </div>
-              <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">
-                Activa
-              </span>
+              <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">Activa</span>
               <button
                 type="button"
                 onClick={() => onUnlinkRequest(nutri.id, nutri.profile.name, 'nutritionist')}
@@ -551,14 +539,20 @@ export const Profile: React.FC = () => {
             )}
 
             <div className="pt-4 flex justify-end">
-              <button
-                type="submit"
-                disabled={isProcessingImg}
-                className="px-8 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg shadow-slate-900/20 hover:bg-slate-800 transition-all flex items-center gap-2 disabled:opacity-50"
-              >
-                <Save className="w-5 h-5" />
-                Guardar Cambios
-              </button>
+              <div className="pt-4 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isProcessingImg || isSaved}
+                  className={`px-8 py-3 font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 ${
+                    isSaved
+                      ? 'bg-emerald-600 text-white shadow-emerald-600/20'
+                      : 'bg-slate-900 text-white shadow-slate-900/20 hover:bg-slate-800'
+                  }`}
+                >
+                  {isSaved ? <Check className="w-5 h-5" /> : <Save className="w-5 h-5" />}
+                  {isSaved ? '¡Guardado con éxito!' : 'Guardar Cambios'}
+                </button>
+              </div>
             </div>
           </form>
         </div>

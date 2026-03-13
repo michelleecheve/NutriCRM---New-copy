@@ -65,7 +65,6 @@ const SEED_USERS: AppUser[] = [
     password: 'admin123',
     role: 'admin',
     profile: ADMIN_PROFILE,
-    // linkCode se asigna automáticamente al cargar (ver ensureLinkCodes)
   } as any,
   {
     id: 'nutri-001',
@@ -174,7 +173,6 @@ const ensureLinkCodes = (users: AppUser[]): AppUser[] => {
   for (const u of users as any[]) {
     if (u.linkCode) used.add(u.linkCode);
   }
-
   const next = (users as any[]).map(u => {
     if (u.linkCode) return u;
     let code = generateLinkCode(u.role);
@@ -182,45 +180,30 @@ const ensureLinkCodes = (users: AppUser[]): AppUser[] => {
     used.add(code);
     return { ...u, linkCode: code };
   });
-
   return next as AppUser[];
 };
 
 const mergePermissions = (stored: PagePermission[] | null, defaults: PagePermission[]): PagePermission[] => {
   if (!stored || !Array.isArray(stored) || stored.length === 0) return defaults;
-
   const storedById = new Map(stored.map(p => [p.pageId, p]));
-
   const merged: PagePermission[] = defaults.map(defPage => {
     const stPage = storedById.get(defPage.pageId);
     if (!stPage) return defPage;
-
     const mergedRoles = uniq([...(stPage.roles ?? []), ...(defPage.roles ?? [])]);
-
     const defModules = defPage.modules ?? [];
     const stModules = stPage.modules ?? [];
     const stModulesById = new Map(stModules.map(m => [m.moduleId, m]));
-
     const mergedModules = defModules.map(defMod => {
       const stMod = stModulesById.get(defMod.moduleId);
       if (!stMod) return defMod;
-
-      return {
-        ...defMod,
-        label: defMod.label,
-        roles: uniq([...(stMod.roles ?? []), ...(defMod.roles ?? [])]),
-      };
+      return { ...defMod, label: defMod.label, roles: uniq([...(stMod.roles ?? []), ...(defMod.roles ?? [])]) };
     });
-
     const defModuleIds = new Set(defModules.map(m => m.moduleId));
     const extraStoredModules = stModules.filter(m => !defModuleIds.has(m.moduleId));
-
     return { ...defPage, label: defPage.label, roles: mergedRoles, modules: [...mergedModules, ...extraStoredModules] };
   });
-
   const defPageIds = new Set(defaults.map(p => p.pageId));
   const extraStoredPages = stored.filter(p => !defPageIds.has(p.pageId));
-
   return [...merged, ...extraStoredPages];
 };
 
@@ -243,41 +226,90 @@ const saveUsers = (users: AppUser[]) => {
 };
 
 const getUserById = (users: AppUser[], id: string) => users.find(u => u.id === id);
-const getUserByLinkCode = (users: AppUser[], linkCode: string) => {
-  if (!linkCode) return undefined;
-  return (users as any[]).find(u => (u.linkCode || '').toUpperCase() === linkCode.toUpperCase());
-};
+
+// ─── Mapper helper ────────────────────────────────────────────────────────────
+
+const mapProfileToAppUser = (p: any): AppUser => ({
+  id: p.id,
+  email: p.email || '',
+  role: p.role as UserRole,
+  linkCode: p.link_code || '',
+  linkedReceptionistIds: p.linked_receptionist_ids || [],
+  linkedNutritionistIds: p.linked_nutritionist_ids || [],
+  profile: {
+    name:              p.name               || '',
+    email:             p.email              || '',
+    timezone:          p.timezone           || 'UTC-06:00',
+    specialty:         p.specialty          || '',
+    avatar:            p.avatar             || '',
+    professionalTitle: p.professional_title || '',
+    licenseNumber:     p.license_number     || '',
+    phone:             p.phone              || '',
+    personalPhone:     p.personal_phone     || '',
+    contactEmail:      p.contact_email      || '',
+    instagramHandle:   p.instagram_handle   || '',
+    website:           p.website            || '',
+    address:           p.address            || '',
+  } as any,
+});
 
 // ─── Auth Store ──────────────────────────────────────────────────────────────
+
+// Listeners para que App.tsx pueda reaccionar cuando la sesión termina de cargar
+type AuthListener = () => void;
 
 class AuthStore {
   private currentUser: AppUser | null = null;
   private permissions: PagePermission[] = [];
   private selectedNutritionistId: string | null = null;
-
   private users: AppUser[] = [];
+  public isLoading: boolean = true;
+  private listeners: AuthListener[] = [];
+
+  // Permite a componentes suscribirse a cambios de auth
+  onAuthReady(fn: AuthListener): () => void {
+    this.listeners.push(fn);
+    return () => { this.listeners = this.listeners.filter(l => l !== fn); };
+  }
+
+  private notifyListeners() {
+    this.listeners.forEach(fn => fn());
+  }
 
   constructor() {
     this.users = loadUsers();
 
-    // Restore session from Supabase
+    // Restaurar sesión inmediatamente desde localStorage para evitar flash
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (raw) this.currentUser = JSON.parse(raw) as AppUser;
+    } catch {
+      this.currentUser = null;
+    }
+
+    // Verificar/actualizar con Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         this.handleSupabaseSession(session);
+      } else {
+        this.currentUser = null;
+        localStorage.removeItem(SESSION_KEY);
+        this.isLoading = false;
+        this.notifyListeners();
       }
     });
 
-    // Listen for auth changes
     supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         this.handleSupabaseSession(session);
       } else {
         this.currentUser = null;
         localStorage.removeItem(SESSION_KEY);
+        this.isLoading = false;
+        this.notifyListeners();
       }
     });
 
-    // Restore permissions + merge
     try {
       const raw = localStorage.getItem(PERMISSIONS_KEY);
       const stored = raw ? (JSON.parse(raw) as PagePermission[]) : null;
@@ -288,7 +320,10 @@ class AuthStore {
     }
   }
 
-  private async handleSupabaseSession(session: any) {
+  async handleSupabaseSession(session: any) {
+    this.isLoading = true;
+    this.notifyListeners();
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
@@ -296,21 +331,34 @@ class AuthStore {
       .single();
 
     const user: AppUser = {
-      id: session.user.id,
-      email: session.user.email || '',
-      role: (profile?.role as UserRole) || 'nutricionista',
+      id:                    session.user.id,
+      email:                 session.user.email || '',
+      role:                  (profile?.role as UserRole) || 'nutricionista',
+      linkCode:              profile?.link_code || '',
+      linkedReceptionistIds: profile?.linked_receptionist_ids || [],
+      linkedNutritionistIds: profile?.linked_nutritionist_ids || [],
       profile: {
-        name: profile?.name || session.user.user_metadata?.name || 'Usuario',
-        email: session.user.email || '',
-        timezone: profile?.timezone || 'UTC-06:00',
-        specialty: profile?.specialty || '',
-        avatar: profile?.avatar || '',
+        name:              profile?.name               || session.user.user_metadata?.name || 'Usuario',
+        email:             session.user.email          || '',
+        timezone:          profile?.timezone            || 'UTC-06:00',
+        specialty:         profile?.specialty           || '',
+        avatar:            profile?.avatar              || '',
+        professionalTitle: profile?.professional_title  || 'Lic.',
+        licenseNumber:     profile?.license_number      || '',
+        phone:             profile?.phone               || '',
+        personalPhone:     profile?.personal_phone      || '',
+        contactEmail:      profile?.contact_email       || '',
+        instagramHandle:   profile?.instagram_handle    || '',
+        website:           profile?.website             || '',
+        address:           profile?.address             || '',
       } as any,
     };
 
     this.currentUser = user;
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     await store.initForUser(user.id);
+    this.isLoading = false;
+    this.notifyListeners();
   }
 
   getAllUsers(): AppUser[] {
@@ -320,7 +368,6 @@ class AuthStore {
   private commitUsers(nextUsers: AppUser[]) {
     this.users = ensureLinkCodes(nextUsers);
     saveUsers(this.users);
-
     if (this.currentUser) {
       const refreshed = getUserById(this.users, this.currentUser.id);
       if (refreshed) {
@@ -330,61 +377,37 @@ class AuthStore {
     }
   }
 
-  // ── Auth ────────────────────────────────────────────────────────────────
+  // ── Auth ──────────────────────────────────────────────────────────────────
 
-  // En login():
   async login(email: string, password: string): Promise<AppUser | null> {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error || !data.user) return null;
 
-    if (error || !data.user) return null;
-    
-    // The session listener will handle the rest
-    return this.currentUser;
+  // Esperar a que handleSupabaseSession termine
+  await this.handleSupabaseSession(data.session);
+  return this.currentUser;
   }
 
   async signUp(email: string, password: string, name: string, role: UserRole, timezone: string, avatar?: string): Promise<{ ok: boolean; message?: string }> {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          name,
-          role,
-        },
-      },
+      options: { data: { name, role } },
     });
-
     if (error) return { ok: false, message: error.message };
     if (!data.user) return { ok: false, message: 'Error al crear el usuario.' };
 
-    // Create or update profile in the profiles table
-    // Using upsert handles cases where a DB trigger might have already created the profile
     const { error: profileError } = await supabase
       .from('profiles')
-      .upsert({
-        id: data.user.id,
-        name,
-        role,
-        timezone,
-        avatar: avatar || '',
-        email: email, // Ensure email is also stored
-      }, { onConflict: 'id' });
+      .upsert({ id: data.user.id, name, role, timezone, avatar: avatar || '', email }, { onConflict: 'id' });
 
     if (profileError) {
       console.error('Error creating profile:', profileError);
-      // We might want to delete the auth user if profile creation fails, 
-      // but Supabase doesn't make this easy from the client.
-      // For now, we'll just return the error.
       return { ok: false, message: 'Error al crear el perfil de usuario.' };
     }
-
     return { ok: true };
   }
 
-  // En logout():
   async logout(): Promise<void> {
     await supabase.auth.signOut();
     this.currentUser = null;
@@ -401,7 +424,7 @@ class AuthStore {
     return this.currentUser !== null;
   }
 
-  // ── Permissions ─────────────────────────────────────────────────────────
+  // ── Permissions ───────────────────────────────────────────────────────────
 
   getPermissions(): PagePermission[] {
     return this.permissions;
@@ -428,130 +451,109 @@ class AuthStore {
     return mod.roles.includes(this.currentUser.role);
   }
 
-  // ── Linked Users ─────────────────────────────────────────────────────────
+  // ── Linked Users ──────────────────────────────────────────────────────────
 
-  getLinkedNutritionists(): AppUser[] {
-    if (this.currentUser?.role === 'admin') return this.users.filter(u => u.role === 'nutricionista');
-    if (!this.currentUser?.linkedNutritionistIds) return [];
-    return this.users.filter(u => u.role === 'nutricionista' && this.currentUser!.linkedNutritionistIds!.includes(u.id));
-  }
-
-  getLinkedReceptionists(): AppUser[] {
-    if (!this.currentUser?.linkedReceptionistIds) return [];
-    return this.users.filter(u => u.role === 'recepcionista' && this.currentUser!.linkedReceptionistIds!.includes(u.id));
-  }
-
-  // ── Vinculación por LINK CODE (no por ID) ────────────────────────────────
-
-  linkReceptionistToNutritionistByCode(code: string): { ok: boolean; message: string } {
+  async getLinkedReceptionists(): Promise<AppUser[]> {
     const current = this.currentUser;
-    if (!current || current.role !== 'nutricionista') return { ok: false, message: 'No autorizado.' };
-
-    const receptionist = getUserByLinkCode(this.users, code.trim());
-    if (!receptionist || receptionist.role !== 'recepcionista') {
-      return { ok: false, message: 'Código inválido. No se encontró una recepcionista con ese código.' };
-    }
-
-    const nutri = getUserById(this.users, current.id);
-    if (!nutri) return { ok: false, message: 'Usuario no encontrado.' };
-
-    const already = (nutri.linkedReceptionistIds ?? []).includes(receptionist.id);
-    if (already) return { ok: false, message: 'Esta recepcionista ya está vinculada.' };
-
-    const nextUsers = this.users.map(u => {
-      if (u.id === nutri.id) {
-        return { ...u, linkedReceptionistIds: uniq([...(u.linkedReceptionistIds ?? []), receptionist.id]) };
-      }
-      if (u.id === receptionist.id) {
-        return { ...u, linkedNutritionistIds: uniq([...(u.linkedNutritionistIds ?? []), nutri.id]) };
-      }
-      return u;
-    });
-
-    this.commitUsers(nextUsers);
-    return { ok: true, message: `Recepcionista ${receptionist.profile.name} vinculada correctamente.` };
+    if (!current) return [];
+    const ids = current.linkedReceptionistIds ?? [];
+    if (ids.length === 0) return [];
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', ids)
+      .eq('role', 'recepcionista');
+    if (error || !data) return [];
+    return data.map(mapProfileToAppUser);
   }
 
-  linkNutritionistToReceptionistByCode(code: string): { ok: boolean; message: string } {
+  async getLinkedNutritionists(): Promise<AppUser[]> {
     const current = this.currentUser;
-    if (!current || current.role !== 'recepcionista') return { ok: false, message: 'No autorizado.' };
-
-    const nutritionist = getUserByLinkCode(this.users, code.trim());
-    if (!nutritionist || nutritionist.role !== 'nutricionista') {
-      return { ok: false, message: 'Código inválido. No se encontró una nutricionista con ese código.' };
-    }
-
-    const recep = getUserById(this.users, current.id);
-    if (!recep) return { ok: false, message: 'Usuario no encontrado.' };
-
-    const already = (recep.linkedNutritionistIds ?? []).includes(nutritionist.id);
-    if (already) return { ok: false, message: 'Esta nutricionista ya está vinculada.' };
-
-    const nextUsers = this.users.map(u => {
-      if (u.id === recep.id) {
-        return { ...u, linkedNutritionistIds: uniq([...(u.linkedNutritionistIds ?? []), nutritionist.id]) };
-      }
-      if (u.id === nutritionist.id) {
-        return { ...u, linkedReceptionistIds: uniq([...(u.linkedReceptionistIds ?? []), recep.id]) };
-      }
-      return u;
-    });
-
-    this.commitUsers(nextUsers);
-    return { ok: true, message: `Nutricionista ${nutritionist.profile.name} vinculada correctamente.` };
+    if (!current) return [];
+    const ids = current.linkedNutritionistIds ?? [];
+    if (ids.length === 0) return [];
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', ids)
+      .eq('role', 'nutricionista');
+    if (error || !data) return [];
+    return data.map(mapProfileToAppUser);
   }
 
-  unlinkReceptionistFromNutritionist(receptionistId: string): { ok: boolean; message: string } {
+  // ── Vinculación ───────────────────────────────────────────────────────────
+
+  async linkReceptionistToNutritionistByCode(code: string): Promise<{ ok: boolean; message: string }> {
     const current = this.currentUser;
-    if (!current || current.role !== 'nutricionista') return { ok: false, message: 'No autorizado.' };
-
-    const nutri = getUserById(this.users, current.id);
-    const recep = getUserById(this.users, receptionistId);
-    if (!nutri || !recep || recep.role !== 'recepcionista') return { ok: false, message: 'Usuario no encontrado.' };
-
-    const nextUsers = this.users.map(u => {
-      if (u.id === nutri.id) {
-        return { ...u, linkedReceptionistIds: (u.linkedReceptionistIds ?? []).filter(id => id !== receptionistId) };
-      }
-      if (u.id === recep.id) {
-        return { ...u, linkedNutritionistIds: (u.linkedNutritionistIds ?? []).filter(id => id !== nutri.id) };
-      }
-      return u;
-    });
-
-    this.commitUsers(nextUsers);
-    return { ok: true, message: `Recepcionista ${recep.profile.name} desvinculada.` };
+    if (!current || (current.role !== 'nutricionista' && current.role !== 'admin')) return { ok: false, message: 'No autorizado.' };
+    const { data: recepProfile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('link_code', code.trim().toUpperCase())
+      .eq('role', 'recepcionista')
+      .single();
+    if (error || !recepProfile) return { ok: false, message: 'Código inválido. No se encontró una recepcionista con ese código.' };
+    const alreadyLinked = (current.linkedReceptionistIds ?? []).includes(recepProfile.id);
+    if (alreadyLinked) return { ok: false, message: 'Esta recepcionista ya está vinculada.' };
+    const newNutriIds = [...(current.linkedReceptionistIds ?? []), recepProfile.id];
+    const newRecepIds = [...(recepProfile.linked_nutritionist_ids ?? []), current.id];
+    await supabase.from('profiles').update({ linked_receptionist_ids: newNutriIds }).eq('id', current.id);
+    await supabase.from('profiles').update({ linked_nutritionist_ids: newRecepIds }).eq('id', recepProfile.id);
+    this.currentUser = { ...current, linkedReceptionistIds: newNutriIds };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
+    return { ok: true, message: `Recepcionista ${recepProfile.name} vinculada correctamente.` };
   }
 
-  unlinkNutritionistFromReceptionist(nutritionistId: string): { ok: boolean; message: string } {
+  async linkNutritionistToReceptionistByCode(code: string): Promise<{ ok: boolean; message: string }> {
     const current = this.currentUser;
-    if (!current || current.role !== 'recepcionista') return { ok: false, message: 'No autorizado.' };
-
-    const recep = getUserById(this.users, current.id);
-    const nutri = getUserById(this.users, nutritionistId);
-    if (!recep || !nutri || nutri.role !== 'nutricionista') return { ok: false, message: 'Usuario no encontrado.' };
-
-    const nextUsers = this.users.map(u => {
-      if (u.id === recep.id) {
-        return { ...u, linkedNutritionistIds: (u.linkedNutritionistIds ?? []).filter(id => id !== nutritionistId) };
-      }
-      if (u.id === nutri.id) {
-        return { ...u, linkedReceptionistIds: (u.linkedReceptionistIds ?? []).filter(id => id !== recep.id) };
-      }
-      return u;
-    });
-
-    this.commitUsers(nextUsers);
-    return { ok: true, message: `Nutricionista ${nutri.profile.name} desvinculada.` };
+    if (!current || (current.role !== 'recepcionista' && current.role !== 'admin')) return { ok: false, message: 'No autorizado.' };
+    const { data: nutriProfile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('link_code', code.trim().toUpperCase())
+      .eq('role', 'nutricionista')
+      .single();
+    if (error || !nutriProfile) return { ok: false, message: 'Código inválido. No se encontró una nutricionista con ese código.' };
+    const alreadyLinked = (current.linkedNutritionistIds ?? []).includes(nutriProfile.id);
+    if (alreadyLinked) return { ok: false, message: 'Esta nutricionista ya está vinculada.' };
+    const newRecepIds = [...(current.linkedNutritionistIds ?? []), nutriProfile.id];
+    const newNutriIds = [...(nutriProfile.linked_receptionist_ids ?? []), current.id];
+    await supabase.from('profiles').update({ linked_nutritionist_ids: newRecepIds }).eq('id', current.id);
+    await supabase.from('profiles').update({ linked_receptionist_ids: newNutriIds }).eq('id', nutriProfile.id);
+    this.currentUser = { ...current, linkedNutritionistIds: newRecepIds };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
+    return { ok: true, message: `Nutricionista ${nutriProfile.name} vinculada correctamente.` };
   }
 
-  // ── Calendar Selector ────────────────────────────────────────────────────
+  async unlinkReceptionistFromNutritionist(receptionistId: string): Promise<{ ok: boolean; message: string }> {
+    const current = this.currentUser;
+    if (!current || (current.role !== 'nutricionista' && current.role !== 'admin')) return { ok: false, message: 'No autorizado.' };
+    const newNutriIds = (current.linkedReceptionistIds ?? []).filter(id => id !== receptionistId);
+    const { data: recepProfile } = await supabase.from('profiles').select('*').eq('id', receptionistId).single();
+    const newRecepIds = (recepProfile?.linked_nutritionist_ids ?? []).filter((id: string) => id !== current.id);
+    await supabase.from('profiles').update({ linked_receptionist_ids: newNutriIds }).eq('id', current.id);
+    await supabase.from('profiles').update({ linked_nutritionist_ids: newRecepIds }).eq('id', receptionistId);
+    this.currentUser = { ...current, linkedReceptionistIds: newNutriIds };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
+    return { ok: true, message: 'Recepcionista desvinculada correctamente.' };
+  }
+
+  async unlinkNutritionistFromReceptionist(nutritionistId: string): Promise<{ ok: boolean; message: string }> {
+    const current = this.currentUser;
+    if (!current || (current.role !== 'recepcionista' && current.role !== 'admin')) return { ok: false, message: 'No autorizado.' };
+    const newRecepIds = (current.linkedNutritionistIds ?? []).filter(id => id !== nutritionistId);
+    const { data: nutriProfile } = await supabase.from('profiles').select('*').eq('id', nutritionistId).single();
+    const newNutriIds = (nutriProfile?.linked_receptionist_ids ?? []).filter((id: string) => id !== current.id);
+    await supabase.from('profiles').update({ linked_nutritionist_ids: newRecepIds }).eq('id', current.id);
+    await supabase.from('profiles').update({ linked_receptionist_ids: newNutriIds }).eq('id', nutritionistId);
+    this.currentUser = { ...current, linkedNutritionistIds: newRecepIds };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
+    return { ok: true, message: 'Nutricionista desvinculada correctamente.' };
+  }
+
+  // ── Calendar Selector ─────────────────────────────────────────────────────
 
   getSelectedNutritionistId(): string | null {
-    if (!this.selectedNutritionistId) {
-      const linked = this.getLinkedNutritionists();
-      return linked.length > 0 ? linked[0].id : null;
-    }
     return this.selectedNutritionistId;
   }
 
@@ -559,12 +561,33 @@ class AuthStore {
     this.selectedNutritionistId = id;
   }
 
-  // ── Profile update ───────────────────────────────────────────────────────
+  // ── Profile update ────────────────────────────────────────────────────────
 
-  updateCurrentUserProfile(profile: UserProfile): void {
+  async updateCurrentUserProfile(profile: UserProfile): Promise<void> {
     if (!this.currentUser) return;
-    const nextUsers = this.users.map(u => (u.id === this.currentUser!.id ? { ...u, profile } : u));
-    this.commitUsers(nextUsers);
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        name:               profile.name,
+        professional_title: profile.professionalTitle,
+        specialty:          profile.specialty,
+        license_number:     profile.licenseNumber,
+        timezone:           profile.timezone,
+        avatar:             profile.avatar,
+        phone:              profile.phone,
+        personal_phone:     profile.personalPhone,
+        contact_email:      profile.contactEmail,
+        instagram_handle:   profile.instagramHandle,
+        website:            profile.website,
+        address:            profile.address,
+      })
+      .eq('id', this.currentUser.id);
+    if (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+    this.currentUser = { ...this.currentUser, profile };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
   }
 
   getUserProfile(): UserProfile {

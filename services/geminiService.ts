@@ -3,10 +3,13 @@ import { Patient, Measurement } from "../types";
 import { MenuPlanData } from "../components/menus_components/MenuDesignTemplates";
 import type { MenuReferenceData } from "../components/menus_components/Menu_References_Components/MenuReferencesStorage";
 import { WEEKDAY_KEYS, calcPortionsTotal } from "../components/menus_components/Menu_References_Components/MenuReferencesStorage";
-import {
-  loadMenuAIConfig, buildFoodIdeasContext, DEFAULT_MENU_PROMPT_SUFFIX,
-  type PatientDataFields
+import { store } from "./store";
+import { 
+  DEFAULT_PATIENT_FIELDS, 
+  DEFAULT_MENU_PROMPT_SUFFIX, 
+  buildFoodIdeasContext 
 } from "../components/menus_components/MenuAIConfigurator";
+import { PatientDataFields } from "../types";
 
 const apiKey = process.env.API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
@@ -279,7 +282,11 @@ export const generateStructuredMenu = async (
   if (!apiKey) throw new Error("API Key not found.");
 
   // ── Load AI config ───────────────────────────────────────────────────────
-  const aiConfig       = loadMenuAIConfig();
+  const aiConfig       = store.getUserProfile()?.menuAIConfig || { 
+    prompt: DEFAULT_MENU_PROMPT_SUFFIX, 
+    ideas: { desayuno: [], refaccion: [], almuerzo: [], merienda: [], cena: [] }, 
+    fields: DEFAULT_PATIENT_FIELDS 
+  };
   const foodIdeasCtx   = buildFoodIdeasContext(aiConfig.ideas);
   const promptSuffix   = (aiConfig.prompt || DEFAULT_MENU_PROMPT_SUFFIX)
     .replace('{foodIdeas}', foodIdeasCtx);

@@ -9,7 +9,6 @@ import {
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord } from '../../types';
 import { MenuPlanData, MenuDay, DayMeal, DomingoData, MealPortions } from '../menus_components/MenuDesignTemplates';
 import { MenuReferenceParsertoMenuData } from '../menus_components/Menu_References_Components/MenuReferenceParsertoMenuData';
-import { MenuReferencesStorage } from '../menus_components/Menu_References_Components/MenuReferencesStorage';
 import { MenuExportPDF } from '../menus_components/MenuExportPDF';
 import { MenuPreview } from '../menus_components/MenuPreview';
 import { generateStructuredMenu } from '../../services/geminiService';
@@ -136,7 +135,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const [editingHydration, setEditingHydration] = useState(false);
 
   // ─── References available for copying ─────────────────────────────────────
-  const availableRefs = MenuReferencesStorage.list().filter(r =>
+  const availableRefs = store.menuReferences.filter(r =>
     selectedReferenceIds.includes(r.id)
   );
 
@@ -159,7 +158,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   // ─── Confirm Copy from Reference ──────────────────────────────────────────
   const handleConfirmCopyRef = () => {
     if (!selectedCopyRefId) return;
-    const ref = MenuReferencesStorage.getById(selectedCopyRefId);
+    const ref = store.menuReferences.find(x => x.id === selectedCopyRefId);
     if (!ref) return;
 
     // Parse reference into MenuPlanData
@@ -193,7 +192,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const handleGenerateAi = async () => {
     setIsGenerating(true);
     try {
-      const refs = MenuReferencesStorage.list()
+      const refs = store.menuReferences
         .filter(r => selectedReferenceIds.includes(r.id))
         .map(r => ({ title: `${r.data.kcal} kcal`, data: r.data }));
       const nutritionistProfile = store.getUserProfile();

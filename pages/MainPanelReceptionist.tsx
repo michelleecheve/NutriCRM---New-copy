@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CalendarDays, Clock, Users, TrendingUp } from 'lucide-react';
 import { authStore } from '../services/authStore';
 import { store } from '../services/store';
-import { AppRoute } from '../types';
+import { AppRoute, Appointment, AppUser } from '../types';
 
 interface Props {
   onNavigate: (page: string) => void;
@@ -10,8 +10,22 @@ interface Props {
 
 export const MainPanelReceptionist: React.FC<Props> = ({ onNavigate }) => {
   const currentUser = authStore.getCurrentUser();
-  const linkedNutris = authStore.getLinkedNutritionists();
-  const appointments = store.getAppointments();
+  const [linkedNutris, setLinkedNutris] = useState<AppUser[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>(store.getAppointments());
+
+  useEffect(() => {
+    authStore.getLinkedNutritionists().then(setLinkedNutris);
+  }, []);
+
+  useEffect(() => {
+    const checkInit = setInterval(() => {
+      if (store.isInitialized) {
+        setAppointments(store.getAppointments());
+        clearInterval(checkInit);
+      }
+    }, 100);
+    return () => clearInterval(checkInit);
+  }, []);
 
   const today = new Date().toISOString().split('T')[0];
   const todayAppts = appointments.filter(a => a.date === today);
@@ -72,7 +86,7 @@ export const MainPanelReceptionist: React.FC<Props> = ({ onNavigate }) => {
           ) : (
             <div className="space-y-3">
               {linkedNutris.map(n => {
-                const nutriAppts = appointments.filter(a => a.patientName); // en producción filtrar por nutriId
+                const nutriAppts = appointments.filter(a => a.patientName);
                 return (
                   <div key={n.id} className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
                     <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold flex-shrink-0">

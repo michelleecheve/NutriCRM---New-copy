@@ -1,4 +1,8 @@
-import { Patient, Invoice, UserProfile, Appointment, PatientEvaluation, ClinicalRecord, DietaryEvaluation, SomatotypeRecord, GeneratedMenu } from '../types';
+import { 
+  Patient, Invoice, UserProfile, Appointment, PatientEvaluation, 
+  ClinicalRecord, DietaryEvaluation, SomatotypeRecord, GeneratedMenu,
+  MenuAIConfig, MenuReferenceRecord
+} from '../types';
 import { supabaseService } from './supabaseService';
 
 // ─── Read current userId directly from localStorage (no circular import) ──────
@@ -117,6 +121,7 @@ class Store {
   private user:         UserProfile        = SEED_USER;
   private statuses:     string[]           = DEFAULT_STATUSES;
   private evaluations:  PatientEvaluation[] = [];
+  public menuReferences: MenuReferenceRecord[] = [];
   private selectedEvaluationByPatient: Record<string, string> = {};
   public isInitialized: boolean = false;
 
@@ -141,18 +146,24 @@ class Store {
     }
 
     try {
-      const [patients, appointments, invoices, evaluations, profile] = await Promise.all([
+      const [patients, appointments, invoices, evaluations, menus, profile, menuRefs] = await Promise.all([
         supabaseService.getPatients(),
         supabaseService.getAppointments(),
         supabaseService.getInvoices(),
         supabaseService.getEvaluations(),
+        supabaseService.getMenus(),
         supabaseService.getProfile(userId),
+        supabaseService.getMenuReferences(userId),
       ]);
 
-      this.patients     = patients as Patient[];
+      this.patients     = (patients as Patient[]).map(p => ({
+        ...p,
+        menus: (menus as GeneratedMenu[]).filter(m => m.patientId === p.id)
+      }));
       this.appointments = appointments as Appointment[];
       this.invoices     = invoices as Invoice[];
       this.evaluations  = evaluations as PatientEvaluation[];
+      this.menuReferences = menuRefs as MenuReferenceRecord[];
 
       if (profile) {
         this.user = {
@@ -164,6 +175,7 @@ class Store {
           timezone:          profile.timezone           || 'UTC±00:00',
           avatar:            profile.avatar             || '',
           phone:             profile.phone              || '',
+          menuAIConfig:      profile.menu_ai_config,
         };
 
         // ✅ Enforce only the three requested statuses as per user request
@@ -324,6 +336,32 @@ class Store {
     await supabaseService.deleteMenu(id);
   }
 
+  // ── Menu References ───────────────────────────────────────────────────────
+
+  getMenuReferences(): MenuReferenceRecord[] { return this.menuReferences; }
+
+  async saveMenuReference(ref: Partial<MenuReferenceRecord>): Promise<MenuReferenceRecord> {
+    const saved = await supabaseService.saveMenuReference({
+      id:             ref.id,
+      nutritionistId: this.uid,
+      kcal:           ref.kcal ?? (ref.data as any)?.kcal,
+      type:           ref.type ?? (ref.data as any)?.type,
+      data:           ref.data,
+    });
+    const existing = this.menuReferences.find(r => r.id === saved.id);
+    if (existing) {
+      this.menuReferences = this.menuReferences.map(r => r.id === saved.id ? saved : r);
+    } else {
+      this.menuReferences = [saved, ...this.menuReferences];
+    }
+    return saved;
+  }
+
+  async deleteMenuReference(id: string): Promise<void> {
+    await supabaseService.deleteMenuReference(id);
+    this.menuReferences = this.menuReferences.filter(r => r.id !== id);
+  }
+
   // ── Invoices ───────────────────────────────────────────────────────────────
 
   getInvoices(): Invoice[] { return this.invoices; }
@@ -438,19 +476,44 @@ class Store {
 
   getUserProfile(): UserProfile { return this.user || SEED_USER; }
 
-  async updateUserProfile(profile: UserProfile): Promise<void> {
-    if (this.uid && this.uid !== 'guest') {
-      await supabaseService.updateProfile(this.uid, {
-        name:              profile.name,
-        professionalTitle: profile.professionalTitle,
-        specialty:         profile.specialty,
-        licenseNumber:     profile.licenseNumber,
-        timezone:          profile.timezone,
-        avatar:            profile.avatar,
-      });
+  async updateCurrentUserProfile(profile: UserProfile): Promise<void> {
+    if (!this.currentUser) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        name:               profile.name,
+        professional_title: profile.professionalTitle,
+        specialty:          profile.specialty,
+        license_number:     profile.licenseNumber,
+        timezone:           profile.timezone,
+        avatar:             profile.avatar,
+        phone:              profile.phone,
+        personal_phone:     profile.personalPhone,
+        contact_email:      profile.contactEmail,
+        instagram_handle:   profile.instagramHandle,
+        website:            profile.website,
+        address:            profile.address,
+      })
+      .eq('id', this.currentUser.id);
+
+    if (error) {
+      console.error('Error updating profile:', error);
+      throw error;
     }
-    this.user = profile;
-    save(this.K.user, this.user);
+
+    this.currentUser = { ...this.currentUser, profile };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
+  }
+
+  async updateMenuAIConfig(config: MenuAIConfig): Promise<void> {
+    if (this.uid && this.uid !== 'guest') {
+      await supabaseService.updateProfile(this.uid, { menuAIConfig: config });
+    }
+    if (this.user) {
+      this.user.menuAIConfig = config;
+      save(this.K.user, this.user);
+    }
   }
 
   // ── Statuses ───────────────────────────────────────────────────────────────

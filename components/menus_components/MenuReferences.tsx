@@ -6,7 +6,6 @@ import {
 import { MenuPlanData } from "./MenuDesignTemplates";
 import { MenuPreview } from "./MenuPreview";
 import {
-  MenuReferencesStorage,
   MenuReferenceRecord,
   MenuReferenceData,
   MealPortions,
@@ -16,13 +15,12 @@ import {
   MEAL_LABEL_OPTIONS,
   WEEKDAY_KEYS,
   WEEKDAY_LABELS,
-  emptyMealPortions,
-  emptyDayMenuFromSlots,
   calcPortionsTotal,
   emptyReferenceData,
   newMealSlot,
 } from "./Menu_References_Components/MenuReferencesStorage";
 import { MenuReferenceDataToMenuPlanData } from "./Menu_References_Components/MenuReferenceParsertoMenuData";
+import { store } from "../../services/store";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -415,7 +413,9 @@ function parseYamlToReferenceData(yaml: string): MenuReferenceData {
 type Mode = "LIST" | "EDITOR";
 
 export const MenuReferences: React.FC = () => {
-  const [items, setItems]             = useState<MenuReferenceRecord[]>([]);
+  // const store = useStore();
+  const items = store.menuReferences;
+  
   const [mode, setMode]               = useState<Mode>("LIST");
   const [viewing, setViewing]         = useState<MenuReferenceRecord | null>(null);
   const [editingId, setEditingId]     = useState<string | null>(null);
@@ -427,14 +427,17 @@ export const MenuReferences: React.FC = () => {
   const [importError, setImportError] = useState("");
   const [importOk, setImportOk]       = useState(false);
 
-  const handleImport = () => {
+  const handleImport = async () => {
     setImportError("");
     setImportOk(false);
     try {
       const data = parseYamlToReferenceData(yamlText);
       if (!data.kcal) throw new Error("No se encontró KCAL válido en el YAML.");
-      MenuReferencesStorage.add(data);
-      setItems(MenuReferencesStorage.list());
+      await store.saveMenuReference({
+        data: data,
+        kcal: data.kcal,
+        type: data.type,
+      });
       setImportOk(true);
       setYamlText("");
       setTimeout(() => { setShowImport(false); setImportOk(false); }, 1500);
@@ -442,8 +445,6 @@ export const MenuReferences: React.FC = () => {
       setImportError(e.message || "Error al parsear el YAML.");
     }
   };
-
-  useEffect(() => { setItems(MenuReferencesStorage.list()); }, []);
 
   const isReadOnly = !!viewing;
   const sortedItems = [...items].sort((a, b) => {
@@ -553,23 +554,31 @@ export const MenuReferences: React.FC = () => {
     catch (e: any) { setSaveError(e?.message || "Error al generar preview."); }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setSaveError("");
     if (!formData.kcal || formData.kcal < 800) { setSaveError("Las kcal deben ser mayores a 800."); return; }
     if (formData.meals.length === 0) { setSaveError("Agrega al menos un tiempo de comida."); return; }
-    if (editingId) {
-      MenuReferencesStorage.update(editingId, formData);
-    } else {
-      MenuReferencesStorage.add(formData);
+    
+    try {
+      await store.saveMenuReference({ 
+        id: editingId || undefined, 
+        data: formData, 
+        kcal: formData.kcal, 
+        type: formData.type 
+      });
+      backToList();
+    } catch (e: any) {
+      setSaveError("Error al guardar la referencia.");
     }
-    setItems(MenuReferencesStorage.list());
-    backToList();
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("¿Eliminar esta referencia?")) return;
-    MenuReferencesStorage.remove(id);
-    setItems(MenuReferencesStorage.list());
+    try {
+      await store.deleteMenuReference(id);
+    } catch (e: any) {
+      alert("Error al eliminar la referencia.");
+    }
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────

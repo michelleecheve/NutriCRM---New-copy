@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
 import { Patient, Appointment, Invoice } from '../types';
-import { CreditCard, Calendar, ChefHat, TrendingUp, Clock, ChevronRight, AlertCircle, CalendarDays, Users, Loader2 } from 'lucide-react';
+import { CreditCard, Calendar, ChefHat, TrendingUp, Clock, ChevronRight, AlertCircle, CalendarDays, Users } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getTodayStr } from '../src/utils/dateUtils';
 import { CalendarAppointmentModal } from '../components/calendar_components/CalendarAppointmentModal';
@@ -14,20 +14,8 @@ interface MainPanelProps {
 export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   const currentUser = authStore.getCurrentUser();
   const user = currentUser?.profile || store.getUserProfile();
-  
-  // Guard against null user or missing timezone
-  if (!user || !user.timezone) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-          <p className="text-slate-500 font-medium">Cargando panel...</p>
-        </div>
-      </div>
-    );
-  }
 
-  const todayStr = getTodayStr(user.timezone);
+  const todayStr = user?.timezone ? getTodayStr(user.timezone) : new Date().toISOString().split('T')[0];
   const [currentYear, currentMonth] = todayStr.split('-').map(Number);
 
   const getFirstDay = () => `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
@@ -37,32 +25,28 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   };
 
   const [dateRange, setDateRange] = useState({ start: getFirstDay(), end: getLastDay() });
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [patients, setPatients] = useState<Patient[]>(store.getPatients());
+  const [appointments, setAppointments] = useState<Appointment[]>(store.getAppointments());
+  const [invoices, setInvoices] = useState<Invoice[]>(store.getInvoices());
+  const [isApptModalOpen, setIsApptModalOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
 
-  // Fetch data
+  // ✅ Mismo patrón que Dashboard: esperar a que el store esté inicializado
   useEffect(() => {
-    const fetchData = async () => {
-      try {
+    const checkInit = setInterval(() => {
+      if (store.isInitialized) {
         setPatients(store.getPatients());
         setAppointments(store.getAppointments());
         setInvoices(store.getInvoices());
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+        clearInterval(checkInit);
       }
-    };
-    fetchData();
+    }, 100);
+    return () => clearInterval(checkInit);
   }, []);
-
-  // Modal state
-  const [isApptModalOpen, setIsApptModalOpen] = useState(false);
-  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
 
   const isInPeriod = (dateString: string) =>
     !!dateString && dateString >= dateRange.start && dateString <= dateRange.end;
 
-  // KPI: Total de pacientes (sin filtro)
   const totalPatients = patients.length;
 
   const totalIncome = invoices
@@ -72,7 +56,6 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   const appointmentsCount = appointments.filter(a => a.status !== 'Cancelada' && isInPeriod(a.date)).length;
   const pendingMenusCount = patients.filter(p => p.clinical.status === 'Menú Pendiente').length;
 
-  // Chart
   const getLast6MonthsData = () => {
     const data = [];
     for (let i = 5; i >= 0; i--) {
@@ -106,7 +89,6 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
     return null;
   };
 
-  // Handlers
   const handleOpenApptModal = (appt: Appointment) => {
     setEditingAppointment({ ...appt });
     setIsApptModalOpen(true);
@@ -146,7 +128,6 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Tarjeta Pacientes - TOTAL SIN FILTRO */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-indigo-200 transition-all">
           <div className="flex justify-between items-start mb-4">
             <div className="bg-indigo-100 p-3 rounded-xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
@@ -159,7 +140,6 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
           </div>
         </div>
 
-        {/* Tarjeta Ingresos */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-emerald-200 transition-all">
           <div className="flex justify-between items-start mb-4">
             <div className="bg-emerald-100 p-3 rounded-xl text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
@@ -175,7 +155,6 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
           </div>
         </div>
 
-        {/* Tarjeta Citas */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-blue-200 transition-all">
           <div className="flex justify-between items-start mb-4">
             <div className="bg-blue-100 p-3 rounded-xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -188,7 +167,6 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
           </div>
         </div>
 
-        {/* Tarjeta Menús Pendientes */}
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-2xl border border-amber-100 shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-start mb-4">
             <div className="bg-white p-3 rounded-xl text-amber-500 shadow-sm">

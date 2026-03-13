@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Appointment, Patient } from '../types';
+import { Appointment, Patient, AppUser } from '../types';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
 import { Plus, Calendar as CalendarIcon } from 'lucide-react';
@@ -21,25 +21,30 @@ export const CalendarPage: React.FC = () => {
   );
   
   // Get linked nutritionists for receptionist/admin
-  const linkedNutritionists = authStore.getLinkedNutritionists();
+  const [linkedNutritionists, setLinkedNutritionists] = useState<AppUser[]>([]);
+
+  useEffect(() => {
+    authStore.getLinkedNutritionists().then(nutris => {
+      setLinkedNutritionists(nutris);
+      // Si no hay nutricionista seleccionada, seleccionar la primera
+      if (nutris.length > 0 && !selectedNutritionistId) {
+        setSelectedNutritionistId(nutris[0].id);
+      }
+    });
+  }, []);
   
   // Check if calendar selector should be visible based on module permissions
   const showCalendarSelector = authStore.canAccessModule('calendar', 'calendar-selector');
 
   // ── Determinar de quién cargar los appointments ───────────────────────────
+  // Reemplaza el useMemo completo:
   const targetNutritionistId = useMemo(() => {
-    // Si es nutricionista, cargar sus propias citas
     if (currentAppUser?.role === 'nutricionista') {
       return currentAppUser.id;
     }
-    
-    // Si tiene acceso al selector (recepcionista/admin)
     if (showCalendarSelector && linkedNutritionists.length > 0) {
-      // Usar la nutricionista seleccionada o la primera vinculada
       return selectedNutritionistId || linkedNutritionists[0].id;
     }
-    
-    // Fallback: cargar las del usuario actual
     return currentAppUser?.id || 'guest';
   }, [currentAppUser, showCalendarSelector, selectedNutritionistId, linkedNutritionists]);
 

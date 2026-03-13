@@ -8,16 +8,14 @@ import { MenuExportPDF } from '../components/menus_components/MenuExportPDF';
 import { MenuPreview } from '../components/menus_components/MenuPreview';
 import { MenuAIConfigurator } from '../components/menus_components/MenuAIConfigurator';
 
-// ─── Keys de storage para la Plantilla Base ───────────────────────────────────
 const MENU_TEMPLATE_HEADER_MODE_KEY = 'nutricrm_menu_template_header_mode_v1';
 const MENU_TEMPLATE_LOGO_URL_KEY = 'nutricrm_menu_template_logo_url_v1';
 const MENU_TEMPLATE_DESIGN_KEY = 'nutricrm_menu_template_design_v1';
 
-// ─── Mock data para preview de plantilla base ────────────────────────────────────
 const MOCK_MEAL_ORDER = ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
 
-const buildMockData = (): MenuPlanData => {
-  const profile = store.getUserProfile();
+// ✅ Ahora es una función pura que recibe el perfil como argumento
+const buildMockData = (profile: ReturnType<typeof store.getUserProfile>): MenuPlanData => {
   return {
     patient: { name: 'Alejandra Montenegro', age: 26, weight: 64.5, height: 163, fatPct: 14.2 },
     kcal: 2800,
@@ -107,34 +105,35 @@ const PlantillaBaseSection: React.FC = () => {
   const [headerMode, setHeaderMode] = useState<'default' | 'logo'>('default');
   const [selectedTemplate, setSelectedTemplate] = useState('base_v1');
 
+  // ✅ Estado para el perfil, con el mismo patrón de setInterval
+  const [userProfile, setUserProfile] = useState(() => store.getUserProfile());
+
+  useEffect(() => {
+    const checkInit = setInterval(() => {
+      if (store.isInitialized) {
+        setUserProfile(store.getUserProfile());
+        clearInterval(checkInit);
+      }
+    }, 100);
+    return () => clearInterval(checkInit);
+  }, []);
+
   // Cargar configuración guardada
   useEffect(() => {
     const savedMode = localStorage.getItem(MENU_TEMPLATE_HEADER_MODE_KEY) as 'default' | 'logo' | null;
     const savedLogo = localStorage.getItem(MENU_TEMPLATE_LOGO_URL_KEY);
     const savedTemplate = localStorage.getItem(MENU_TEMPLATE_DESIGN_KEY);
 
-    if (savedMode === 'default' || savedMode === 'logo') {
-      setHeaderMode(savedMode);
-    }
-    if (savedLogo) {
-      setLogoUrl(savedLogo);
-    }
-    if (savedTemplate) {
-      setSelectedTemplate(savedTemplate);
-    }
-
-    // Si había logo guardado, tiene sentido dejar modo logo
-    if (savedLogo && !savedMode) {
-      setHeaderMode('logo');
-    }
+    if (savedMode === 'default' || savedMode === 'logo') setHeaderMode(savedMode);
+    if (savedLogo) setLogoUrl(savedLogo);
+    if (savedTemplate) setSelectedTemplate(savedTemplate);
+    if (savedLogo && !savedMode) setHeaderMode('logo');
   }, []);
 
-  // Guardar modo al cambiar
   useEffect(() => {
     localStorage.setItem(MENU_TEMPLATE_HEADER_MODE_KEY, headerMode);
   }, [headerMode]);
 
-  // Guardar logo al cambiar
   useEffect(() => {
     if (logoUrl) {
       localStorage.setItem(MENU_TEMPLATE_LOGO_URL_KEY, logoUrl);
@@ -143,7 +142,6 @@ const PlantillaBaseSection: React.FC = () => {
     }
   }, [logoUrl]);
 
-  // Guardar diseño al cambiar
   useEffect(() => {
     localStorage.setItem(MENU_TEMPLATE_DESIGN_KEY, selectedTemplate);
   }, [selectedTemplate]);
@@ -170,7 +168,6 @@ const PlantillaBaseSection: React.FC = () => {
       const img = new Image();
       img.src = ev.target?.result as string;
       img.onload = () => {
-        // Scale down proportionally so it fits within 620×100
         const scaleW = img.width  > MAX_W ? MAX_W / img.width  : 1;
         const scaleH = img.height > MAX_H ? MAX_H / img.height : 1;
         const scale  = Math.min(scaleW, scaleH);
@@ -199,7 +196,8 @@ const PlantillaBaseSection: React.FC = () => {
     localStorage.setItem(MENU_TEMPLATE_HEADER_MODE_KEY, 'default');
   };
 
-  const mockData = buildMockData();
+  // ✅ mockData ahora usa userProfile del estado, no directo del store
+  const mockData = buildMockData(userProfile);
   const dataWithLogo = {
     ...mockData,
     nutritionist: {
@@ -228,7 +226,7 @@ const PlantillaBaseSection: React.FC = () => {
             <Eye className="w-4 h-4" />
             {showPreview ? 'Ocultar preview' : 'Ver preview'}
           </button>
-          <MenuExportPDF 
+          <MenuExportPDF
             elementId="menu-print-area"
             filename={`Menu_${mockData.patient.name.replace(/\s+/g, '_')}`}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm shadow-emerald-600/20"
@@ -263,7 +261,7 @@ const PlantillaBaseSection: React.FC = () => {
           <span className="bg-emerald-100 text-emerald-600 p-1 rounded">🖼️</span>
           Personalizar Membrete
         </h4>
-        
+
         <div className="flex gap-3 items-center flex-wrap">
           <button
             onClick={() => setHeaderMode('default')}
@@ -327,9 +325,9 @@ const PlantillaBaseSection: React.FC = () => {
       {/* Preview A4 */}
       {showPreview && (
         <div className="p-6 bg-slate-100">
-          <MenuPreview 
-            data={dataWithLogo} 
-            elementId="menu-print-area" 
+          <MenuPreview
+            data={dataWithLogo}
+            elementId="menu-print-area"
             selectedTemplate={selectedTemplate}
             onTemplateChange={setSelectedTemplate}
           />
