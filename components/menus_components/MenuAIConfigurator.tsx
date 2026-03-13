@@ -49,7 +49,7 @@ export const DEFAULT_PATIENT_FIELDS: PatientDataFields = {
   meta:                     true,
   alergias:                 true,
   diagnostico:              true,
-  historialFamiliar:        false,
+  historialFamiliar:        true,
   medicamentos:             true,
   evaluacionDietetica:      true,
   evaluacionDieteticaFecha: true,

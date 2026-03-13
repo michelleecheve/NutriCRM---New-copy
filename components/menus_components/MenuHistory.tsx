@@ -128,7 +128,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient }) => 
                     <div className="flex items-center gap-2 text-slate-600">
                       <Flame className="w-4 h-4 text-orange-400" />
                       <span className="text-sm font-medium">
-                        {entry.menu.menuPreviewData?.kcal || entry.menu.vet?.kcalToWork || 'N/A'} kcal
+                        {entry.menu.menuPreviewData?.kcal || entry.menu.kcalToWork || 'N/A'} kcal
                       </span>
                     </div>
                   </td>

@@ -203,6 +203,7 @@ export interface GeneratedMenu {
   name?: string;
   content?: string;
   aiRationale?: string;
+  menuPreviewData?: any;
 }
 
 // SIMPLIFICADO - Eliminados: currentDiet, dailyCaloriesTarget, menus, notes
