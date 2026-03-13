@@ -491,11 +491,11 @@ export const supabaseService = {
 
   // ─── Appointments ──────────────────────────────────────────────────────────
 
-  async getAppointments(nutritionistId?: string): Promise<Appointment[]> {
+  async getAppointments(ownerId?: string): Promise<Appointment[]> {
     let query = supabase
       .from('appointments')
       .select('*, patients (first_name, last_name)');
-    if (nutritionistId) query = query.eq('nutritionist_id', nutritionistId);
+    if (ownerId) query = query.eq('owner_id', ownerId);
     const { data, error } = await query
       .order('date', { ascending: true })
       .order('time', { ascending: true });
@@ -512,7 +512,7 @@ export const supabaseService = {
       modality:         appointment.modality,
       status:           appointment.status,
       patient_name:     appointment.patientName,
-      nutritionist_id:  appointment.nutritionistId,
+      owner_id:         appointment.ownerId,
     };
     if (appointment.patientId && appointment.patientId !== 'guest') {
       insertData.patient_id = appointment.patientId;
@@ -536,7 +536,7 @@ export const supabaseService = {
       status:   appointment.status,
     };
     if (appointment.patientName)    updateData.patient_name     = appointment.patientName;
-    if (appointment.nutritionistId) updateData.nutritionist_id  = appointment.nutritionistId;
+    if (appointment.ownerId) updateData.owner_id  = appointment.ownerId;
     if (appointment.patientId && appointment.patientId !== 'guest') {
       updateData.patient_id = appointment.patientId;
     }
@@ -557,11 +557,11 @@ export const supabaseService = {
 
   // ─── Menu References ───────────────────────────────────────────────────────
 
-  async getMenuReferences(nutritionistId: string): Promise<MenuReferenceRecord[]> {
+  async getMenuReferences(ownerId: string): Promise<MenuReferenceRecord[]> {
     const { data, error } = await supabase
       .from('menu_references')
       .select('*')
-      .eq('nutritionist_id', nutritionistId)
+      .eq('owner_id', ownerId)
       .order('created_at', { ascending: false });
     if (error) throw error;
     return (data || []).map(this.mapMenuReferenceFromDb);
@@ -569,7 +569,7 @@ export const supabaseService = {
 
   async saveMenuReference(ref: Partial<MenuReferenceRecord>) {
     const payload: any = {
-      nutritionist_id: ref.nutritionistId,
+      owner_id: ref.ownerId,
       kcal:            ref.kcal,
       type:            ref.type,
       data:            ref.data,
@@ -603,23 +603,17 @@ export const supabaseService = {
 
   async uploadPatientFile(userId: string, patientId: string, file: File, folder: 'photos' | 'labs') {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}/${patientId}/${folder}/${Math.random()}.${fileExt}`;
-    const { error: uploadError } = await supabase.storage.from('patient-data').upload(fileName, file);
-    if (uploadError) throw uploadError;
-    const { data, error } = await supabase.storage
+    const fileName = `${userId}/${patientId}/${folder}/${crypto.randomUUID()}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage
       .from('patient-data')
-      .createSignedUrl(fileName, 60 * 60); // 1 hora
-    if (error) throw error;
-    return { path: fileName, signedUrl: data.signedUrl };
+      .upload(fileName, file);
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage
+      .from('patient-data')
+      .getPublicUrl(fileName);
+    return { path: fileName, signedUrl: data.publicUrl };
   },
 
-  async refreshFileUrl(path: string): Promise<string> {
-    const { data, error } = await supabase.storage
-      .from('patient-data')
-      .createSignedUrl(path, 60 * 60);
-    if (error) throw error;
-    return data.signedUrl;
-  },
 
   // ─── Mappers ───────────────────────────────────────────────────────────────
 
@@ -827,7 +821,7 @@ export const supabaseService = {
       modality:        db.modality,
       status:          db.status,
       notes:           db.notes,
-      nutritionistId:  db.nutritionist_id,
+      ownerId:  db.owner_id, 
       receptionistId:  db.receptionist_id,
     };
   },
@@ -835,7 +829,7 @@ export const supabaseService = {
   mapMenuReferenceFromDb(db: any): MenuReferenceRecord {
     return {
       id:             db.id,
-      nutritionistId: db.nutritionist_id,
+      ownerId:  db.owner_id,
       kcal:           db.kcal,
       type:           db.type,
       data:           db.data,

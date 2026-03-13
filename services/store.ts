@@ -390,14 +390,20 @@ class Store {
   getAppointments(): Appointment[] { return this.appointments; }
 
   async addAppointment(appointment: Omit<Appointment, 'id'>): Promise<Appointment> {
-    const newAppt = await supabaseService.createAppointment(appointment);
+    const newAppt = await supabaseService.createAppointment({
+      ...appointment,
+      ownerId: appointment.ownerId || this.uid,
+    });
     this.appointments = [...this.appointments, newAppt];
     save(this.K.appointments, this.appointments);
     return newAppt;
   }
 
   async updateAppointment(updatedAppointment: Appointment): Promise<void> {
-    await supabaseService.updateAppointment(updatedAppointment.id, updatedAppointment);
+    await supabaseService.updateAppointment(updatedAppointment.id, {
+      ...updatedAppointment,
+      ownerId: updatedAppointment.ownerId || this.uid,
+    });
     this.appointments = this.appointments.map(a => a.id === updatedAppointment.id ? updatedAppointment : a);
     save(this.K.appointments, this.appointments);
   }
@@ -406,6 +412,17 @@ class Store {
     await supabaseService.deleteAppointment(id);
     this.appointments = this.appointments.filter(a => a.id !== id);
     save(this.K.appointments, this.appointments);
+  }
+
+  async addAppointmentForNutritionist(nutritionistId: string, appointment: Omit<Appointment, 'id'>): Promise<Appointment> {
+    const newAppt = await supabaseService.createAppointment({ 
+      ...appointment, 
+      ownerId: nutritionistId,
+    });
+    const keys = makeKeys(nutritionistId);
+    const existing = load<Appointment[]>(keys.appointments, []);
+    save(keys.appointments, [...existing, newAppt]);
+    return newAppt;
   }
 
   // ── Evaluations ────────────────────────────────────────────────────────────
@@ -547,16 +564,12 @@ class Store {
     return load(keys.patients, []);
   }
 
-  async addAppointmentForNutritionist(nutritionistId: string, appointment: Omit<Appointment, 'id'>): Promise<Appointment> {
-    const newAppt = await supabaseService.createAppointment({ ...appointment, nutritionistId });
-    const keys = makeKeys(nutritionistId);
-    const existing = load<Appointment[]>(keys.appointments, []);
-    save(keys.appointments, [...existing, newAppt]);
-    return newAppt;
-  }
 
   async updateAppointmentForNutritionist(nutritionistId: string, updatedAppointment: Appointment): Promise<void> {
-    await supabaseService.updateAppointment(updatedAppointment.id, updatedAppointment);
+    await supabaseService.updateAppointment(updatedAppointment.id, {
+      ...updatedAppointment,
+      ownerId: nutritionistId,
+    });
     const keys = makeKeys(nutritionistId);
     const existing = load<Appointment[]>(keys.appointments, []);
     save(keys.appointments, existing.map(a => a.id === updatedAppointment.id ? updatedAppointment : a));

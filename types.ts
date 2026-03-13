@@ -235,6 +235,7 @@ export interface LabResult {
   date: string;
   linkedEvaluationId: string;
   url: string;
+  path: string
   type: 'image' | 'pdf' | 'other';
   labInterpretation?: string;
 }
@@ -245,6 +246,7 @@ export interface Photo {
   date: string;
   linkedEvaluationId?: string;  // Opcional porque puede ser foto general
   url: string;
+  path: string
   type: 'image' | 'pdf' | 'other';
 }
 

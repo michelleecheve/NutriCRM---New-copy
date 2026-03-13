@@ -14,41 +14,34 @@ export const CalendarPage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [user] = useState(store.getUserProfile());
   const currentAppUser = authStore.getCurrentUser();
-  
-  // Calendar selector state for receptionist/admin
+
   const [selectedNutritionistId, setSelectedNutritionistId] = useState<string | null>(
-    authStore.getSelectedNutritionistId()
+    authStore.getSelectedNutritionistId() // ✅ quita el || currentAppUser?.id
   );
-  
-  // Get linked nutritionists for receptionist/admin
+
   const [linkedNutritionists, setLinkedNutritionists] = useState<AppUser[]>([]);
 
   useEffect(() => {
     authStore.getLinkedNutritionists().then(nutris => {
       setLinkedNutritionists(nutris);
-      // Si no hay nutricionista seleccionada, seleccionar la primera
       if (nutris.length > 0 && !selectedNutritionistId) {
-        setSelectedNutritionistId(nutris[0].id);
+        setSelectedNutritionistId(nutris[0].id); // ✅ solo autoselecciona nutricionistas vinculadas
       }
+      // Si no hay vinculadas, selectedNutritionistId queda null
     });
   }, []);
-  
-  // Check if calendar selector should be visible based on module permissions
-  const showCalendarSelector = authStore.canAccessModule('calendar', 'calendar-selector');
 
-  // ── Determinar de quién cargar los appointments ───────────────────────────
-  // Reemplaza el useMemo completo:
+  const showCalendarSelector = authStore.canAccessModule('calendar', 'calendar-selector');
+  const canCreateAppointments = !showCalendarSelector || linkedNutritionists.length > 0;
+
   const targetNutritionistId = useMemo(() => {
-    if (currentAppUser?.role === 'nutricionista') {
-      return currentAppUser.id;
-    }
+    if (currentAppUser?.role === 'nutricionista') return currentAppUser.id;
     if (showCalendarSelector && linkedNutritionists.length > 0) {
       return selectedNutritionistId || linkedNutritionists[0].id;
     }
     return currentAppUser?.id || 'guest';
   }, [currentAppUser, showCalendarSelector, selectedNutritionistId, linkedNutritionists]);
 
-  // ── Cargar appointments de la nutricionista target ────────────────────────
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
 
@@ -56,11 +49,9 @@ export const CalendarPage: React.FC = () => {
     const fetchData = async () => {
       try {
         if (targetNutritionistId === currentAppUser?.id) {
-          // Cargar las propias
           setAppointments(store.getAppointments());
           setPatients(store.getPatients());
         } else {
-          // Cargar las de otra nutricionista
           const appts = await store.getAppointmentsForNutritionist(targetNutritionistId);
           setAppointments(appts);
           setPatients(store.getPatientsForNutritionist(targetNutritionistId));
@@ -78,7 +69,6 @@ export const CalendarPage: React.FC = () => {
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-
   const todayStr = getTodayStr(user.timezone);
 
   const fiveDaysFromNowDate = new Date();
@@ -139,23 +129,39 @@ export const CalendarPage: React.FC = () => {
             </h1>
             <p className="text-slate-500 mt-1">Gestiona tus citas y agenda</p>
           </div>
-          <button
-            onClick={() => handleCreateAppointment()}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
-          >
-            <Plus className="w-5 h-5" />
-            Nueva Cita
-          </button>
+          {canCreateAppointments && (
+            <button
+              onClick={() => handleCreateAppointment()}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
+            >
+              <Plus className="w-5 h-5" />
+              Nueva Cita
+            </button>
+          )}
         </div>
 
-        {/* Calendar Selector for receptionist/admin */}
-        {showCalendarSelector && linkedNutritionists.length > 0 && (
-          <CalendarSelector 
-            linkedNutritionists={linkedNutritionists}
-            selectedNutritionistId={targetNutritionistId}
-            onNutritionistChange={handleNutritionistChange}
-          />
-        )}
+        {/* Calendar Selector */}
+          {showCalendarSelector && (
+            linkedNutritionists.length === 0 ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 flex items-center gap-4 shadow-sm">
+                <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <CalendarIcon className="w-5 h-5 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-amber-800">No tienes nutricionistas vinculadas</p>
+                  <p className="text-xs text-amber-600 mt-0.5">Ve a <strong>Configuración</strong> para vincular una nutricionista y activar la función de agendar en su calendario.</p>
+                </div>
+              </div>
+            ) : (
+              <CalendarSelector
+                currentUserId={currentAppUser?.id || ''}
+                currentUserName={currentAppUser?.profile?.name || 'Mi Calendario'}
+                linkedNutritionists={linkedNutritionists}
+                selectedNutritionistId={targetNutritionistId}
+                onNutritionistChange={handleNutritionistChange}
+              />
+            )
+          )}
 
         {/* Calendar + Sidebar Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -164,7 +170,7 @@ export const CalendarPage: React.FC = () => {
             appointments={appointments}
             onPrevMonth={handlePrevMonth}
             onNextMonth={handleNextMonth}
-            onDayClick={handleCreateAppointment}
+            onDayClick={canCreateAppointments ? handleCreateAppointment : undefined}
             onAppointmentClick={(e, appt) => {
               e.stopPropagation();
               handleEditAppointment(appt);

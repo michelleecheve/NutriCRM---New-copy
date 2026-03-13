@@ -23,22 +23,61 @@ export interface FileGalleryHandle {
   openUpload: () => void;
 }
 
+// ── Compresión de imágenes ────────────────────────────────────────────────────
+const compressImageFile = (inputFile: File, maxSizeKb = 500): Promise<File> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(inputFile);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+
+      const MAX_DIM = 1920;
+      if (width > MAX_DIM || height > MAX_DIM) {
+        if (width > height) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM; }
+        else { width = Math.round(width * MAX_DIM / height); height = MAX_DIM; }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      let quality = 0.9;
+      const tryCompress = () => {
+        canvas.toBlob((blob) => {
+          if (!blob) { resolve(inputFile); return; }
+          if (blob.size <= maxSizeKb * 1024 || quality <= 0.1) {
+            resolve(new globalThis.File([blob], inputFile.name, { type: 'image/jpeg' }));
+          } else {
+            quality -= 0.1;
+            tryCompress();
+          }
+        }, 'image/jpeg', quality);
+      };
+      tryCompress();
+    };
+    img.src = objectUrl;
+  });
+};
+
 export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
   ({ patientId, files = [], onUpdate, title, icon: Icon, accept, showDelete = true }, ref) => {
 
-    const [uploadModalOpen,    setUploadModalOpen]    = useState(false);
-    const [isUploading,        setIsUploading]        = useState(false);
-    const [previewFile,        setPreviewFile]        = useState<any>(null);
-    const [confirmDeleteOpen,  setConfirmDeleteOpen]  = useState(false);
-    const [deleteTargetId,     setDeleteTargetId]     = useState<string | null>(null);
-    const [infoModal,          setInfoModal]          = useState<{ title: string; message: string } | null>(null);
-    const [uploadEvaluationId, setUploadEvaluationId] = useState<string | null>(null);
+    const [uploadModalOpen,        setUploadModalOpen]        = useState(false);
+    const [isUploading,            setIsUploading]            = useState(false);
+    const [previewFile,            setPreviewFile]            = useState<any>(null);
+    const [confirmDeleteOpen,      setConfirmDeleteOpen]      = useState(false);
+    const [deleteTargetId,         setDeleteTargetId]         = useState<string | null>(null);
+    const [infoModal,              setInfoModal]              = useState<{ title: string; message: string } | null>(null);
+    const [uploadEvaluationId,     setUploadEvaluationId]     = useState<string | null>(null);
     const [uploadEvalSelectorOpen, setUploadEvalSelectorOpen] = useState(false);
-    const [fileLinkModalOpen,  setFileLinkModalOpen]  = useState(false);
-    const [linkingFileId,      setLinkingFileId]      = useState<string | null>(null);
-    const [fileEvalSelectorOpen, setFileEvalSelectorOpen] = useState(false);
-    const [fileEvaluationId,   setFileEvaluationId]   = useState<string | null>(null);
-    const [isDragOver,         setIsDragOver]         = useState(false);
+    const [fileLinkModalOpen,      setFileLinkModalOpen]      = useState(false);
+    const [linkingFileId,          setLinkingFileId]          = useState<string | null>(null);
+    const [fileEvalSelectorOpen,   setFileEvalSelectorOpen]   = useState(false);
+    const [fileEvaluationId,       setFileEvaluationId]       = useState<string | null>(null);
+    const [isDragOver,             setIsDragOver]             = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,17 +126,14 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
       setFileLinkModalOpen(true);
     };
 
-    // ✅ Guarda vínculo en Supabase + estado local
     const applyFileLink = async () => {
       if (!linkingFileId) return;
       const nextDate = fileLinkedDate;
-
       const updatedFiles = files.map(f => {
         if (f.id !== linkingFileId) return f;
         return { ...f, date: nextDate, linkedEvaluationId: fileEvaluationId ?? null };
       });
       onUpdate(updatedFiles);
-
       try {
         await supabaseService.updatePatientFile(linkingFileId, {
           evaluationId: fileEvaluationId,
@@ -106,23 +142,23 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
       } catch (err) {
         console.error('Error actualizando vínculo en Supabase:', err);
       }
-
       setFileLinkModalOpen(false);
       setLinkingFileId(null);
       setFileEvalSelectorOpen(false);
     };
 
-    // ✅ Upload: sube a Storage y guarda registro en patient_files
     const uploadFileObject = async (file: File) => {
       const isImage = file.type.startsWith('image/');
 
-      if (file.size > 1024 * 1024) {
+      if (!isImage && file.size > 1024 * 1024) {
         setInfoModal({ title: 'Archivo muy grande', message: 'El archivo supera el límite de 1 MB.' });
         return;
       }
 
       setIsUploading(true);
       try {
+        const fileToUpload = isImage ? await compressImageFile(file, 500) : file;
+
         const folder: 'photos' | 'labs' = isImage ? 'photos' : 'labs';
         const userId = authStore.getCurrentUser()?.id ?? 'guest';
         const type: 'image' | 'pdf' | 'other' = isImage
@@ -130,7 +166,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
           : file.type === 'application/pdf' ? 'pdf' : 'other';
 
         const { signedUrl, path } = await supabaseService.uploadPatientFile(
-          userId, patientId, file, folder,
+          userId, patientId, fileToUpload, folder,
         );
 
         const saved = await supabaseService.savePatientFile({
@@ -165,13 +201,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
 
     const handlePreview = (file: any) => {
       if (file.type === 'pdf') {
-        const w = window.open();
-        if (w) {
-          w.document.write(
-            `<iframe src="${file.url}" frameborder="0" style="border:0;top:0;left:0;bottom:0;right:0;width:100%;height:100%;" allowfullscreen></iframe>`,
-          );
-          w.document.title = file.name;
-        }
+        window.open(file.url, '_blank');
       } else if (file.type === 'image') {
         setPreviewFile(file);
       }
@@ -182,7 +212,6 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
       setConfirmDeleteOpen(true);
     };
 
-    // ✅ Elimina de Storage + tabla + estado local
     const confirmDelete = async () => {
       if (!deleteTargetId) return;
       const target = files.find(f => f.id === deleteTargetId);
@@ -207,7 +236,6 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
       document.body.removeChild(link);
     };
 
-    // ✅ Renombrar guarda en Supabase también
     const handleRename = async (id: string, newName: string) => {
       onUpdate(files.map(f => f.id === id ? { ...f, name: newName } : f));
       try {
@@ -388,7 +416,6 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
           <div className="fixed inset-0 z-[70] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm p-6 space-y-4">
               <h3 className="font-bold text-slate-900">Vincular a evaluación</h3>
-
               {!fileEvalSelectorOpen ? (
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-slate-700">
@@ -416,7 +443,6 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                   ))}
                 </div>
               )}
-
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={() => { setFileLinkModalOpen(false); setLinkingFileId(null); setFileEvalSelectorOpen(false); }}
@@ -451,9 +477,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <div className="p-5 space-y-5">
-                {/* Evaluación vinculada */}
                 <div className="bg-slate-50 rounded-2xl border border-slate-100 p-4 space-y-2">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Evaluación asignada</p>
                   {!uploadEvalSelectorOpen ? (
@@ -484,8 +508,6 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                     </div>
                   )}
                 </div>
-
-                {/* Drop zone */}
                 <div
                   onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
                   onDragLeave={() => setIsDragOver(false)}
@@ -511,7 +533,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                   >
                     {isUploading ? 'Subiendo...' : 'Seleccionar archivo'}
                   </button>
-                  <p className="text-[10px] text-slate-400 mt-3">Límite: 1 MB</p>
+                  <p className="text-[10px] text-slate-400 mt-3">Imágenes: comprimidas a 500 KB · PDFs: máx 1 MB</p>
                 </div>
               </div>
             </div>
