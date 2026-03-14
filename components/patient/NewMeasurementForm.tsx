@@ -186,7 +186,6 @@ export const NewMeasurementForm: React.FC<{
     [patient.id]
   );
 
-  // ✅ resolver record existente — busca por id primero, fallback a date para registros legacy
   const existingRecord = useMemo<Measurement | null>(() => {
     if (!editingId) return null;
     return (
@@ -198,7 +197,6 @@ export const NewMeasurementForm: React.FC<{
 
   const isEditing = !!existingRecord;
 
-  // ✅ evaluación vinculada — inicializar desde el record si existe
   const [evaluationId, setEvaluationId] = useState<string | null>(() => {
     if (existingRecord) {
       const match = patientEvaluations.find(e => e.date === existingRecord.date);
@@ -216,7 +214,6 @@ export const NewMeasurementForm: React.FC<{
     evaluation?.date ??
     (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
 
-  // ✅ form data
   const buildDefault = (): Measurement => ({
     id: Math.random().toString(36).substring(7),
     linkedEvaluationId: evaluationId || '',
@@ -230,7 +227,6 @@ export const NewMeasurementForm: React.FC<{
     existingRecord ? { ...existingRecord } : buildDefault()
   );
 
-  // re-inicializar si cambia editingId
   useEffect(() => {
     const rec = editingId
       ? (patient.measurements.find(m => m.id === editingId) ??
@@ -255,9 +251,8 @@ export const NewMeasurementForm: React.FC<{
       });
       setEvaluationId(selId);
     }
-  }, [editingId]);
+  }, [editingId, patient.measurements, patientEvaluations]);
 
-  // cuando cambia la evaluación asignada → actualizar fecha en formData
   useEffect(() => {
     if (!evaluation) return;
     setFormData(prev => calculateAnthropometry({ ...prev, date: evaluation.date }));
@@ -281,23 +276,24 @@ export const NewMeasurementForm: React.FC<{
       return;
     }
 
+    // ✅ si estamos editando, conserva el ID original (NO generes uno nuevo)
     const normalized: Measurement = calculateAnthropometry({
       ...formData,
       date: ev.date,
       linkedEvaluationId: evaluationId || '',
-      // garantizar que siempre tenga id
-      id: formData.id || Math.random().toString(36).substring(7),
+      id: isEditing ? (existingRecord!.id) : (formData.id || Math.random().toString(36).substring(7)),
     });
 
     let updatedMeasurements: Measurement[];
 
     if (isEditing) {
-      // ✅ editar — reemplaza por id
-      updatedMeasurements = patient.measurements.map(m =>
-        m.id === editingId ? normalized : m
-      );
+      // ✅ editar — reemplaza por id o por fecha (legacy)
+      updatedMeasurements = patient.measurements.map(m => {
+        const isMatch = m.id === editingId || (!m.id && m.date === editingId);
+        return isMatch ? normalized : m;
+      });
     } else {
-      // ✅ crear nuevo — siempre agrega, nunca sobreescribe
+      // ✅ crear nuevo — agrega hasta arriba
       updatedMeasurements = [normalized, ...patient.measurements];
     }
 
@@ -314,7 +310,7 @@ export const NewMeasurementForm: React.FC<{
 
   const handleDeleteConfirmed = async () => {
     if (!editingId) return;
-    const itemToDelete = patient.measurements.find(m => m.id === editingId);
+    const itemToDelete = patient.measurements.find(m => m.id === editingId || (!m.id && m.date === editingId));
     const updatedMeasurements = patient.measurements.filter(m => m.id !== editingId && m.date !== editingId);
     const updatedPatient = { ...patient, measurements: updatedMeasurements };
     onUpdate(updatedPatient);

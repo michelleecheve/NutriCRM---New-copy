@@ -344,7 +344,7 @@ class Store {
   async saveMenuReference(ref: Partial<MenuReferenceRecord>): Promise<MenuReferenceRecord> {
     const saved = await supabaseService.saveMenuReference({
       id:             ref.id,
-      nutritionistId: this.uid,
+      ownerId:        this.uid,
       kcal:           ref.kcal ?? (ref.data as any)?.kcal,
       type:           ref.type ?? (ref.data as any)?.type,
       data:           ref.data,
@@ -493,36 +493,6 @@ class Store {
   // ── User profile ───────────────────────────────────────────────────────────
 
   getUserProfile(): UserProfile { return this.user || SEED_USER; }
-
-  async updateCurrentUserProfile(profile: UserProfile): Promise<void> {
-    if (!this.currentUser) return;
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        name:               profile.name,
-        professional_title: profile.professionalTitle,
-        specialty:          profile.specialty,
-        license_number:     profile.licenseNumber,
-        timezone:           profile.timezone,
-        avatar:             profile.avatar,
-        phone:              profile.phone,
-        personal_phone:     profile.personalPhone,
-        contact_email:      profile.contactEmail,
-        instagram_handle:   profile.instagramHandle,
-        website:            profile.website,
-        address:            profile.address,
-      })
-      .eq('id', this.currentUser.id);
-
-    if (error) {
-      console.error('Error updating profile:', error);
-      throw error;
-    }
-
-    this.currentUser = { ...this.currentUser, profile };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
-  }
 
   async updateMenuAIConfig(config: MenuAIConfig): Promise<void> {
     if (this.uid && this.uid !== 'guest') {

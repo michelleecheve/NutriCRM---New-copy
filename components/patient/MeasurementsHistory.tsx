@@ -24,7 +24,7 @@ export const MeasurementsHistory: React.FC<{
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {sorted.map((m) => (
         <button
-          key={m.date}
+          key={m.id} // <--- SOLO el id!
           type="button"
           onClick={() => onEdit(m)}
           className="text-left bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all p-5 group"
@@ -62,7 +62,7 @@ export const MeasurementsHistory: React.FC<{
 
             <div className="bg-emerald-50/40 rounded-xl p-3 border border-emerald-100">
               <div className="text-[10px] font-bold text-emerald-700 uppercase">IMC</div>
-              <div className="font-extrabold text-emerald-700">{m.imc ?? '-'}</div>
+              <div className="font-extrabold text-emerald-700">{m.imc !== undefined && m.imc !== null ? m.imc.toFixed(2) : '-'}</div>
             </div>
           </div>
 

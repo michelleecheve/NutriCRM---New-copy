@@ -17,6 +17,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { store } from '../../services/store';
+import { authStore } from '../../services/authStore';
+import { supabaseService } from '../../services/supabaseService';
 import { DietaryCard } from './DietaryCard';
 import { DietaryForm } from './DietaryForm';
 import { NewMeasurementForm } from './NewMeasurementForm';

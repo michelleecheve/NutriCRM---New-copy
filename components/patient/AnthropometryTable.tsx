@@ -268,8 +268,8 @@ export const AnthropometryTable: React.FC<{ patient: Patient; onUpdate: (p: Pati
                 <th className="p-4 font-bold text-emerald-800 text-xs uppercase tracking-wider w-52 border-b border-r border-slate-100 sticky left-0 bg-slate-50 z-20">
                    PARÁMETRO
                 </th>
-                {sortedMeasurements.map((m, idx) => (
-                  <th key={idx} className="p-2 border-b border-slate-100 min-w-[110px] text-center">
+                {sortedMeasurements.map((m) => (
+                  <th key={m.id || m.date} className="p-2 border-b border-slate-100 min-w-[110px] text-center">
                      <div className="flex flex-col items-center">
                        <span className="text-[10px] font-bold text-emerald-600 uppercase mb-1">FECHA EVALUACIÓN</span>
                        <div className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-700 text-center w-32">
@@ -285,8 +285,8 @@ export const AnthropometryTable: React.FC<{ patient: Patient; onUpdate: (p: Pati
                  <td className="p-4 font-bold text-slate-500 text-xs border-r border-slate-100 sticky left-0 bg-white z-10 flex items-center gap-2 w-52">
                     <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" /> META CUMPLIDA
                  </td>
-                 {sortedMeasurements.map((m, idx) => (
-                   <td key={idx} className="p-2 text-center border-r border-slate-50">
+                 {sortedMeasurements.map((m) => (
+                   <td key={m.id || m.date} className="p-2 text-center border-r border-slate-50">
                       <div className="flex justify-center">
                         {m.metaComplied ? (
                           <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
@@ -304,8 +304,8 @@ export const AnthropometryTable: React.FC<{ patient: Patient; onUpdate: (p: Pati
                      <td className="p-3 font-bold text-slate-400 text-xs uppercase tracking-widest pl-4 border-y border-slate-100 sticky left-0 z-10 w-52 bg-slate-50">
                         {section.title}
                      </td>
-                     {sortedMeasurements.map((_, idx) => (
-                       <td key={idx} className="border-y border-slate-100 bg-slate-50/50"></td>
+                     {sortedMeasurements.map((m) => (
+                       <td key={m.id || m.date} className="border-y border-slate-100 bg-slate-50/50"></td>
                      ))}
                   </tr>
                   {section.rows.map((row: any) => (
@@ -313,7 +313,7 @@ export const AnthropometryTable: React.FC<{ patient: Patient; onUpdate: (p: Pati
                       <td className={`p-4 border-r border-slate-100 sticky left-0 bg-white z-10 text-slate-700 w-52 ${row.isBold ? 'font-bold' : 'font-medium'}`}>
                          {row.label}
                       </td>
-                      {sortedMeasurements.map((m, idx) => {
+                      {sortedMeasurements.map((m) => {
                          const rawValue = (m as any)[row.key];
                          let displayValue = rawValue;
                          if (row.isCalculated) {
@@ -324,7 +324,7 @@ export const AnthropometryTable: React.FC<{ patient: Patient; onUpdate: (p: Pati
                          }
 
                          return (
-                            <td key={`${idx}-${row.key}`} className={`p-3 border-r border-slate-50 text-center ${row.isCalculated ? 'bg-emerald-50/30 text-emerald-700 font-bold' : 'text-slate-600 font-medium'}`}>
+                            <td key={`${m.id || m.date}-${row.key}`} className={`p-3 border-r border-slate-50 text-center ${row.isCalculated ? 'bg-emerald-50/30 text-emerald-700 font-bold' : 'text-slate-600 font-medium'}`}>
                                <div className={row.key === 'diagnosticN' ? 'text-[10px] leading-tight max-w-[150px] mx-auto' : ''}>
                                  {displayValue}
                                </div>

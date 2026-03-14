@@ -69,6 +69,9 @@ const getLocalTimezone = () => {
   return `UTC${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
 
+
+// VINCULACION
+
 const VinculacionNutricionista: React.FC<{
   onUnlinkRequest: (id: string, name: string, type: 'receptionist') => void;
   }> = ({ onUnlinkRequest }) => {
@@ -113,13 +116,15 @@ const VinculacionNutricionista: React.FC<{
       </div>
 
       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 space-y-3">
-        <div>
-          <p className="text-sm font-bold text-emerald-800">Tu código de vinculación</p>
-          <p className="text-xs text-emerald-600 mt-0.5">
-            Comparte este código con tu recepcionista para que pueda vincularse a tu cuenta.
-          </p>
-        </div>
-        <div className="flex gap-3">
+    <div>
+      <p className="text-sm font-bold text-emerald-800">Tu código de vinculación</p>
+      <p className="text-xs text-emerald-600 mt-0.5">
+        Comparte este código con tu recepcionista para que pueda vincularse a tu cuenta.
+      </p>
+    </div>
+    <div className="flex gap-3">
+      {myLinkCode ? (
+        <>
           <div className="flex-1 bg-white border border-emerald-200 rounded-xl px-4 py-3 font-mono text-base font-bold tracking-wide text-emerald-700 select-all">
             {myLinkCode}
           </div>
@@ -133,8 +138,30 @@ const VinculacionNutricionista: React.FC<{
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copied ? 'Copiado' : 'Copiar'}
           </button>
-        </div>
-      </div>
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={async () => {
+            setMsg({ type: 'ok', text: 'Generando código...' });
+            const code = await authStore.generateAndSaveLinkCode();
+            setMsg({ type: 'ok', text: `Código generado: ${code}` });
+            setTimeout(() => setMsg(null), 2000);
+            // Aquí puedes recargar, volver a llamar a setRefreshKey(x => x + 1), o setear localmente tu estado:
+            window.location.reload(); // fuerza el refetch y la recarga de código
+          }}
+          className="px-5 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all text-sm"
+        >
+          Generar código de vinculación
+        </button>
+      )}
+    </div>
+    {msg && (
+      <p className={`text-sm font-medium px-1 ${msg.type === 'ok' ? 'text-emerald-600' : 'text-red-500'}`}>
+        {msg.text}
+      </p>
+    )}
+  </div>
 
       <div className="space-y-2">
         <label className="text-sm font-bold text-slate-700 block">Vincular recepcionista por código</label>
@@ -176,25 +203,29 @@ const VinculacionNutricionista: React.FC<{
             No tienes recepcionistas vinculadas aún.
           </div>
         ) : (
-          linkedReceptionists.map(recep => (
+        linkedReceptionists.map(recep => {
+          // Usar fallback seguro para el nombre
+          const recepName = recep.profile?.name ?? recep.name ?? "Sin nombre";
+          return (
             <div key={recep.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-4">
               <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
-                {recep.profile.name.charAt(0)}
+                {recepName.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-800 truncate">{recep.profile.name}</p>
+                <p className="text-sm font-bold text-slate-800 truncate">{recepName}</p>
                 <p className="text-xs text-slate-400 truncate">{recep.email}</p>
               </div>
               <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">Activa</span>
               <button
                 type="button"
-                onClick={() => onUnlinkRequest(recep.id, recep.profile.name, 'receptionist')}
+                onClick={() => onUnlinkRequest(recep.id, recepName, 'receptionist')}
                 className="w-8 h-8 flex items-center justify-center bg-white border border-red-100 text-red-400 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
-          ))
+          );
+        })
         )}
       </div>
     </div>
@@ -333,6 +364,8 @@ const VinculacionRecepcionista: React.FC<{
   );
 };
 
+
+
 export const Profile: React.FC = () => {
   const currentUser = authStore.getCurrentUser();
   const role = currentUser?.role ?? 'nutricionista';
@@ -377,14 +410,14 @@ export const Profile: React.FC = () => {
     setIsUnlinkModalOpen(true);
   };
 
-  const confirmUnlink = () => {
+  const confirmUnlink = async () => {
     if (!unlinkTarget) return;
 
     if (unlinkTarget.type === 'receptionist') {
-      const result = authStore.unlinkReceptionistFromNutritionist(unlinkTarget.id);
+      const result = await authStore.unlinkReceptionistFromNutritionist(unlinkTarget.id);
       alert(result.message);
     } else {
-      const result = authStore.unlinkNutritionistFromReceptionist(unlinkTarget.id);
+      const result = await authStore.unlinkNutritionistFromReceptionist(unlinkTarget.id);
       alert(result.message);
     }
 

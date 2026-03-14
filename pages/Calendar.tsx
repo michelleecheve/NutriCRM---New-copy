@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Appointment, Patient, AppUser } from '../types';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
+import { supabase } from '../services/supabase';
 import { Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { getTodayStr } from '../src/utils/dateUtils';
 import { CalendarGrid } from '../components/calendar_components/CalendarGrid';
@@ -21,15 +22,7 @@ export const CalendarPage: React.FC = () => {
 
   const [linkedNutritionists, setLinkedNutritionists] = useState<AppUser[]>([]);
 
-  useEffect(() => {
-    authStore.getLinkedNutritionists().then(nutris => {
-      setLinkedNutritionists(nutris);
-      if (nutris.length > 0 && !selectedNutritionistId) {
-        setSelectedNutritionistId(nutris[0].id); // ✅ solo autoselecciona nutricionistas vinculadas
-      }
-      // Si no hay vinculadas, selectedNutritionistId queda null
-    });
-  }, []);
+  const [canViewCalendar, setCanViewCalendar] = useState(true);
 
   const showCalendarSelector = authStore.canAccessModule('calendar', 'calendar-selector');
   const canCreateAppointments = !showCalendarSelector || linkedNutritionists.length > 0;
@@ -44,6 +37,39 @@ export const CalendarPage: React.FC = () => {
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
+
+  useEffect(() => {
+    // Si es recepcionista y selecciona nutri, valida vínculo en DB
+    if (currentAppUser?.role === 'recepcionista' && targetNutritionistId) {
+      supabase
+        .from('profile_links')
+        .select('id')
+        .eq('nutritionist_id', targetNutritionistId)
+        .eq('receptionist_id', currentAppUser.id)
+        .then(({ data, error }) => {
+          if (error) {
+            console.error(error);
+            setCanViewCalendar(false);
+          } else {
+            setCanViewCalendar(Boolean(data && data.length > 0));
+          }
+        });
+    } else {
+      setCanViewCalendar(true);
+    }
+  }, [currentAppUser, targetNutritionistId]);
+
+  useEffect(() => {
+    authStore.getLinkedNutritionists().then(nutris => {
+      setLinkedNutritionists(nutris);
+      if (nutris.length > 0 && !selectedNutritionistId) {
+        setSelectedNutritionistId(nutris[0].id); // ✅ solo autoselecciona nutricionistas vinculadas
+      }
+      // Si no hay vinculadas, selectedNutritionistId queda null
+    });
+  }, []);
+
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -113,6 +139,18 @@ export const CalendarPage: React.FC = () => {
     setSelectedNutritionistId(nutritionistId);
     authStore.setSelectedNutritionistId(nutritionistId);
   };
+
+  if (!canViewCalendar) {
+    return (
+      <div className="p-8 max-w-xl mx-auto flex flex-col items-center justify-center gap-4">
+        <div className="bg-red-100 text-red-600 rounded-full w-16 h-16 flex items-center justify-center mb-2">
+          <CalendarIcon className="w-8 h-8" />
+        </div>
+        <p className="text-xl font-bold text-red-700 text-center">No tienes acceso al calendario de esta nutricionista</p>
+        <p className="text-slate-500 text-center">Solicita a la nutricionista que te vincule para poder ver y agendar en su calendario.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 p-4 sm:p-6 lg:p-8">

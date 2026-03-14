@@ -453,103 +453,125 @@ class AuthStore {
 
   // ── Linked Users ──────────────────────────────────────────────────────────
 
-  async getLinkedReceptionists(): Promise<AppUser[]> {
+  async getLinkedReceptionists() {
     const current = this.currentUser;
     if (!current) return [];
-    const ids = current.linkedReceptionistIds ?? [];
-    if (ids.length === 0) return [];
-    const { data, error } = await supabase
+    const { data: links } = await supabase
+      .from('profile_links')
+      .select('receptionist_id')
+      .eq('nutritionist_id', current.id);
+    if (!links) return [];
+    const ids = links.map((l: any) => l.receptionist_id);
+    if (!ids.length) return [];
+    const { data } = await supabase
       .from('profiles')
       .select('*')
       .in('id', ids)
       .eq('role', 'recepcionista');
-    if (error || !data) return [];
-    return data.map(mapProfileToAppUser);
+    return data || [];
   }
 
   async getLinkedNutritionists(): Promise<AppUser[]> {
     const current = this.currentUser;
     if (!current) return [];
-    const ids = current.linkedNutritionistIds ?? [];
+    // 1. Buscar los nutritionist_id donde el receptionist_id es el usuario actual
+    const { data: links, error } = await supabase
+      .from('profile_links')
+      .select('nutritionist_id')
+      .eq('receptionist_id', current.id);
+    if (error || !links) return [];
+    const ids = links.map((l: any) => l.nutritionist_id);
     if (ids.length === 0) return [];
-    const { data, error } = await supabase
+    // 2. Traer los perfiles de esos IDs sólo si son nutricionistas
+    const { data, error: profErr } = await supabase
       .from('profiles')
       .select('*')
       .in('id', ids)
       .eq('role', 'nutricionista');
-    if (error || !data) return [];
+    if (profErr || !data) return [];
     return data.map(mapProfileToAppUser);
   }
 
   // ── Vinculación ───────────────────────────────────────────────────────────
 
-  async linkReceptionistToNutritionistByCode(code: string): Promise<{ ok: boolean; message: string }> {
+  async linkReceptionistToNutritionistByCode(code: string) {
     const current = this.currentUser;
-    if (!current || (current.role !== 'nutricionista' && current.role !== 'admin')) return { ok: false, message: 'No autorizado.' };
-    const { data: recepProfile, error } = await supabase
+    if (!current || current.role !== 'nutricionista') return { ok: false, message: 'No autorizado.' };
+    // Buscar recepcionista por código
+    const { data: recep, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, name')
       .eq('link_code', code.trim().toUpperCase())
       .eq('role', 'recepcionista')
       .single();
-    if (error || !recepProfile) return { ok: false, message: 'Código inválido. No se encontró una recepcionista con ese código.' };
-    const alreadyLinked = (current.linkedReceptionistIds ?? []).includes(recepProfile.id);
-    if (alreadyLinked) return { ok: false, message: 'Esta recepcionista ya está vinculada.' };
-    const newNutriIds = [...(current.linkedReceptionistIds ?? []), recepProfile.id];
-    const newRecepIds = [...(recepProfile.linked_nutritionist_ids ?? []), current.id];
-    await supabase.from('profiles').update({ linked_receptionist_ids: newNutriIds }).eq('id', current.id);
-    await supabase.from('profiles').update({ linked_nutritionist_ids: newRecepIds }).eq('id', recepProfile.id);
-    this.currentUser = { ...current, linkedReceptionistIds: newNutriIds };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
-    return { ok: true, message: `Recepcionista ${recepProfile.name} vinculada correctamente.` };
+    if (error || !recep) return { ok: false, message: 'Código inválido.' };
+    // CREAR vínculo N:M
+    const { error: linkError } = await supabase
+      .from('profile_links')
+      .insert([{ nutritionist_id: current.id, receptionist_id: recep.id }]);
+    if (linkError && linkError.code === '23505') return { ok: false, message: 'Ya está vinculada.' };
+    if (linkError) return { ok: false, message: 'Error inesperado.' };
+    return { ok: true, message: `Recepcionista ${recep.name} vinculada correctamente.` };
   }
 
-  async linkNutritionistToReceptionistByCode(code: string): Promise<{ ok: boolean; message: string }> {
+  async linkNutritionistToReceptionistByCode(code: string) {
     const current = this.currentUser;
-    if (!current || (current.role !== 'recepcionista' && current.role !== 'admin')) return { ok: false, message: 'No autorizado.' };
-    const { data: nutriProfile, error } = await supabase
+    if (!current || current.role !== 'recepcionista') return { ok: false, message: 'No autorizado.' };
+    const { data: nutri, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, name')
       .eq('link_code', code.trim().toUpperCase())
       .eq('role', 'nutricionista')
       .single();
-    if (error || !nutriProfile) return { ok: false, message: 'Código inválido. No se encontró una nutricionista con ese código.' };
-    const alreadyLinked = (current.linkedNutritionistIds ?? []).includes(nutriProfile.id);
-    if (alreadyLinked) return { ok: false, message: 'Esta nutricionista ya está vinculada.' };
-    const newRecepIds = [...(current.linkedNutritionistIds ?? []), nutriProfile.id];
-    const newNutriIds = [...(nutriProfile.linked_receptionist_ids ?? []), current.id];
-    await supabase.from('profiles').update({ linked_nutritionist_ids: newRecepIds }).eq('id', current.id);
-    await supabase.from('profiles').update({ linked_receptionist_ids: newNutriIds }).eq('id', nutriProfile.id);
-    this.currentUser = { ...current, linkedNutritionistIds: newRecepIds };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
-    return { ok: true, message: `Nutricionista ${nutriProfile.name} vinculada correctamente.` };
+    if (error || !nutri) return { ok: false, message: 'Código inválido.' };
+    const { error: linkError } = await supabase
+      .from('profile_links')
+      .insert([{ nutritionist_id: nutri.id, receptionist_id: current.id }]);
+    if (linkError && linkError.code === '23505') return { ok: false, message: 'Ya está vinculada.' };
+    if (linkError) return { ok: false, message: 'Error inesperado.' };
+    return { ok: true, message: `Nutricionista ${nutri.name} vinculada correctamente.` };
   }
 
   async unlinkReceptionistFromNutritionist(receptionistId: string): Promise<{ ok: boolean; message: string }> {
     const current = this.currentUser;
-    if (!current || (current.role !== 'nutricionista' && current.role !== 'admin')) return { ok: false, message: 'No autorizado.' };
-    const newNutriIds = (current.linkedReceptionistIds ?? []).filter(id => id !== receptionistId);
-    const { data: recepProfile } = await supabase.from('profiles').select('*').eq('id', receptionistId).single();
-    const newRecepIds = (recepProfile?.linked_nutritionist_ids ?? []).filter((id: string) => id !== current.id);
-    await supabase.from('profiles').update({ linked_receptionist_ids: newNutriIds }).eq('id', current.id);
-    await supabase.from('profiles').update({ linked_nutritionist_ids: newRecepIds }).eq('id', receptionistId);
-    this.currentUser = { ...current, linkedReceptionistIds: newNutriIds };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
+    if (!current || current.role !== 'nutricionista') return { ok: false, message: 'No autorizado.' };
+    const { error } = await supabase
+      .from('profile_links')
+      .delete()
+      .eq('nutritionist_id', current.id)
+      .eq('receptionist_id', receptionistId);
+    if (error) return { ok: false, message: 'Error al desvincular.' };
     return { ok: true, message: 'Recepcionista desvinculada correctamente.' };
   }
 
   async unlinkNutritionistFromReceptionist(nutritionistId: string): Promise<{ ok: boolean; message: string }> {
     const current = this.currentUser;
-    if (!current || (current.role !== 'recepcionista' && current.role !== 'admin')) return { ok: false, message: 'No autorizado.' };
-    const newRecepIds = (current.linkedNutritionistIds ?? []).filter(id => id !== nutritionistId);
-    const { data: nutriProfile } = await supabase.from('profiles').select('*').eq('id', nutritionistId).single();
-    const newNutriIds = (nutriProfile?.linked_receptionist_ids ?? []).filter((id: string) => id !== current.id);
-    await supabase.from('profiles').update({ linked_nutritionist_ids: newRecepIds }).eq('id', current.id);
-    await supabase.from('profiles').update({ linked_receptionist_ids: newNutriIds }).eq('id', nutritionistId);
-    this.currentUser = { ...current, linkedNutritionistIds: newRecepIds };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
+    if (!current || current.role !== 'recepcionista') return { ok: false, message: 'No autorizado.' };
+    const { error } = await supabase
+      .from('profile_links')
+      .delete()
+      .eq('nutritionist_id', nutritionistId)
+      .eq('receptionist_id', current.id);
+    if (error) return { ok: false, message: 'Error al desvincular.' };
     return { ok: true, message: 'Nutricionista desvinculada correctamente.' };
   }
+
+  async generateAndSaveLinkCode(): Promise<string> {
+  if (!this.currentUser) throw new Error('No usuario autenticado');
+  // 1. Generar el código bonito (NUTRI-, RECEP-)
+  const prefix = this.currentUser.role === 'recepcionista' ? 'RECEP' : 'NUTRI';
+  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const code = `${prefix}-${random}`;
+  // 2. Guardar el código en el perfil en DB
+  await supabase
+    .from('profiles')
+    .update({ link_code: code })
+    .eq('id', this.currentUser.id);
+  // 3. Refrescar el usuario actual (opcional pero recomendable)
+  this.currentUser.linkCode = code;
+  localStorage.setItem('nutricrm_session_v1', JSON.stringify(this.currentUser));
+  return code;
+}
 
   // ── Calendar Selector ─────────────────────────────────────────────────────
 
