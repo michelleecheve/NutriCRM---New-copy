@@ -317,7 +317,7 @@ const PlantillaBaseSection: React.FC = () => {
             <div className="text-emerald-600 font-bold text-xs uppercase tracking-wide mb-1">Estructura</div>
             <div className="text-slate-800 font-semibold">Header + Porciones + Menú</div>
             <div className="text-slate-500 text-xs mt-0.5">
-              {selectedTemplate === 'plantilla_v2' ? 'Domingo con tiempos de comida' : 'Domingo día libre'}
+              {selectedTemplate === 'plantilla_v2' ? 'Tabla Menú 3 x 4' : 'Tabla Menú 3 x 3.'}
             </div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -326,7 +326,7 @@ const PlantillaBaseSection: React.FC = () => {
               {selectedTemplate === 'plantilla_v2' ? 'Plantilla V2' : 'Plantilla V1'}
             </div>
             <div className="text-slate-500 text-xs mt-0.5">
-              {selectedTemplate === 'plantilla_v2' ? 'Domingo como día normal' : 'Domingo día libre'}
+              {selectedTemplate === 'plantilla_v2' ? 'Menú 7 días' : 'Menú 6 días + Domingo libre'}
             </div>
           </div>
         </div>

@@ -100,7 +100,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
             <GridInput label="CUI/DPI" value={patient.clinical.cui} onChange={(e: any) => updateClinical('cui', e.target.value)} />
           </div>
           <div className="lg:col-span-2">
-            <GridInput label="Fecha de Nacimiento" type="date" value={patient.clinical.birthdate} onChange={(e: any) => updateClinical('birthdate', e.target.value)} />
+            <GridInput label="F. Nacimiento" type="date" value={patient.clinical.birthdate} onChange={(e: any) => updateClinical('birthdate', e.target.value)} />
           </div>
           <div className="lg:col-span-1">
             <GridInput label="Edad" type="number" value={patient.clinical.age} onChange={() => {}} readOnly={true} />
@@ -265,7 +265,7 @@ export const ClinicalTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) =>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <GridInput label="Periodo Menstrual regular" value={patient.clinical.regularPeriod} onChange={(e: any) => updateClinical('regularPeriod', e.target.value)} />
               <GridInput label="Duración" value={patient.clinical.periodDuration} onChange={(e: any) => updateClinical('periodDuration', e.target.value)} />
-              <GridInput label="Fecha y/o edad de primera menstruación" value={patient.clinical.firstperiodage} onChange={(e: any) => updateClinical('firstperiodage', e.target.value)} />
+              <GridInput label="Edad de primera menstruación" value={patient.clinical.firstperiodage} onChange={(e: any) => updateClinical('firstperiodage', e.target.value)} />
             </div>
             <div className="mt-6">
               <ModernTextArea label="Otros" value={patient.clinical.menstrualOthers} onChange={(e: any) => updateClinical('menstrualOthers', e.target.value)} rows={2} placeholder="Otros detalles del periodo menstrual..." />
