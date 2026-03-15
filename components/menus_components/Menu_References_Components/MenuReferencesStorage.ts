@@ -91,7 +91,10 @@ export interface MenuReferenceData {
   kcal:       number;
   type:       ReferenceType;
   meals:      MealSlot[];        // ordered array — defines table rows
-  weeklyMenu: Record<WeekDayKey, DayMenu> & { domingo: { note: string } };
+  weeklyMenu: Record<WeekDayKey, DayMenu> & { 
+    domingo: { note: string };
+    domingoV2?: DayMenu;
+  };
   hydration:  string;
   notes?:     string[];
 }
@@ -101,6 +104,7 @@ export function emptyReferenceData(): MenuReferenceData {
   const weeklyMenu: any = {};
   WEEKDAY_KEYS.forEach(dk => { weeklyMenu[dk] = emptyDayMenuFromSlots(meals); });
   weeklyMenu.domingo = { note: '' };
+  weeklyMenu.domingoV2 = emptyDayMenuFromSlots(meals);
   return { kcal: 0, type: 'SEMANAL', meals, weeklyMenu, hydration: '2.5L Agua/Día', notes: [] };
 }
 

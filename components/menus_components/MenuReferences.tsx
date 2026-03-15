@@ -165,15 +165,19 @@ const WeeklyMenuEditor: React.FC<{
   weeklyMenu: MenuReferenceData["weeklyMenu"];
   hydration:  string;
   readOnly?:  boolean;
-  onChangeMealText:   (day: WeekDayKey, slotId: string, value: string) => void;
+  onChangeMealText:   (day: WeekDayKey | 'domingoV2', slotId: string, value: string) => void;
   onChangeDomingoNote:(value: string) => void;
   onHydrationChange:  (value: string) => void;
 }> = ({ meals, weeklyMenu, hydration, readOnly, onChangeMealText, onChangeDomingoNote, onHydrationChange }) => {
-  const ALL_TABS = [...WEEKDAY_KEYS, "domingo"] as const;
+  const ALL_TABS = [...WEEKDAY_KEYS, "domingo", "domingoV2"] as const;
   type TabKey = typeof ALL_TABS[number];
   const [activeTab, setActiveTab] = useState<TabKey>("lunes");
 
-  const TAB_LABELS: Record<TabKey, string> = { ...WEEKDAY_LABELS, domingo: "Domingo" };
+  const TAB_LABELS: Record<TabKey, string> = { 
+    ...WEEKDAY_LABELS, 
+    domingo: "Dom V1",
+    domingoV2: "Dom V2"
+  };
   const currentIndex = ALL_TABS.indexOf(activeTab);
 
   return (
@@ -195,7 +199,7 @@ const WeeklyMenuEditor: React.FC<{
               onClick={() => setActiveTab(tab)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 activeTab === tab
-                  ? tab === "domingo" ? "bg-slate-800 text-white" : "bg-emerald-600 text-white"
+                  ? tab.startsWith("domingo") ? "bg-slate-800 text-white" : "bg-emerald-600 text-white"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -247,7 +251,7 @@ const WeeklyMenuEditor: React.FC<{
         ) : (
           <div className="space-y-4">
             <h4 className="text-sm font-black text-slate-700 uppercase tracking-wider">
-              {TAB_LABELS[activeTab as WeekDayKey]}
+              {TAB_LABELS[activeTab]}
             </h4>
 
             {meals.length === 0 && (
@@ -262,8 +266,8 @@ const WeeklyMenuEditor: React.FC<{
                   {slot.label}
                 </label>
                 <textarea
-                  value={(weeklyMenu[activeTab as WeekDayKey] as Record<string, string>)[slot.id] ?? ""}
-                  onChange={e => onChangeMealText(activeTab as WeekDayKey, slot.id, e.target.value)}
+                  value={(weeklyMenu[activeTab as WeekDayKey | 'domingoV2'] as Record<string, string>)?.[slot.id] ?? ""}
+                  onChange={e => onChangeMealText(activeTab as WeekDayKey | 'domingoV2', slot.id, e.target.value)}
                   readOnly={readOnly}
                   rows={3}
                   className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all resize-none font-medium"
@@ -357,7 +361,7 @@ function parseYamlToReferenceData(yaml: string): MenuReferenceData {
 
   // ── Parse WEEKLY_MENU block ──
   const weeklySection = yaml.match(/WEEKLY_MENU:([\s\S]*?)(?=\nNOTAS:|\s*$)/)?.[1] ?? '';
-  const weekDays: WeekDayKey[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+  const weekDays: (WeekDayKey | 'domingoV2')[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingoV2'];
   const weeklyMenu: any = { domingo: { note: '' } };
 
   weekDays.forEach(day => {
@@ -497,6 +501,9 @@ export const MenuReferences: React.FC = () => {
       WEEKDAY_KEYS.forEach(dk => {
         weeklyMenu[dk] = { ...weeklyMenu[dk], [slot.id]: '' };
       });
+      if (weeklyMenu.domingoV2) {
+        weeklyMenu.domingoV2 = { ...weeklyMenu.domingoV2, [slot.id]: '' };
+      }
       return { ...prev, meals, weeklyMenu };
     });
   };
@@ -511,6 +518,11 @@ export const MenuReferences: React.FC = () => {
         delete day[slotId];
         weeklyMenu[dk] = day;
       });
+      if (weeklyMenu.domingoV2) {
+        const domV2 = { ...weeklyMenu.domingoV2 };
+        delete domV2[slotId];
+        weeklyMenu.domingoV2 = domV2;
+      }
       return { ...prev, meals, weeklyMenu };
     });
   };
@@ -533,12 +545,12 @@ export const MenuReferences: React.FC = () => {
 
   // ── Weekly menu text ────────────────────────────────────────────────────────
 
-  const handleChangeMealText = (day: WeekDayKey, slotId: string, value: string) => {
+  const handleChangeMealText = (day: WeekDayKey | 'domingoV2', slotId: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       weeklyMenu: {
         ...prev.weeklyMenu,
-        [day]: { ...prev.weeklyMenu[day], [slotId]: value },
+        [day]: { ...(prev.weeklyMenu[day] as Record<string, string>), [slotId]: value },
       },
     }));
   };

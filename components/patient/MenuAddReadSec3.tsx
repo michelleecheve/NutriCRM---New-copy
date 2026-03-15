@@ -87,6 +87,7 @@ function buildBlankMenuPlanData(patient: Patient, vetData: VetCalculation, nutri
       viernes: emptyDay(),
       sabado: emptyDay(),
       domingo: { note: '', hydration: '2.5L Agua/Día' },
+      domingoV2: emptyDay(), // ✅ Inicializar domingoV2
     },
     nutritionist: nutritionistData,
   };
@@ -463,15 +464,15 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const DayEditor = ({ dayKey }: { dayKey: string }) => {
     if (!menuPreviewData) return null;
     
-    const isDomingo = dayKey === 'domingo';
+    const isDomingoV1 = dayKey === 'domingo';
     const [localDay, setLocalDay] = useState(menuPreviewData.weeklyMenu[dayKey as keyof typeof menuPreviewData.weeklyMenu]);
     
     const [meals, setMeals] = useState<{id: string, label: string, title: string}[]>(() => {
-      if (isDomingo) return [];
+      if (isDomingoV1) return [];
       const day = localDay as MenuDay;
-      const order = day.mealsOrder || ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
+      const order = day?.mealsOrder || ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
       return order.map(id => {
-        const m = (day as any)[id] as DayMeal;
+        const m = (day as any)?.[id] as DayMeal;
         return {
           id,
           label: m?.label || (id.includes('ref') ? 'Refacción' : id.charAt(0).toUpperCase() + id.slice(1)),
@@ -481,11 +482,14 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     });
 
     const handleSave = () => {
-      if (isDomingo) {
+      if (isDomingoV1) {
         const newWeekly = { ...menuPreviewData.weeklyMenu, [dayKey]: localDay };
         setMenuPreviewData({ ...menuPreviewData, weeklyMenu: newWeekly as any });
       } else {
-        const newDay: any = { mealsOrder: meals.map(m => m.id) };
+        const newDay: any = { 
+          ...localDay, // Preserve note/hydration if it's domingoV2
+          mealsOrder: meals.map(m => m.id) 
+        };
         meals.forEach(m => {
           newDay[m.id] = { label: m.label, title: m.title };
         });
@@ -538,7 +542,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
           </div>
 
           <div className="p-6 overflow-y-auto flex-1 space-y-6">
-            {isDomingo ? (
+            {isDomingoV1 ? (
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-500 uppercase ml-1">Nota / Día Libre</label>
@@ -630,9 +634,12 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     const handleSave = () => {
       const newWeekly = { 
         ...menuPreviewData.weeklyMenu, 
-        domingo: { ...menuPreviewData.weeklyMenu.domingo, hydration: localHydration } 
+        domingo: { ...menuPreviewData.weeklyMenu.domingo, hydration: localHydration },
+        domingoV2: menuPreviewData.weeklyMenu.domingoV2 
+          ? { ...menuPreviewData.weeklyMenu.domingoV2, hydration: localHydration }
+          : undefined
       };
-      setMenuPreviewData({ ...menuPreviewData, weeklyMenu: newWeekly });
+      setMenuPreviewData({ ...menuPreviewData, weeklyMenu: newWeekly as any });
       setEditingHydration(false);
     };
 
@@ -888,14 +895,14 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                   <TableIcon className="w-3.5 h-3.5" />
                   Tabla porciones
                 </button>
-                {['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'].map(day => (
+                {['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo', 'domingoV2'].map(day => (
                   <button 
                     key={day}
                     onClick={() => setEditingDay(day)}
                     className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-indigo-600 hover:text-indigo-600 transition-all shadow-sm capitalize"
                   >
                     <Calendar className="w-3.5 h-3.5" />
-                    {day.slice(0, 3)}
+                    {day === 'domingoV2' ? 'Dom V2' : day.slice(0, 3)}
                   </button>
                 ))}
                 <button 

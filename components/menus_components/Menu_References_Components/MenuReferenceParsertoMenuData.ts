@@ -51,6 +51,24 @@ export function MenuReferenceDataToMenuPlanData(data: MenuReferenceData): MenuPl
     hydration: data.hydration ?? "",
   };
 
+  // Domingo V2: full day structure
+  if (data.weeklyMenu.domingoV2) {
+    const domV2Data = data.weeklyMenu.domingoV2;
+    const domV2Obj: any = { 
+      mealsOrder: mealOrder,
+      note: data.weeklyMenu.domingo?.note ?? "",
+      hydration: data.hydration ?? "",
+    };
+
+    data.meals.forEach(slot => {
+      domV2Obj[slot.id] = {
+        title: domV2Data?.[slot.id] ?? "",
+        label: slot.label,
+      };
+    });
+    weeklyMenu.domingoV2 = domV2Obj;
+  }
+
   return {
     patient: {
       name:   "Referencia (sin paciente)",

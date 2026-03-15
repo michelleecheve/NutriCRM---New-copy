@@ -97,7 +97,8 @@ const buildMockData = (
         'Licuado verde: espinaca + piña + leche',
         'Ceviche: 4oz camarón\n¼ aguacate\nTomate + pepino + limón\n1 paquete galleta soda integral'
       ),
-      domingo: templateDesign === 'plantilla_v2' ? domingoV2 : domingoV1,
+      domingo: domingoV1,
+      domingoV2: domingoV2,
     },
     nutritionist: {
       name: profile.name,

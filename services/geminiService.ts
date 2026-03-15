@@ -34,7 +34,8 @@ interface AIResponse {
   rationale:     string;
   mealStructure: AIMealEntry[];
   weeklyMenu:    AIDayEntry[];
-  domingo:       { note: string; hydration: string; meals?: { id: string; title: string }[] };
+  domingoV1:     { note: string; hydration: string };
+  domingoV2:     { note: string; hydration: string; meals: { id: string; title: string }[] };
   patient:       { name: string; age: number; weight: number; height: number; fatPct: number };
   kcal:          number;
 }
@@ -62,22 +63,23 @@ function transformToMenuPlanData(
 
   const weeklyMenu: any = {};
 
-  // ✅ Domingo: v1 = día libre, v2 = día con comidas
-  if (templateDesign === 'plantilla_v2' && ai.domingo.meals?.length) {
-    const domObj: any = {
+  // ✅ Domingo V1 (siempre se guarda)
+  weeklyMenu.domingo = {
+    note:      ai.domingoV1.note,
+    hydration: ai.domingoV1.hydration,
+  };
+
+  // ✅ Domingo V2 (siempre se guarda)
+  if (ai.domingoV2.meals?.length) {
+    const domV2Obj: any = {
       mealsOrder: mealOrder,
-      note:       ai.domingo.note,
-      hydration:  ai.domingo.hydration,
+      note:       ai.domingoV2.note,
+      hydration:  ai.domingoV2.hydration,
     };
-    ai.domingo.meals.forEach(meal => {
-      domObj[meal.id] = { title: meal.title, label: mealLabels[meal.id] || meal.id };
+    ai.domingoV2.meals.forEach(meal => {
+      domV2Obj[meal.id] = { title: meal.title, label: mealLabels[meal.id] || meal.id };
     });
-    weeklyMenu.domingo = domObj;
-  } else {
-    weeklyMenu.domingo = {
-      note:      ai.domingo.note,
-      hydration: ai.domingo.hydration,
-    };
+    weeklyMenu.domingoV2 = domV2Obj;
   }
 
   ai.weeklyMenu.forEach(dayEntry => {
@@ -346,9 +348,9 @@ ${refContext}
    - Descripción detallada con cantidades en medidas caseras, usando \\n para separar items.
    - Inspírate en el estilo y alimentos de las REFERENCIAS.
 
-3. DOMINGO: ${templateDesign === 'plantilla_v1'
-  ? 'Es día libre. Genera solo una nota motivacional breve y meta de hidratación "X.XL Agua/Día". NO generes tiempos de comida.'
-  : 'Es un día normal igual que los demás. Genera todos los tiempos de comida completos con los mismos ids que definiste en mealStructure. También incluye nota motivacional e hidratación.'}
+3. DOMINGO: Genera SIEMPRE dos versiones para el domingo:
+   - domingoV1: Versión tipo 'día libre' con nota motivacional breve y meta de hidratación "X.XL Agua/Día". NO generes tiempos de comida aquí.
+   - domingoV2: Versión tipo 'día normal' con todos los tiempos de comida completos (mismos ids que mealStructure), además de nota e hidratación.
 
 4. RATIONALE: 2-3 oraciones sobre el criterio nutricional en español.
 
@@ -404,7 +406,15 @@ ${promptSuffix}
               required: ["dayKey","meals"],
             },
           },
-          domingo: {
+          domingoV1: {
+            type: Type.OBJECT,
+            properties: {
+              note:      { type: Type.STRING },
+              hydration: { type: Type.STRING },
+            },
+            required: ["note", "hydration"],
+          },
+          domingoV2: {
             type: Type.OBJECT,
             properties: {
               note:      { type: Type.STRING },
@@ -421,10 +431,10 @@ ${promptSuffix}
                 },
               },
             },
-            required: ["note", "hydration"],
+            required: ["note", "hydration", "meals"],
           },
         },
-        required: ["rationale","patient","kcal","mealStructure","weeklyMenu","domingo"],
+        required: ["rationale","patient","kcal","mealStructure","weeklyMenu","domingoV1", "domingoV2"],
       },
     },
   });

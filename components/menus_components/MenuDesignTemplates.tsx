@@ -68,7 +68,8 @@ export interface MenuPlanData {
     jueves: MenuDay;
     viernes: MenuDay;
     sabado: MenuDay;
-    domingo: DomingoData | DomingoV2; // ✅ antes era solo DomingoData
+    domingo: DomingoData; // ✅ Siempre V1 (nota + hidratación)
+    domingoV2?: DomingoV2; // ✅ Siempre V2 (tiempos de comida)
   };
   nutritionist: {
     name: string;
@@ -493,8 +494,8 @@ export const MenuTemplateV1: React.FC<{ data: MenuPlanData }> = ({ data }) => (
 
 // ─── Plantilla V2: Domingo como día normal (grid 3+4) ─────────────────────────
 export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
-  const domingo = data.weeklyMenu.domingo;
-  const domingoAsDay = isDomingoV2(domingo) ? domingo as DomingoV2 : null;
+  const domingoV1 = data.weeklyMenu.domingo;
+  const domingoV2 = data.weeklyMenu.domingoV2;
 
   return (
     <>
@@ -519,8 +520,8 @@ export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
           {(['jueves', 'viernes', 'sabado'] as WeekDayKey[]).map(day =>
             <DayCard key={day} label={WEEKDAY_LABELS[day]} day={data.weeklyMenu[day]} />
           )}
-          {domingoAsDay ? (
-            <DayCard label="DOMINGO" day={domingoAsDay} />
+          {domingoV2 ? (
+            <DayCard label="DOMINGO" day={domingoV2} />
           ) : (
             <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', flex: 1, minWidth: 0 }}>
               <div style={{
@@ -531,7 +532,7 @@ export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
               </div>
               <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 <div style={{ color: '#334155', fontSize: '8px', fontWeight: 600, lineHeight: '1.3', whiteSpace: 'pre-line' }}>
-                  {(domingo as DomingoData).note}
+                  {domingoV1.note}
                 </div>
               </div>
             </div>
@@ -552,7 +553,7 @@ export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
               </td>
               <td style={{ padding: '8px 14px', verticalAlign: 'middle' }}>
                 <div style={{ fontSize: '8.5px', color: '#334155', fontWeight: 600 }}>
-                  {domingoAsDay?.note || (domingo as DomingoData).note}
+                  {domingoV2?.note || domingoV1.note}
                 </div>
               </td>
               <td style={{
@@ -563,7 +564,7 @@ export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
                   META HIDRATACIÓN
                 </div>
                 <div style={{ fontSize: '9px', color: '#0f766e', fontWeight: 800 }}>
-                  💧 {domingoAsDay?.hydration || (domingo as DomingoData).hydration}
+                  💧 {domingoV2?.hydration || domingoV1.hydration}
                 </div>
               </td>
             </tr>
