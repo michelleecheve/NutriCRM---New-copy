@@ -17,16 +17,17 @@ export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient
   };
 
   const handleEdit = (m: Measurement) => {
-    // Legacy fix: si no tiene id, mándale un id generado (esto evita bugs durmientes)
+    // Legacy fix: si no tiene id, crea uno y actualiza el measurement INMUTABLE
     if (!m.id) {
-      m.id = Math.random().toString(36).substring(7);
-      // Actualiza el paciente con el nuevo id
+      const newId = crypto.randomUUID();
       const updatedMeasurements = patient.measurements.map(meas =>
-        meas === m ? { ...m } : meas
+        meas === m ? { ...m, id: newId } : meas
       );
       onUpdate({ ...patient, measurements: updatedMeasurements });
+      setEditingId(newId);
+    } else {
+      setEditingId(m.id);
     }
-    setEditingId(m.id);
     setView('edit');
   };
 

@@ -215,62 +215,68 @@ export const supabaseService = {
   // ─── Measurements ──────────────────────────────────────────────────────────
 
   async saveMeasurement(evaluationId: string, measurement: any) {
+    // Incluye el id si existe, siempre
+    const payload: any = {
+      evaluation_id:       evaluationId,
+      date:                measurement.date,
+      gender:              measurement.gender,
+      age:                 measurement.age,
+      weight:              measurement.weight,
+      height:              measurement.height,
+      meta_complied:       measurement.metaComplied,
+      biceps:              measurement.biceps,
+      triceps:             measurement.triceps,
+      subscapular:         measurement.subscapular,
+      supraspinal:         measurement.supraspinal,
+      abdomen:             measurement.abdomen,
+      thigh:               measurement.thigh,
+      calf:                measurement.calf,
+      iliac_crest:         measurement.iliacCrest,
+      skinfold_sum:        measurement.skinfoldSum,
+      wrist:               measurement.wrist,
+      humerus:             measurement.humerus,
+      femur:               measurement.femur,
+      arm_relaxed:         measurement.armRelaxed,
+      arm_contracted:      measurement.armContracted,
+      calf_girth:          measurement.calfGirth,
+      waist:               measurement.waist,
+      umbilical:           measurement.umbilical,
+      hip:                 measurement.hip,
+      abdominal_low:       measurement.abdominalLow,
+      thigh_right:         measurement.thighRight,
+      thigh_left:          measurement.thighLeft,
+      imc:                 measurement.imc,
+      body_fat_pct:        measurement.bodyFat,
+      fat_kg:              measurement.fatKg,
+      lean_mass_kg:        measurement.leanMassKg,
+      lean_mass_pct:       measurement.leanMassPct,
+      aks:                 measurement.aks,
+      bone_mass:           measurement.boneMass,
+      residual_mass:       measurement.residualMass,
+      muscle_mass_kg:      measurement.muscleKg,
+      endomorfo:           measurement.endomorfo,
+      mesomorfo:           measurement.mesomorfo,
+      ectomorfo:           measurement.ectomorfo,
+      x:                   measurement.x,
+      y:                   measurement.y,
+      diagnostic_n:        measurement.diagnosticN,
+      subjective_valuation: measurement.subjectiveValuation,
+    };
+    // ⬇️ Este if es lo clave
+    if (measurement.id) payload.id = measurement.id;
+
+    // ⬇️ Esto también es CRÍTICO
     const { data, error } = await supabase
       .from('measurements')
-      .upsert({
-        evaluation_id:       evaluationId,
-        date:                measurement.date,
-        gender:              measurement.gender,
-        age:                 measurement.age,
-        weight:              measurement.weight,
-        height:              measurement.height,
-        meta_complied:       measurement.metaComplied,
-        biceps:              measurement.biceps,
-        triceps:             measurement.triceps,
-        subscapular:         measurement.subscapular,
-        supraspinal:         measurement.supraspinal,
-        abdomen:             measurement.abdomen,
-        thigh:               measurement.thigh,
-        calf:                measurement.calf,
-        iliac_crest:         measurement.iliacCrest,
-        skinfold_sum:        measurement.skinfoldSum,
-        wrist:               measurement.wrist,
-        humerus:             measurement.humerus,
-        femur:               measurement.femur,
-        arm_relaxed:         measurement.armRelaxed,
-        arm_contracted:      measurement.armContracted,
-        calf_girth:          measurement.calfGirth,
-        waist:               measurement.waist,
-        umbilical:           measurement.umbilical,
-        hip:                 measurement.hip,
-        abdominal_low:       measurement.abdominalLow,
-        thigh_right:         measurement.thighRight,
-        thigh_left:          measurement.thighLeft,
-        imc:                 measurement.imc,
-        body_fat_pct:        measurement.bodyFat,
-        fat_kg:              measurement.fatKg,
-        lean_mass_kg:        measurement.leanMassKg,
-        lean_mass_pct:       measurement.leanMassPct,
-        aks:                 measurement.aks,
-        bone_mass:           measurement.boneMass,
-        residual_mass:       measurement.residualMass,
-        muscle_mass_kg:      measurement.muscleKg,
-        endomorfo:           measurement.endomorfo,
-        mesomorfo:           measurement.mesomorfo,
-        ectomorfo:           measurement.ectomorfo,
-        x:                   measurement.x,
-        y:                   measurement.y,
-        diagnostic_n:        measurement.diagnosticN,
-        subjective_valuation: measurement.subjectiveValuation,
-      })
+      .upsert(payload, { onConflict: 'id' }) // Asegura upsert por el id único
       .select()
       .single();
     if (error) throw error;
     return data;
   },
 
-  async deleteMeasurement(evaluationId: string) {
-    const { error } = await supabase.from('measurements').delete().eq('evaluation_id', evaluationId);
+  async deleteMeasurementById(id: string) {
+    const { error } = await supabase.from('measurements').delete().eq('id', id);
     if (error) throw error;
   },
 
@@ -598,7 +604,7 @@ export const supabaseService = {
 
   async uploadAvatar(userId: string, file: File) {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}/${Math.random()}.${fileExt}`;
+    const fileName = `${userId}/${crypto.randomUUID()}.${fileExt}`;
     const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file);
     if (uploadError) throw uploadError;
     const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);

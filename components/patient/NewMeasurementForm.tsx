@@ -215,7 +215,7 @@ export const NewMeasurementForm: React.FC<{
     (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
 
   const buildDefault = (): Measurement => ({
-    id: Math.random().toString(36).substring(7),
+    id: crypto.randomUUID(),
     linkedEvaluationId: evaluationId || '',
     date: linkedDate,
     metaComplied: false,
@@ -242,7 +242,7 @@ export const NewMeasurementForm: React.FC<{
       const selId = store.getSelectedEvaluationId(patient.id);
       const selEv = selId ? store.getEvaluationById(selId) : null;
       setFormData({
-        id: Math.random().toString(36).substring(7),
+        id: crypto.randomUUID(),
         linkedEvaluationId: selId || '',
         date: selEv?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]),
         metaComplied: false,
@@ -276,32 +276,34 @@ export const NewMeasurementForm: React.FC<{
       return;
     }
 
-    // ✅ si estamos editando, conserva el ID original (NO generes uno nuevo)
+    // 1. Mantener el ID original al editar; si creas, usa uno nuevo si no hay
     const normalized: Measurement = calculateAnthropometry({
       ...formData,
       date: ev.date,
       linkedEvaluationId: evaluationId || '',
-      id: isEditing ? (existingRecord!.id) : (formData.id || Math.random().toString(36).substring(7)),
+      id: isEditing && existingRecord ? existingRecord.id : (formData.id || crypto.randomUUID()),
     });
 
+    // 2. Reemplaza en memoria POR ID (no por fecha) al editar, o agrega si nuevo
     let updatedMeasurements: Measurement[];
-
-    if (isEditing) {
-      // ✅ editar — reemplaza por id o por fecha (legacy)
-      updatedMeasurements = patient.measurements.map(m => {
-        const isMatch = m.id === editingId || (!m.id && m.date === editingId);
-        return isMatch ? normalized : m;
-      });
+    if (isEditing && existingRecord) {
+      updatedMeasurements = patient.measurements.map(m =>
+        m.id === existingRecord.id ? normalized : m
+      );
     } else {
-      // ✅ crear nuevo — agrega hasta arriba
-      updatedMeasurements = [normalized, ...patient.measurements];
+      // Evita duplicados si se crea con la misma fecha o datos
+      updatedMeasurements = [normalized, ...patient.measurements.filter(m => m.id !== normalized.id)];
     }
 
     const updatedPatient = { ...patient, measurements: updatedMeasurements };
+
+    // 3. Actualiza la UI primero (optimista)
     onUpdate(updatedPatient);
+
     try {
-      await store.updatePatient(updatedPatient);
-      await store.saveMeasurement(evaluationId, normalized);
+      // 4. Guarda en Supabase
+      await store.updatePatient(updatedPatient);      // Actualiza al paciente
+      await store.saveMeasurement(evaluationId, normalized); // Actualiza la tabla measurements
       onClose();
     } catch (error) {
       console.error('Error saving measurement:', error);
@@ -317,7 +319,7 @@ export const NewMeasurementForm: React.FC<{
     try {
       await store.updatePatient(updatedPatient);
       if (itemToDelete?.linkedEvaluationId) {
-        await store.deleteMeasurement(itemToDelete.linkedEvaluationId);
+        await store.deleteMeasurement(itemToDelete.id);
       }
       setConfirmDeleteOpen(false);
       onClose();

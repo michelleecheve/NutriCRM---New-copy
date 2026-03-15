@@ -317,8 +317,8 @@ class Store {
     await supabaseService.saveMeasurement(evaluationId, measurement);
   }
 
-  async deleteMeasurement(evaluationId: string): Promise<void> {
-    await supabaseService.deleteMeasurement(evaluationId);
+  async deleteMeasurement(id: string): Promise<void> {
+    await supabaseService.deleteMeasurementById(id);
   }
 
   async saveSomatotype(evaluationId: string, record: SomatotypeRecord): Promise<void> {
