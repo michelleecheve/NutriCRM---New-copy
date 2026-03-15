@@ -426,6 +426,8 @@ export const MenuReferences: React.FC = () => {
   const [yamlText, setYamlText]       = useState("");
   const [importError, setImportError] = useState("");
   const [importOk, setImportOk]       = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
 
   const handleImport = async () => {
     setImportError("");
@@ -573,17 +575,62 @@ export const MenuReferences: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar esta referencia?")) return;
+    setConfirmDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!confirmDeleteId) return;
     try {
-      await store.deleteMenuReference(id);
+      await store.deleteMenuReference(confirmDeleteId);
+      setConfirmDeleteId(null);
     } catch (e: any) {
-      alert("Error al eliminar la referencia.");
+      setDeleteError("Error al eliminar la referencia.");
+      setTimeout(() => setDeleteError(""), 3000);
     }
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in duration-200">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-red-600" />
+                </div>
+                <h3 className="font-bold text-slate-900">Eliminar referencia</h3>
+              </div>
+              <button onClick={() => setConfirmDeleteId(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5">
+              <p className="text-sm text-slate-600">¿Estás seguro de que deseas eliminar esta referencia? Esta acción no se puede deshacer.</p>
+              {deleteError && <p className="mt-2 text-xs font-bold text-red-500">{deleteError}</p>}
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDelete}
+                  className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700"
+                >
+                  Sí, eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* YAML Import Modal */}
       {showImport && (

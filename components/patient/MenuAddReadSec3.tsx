@@ -34,8 +34,7 @@ interface MenuAddReadSec3Props {
 }
 
 // ─── Helper: build a blank MenuPlanData ───────────────────────────────────────
-function buildBlankMenuPlanData(patient: Patient, vetData: VetCalculation): MenuPlanData {
-  const profile = store.getUserProfile();
+function buildBlankMenuPlanData(patient: Patient, vetData: VetCalculation, nutritionistData: any): MenuPlanData {
   const mealOrder = ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
   const mealLabels: Record<string, string> = {
     desayuno: 'Desayuno',
@@ -89,16 +88,7 @@ function buildBlankMenuPlanData(patient: Patient, vetData: VetCalculation): Menu
       sabado: emptyDay(),
       domingo: { note: '', hydration: '2.5L Agua/Día' },
     },
-    nutritionist: {
-      name: profile.name,
-      title: profile.specialty,
-      licenseNumber: profile.licenseNumber || '',
-      whatsapp: profile.phone,
-      email: profile.contactEmail || profile.email,
-      instagram: profile.instagramHandle ? `@${profile.instagramHandle}` : '',
-      website: profile.website || '',
-      avatar: profile.avatar,
-    },
+    nutritionist: nutritionistData,
   };
 }
 
@@ -127,6 +117,25 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
 
+  // ─── Helper: Get current nutritionist data with logo ──────────────────────
+  const getNutritionistData = () => {
+    const profile = store.getUserProfile();
+    const template = store.getMenuTemplate();
+    const logoUrl = template?.headerMode === 'logo' ? template.logoUrl : undefined;
+
+    return {
+      name: profile.name,
+      title: profile.specialty,
+      licenseNumber: profile.licenseNumber || '',
+      whatsapp: profile.phone,
+      email: profile.contactEmail || profile.email,
+      instagram: profile.instagramHandle ? `@${profile.instagramHandle}` : '',
+      website: profile.website || '',
+      avatar: profile.avatar,
+      logoUrl,
+    };
+  };
+
   // ─── Copy from Reference modal state ──────────────────────────────────────
   const [showCopyRefModal, setShowCopyRefModal] = useState(false);
   const [selectedCopyRefId, setSelectedCopyRefId] = useState<string | null>(null);
@@ -143,7 +152,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
 
   // ─── Iniciar Menú en Blanco ────────────────────────────────────────────────
   const handleStartBlank = () => {
-    const blank = buildBlankMenuPlanData(patient, vetData);
+    const blank = buildBlankMenuPlanData(patient, vetData, getNutritionistData());
     setMenuPreviewData(blank);
     setAiRationale('');
     setAiDraftText('');
@@ -181,6 +190,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         fatPct: lastMeas?.bodyFat || 0,
       },
       kcal: vetData.kcalToWork || plan.kcal,
+      nutritionist: getNutritionistData(),
     };
 
     setMenuPreviewData(withPatient);
@@ -197,29 +207,14 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       const refs = store.menuReferences
         .filter(r => selectedReferenceIds.includes(r.id))
         .map(r => ({ title: `${r.data.kcal} kcal`, data: r.data }));
-      const nutritionistProfile = store.getUserProfile();
       
-      const nutritionistData = {
-        name: nutritionistProfile.name,
-        title: nutritionistProfile.specialty,
-        licenseNumber: nutritionistProfile.licenseNumber || '',
-        whatsapp: nutritionistProfile.phone,
-        email: nutritionistProfile.contactEmail || nutritionistProfile.email,
-        instagram: nutritionistProfile.instagramHandle ? `@${nutritionistProfile.instagramHandle}` : '',
-        website: nutritionistProfile.website || '',
-        avatar: nutritionistProfile.avatar,
-      };
+      const nutritionistData = getNutritionistData();
 
-      // ✅ Cargar plantilla guardada
-      const userId = authStore.getCurrentUser()?.id;
+      // ✅ Cargar plantilla guardada (diseño)
       let templateDesign: MenuTemplateDesign = 'plantilla_v1';
-      let logoUrl: string | undefined = undefined;
-      if (userId) {
-        const template = await supabaseService.getDefaultMenuTemplate(userId);
-        if (template) {
-          templateDesign = template.templateDesign as MenuTemplateDesign;
-          if (template.headerMode === 'logo') logoUrl = template.logoUrl;
-        }
+      const template = store.getMenuTemplate();
+      if (template) {
+        templateDesign = template.templateDesign as MenuTemplateDesign;
       }
 
       const result = await generateStructuredMenu(
@@ -227,9 +222,9 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         vetData,
         portions,
         refs,
-        { ...nutritionistData, logoUrl }, // ✅ logo aplicado
+        nutritionistData, // ✅ logo aplicado vía helper
         undefined,
-        templateDesign                    // ✅ plantilla aplicada
+        templateDesign     // ✅ plantilla aplicada vía store
       );
 
       setMenuPreviewData(result.plan);

@@ -300,8 +300,8 @@ export const supabaseService = {
     return data;
   },
 
-  async deleteDietaryEvaluation(evaluationId: string) {
-    const { error } = await supabase.from('dietary_evaluations').delete().eq('evaluation_id', evaluationId);
+  async deleteDietaryEvaluation(id: string) {
+    const { error } = await supabase.from('dietary_evaluations').delete().eq('id', id);
     if (error) throw error;
   },
 
@@ -315,8 +315,8 @@ export const supabaseService = {
     return data;
   },
 
-  async deleteSomatotype(evaluationId: string) {
-    const { error } = await supabase.from('somatotypes').delete().eq('evaluation_id', evaluationId);
+  async deleteSomatotype(id: string) {
+    const { error } = await supabase.from('somatotypes').delete().eq('id', id);
     if (error) throw error;
   },
 
@@ -645,7 +645,7 @@ export const supabaseService = {
       .eq('is_default', true)
       .single();
     if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
-    return data || null;
+    return data ? this.mapMenuTemplateFromDb(data) : null;
   },
 
   async saveMenuTemplate(template: {

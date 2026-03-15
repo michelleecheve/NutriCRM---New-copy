@@ -116,9 +116,9 @@ export const SomatocartaModule: React.FC<{
     const updatedPatient = { ...patient, somatotypes: updatedSomatotypes };
     onUpdate(updatedPatient);
     
-    if (itemToDelete?.linkedEvaluationId) {
+    if (itemToDelete?.id) {
       try {
-        await store.deleteSomatotype(itemToDelete.linkedEvaluationId);
+        await store.deleteSomatotype(itemToDelete.id);
       } catch (error) {
         console.error('Error deleting somatotype from Supabase:', error);
       }

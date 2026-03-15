@@ -34,8 +34,8 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
     onUpdate(updated);
     try {
       await store.updatePatient(updated);
-      if (itemToDelete?.linkedEvaluationId) {
-        await store.deleteDietaryEvaluation(itemToDelete.linkedEvaluationId);
+      if (itemToDelete?.id) {
+        await store.deleteDietaryEvaluation(itemToDelete.id);
       }
     } catch (error) {
       console.error('Error deleting dietary evaluation:', error);

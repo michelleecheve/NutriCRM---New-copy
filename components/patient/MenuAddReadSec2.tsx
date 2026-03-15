@@ -4,15 +4,11 @@ import { MenuReferenceRecord } from '../menus_components/Menu_References_Compone
 import { store } from '../../services/store';
 
 interface MenuAddReadSec2Props {
-  selectedTemplateId: string;
-  setSelectedTemplateId: (id: string) => void;
   selectedReferenceIds: string[];
   setSelectedReferenceIds: (ids: string[]) => void;
 }
 
 export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
-  selectedTemplateId,
-  setSelectedTemplateId,
   selectedReferenceIds,
   setSelectedReferenceIds
 }) => {
@@ -25,7 +21,9 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
   const selectedReferences = allReferences.filter(r => selectedReferenceIds.includes(r.id));
 
   const handleOpenSelector = () => {
-    setTempSelectedIds(selectedReferenceIds);
+    const allRefIds = allReferences.map(r => r.id);
+    const validCurrentIds = selectedReferenceIds.filter(id => allRefIds.includes(id));
+    setTempSelectedIds(validCurrentIds);
     setShowSelector(true);
   };
 
@@ -63,18 +61,6 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
 
       {isVisible && (
         <div className="p-8 space-y-8 animate-in slide-in-from-top-2 duration-300">
-          {/* A) Plantilla */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold text-slate-500 uppercase ml-1">Elegir plantilla de menú</label>
-            <select
-              value={selectedTemplateId}
-              onChange={(e) => setSelectedTemplateId(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all appearance-none"
-            >
-              <option value="base_v1">Plantilla Base V1</option>
-            </select>
-          </div>
-
           {/* B) Referencias Seleccionadas */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">

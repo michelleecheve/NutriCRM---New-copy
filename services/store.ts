@@ -122,6 +122,7 @@ class Store {
   private statuses:     string[]           = DEFAULT_STATUSES;
   private evaluations:  PatientEvaluation[] = [];
   public menuReferences: MenuReferenceRecord[] = [];
+  public menuTemplate: any = null;
   private selectedEvaluationByPatient: Record<string, string> = {};
   public isInitialized: boolean = false;
 
@@ -146,7 +147,7 @@ class Store {
     }
 
     try {
-      const [patients, appointments, invoices, evaluations, menus, profile, menuRefs] = await Promise.all([
+      const [patients, appointments, invoices, evaluations, menus, profile, menuRefs, template] = await Promise.all([
         supabaseService.getPatients(),
         supabaseService.getAppointments(),
         supabaseService.getInvoices(),
@@ -154,6 +155,7 @@ class Store {
         supabaseService.getMenus(),
         supabaseService.getProfile(userId),
         supabaseService.getMenuReferences(userId),
+        supabaseService.getDefaultMenuTemplate(userId),
       ]);
 
       this.patients     = (patients as Patient[]).map(p => ({
@@ -164,6 +166,7 @@ class Store {
       this.invoices     = invoices as Invoice[];
       this.evaluations  = evaluations as PatientEvaluation[];
       this.menuReferences = menuRefs as MenuReferenceRecord[];
+      this.menuTemplate = template;
 
       if (profile) {
         this.user = {
@@ -309,8 +312,8 @@ class Store {
     await supabaseService.saveDietaryEvaluation(evaluationId, dietary);
   }
 
-  async deleteDietaryEvaluation(evaluationId: string): Promise<void> {
-    await supabaseService.deleteDietaryEvaluation(evaluationId);
+  async deleteDietaryEvaluation(id: string): Promise<void> {
+    await supabaseService.deleteDietaryEvaluation(id);
   }
 
   async saveMeasurement(evaluationId: string, measurement: any): Promise<void> {
@@ -325,8 +328,8 @@ class Store {
     await supabaseService.saveSomatotype(evaluationId, record);
   }
 
-  async deleteSomatotype(evaluationId: string): Promise<void> {
-    await supabaseService.deleteSomatotype(evaluationId);
+  async deleteSomatotype(id: string): Promise<void> {
+    await supabaseService.deleteSomatotype(id);
   }
 
   async saveMenu(evaluationId: string, menu: GeneratedMenu): Promise<void> {
@@ -502,6 +505,16 @@ class Store {
       this.user.menuAIConfig = config;
       save(this.K.user, this.user);
     }
+  }
+
+  // ── Menu Templates ─────────────────────────────────────────────────────────
+
+  getMenuTemplate() { return this.menuTemplate; }
+
+  async saveMenuTemplate(template: any): Promise<any> {
+    const saved = await supabaseService.saveMenuTemplate(template);
+    this.menuTemplate = saved;
+    return saved;
   }
 
   // ── Statuses ───────────────────────────────────────────────────────────────

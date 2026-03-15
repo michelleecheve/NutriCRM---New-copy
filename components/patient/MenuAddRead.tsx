@@ -181,7 +181,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         try {
           const parsed = JSON.parse(menu.templatesReferences);
           setSelectedTemplateId(parsed.templateId || "base_v1");
-          setSelectedReferenceIds(parsed.referenceIds || []);
+          // ✅ Filter reference IDs to only include those that still exist in the store
+          const allRefIds = store.menuReferences.map(r => r.id);
+          const validIds = (parsed.referenceIds || []).filter((id: string) => allRefIds.includes(id));
+          setSelectedReferenceIds(validIds);
         } catch (e) {
           setSelectedTemplateId("base_v1");
           setSelectedReferenceIds([]);
@@ -219,6 +222,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       setMacros(defaultMacros);
       setPortions(defaultPortions);
       setMenuName(`Menú para ${patient.firstName} ${new Date().toLocaleDateString()}`);
+      setSelectedTemplateId("base_v1");
+      setSelectedReferenceIds([]);
 
       const selected = store.getSelectedEvaluationId(patient.id);
       const ev = selected ? store.getEvaluationById(selected) : null;
@@ -488,8 +493,6 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         </section>
 
         <MenuAddReadSec2
-          selectedTemplateId={selectedTemplateId}
-          setSelectedTemplateId={setSelectedTemplateId}
           selectedReferenceIds={selectedReferenceIds}
           setSelectedReferenceIds={setSelectedReferenceIds}
         />

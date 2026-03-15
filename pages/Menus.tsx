@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Layout, Eye, Trash2 } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Layout, Eye, Trash2, Save, CheckCircle } from 'lucide-react';
 import { MenuTemplateV1, MenuTemplateV2, MenuPlanData } from '../components/menus_components/MenuDesignTemplates';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
@@ -122,6 +122,8 @@ const PlantillaBaseSection: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('plantilla_v1');
   const [templateId, setTemplateId] = useState<string | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [userProfile, setUserProfile] = useState(() => store.getUserProfile());
 
@@ -137,6 +139,16 @@ const PlantillaBaseSection: React.FC = () => {
 
   useEffect(() => {
     const loadTemplate = async () => {
+      // Intentar cargar desde el store primero (cache en memoria)
+      const cached = store.getMenuTemplate();
+      if (cached) {
+        setTemplateId(cached.id);
+        setHeaderMode(cached.headerMode);
+        setLogoUrl(cached.logoUrl || undefined);
+        setSelectedTemplate(cached.templateDesign);
+        return;
+      }
+
       const userId = authStore.getCurrentUser()?.id;
       if (!userId) return;
       try {
@@ -146,6 +158,8 @@ const PlantillaBaseSection: React.FC = () => {
           setHeaderMode(template.headerMode);
           setLogoUrl(template.logoUrl || undefined);
           setSelectedTemplate(template.templateDesign);
+          // Actualizar store para futuras navegaciones
+          (store as any).menuTemplate = template;
         }
       } catch (err) {
         console.error('Error cargando plantilla:', err);
@@ -163,7 +177,7 @@ const PlantillaBaseSection: React.FC = () => {
     if (!userId) return;
     setIsSaving(true);
     try {
-      const saved = await supabaseService.saveMenuTemplate({
+      const saved = await store.saveMenuTemplate({
         id:             templateId,
         ownerId:        userId,
         headerMode:     updates.headerMode ?? headerMode,
@@ -176,6 +190,8 @@ const PlantillaBaseSection: React.FC = () => {
       console.error('Error guardando plantilla:', err);
     } finally {
       setIsSaving(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     }
   };
 
@@ -265,6 +281,12 @@ const PlantillaBaseSection: React.FC = () => {
   const handleHeaderModeChange = async (mode: 'default' | 'logo') => {
     setHeaderMode(mode);
     await saveTemplate({ headerMode: mode });
+    if (mode === 'logo') {
+      // Pequeño delay para asegurar que el input esté en el DOM si no lo estaba
+      setTimeout(() => {
+        fileInputRef.current?.click();
+      }, 50);
+    }
   };
 
   const mockData = buildMockData(userProfile, selectedTemplate);
@@ -289,7 +311,13 @@ const PlantillaBaseSection: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {isSaving && <span className="text-xs text-slate-400 font-medium">Guardando...</span>}
+          {isSaving && <span className="text-xs text-slate-400 font-medium animate-pulse">Guardando...</span>}
+          {saveSuccess && (
+            <span className="flex items-center gap-1 text-xs text-emerald-600 font-bold animate-in fade-in zoom-in duration-300">
+              <CheckCircle className="w-3 h-3" />
+              ¡Guardado!
+            </span>
+          )}
           <button
             onClick={() => setShowPreview(!showPreview)}
             className="flex items-center gap-2 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors"
@@ -297,6 +325,20 @@ const PlantillaBaseSection: React.FC = () => {
             <Eye className="w-4 h-4" />
             {showPreview ? 'Ocultar preview' : 'Ver preview'}
           </button>
+          
+          <button
+            onClick={() => saveTemplate({})}
+            disabled={isSaving}
+            className={`flex items-center gap-2 font-bold px-4 py-2 rounded-xl text-sm transition-all ${
+              saveSuccess 
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                : 'bg-white border border-slate-200 text-slate-700 hover:border-emerald-500 hover:text-emerald-600'
+            }`}
+          >
+            <Save className={`w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
+            {isSaving ? 'Guardando...' : 'Guardar'}
+          </button>
+
           <MenuExportPDF
             elementId="menu-print-area"
             filename={`Menu_${mockData.patient.name.replace(/\s+/g, '_')}`}
@@ -366,7 +408,13 @@ const PlantillaBaseSection: React.FC = () => {
 
           {headerMode === 'logo' && (
             <label className="cursor-pointer">
-              <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleLogoUpload} 
+              />
               <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-lg transition-colors">
                 📁 {logoUrl ? 'Cambiar logo' : 'Subir logo'}
               </span>
