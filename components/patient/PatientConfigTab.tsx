@@ -1,8 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { Download, Upload, Settings, AlertCircle, CheckCircle2, Trash2, X } from 'lucide-react';
+import { Download, Upload, Settings, AlertCircle, CheckCircle2, Trash2, X, FileDown, Loader2 } from 'lucide-react';
 import { Patient } from '../../types';
 import { store } from '../../services/store';
 import { getTodayStr } from '../../src/utils/dateUtils';
+import { exportClinicalDoc } from '../../services/exportClinicalDoc';
 
 interface PatientConfigTabProps {
   patient: Patient;
@@ -18,6 +19,8 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [showExportProfileModal, setShowExportProfileModal] = useState(false);
+  const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
 
   const fullName = `${patient.firstName} ${patient.lastName}`;
   const nameMatches = deleteConfirmName.trim().toLowerCase() === fullName.toLowerCase();
@@ -32,6 +35,18 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Error al eliminar el paciente.');
       setIsDeleting(false);
+    }
+  };
+
+  const evaluations = store.getEvaluations(patient.id);
+
+  const handleExportClinical = async () => {
+    setIsGeneratingDoc(true);
+    try {
+      await exportClinicalDoc(patient);
+    } finally {
+      setIsGeneratingDoc(false);
+      setShowExportProfileModal(false);
     }
   };
 
@@ -257,6 +272,26 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
         </div>
 
         <div className="p-8">
+          {/* ── Exportar Perfil Completo ── */}
+          <div className="mb-8 p-6 rounded-2xl border border-teal-100 bg-teal-50/40 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-teal-100 p-2 rounded-lg">
+                <FileDown className="w-5 h-5 text-teal-600" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-800">Exportar Perfil Completo</h4>
+                <p className="text-sm text-slate-500">Genera un documento con la información clínica del paciente.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowExportProfileModal(true)}
+              className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-sm shadow-teal-600/20"
+            >
+              <FileDown className="w-4 h-4" />
+              Exportar Perfil Completo
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Export Section */}
             <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50/30 space-y-4">
@@ -358,6 +393,89 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
           </div>
         </div>
       </div>
+
+      {/* Modal Exportar Perfil Completo */}
+      {showExportProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="bg-teal-100 p-2 rounded-xl">
+                  <FileDown className="w-5 h-5 text-teal-600" />
+                </div>
+                <h3 className="font-bold text-slate-900 text-lg">Exportar Perfil</h3>
+              </div>
+              <button
+                onClick={() => setShowExportProfileModal(false)}
+                disabled={isGeneratingDoc}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-slate-500 mb-5">Elige qué información deseas exportar:</p>
+
+            <div className="space-y-3">
+              {/* Exportar Todo — próximamente */}
+              <div className="relative group">
+                <button
+                  disabled
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed text-sm font-bold"
+                >
+                  <Download className="w-4 h-4" />
+                  Exportar Todo
+                </button>
+                <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-8 bg-slate-800 text-white text-xs font-medium px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Próximamente
+                </span>
+              </div>
+
+              {/* Solo Información Clínica */}
+              <button
+                onClick={handleExportClinical}
+                disabled={isGeneratingDoc}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-700 text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isGeneratingDoc ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generando Documento...
+                  </>
+                ) : (
+                  <>
+                    <FileDown className="w-4 h-4" />
+                    Solo Información Clínica
+                  </>
+                )}
+              </button>
+
+              {/* Evaluaciones */}
+              {evaluations.length > 0 && (
+                <div className="pt-2 border-t border-slate-100">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Por Evaluación</p>
+                  <div className="space-y-2">
+                    {evaluations.map((ev) => (
+                      <div key={ev.id} className="relative group">
+                        <button
+                          disabled
+                          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed text-sm font-medium text-left"
+                        >
+                          <Download className="w-4 h-4 shrink-0" />
+                          <span>Evaluación {ev.date}</span>
+                        </button>
+                        <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-8 bg-slate-800 text-white text-xs font-medium px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                          Próximamente
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de confirmación */}
       {showDeleteModal && (

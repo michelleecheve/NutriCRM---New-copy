@@ -12,6 +12,7 @@
   "dependencies": {
     "@google/genai": "^1.41.0",
     "@supabase/supabase-js": "^2.99.1",
+    "docx": "^9.6.1",
     "html2pdf.js": "^0.14.0",
     "jspdf": "2.5.1",
     "jspdf-autotable": "3.8.2",
