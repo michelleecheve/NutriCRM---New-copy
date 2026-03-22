@@ -131,6 +131,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
   const [aiDraftText, setAiDraftText] = useState<string>("");
   const [aiRationale, setAiRationale] = useState<string>("");
   const [menuPreviewData, setMenuPreviewData] = useState<MenuPlanData | null>(null);
+  const [selectedPreviewTemplate, setSelectedPreviewTemplate] = useState<string>('plantilla_v1');
   const [zoom, setZoom] = useState<number>(1);
 
   // ✅ Estados de vinculación
@@ -211,6 +212,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       setAiDraftText(menu.content || "");
       setAiRationale(menu.aiRationale || "");
       setMenuPreviewData(menu.menuData || null);
+      setSelectedPreviewTemplate(menu.templateId || 'plantilla_v1');
 
       // ✅ Precarga de vinculación: prioridad a linkedEvaluationId, luego date
       const linkedEvalId = (menu as any).linkedEvaluationId as string | undefined;
@@ -285,6 +287,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         referenceIds: selectedReferenceIds,
         recommendationIds: selectedRecommendationIds
       }),
+      templateId: selectedPreviewTemplate,
       menuData: menuPreviewData,
       name: menuName || `Menú ${vetData.kcalToWork} kcal`,
       content: aiDraftText,
@@ -357,6 +360,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         referenceIds: selectedReferenceIds,
         recommendationIds: selectedRecommendationIds
       }),
+      templateId: selectedPreviewTemplate,
       menuData: menuPreviewData,
       name: menuName || `Menú ${vetData.kcalToWork} kcal`,
       content: aiDraftText,
@@ -639,6 +643,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           setMenuPreviewData={setMenuPreviewData}
           zoom={zoom}
           setZoom={setZoom}
+          selectedPreviewTemplate={selectedPreviewTemplate}
+          setSelectedPreviewTemplate={setSelectedPreviewTemplate}
           onSave={handleSaveOnly}
         />
 

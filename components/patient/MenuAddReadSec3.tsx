@@ -33,6 +33,8 @@ interface MenuAddReadSec3Props {
   setMenuPreviewData: (data: MenuPlanData | null) => void;
   zoom: number;
   setZoom: (z: number) => void;
+  selectedPreviewTemplate: string;
+  setSelectedPreviewTemplate: (id: string) => void;
   onSave?: () => Promise<boolean>;
 }
 
@@ -125,6 +127,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   setMenuPreviewData,
   zoom,
   setZoom,
+  selectedPreviewTemplate,
+  setSelectedPreviewTemplate,
   evaluationId,
   onSave
 }) => {
@@ -139,6 +143,11 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditingPatientInfo, setIsEditingPatientInfo] = useState(false);
   const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
+
+  // ─── Template change ──────────────────────────────────────────────────────
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedPreviewTemplate(templateId);
+  };
 
   // ─── Helper: Get current nutritionist data with logo ──────────────────────
   const getNutritionistData = () => {
@@ -1655,11 +1664,13 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
           {/* Preview Area */}
           {menuPreviewData && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <MenuPreview 
+              <MenuPreview
                 data={menuPreviewData}
                 zoom={zoom}
                 setZoom={setZoom}
                 elementId="menu-print-area"
+                selectedTemplate={selectedPreviewTemplate}
+                onTemplateChange={handleTemplateChange}
               />
 
               {/* Editor Toolbar */}

@@ -5,6 +5,7 @@ import { store } from '../../services/store';
 import { getTodayStr } from '../../src/utils/dateUtils';
 import { exportClinicalDoc } from '../../services/exportClinicalDoc';
 import { exportEvaluationDoc } from '../../services/exportEvaluationDoc';
+import { exportMenuPDF } from '../../services/exportMenuPDF';
 
 interface PatientConfigTabProps {
   patient: Patient;
@@ -282,7 +283,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
               </div>
               <div>
                 <h4 className="font-bold text-slate-800">Exportar Perfil Completo</h4>
-                <p className="text-sm text-slate-500">Genera un documento con la información clínica del paciente.</p>
+                <p className="text-sm text-slate-500">Descarga un archivo .doc de información clínica del paciente + contenido completo vinculado a cada evaluación por fecha</p>
               </div>
             </div>
             <button
@@ -290,7 +291,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
               className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-sm shadow-teal-600/20"
             >
               <FileDown className="w-4 h-4" />
-              Exportar Perfil Completo
+              Exportar Perfil Completo en .doc
             </button>
           </div>
 
@@ -447,7 +448,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
                 ) : (
                   <>
                     <FileDown className="w-4 h-4" />
-                    Solo Información Clínica
+                    Solo Información Clínica .doc
                   </>
                 )}
               </button>
@@ -455,7 +456,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
               {/* Evaluaciones */}
               {evaluations.length > 0 && (
                 <div className="pt-2 border-t border-slate-100">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Por Evaluación</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Evaluación en .doc + menú en pdf</p>
                   <div className="space-y-2">
                     {evaluations.map((ev) => {
                       const isExporting = exportingEvaluationId === ev.id;
@@ -466,6 +467,13 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
                             setExportingEvaluationId(ev.id);
                             try {
                               await exportEvaluationDoc(patient, ev);
+                              const linkedMenu = patient.menus.find(
+                                (m) => m.linkedEvaluationId === ev.id && m.menuData
+                              );
+                              if (linkedMenu) {
+                                const safeName = `${patient.firstName}_${patient.lastName}`.replace(/\s+/g, '_');
+                                await exportMenuPDF(linkedMenu, `${safeName}_Menu_${ev.date}`);
+                              }
                             } finally {
                               setExportingEvaluationId(null);
                               setShowExportProfileModal(false);

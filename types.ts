@@ -200,7 +200,8 @@ export interface GeneratedMenu {
   
   // Templates and References
   templatesReferences?: string;
-  
+  templateId?: string;
+
   // The actual menu (JSONB)
   menuData?: any;
   
