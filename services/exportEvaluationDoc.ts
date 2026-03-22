@@ -188,7 +188,7 @@ function twoColTable(rows: Array<[string, any]>): Table {
 
 // ── Main export function ──────────────────────────────────────────────────────
 
-export async function exportEvaluationDoc(patient: Patient, evaluation: PatientEvaluation): Promise<void> {
+export async function buildEvaluationDocBlob(patient: Patient, evaluation: PatientEvaluation): Promise<Blob> {
   const firstName = patient.firstName;
   const lastName = patient.lastName;
   const fullName = `${firstName} ${lastName}`;
@@ -813,11 +813,15 @@ export async function exportEvaluationDoc(patient: Patient, evaluation: PatientE
     ],
   });
 
-  const blob = await Packer.toBlob(doc);
+  return Packer.toBlob(doc);
+}
+
+export async function exportEvaluationDoc(patient: Patient, evaluation: PatientEvaluation): Promise<void> {
+  const blob = await buildEvaluationDocBlob(patient, evaluation);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  const safeName = `${firstName}_${lastName}`.replace(/\s+/g, '_');
+  const safeName = `${patient.firstName}_${patient.lastName}`.replace(/\s+/g, '_');
   link.download = `${safeName}_Evaluacion_${evaluation.date}.docx`;
   document.body.appendChild(link);
   link.click();

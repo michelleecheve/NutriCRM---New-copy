@@ -6,6 +6,7 @@ import { getTodayStr } from '../../src/utils/dateUtils';
 import { exportClinicalDoc } from '../../services/exportClinicalDoc';
 import { exportEvaluationDoc } from '../../services/exportEvaluationDoc';
 import { exportMenuPDF } from '../../services/exportMenuPDF';
+import { exportPatientZip } from '../../services/exportPatientZip';
 
 interface PatientConfigTabProps {
   patient: Patient;
@@ -24,6 +25,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
   const [showExportProfileModal, setShowExportProfileModal] = useState(false);
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
   const [exportingEvaluationId, setExportingEvaluationId] = useState<string | null>(null);
+  const [isExportingAll, setIsExportingAll] = useState(false);
 
   const fullName = `${patient.firstName} ${patient.lastName}`;
   const nameMatches = deleteConfirmName.trim().toLowerCase() === fullName.toLowerCase();
@@ -50,6 +52,16 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
     } finally {
       setIsGeneratingDoc(false);
       setShowExportProfileModal(false);
+    }
+  };
+
+  const handleExportAll = async () => {
+    setIsExportingAll(true);
+    try {
+      await exportPatientZip(patient);
+      setShowExportProfileModal(false);
+    } finally {
+      setIsExportingAll(false);
     }
   };
 
@@ -410,7 +422,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
               </div>
               <button
                 onClick={() => setShowExportProfileModal(false)}
-                disabled={isGeneratingDoc}
+                disabled={isGeneratingDoc || isExportingAll}
                 className="text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -420,24 +432,29 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
             <p className="text-sm text-slate-500 mb-5">Elige qué información deseas exportar:</p>
 
             <div className="space-y-3">
-              {/* Exportar Todo — próximamente */}
-              <div className="relative group">
-                <button
-                  disabled
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed text-sm font-bold"
-                >
-                  <Download className="w-4 h-4" />
-                  Exportar Todo
-                </button>
-                <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-8 bg-slate-800 text-white text-xs font-medium px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  Próximamente
-                </span>
-              </div>
+              {/* Exportar Todo */}
+              <button
+                onClick={handleExportAll}
+                disabled={isExportingAll || isGeneratingDoc || exportingEvaluationId !== null}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isExportingAll ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                    Generando reporte completo... (esto puede tomar unos segundos)
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4 shrink-0" />
+                    Exportar Todo (.zip)
+                  </>
+                )}
+              </button>
 
               {/* Solo Información Clínica */}
               <button
                 onClick={handleExportClinical}
-                disabled={isGeneratingDoc}
+                disabled={isGeneratingDoc || isExportingAll || exportingEvaluationId !== null}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-700 text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isGeneratingDoc ? (
@@ -479,7 +496,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
                               setShowExportProfileModal(false);
                             }
                           }}
-                          disabled={isExporting || isGeneratingDoc || exportingEvaluationId !== null}
+                          disabled={isExporting || isGeneratingDoc || exportingEvaluationId !== null || isExportingAll}
                           className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-teal-100 bg-teal-50/40 hover:bg-teal-100 text-teal-700 text-sm font-medium text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           {isExporting ? (

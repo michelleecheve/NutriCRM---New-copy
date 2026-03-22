@@ -60,7 +60,7 @@ const divider = (): Paragraph =>
     children: [new TextRun({ text: '', size: 4 })],
   });
 
-export async function exportClinicalDoc(patient: Patient): Promise<void> {
+export async function buildClinicalDocBlob(patient: Patient): Promise<Blob> {
   const fullName = `${patient.firstName} ${patient.lastName}`;
   const today = new Date();
   const dateStr = today.toLocaleDateString('es-GT', {
@@ -299,7 +299,11 @@ export async function exportClinicalDoc(patient: Patient): Promise<void> {
     ],
   });
 
-  const blob = await Packer.toBlob(doc);
+  return Packer.toBlob(doc);
+}
+
+export async function exportClinicalDoc(patient: Patient): Promise<void> {
+  const blob = await buildClinicalDocBlob(patient);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
