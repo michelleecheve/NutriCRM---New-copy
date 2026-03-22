@@ -29,9 +29,7 @@ export const EvaluationLink: React.FC<{
     return store.getEvaluationById(evaluationId) ?? null;
   }, [evaluationId]);
 
-  const linkedDate =
-    evaluation?.date ??
-    (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
+  const linkedDate = evaluation?.date ?? '';
 
   const handlePick = (evId: string) => {
     const id = evId || null;
@@ -76,7 +74,6 @@ export const EvaluationLink: React.FC<{
               <option value="">Crea Una Evaluación Primero</option>
             ) : (
               <>
-                <option value="">Seleccionar...</option>
                 {patientEvaluations.map(ev => (
                   <option key={ev.id} value={ev.id}>
                     {ev.title ?? ev.date} — {ev.date}
@@ -106,6 +103,12 @@ export const EvaluationLink: React.FC<{
           className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-600 outline-none cursor-not-allowed"
         />
       </div>
+
+      {patientEvaluations.length === 0 && (
+        <p className="mt-3 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+          Este paciente no tiene evaluaciones registradas. Crea una evaluación antes de guardar.
+        </p>
+      )}
     </div>
   );
 };

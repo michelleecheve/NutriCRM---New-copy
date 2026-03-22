@@ -77,9 +77,7 @@ export const SomatocartaModule: React.FC<{
     return store.getEvaluationById(somatoEvaluationId) ?? null;
   }, [somatoEvaluationId]);
 
-  const somatoLinkedDate =
-    somatoEvaluation?.date ??
-    (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
+  const somatoLinkedDate = somatoEvaluation?.date ?? '';
 
   const sortedRecords = useMemo(
     () => [...(patient.somatotypes || [])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),

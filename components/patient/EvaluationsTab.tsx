@@ -59,14 +59,7 @@ export const EvaluationsTab: React.FC<{
   }
 
   // Always mark the most recently created evaluation (latest by date, then by position)
-  const lastRegisteredId = evaluations.length > 0
-    ? [...evaluations].sort((a, b) => {
-        const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-        if (dateDiff !== 0) return dateDiff;
-        // If same date, keep the one that appears last in the original array (most recently added)
-        return evaluations.indexOf(b) - evaluations.indexOf(a);
-      })[0].id
-    : null;
+  const lastRegisteredId = store.getLatestEvaluationId(patientId);
 
   return (
     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">

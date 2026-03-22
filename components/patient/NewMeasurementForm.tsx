@@ -200,9 +200,9 @@ export const NewMeasurementForm: React.FC<{
   const [evaluationId, setEvaluationId] = useState<string | null>(() => {
     if (existingRecord) {
       const match = patientEvaluations.find(e => e.date === existingRecord.date);
-      return match?.id ?? store.getSelectedEvaluationId(patient.id);
+      return match?.id ?? store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id);
     }
-    return store.getSelectedEvaluationId(patient.id);
+    return store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id);
   });
 
   const evaluation = useMemo(() => {
@@ -210,9 +210,7 @@ export const NewMeasurementForm: React.FC<{
     return store.getEvaluationById(evaluationId) ?? null;
   }, [evaluationId]);
 
-  const linkedDate =
-    evaluation?.date ??
-    (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
+  const linkedDate = evaluation?.date ?? '';
 
   const buildDefault = (): Measurement => ({
     id: crypto.randomUUID(),
@@ -237,14 +235,14 @@ export const NewMeasurementForm: React.FC<{
     if (rec) {
       setFormData({ ...rec });
       const match = patientEvaluations.find(e => e.date === rec.date);
-      setEvaluationId(match?.id ?? store.getSelectedEvaluationId(patient.id));
+      setEvaluationId(match?.id ?? store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id));
     } else {
-      const selId = store.getSelectedEvaluationId(patient.id);
+      const selId = store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id);
       const selEv = selId ? store.getEvaluationById(selId) : null;
       setFormData({
         id: crypto.randomUUID(),
         linkedEvaluationId: selId || '',
-        date: selEv?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]),
+        date: selEv?.date ?? '',
         metaComplied: false,
         weight: 0,
         height: 0,

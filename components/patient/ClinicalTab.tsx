@@ -305,20 +305,23 @@ export const ClinicalTab: React.FC<{
 
         {/* Nuevos campos de Perfil Deportivo */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-100">
-          <GridInput 
-            label="Categoria / Disciplina" 
-            value={localPatient.clinical.categ_discipline || ''} 
-            onChange={(e: any) => updateClinical('categ_discipline', e.target.value)} 
+          <ModernTextArea
+            label="Categoria / Disciplina"
+            value={localPatient.clinical.categ_discipline || ''}
+            onChange={(e: any) => updateClinical('categ_discipline', e.target.value)}
+            rows={2}
           />
-          <GridInput 
-            label="edad deportiva" 
-            value={localPatient.clinical.sport_age || ''} 
-            onChange={(e: any) => updateClinical('sport_age', e.target.value)} 
+          <ModernTextArea
+            label="Edad Deportiva"
+            value={localPatient.clinical.sport_age || ''}
+            onChange={(e: any) => updateClinical('sport_age', e.target.value)}
+            rows={2}
           />
-          <GridInput 
-            label="competencia" 
-            value={localPatient.clinical.competencia || ''} 
-            onChange={(e: any) => updateClinical('competencia', e.target.value)} 
+          <ModernTextArea
+            label="Competencia"
+            value={localPatient.clinical.competencia || ''}
+            onChange={(e: any) => updateClinical('competencia', e.target.value)}
+            rows={2}
           />
         </div>
       </div>

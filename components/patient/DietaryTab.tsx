@@ -79,23 +79,7 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20 relative">
-      
-      {/* Botón Flotante de Guardar */}
-      <div className="fixed bottom-8 right-8 z-50">
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-full font-bold shadow-xl hover:shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
-        >
-          {isSaving ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          {isSaving ? 'Guardando...' : 'Guardar Cambios'}
-        </button>
-      </div>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
       {/* Perfil dietético */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -104,9 +88,14 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="text-emerald-600 text-xs font-bold flex items-center gap-1 hover:text-emerald-700 transition-colors bg-emerald-50 px-3 py-1.5 rounded-lg"
+            className={`text-xs font-bold flex items-center gap-1 transition-colors px-3 py-1.5 rounded-lg ${
+              hasChanges
+                ? 'text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100'
+                : 'text-emerald-600 bg-emerald-50 hover:text-emerald-700'
+            }`}
           >
-            <Save className="w-3 h-3" /> {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+            <Save className="w-3 h-3" />
+            {isSaving ? 'Guardando...' : hasChanges ? '● Hay cambios sin guardar' : 'Guardar Cambios'}
           </button>
         </div>
         <div className="grid grid-cols-1 gap-6">

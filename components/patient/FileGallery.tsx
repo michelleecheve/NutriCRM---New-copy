@@ -17,6 +17,7 @@ interface FileGalleryProps {
   icon: React.ElementType;
   accept?: string;
   showDelete?: boolean;
+  hideHeader?: boolean;
   onCreateEvaluation?: () => void;
 }
 
@@ -64,7 +65,7 @@ const compressImageFile = (inputFile: File, maxSizeKb = 500): Promise<File> => {
 };
 
 export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
-  ({ patientId, files = [], onUpdate, title, icon: Icon, accept, showDelete = true, onCreateEvaluation }, ref) => {
+  ({ patientId, files = [], onUpdate, title, icon: Icon, accept, showDelete = true, hideHeader = false, onCreateEvaluation }, ref) => {
 
     const [uploadModalOpen,        setUploadModalOpen]        = useState(false);
     const [isUploading,            setIsUploading]            = useState(false);
@@ -72,7 +73,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
     const [confirmDeleteOpen,      setConfirmDeleteOpen]      = useState(false);
     const [deleteTargetId,         setDeleteTargetId]         = useState<string | null>(null);
     const [infoModal,              setInfoModal]              = useState<{ title: string; message: string } | null>(null);
-    const [uploadEvaluationId,     setUploadEvaluationId]     = useState<string | null>(null);
+    const [uploadEvaluationId,     setUploadEvaluationId]     = useState<string | null>(() => store.getSelectedEvaluationId(patientId) ?? store.getLatestEvaluationId(patientId));
     const [uploadEvalSelectorOpen, setUploadEvalSelectorOpen] = useState(false);
     const [fileLinkModalOpen,      setFileLinkModalOpen]      = useState(false);
     const [linkingFileId,          setLinkingFileId]          = useState<string | null>(null);
@@ -94,18 +95,14 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
       [uploadEvaluationId],
     );
 
-    const uploadLinkedDate =
-      uploadEvaluation?.date ??
-      (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
+    const uploadLinkedDate = uploadEvaluation?.date ?? '';
 
     const fileEvaluation = useMemo(
       () => (fileEvaluationId ? store.getEvaluationById(fileEvaluationId) ?? null : null),
       [fileEvaluationId],
     );
 
-    const fileLinkedDate =
-      fileEvaluation?.date ??
-      (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]);
+    const fileLinkedDate = fileEvaluation?.date ?? '';
 
     const handleChangeUploadEvaluation = (evId: string) => {
       const ev = store.getEvaluationById(evId);
@@ -121,7 +118,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
         setFileEvaluationId(currentLinkedEvalId);
       } else {
         const match = patientEvaluations.find(e => e.date === file.date);
-        setFileEvaluationId(match?.id ?? store.getSelectedEvaluationId(patientId));
+        setFileEvaluationId(match?.id ?? store.getSelectedEvaluationId(patientId) ?? store.getLatestEvaluationId(patientId));
       }
       setFileEvalSelectorOpen(false);
       setFileLinkModalOpen(true);
@@ -267,39 +264,41 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
       <>
         <div className="space-y-4">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Icon className="w-5 h-5 text-slate-500" />
-              <h3 className="font-bold text-slate-800">{title}</h3>
-              <span className="text-xs text-slate-400 font-medium">({files.length})</span>
+          {!hideHeader && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon className="w-5 h-5 text-slate-500" />
+                <h3 className="font-bold text-slate-800">{title}</h3>
+                <span className="text-xs text-slate-400 font-medium">({files.length})</span>
+              </div>
+              <div className="flex flex-col items-end gap-1.5">
+                <button
+                  onClick={() => setUploadModalOpen(true)}
+                  disabled={patientEvaluations.length === 0 && !!onCreateEvaluation}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm ${
+                    patientEvaluations.length === 0 && onCreateEvaluation
+                      ? 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed'
+                      : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  Subir
+                </button>
+                {patientEvaluations.length === 0 && onCreateEvaluation && (
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <span>Para subir archivos primero debes crear una fecha de evaluación.</span>
+                    <button
+                      type="button"
+                      onClick={onCreateEvaluation}
+                      className="flex-shrink-0 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                    >
+                      Crear evaluación
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex flex-col items-end gap-1.5">
-              <button
-                onClick={() => setUploadModalOpen(true)}
-                disabled={patientEvaluations.length === 0 && !!onCreateEvaluation}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm ${
-                  patientEvaluations.length === 0 && onCreateEvaluation
-                    ? 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed'
-                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                }`}
-              >
-                <UploadCloud className="w-4 h-4" />
-                Subir
-              </button>
-              {patientEvaluations.length === 0 && onCreateEvaluation && (
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span>Para subir archivos primero debes crear una fecha de evaluación.</span>
-                  <button
-                    type="button"
-                    onClick={onCreateEvaluation}
-                    className="flex-shrink-0 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 hover:bg-emerald-100 transition-colors whitespace-nowrap"
-                  >
-                    Crear evaluación
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          )}
 
           {/* Grid */}
           {files.length === 0 ? (
@@ -516,7 +515,11 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                     </div>
                   ) : (
                     <div className="space-y-1 max-h-40 overflow-y-auto">
-                      {patientEvaluations.map(ev => (
+                      {patientEvaluations.length === 0 ? (
+                        <p className="text-xs font-bold text-amber-700 px-3 py-2">
+                          No hay evaluaciones registradas.
+                        </p>
+                      ) : patientEvaluations.map(ev => (
                         <button
                           key={ev.id}
                           onClick={() => handleChangeUploadEvaluation(ev.id)}
@@ -526,6 +529,12 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                         </button>
                       ))}
                     </div>
+                  )}
+
+                  {patientEvaluations.length === 0 && (
+                    <p className="mt-2 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+                      Este paciente no tiene evaluaciones registradas. Crea una evaluación antes de subir archivos.
+                    </p>
                   )}
                 </div>
                 <div

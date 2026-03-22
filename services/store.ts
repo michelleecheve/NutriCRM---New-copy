@@ -640,6 +640,16 @@ class Store {
     return this.selectedEvaluationByPatient[patientId] ?? null;
   }
 
+  getLatestEvaluationId(patientId: string): string | null {
+    const evals = this.evaluations.filter(e => e.patientId === patientId);
+    if (evals.length === 0) return null;
+    return [...evals].sort((a, b) => {
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return evals.indexOf(b) - evals.indexOf(a);
+    })[0].id;
+  }
+
   setSelectedEvaluationId(patientId: string, evaluationId: string | null): void {
     if (!evaluationId) {
       delete this.selectedEvaluationByPatient[patientId];

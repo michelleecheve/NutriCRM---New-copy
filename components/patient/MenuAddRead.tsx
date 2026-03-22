@@ -134,11 +134,15 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
   const [zoom, setZoom] = useState<number>(1);
 
   // ✅ Estados de vinculación
-  const [formEvaluationId, setFormEvaluationId] = useState<string | null>(store.getSelectedEvaluationId(patient.id));
-  const [evalSelectorOpen, setEvalSelectorOpen] = useState(false);
-  const [menuDate, setMenuDate] = useState<string>(
-    store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]
+  const [formEvaluationId, setFormEvaluationId] = useState<string | null>(() =>
+    store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id)
   );
+  const [evalSelectorOpen, setEvalSelectorOpen] = useState(false);
+  const [menuDate, setMenuDate] = useState<string>(() => {
+    const evalId = store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id);
+    const ev = evalId ? store.getEvaluationById(evalId) : null;
+    return ev?.date ?? '';
+  });
 
   const formEvaluation = useMemo(() => {
     if (!formEvaluationId) return null;
@@ -221,11 +225,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         const match = patientEvaluations.find(e => e.date === menuDateValue);
         setFormEvaluationId(match?.id ?? store.getSelectedEvaluationId(patient.id));
       } else {
-        setFormEvaluationId(store.getSelectedEvaluationId(patient.id));
-        const ev = store.getSelectedEvaluationId(patient.id)
-          ? store.getEvaluationById(store.getSelectedEvaluationId(patient.id) as string)
-          : null;
-        setMenuDate(ev?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]));
+        const fallbackId = store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id);
+        const ev = fallbackId ? store.getEvaluationById(fallbackId) : null;
+        setFormEvaluationId(fallbackId ?? null);
+        setMenuDate(ev?.date ?? '');
       }
     } else {
       setVetData(defaultVet);
@@ -235,10 +238,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       setSelectedTemplateId("base_v1");
       setSelectedReferenceIds([]);
 
-      const selected = store.getSelectedEvaluationId(patient.id);
+      const selected = store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id);
       const ev = selected ? store.getEvaluationById(selected) : null;
       setFormEvaluationId(selected ?? null);
-      setMenuDate(ev?.date ?? (store.getTodayStr ? store.getTodayStr() : new Date().toISOString().split('T')[0]));
+      setMenuDate(ev?.date ?? '');
     }
 
     setEvalSelectorOpen(false);
@@ -517,7 +520,6 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
                     <option value="">Crea una evaluación primero</option>
                   ) : (
                     <>
-                      <option value="">Seleccionar...</option>
                       {patientEvaluations.map(ev => (
                         <option key={ev.id} value={ev.id}>
                           {ev.title ?? ev.date} — {ev.date}
@@ -546,6 +548,12 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
                 className="mt-1.5 w-full text-sm font-bold text-slate-600 bg-slate-100 px-3 py-2 rounded-xl border border-slate-200 cursor-not-allowed"
               />
             </div>
+
+            {patientEvaluations.length === 0 && (
+              <p className="mt-3 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+                Este paciente no tiene evaluaciones registradas. Crea una evaluación antes de guardar.
+              </p>
+            )}
           </div>
           
         </section>

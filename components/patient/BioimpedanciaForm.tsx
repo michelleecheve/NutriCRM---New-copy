@@ -28,7 +28,7 @@ export const BioimpedanciaForm: React.FC<{
   onUpdate: (p: Patient) => void;
   editingId?: string | null;
 }> = ({ patient, onClose, onUpdate, editingId }) => {
-  const [evaluationId, setEvaluationId] = useState<string | null>(() => store.getSelectedEvaluationId(patient.id));
+  const [evaluationId, setEvaluationId] = useState<string | null>(() => store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
   
