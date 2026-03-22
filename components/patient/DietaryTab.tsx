@@ -6,7 +6,7 @@ import { SectionHeader, ModernTextArea } from './SharedComponents';
 import { DietaryCard } from './DietaryCard';
 import { DietaryForm } from './DietaryForm';
 
-export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void }> = ({ patient, onUpdate }) => {
+export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void; onNavigateToEvaluations: () => void }> = ({ patient, onUpdate, onNavigateToEvaluations }) => {
   const [view, setView] = useState<'list' | 'edit'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [localPatient, setLocalPatient] = useState<Patient>(patient);
@@ -129,24 +129,36 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900">Historial de Evaluaciones Dietéticas</h3>
-              <p className="text-xs text-slate-400">La evaluación a vincular se selecciona dentro del formulario.</p>
+              <p className="text-xs text-slate-400">Recordatorio 24H, Frecuencia de consumo de alimentos.</p>
             </div>
           </div>
 
-          {/* ✅ Botón Crear siempre visible — EvaluationLink vive dentro del form */}
-          <button
-            type="button"
-            onClick={() => { setEditingId(null); setView('edit'); }}
-            disabled={patientEvaluations.length === 0}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm shadow-lg transition-colors ${
-              patientEvaluations.length > 0
-                ? 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
-                : 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed'
-            }`}
-            title={patientEvaluations.length === 0 ? 'Crea una evaluación primero.' : ''}
-          >
-            <Plus className="w-4 h-4" /> Nueva evaluación dietética
-          </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <button
+              type="button"
+              onClick={() => { setEditingId(null); setView('edit'); }}
+              disabled={patientEvaluations.length === 0}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm shadow-lg transition-colors ${
+                patientEvaluations.length > 0
+                  ? 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
+                  : 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed'
+              }`}
+            >
+              <Plus className="w-4 h-4" /> Nueva evaluación dietética
+            </button>
+            {patientEvaluations.length === 0 && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>Para crear una evaluación dietética primero debes crear una fecha de evaluación.</span>
+                <button
+                  type="button"
+                  onClick={onNavigateToEvaluations}
+                  className="flex-shrink-0 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                >
+                  Crear evaluación
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

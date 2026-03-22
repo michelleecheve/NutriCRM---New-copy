@@ -45,6 +45,7 @@ Analiza ahora el archivo adjunto:`;
 interface LabsTabProps {
   patient: Patient;
   onUpdate: (updatedPatient: Patient) => void;
+  onNavigateToEvaluations: () => void;
 }
 
 // ─── AI Lab Analysis via Gemini ───────────────────────────────────────────────
@@ -348,7 +349,7 @@ export const LabInterpretationPanel: React.FC<{
 };
 
 // ─── Main LabsTab ──────────────────────────────────────────────────────────────
-export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate }) => {
+export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate, onNavigateToEvaluations }) => {
   const labs = patient.labs || [];
 
   const savedPrompt = store.getUserProfile()?.labAIPrompt || DEFAULT_PROMPT;
@@ -405,6 +406,7 @@ export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate }) => {
           title="Resultados de Laboratorio"
           icon={Microscope}
           accept="application/pdf,image/*"
+          onCreateEvaluation={onNavigateToEvaluations}
         />
       </div>
 

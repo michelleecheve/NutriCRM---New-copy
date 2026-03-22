@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Patient, Measurement } from '../../types';
+import { store } from '../../services/store';
 import { Plus, History, Eye, EyeOff, Activity } from 'lucide-react';
 import { AnthropometryTable } from './AnthropometryTable';
 import { SomatocartaModule } from './SomatocartaModule';
@@ -8,8 +9,9 @@ import { MeasurementsHistory } from './MeasurementsHistory';
 import { BioimpedanciaSection } from './BioimpedanciaSection';
 import { BioimpedanciaForm } from './BioimpedanciaForm';
 
-export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void }> = ({ patient, onUpdate }) => {
+export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void; onNavigateToEvaluations: () => void }> = ({ patient, onUpdate, onNavigateToEvaluations }) => {
   const [view, setView] = useState<'list' | 'edit' | 'bio_edit'>('list');
+  const patientEvaluations = useMemo(() => store.getEvaluations(patient.id), [patient.id]);
   // ✅ editingId es ahora m.id (string) — null = crear nuevo
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAnthro, setShowAnthro] = useState(false);
@@ -99,12 +101,31 @@ export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient
           >
             {showAnthro ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
-          <button
-            onClick={handleAdd}
-            className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 flex items-center gap-2 transition-all"
-          >
-            <Plus className="w-4 h-4" /> Agregar
-          </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <button
+              onClick={handleAdd}
+              disabled={patientEvaluations.length === 0}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg transition-all ${
+                patientEvaluations.length === 0
+                  ? 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed'
+                  : 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
+              }`}
+            >
+              <Plus className="w-4 h-4" /> Agregar
+            </button>
+            {patientEvaluations.length === 0 && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>Para agregar medidas primero debes crear una fecha de evaluación.</span>
+                <button
+                  type="button"
+                  onClick={onNavigateToEvaluations}
+                  className="flex-shrink-0 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                >
+                  Crear evaluación
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -142,12 +163,31 @@ export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient
           >
             {showBio ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           </button>
-          <button
-            onClick={handleAddBio}
-            className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 hover:bg-blue-700 flex items-center gap-2 transition-all"
-          >
-            <Plus className="w-4 h-4" /> Agregar
-          </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <button
+              onClick={handleAddBio}
+              disabled={patientEvaluations.length === 0}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg transition-all ${
+                patientEvaluations.length === 0
+                  ? 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed'
+                  : 'bg-blue-600 text-white shadow-blue-600/20 hover:bg-blue-700'
+              }`}
+            >
+              <Plus className="w-4 h-4" /> Agregar
+            </button>
+            {patientEvaluations.length === 0 && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>Para agregar medidas primero debes crear una fecha de evaluación.</span>
+                <button
+                  type="button"
+                  onClick={onNavigateToEvaluations}
+                  className="flex-shrink-0 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                >
+                  Crear evaluación
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

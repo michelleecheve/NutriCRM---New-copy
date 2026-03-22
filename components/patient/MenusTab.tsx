@@ -1,12 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { Patient } from '../../types';
 import { Plus, Calculator } from 'lucide-react';
+import { store } from '../../services/store';
 import { MenuAddRead } from './MenuAddRead';
 import { MenuCard } from './MenuCard';
 
-export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void }> = ({ patient, onUpdate }) => {
+export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void; onNavigateToEvaluations: () => void }> = ({ patient, onUpdate, onNavigateToEvaluations }) => {
   const [isStarted, setIsStarted] = useState(false);
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null);
+  const patientEvaluations = useMemo(() => store.getEvaluations(patient.id), [patient.id]);
 
   const menus = useMemo(() => {
     const rootMenus = patient.menus || [];
@@ -30,12 +32,31 @@ export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => vo
       <div className="space-y-8 animate-in fade-in duration-500">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold text-slate-800">Menús del Paciente</h2>
-          <button
-            onClick={handleStartNew}
-            className="bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" /> Nuevo Menú
-          </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <button
+              onClick={handleStartNew}
+              disabled={patientEvaluations.length === 0}
+              className={`font-bold px-4 py-2 rounded-xl shadow-lg transition-all flex items-center gap-2 ${
+                patientEvaluations.length === 0
+                  ? 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed'
+                  : 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
+              }`}
+            >
+              <Plus className="w-5 h-5" /> Nuevo Menú
+            </button>
+            {patientEvaluations.length === 0 && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>Para crear un menú primero debes crear una fecha de evaluación.</span>
+                <button
+                  type="button"
+                  onClick={onNavigateToEvaluations}
+                  className="flex-shrink-0 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                >
+                  Crear evaluación
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {menus.length === 0 ? (

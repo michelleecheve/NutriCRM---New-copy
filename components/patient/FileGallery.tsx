@@ -17,6 +17,7 @@ interface FileGalleryProps {
   icon: React.ElementType;
   accept?: string;
   showDelete?: boolean;
+  onCreateEvaluation?: () => void;
 }
 
 export interface FileGalleryHandle {
@@ -63,7 +64,7 @@ const compressImageFile = (inputFile: File, maxSizeKb = 500): Promise<File> => {
 };
 
 export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
-  ({ patientId, files = [], onUpdate, title, icon: Icon, accept, showDelete = true }, ref) => {
+  ({ patientId, files = [], onUpdate, title, icon: Icon, accept, showDelete = true, onCreateEvaluation }, ref) => {
 
     const [uploadModalOpen,        setUploadModalOpen]        = useState(false);
     const [isUploading,            setIsUploading]            = useState(false);
@@ -272,13 +273,32 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
               <h3 className="font-bold text-slate-800">{title}</h3>
               <span className="text-xs text-slate-400 font-medium">({files.length})</span>
             </div>
-            <button
-              onClick={() => setUploadModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-colors shadow-sm"
-            >
-              <UploadCloud className="w-4 h-4" />
-              Subir
-            </button>
+            <div className="flex flex-col items-end gap-1.5">
+              <button
+                onClick={() => setUploadModalOpen(true)}
+                disabled={patientEvaluations.length === 0 && !!onCreateEvaluation}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm ${
+                  patientEvaluations.length === 0 && onCreateEvaluation
+                    ? 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                }`}
+              >
+                <UploadCloud className="w-4 h-4" />
+                Subir
+              </button>
+              {patientEvaluations.length === 0 && onCreateEvaluation && (
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <span>Para subir archivos primero debes crear una fecha de evaluación.</span>
+                  <button
+                    type="button"
+                    onClick={onCreateEvaluation}
+                    className="flex-shrink-0 font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1 hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                  >
+                    Crear evaluación
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Grid */}

@@ -63,6 +63,8 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack 
   // };
 
   // ✅ DESPUÉS: guarda y refresca desde Supabase para tener datos completos
+  const navigateToEvaluations = () => setActiveTab('appointments');
+
   const handleUpdatePatient = async (updated: Patient) => {
     setPatient(updated); // actualización optimista inmediata en la UI
     try {
@@ -166,11 +168,11 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack 
           <EvaluationsTab patientId={patient.id} patient={patient} onUpdate={handleUpdatePatient} />
         )}
 
-        {activeTab === 'dietary' && <DietaryTab patient={patient} onUpdate={handleUpdatePatient} />}
-        {activeTab === 'measurements' && <MeasurementsTab patient={patient} onUpdate={handleUpdatePatient} />}
-        {activeTab === 'menus' && <MenusTab patient={patient} onUpdate={handleUpdatePatient} />}
-        {activeTab === 'labs' && <LabsTab patient={patient} onUpdate={handleUpdatePatient} />}
-        {activeTab === 'photos' && <PhotosTab patient={patient} onUpdate={handleUpdatePatient} />}
+        {activeTab === 'dietary' && <DietaryTab patient={patient} onUpdate={handleUpdatePatient} onNavigateToEvaluations={navigateToEvaluations} />}
+        {activeTab === 'measurements' && <MeasurementsTab patient={patient} onUpdate={handleUpdatePatient} onNavigateToEvaluations={navigateToEvaluations} />}
+        {activeTab === 'menus' && <MenusTab patient={patient} onUpdate={handleUpdatePatient} onNavigateToEvaluations={navigateToEvaluations} />}
+        {activeTab === 'labs' && <LabsTab patient={patient} onUpdate={handleUpdatePatient} onNavigateToEvaluations={navigateToEvaluations} />}
+        {activeTab === 'photos' && <PhotosTab patient={patient} onUpdate={handleUpdatePatient} onNavigateToEvaluations={navigateToEvaluations} />}
         {activeTab === 'config' && <PatientConfigTab patient={patient} onUpdate={handleUpdatePatient} />}
       </div>
     </div>

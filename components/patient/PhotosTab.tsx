@@ -6,9 +6,10 @@ import { FileGallery } from './FileGallery';
 interface PhotosTabProps {
   patient: Patient;
   onUpdate: (updatedPatient: Patient) => void;
+  onNavigateToEvaluations: () => void;
 }
 
-export const PhotosTab: React.FC<PhotosTabProps> = ({ patient, onUpdate }) => {
+export const PhotosTab: React.FC<PhotosTabProps> = ({ patient, onUpdate, onNavigateToEvaluations }) => {
   const handleUpdateFiles = (newFiles: any[]) => {
     onUpdate({ ...patient, photos: newFiles });
   };
@@ -23,6 +24,7 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({ patient, onUpdate }) => {
           title="Galería de Progreso"
           icon={ImageIcon}
           accept="image/*"
+          onCreateEvaluation={onNavigateToEvaluations}
         />
       </div>
     </div>

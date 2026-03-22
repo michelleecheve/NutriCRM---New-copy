@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO Primario -->
+  <title>NutriFollow — Sistema de Gestión de Clínica Nutricional con IA</title>
+  <meta name="description" content="NutriFollow es el sistema de gestión clínica diseñado para nutricionistas. Genera menús personalizados con IA, gestiona evaluaciones antropométricas, citas, laboratorios y pagos — todo en una sola plataforma segura y privada." />
+  <meta name="keywords" content="software nutricionista, CRM nutrición, sistema clínica nutricional, gestión pacientes nutrición, menús con inteligencia artificial, software nutricional, evaluaciones antropométricas, agenda citas nutrición" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://nutrifollow.app/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://nutrifollow.app/" />
+  <meta property="og:title"       content="NutriFollow — Sistema de Gestión de Clínica Nutricional con IA" />
+  <meta property="og:description" content="Gestiona pacientes, evaluaciones, menús con IA, citas y pagos desde una sola plataforma diseñada exclusivamente para nutricionistas." />
+  <meta property="og:image"       content="/og-image.jpg" />
+  <meta property="og:locale"      content="es_ES" />
+  <meta property="og:site_name"   content="NutriFollow" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="NutriFollow — Sistema de Gestión de Clínica Nutricional con IA" />
+  <meta name="twitter:description" content="El sistema que los nutricionistas necesitaban. Pacientes, evaluaciones, IA y más — todo en un solo lugar." />
+  <meta name="twitter:image"       content="/og-image.jpg" />
+
+  <!-- Fonts & Styles -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="landing.css" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       NAVBAR
+  ═══════════════════════════════════════════════════════ -->
+  <header id="navbar" role="banner">
+    <div class="navbar-inner">
+
+      <a href="/" class="nav-logo" aria-label="NutriFollow — Inicio">
+        <div class="nav-logo-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 22l10-10"/>
+            <path d="M16 8c0 0-4 0-7 3s-3 7-3 7 4 0 7-3 3-7 3-7z"/>
+          </svg>
+        </div>
+        NutriFollow
+      </a>
+
+      <nav aria-label="Navegación principal">
+        <ul class="nav-links">
+          <li><a href="#features">Funciones</a></li>
+          <li><a href="#mas-que-crm">Filosofía</a></li>
+          <li><a href="#cta-final">Comenzar</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-cta">
+        <a href="/login" class="btn btn-primary">Iniciar Sesión</a>
+        <button class="nav-hamburger" aria-label="Abrir menú" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <main id="main-content">
+
+    <!-- ═══════════════════════════════════════════════════════
+         HERO
+    ═══════════════════════════════════════════════════════ -->
+    <section id="hero" aria-labelledby="hero-heading">
+      <div class="hero-inner">
+
+        <!-- Texto -->
+        <div class="hero-content fade-up">
+          <div class="hero-eyebrow" aria-hidden="true">
+            <span class="hero-eyebrow-dot"></span>
+            Plataforma para nutricionistas
+          </div>
+
+          <h1 class="hero-h1" id="hero-heading">
+            Tu práctica<br />
+            nutricional,<br />
+            <em>organizada</em> y<br />
+            potenciada con IA
+          </h1>
+
+          <p class="hero-subtitle">
+            NutriFollow centraliza la gestión de pacientes, evaluaciones clínicas,
+            generación de menús con inteligencia artificial, agenda de citas y facturación
+            — todo diseñado específicamente para la consulta nutricional.
+          </p>
+
+          <div class="hero-actions">
+            <a href="/login" class="btn btn-primary btn-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                <polyline points="10 17 15 12 10 7"/>
+                <line x1="15" y1="12" x2="3" y2="12"/>
+              </svg>
+              Iniciar Sesión
+            </a>
+            <a href="#features" class="btn btn-secondary btn-lg">
+              Conoce más
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <path d="M7 13l5 5 5-5"/><path d="M7 6l5 5 5-5"/>
+              </svg>
+            </a>
+          </div>
+
+          <div class="hero-social-proof">
+            <div class="hero-avatars" aria-hidden="true">
+              <div>A</div><div>M</div><div>L</div>
+            </div>
+            <span>Diseñado con <strong>nutricionistas reales</strong> en mente</span>
+          </div>
+        </div>
+
+        <!-- Imagen hero -->
+        <div class="hero-image-wrap fade-up delay-2">
+          <div id="image-hero" class="img-placeholder aspect-16-9">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+              <path d="M7 7h.01M10 7h7M7 11h.01M10 11h5"/>
+              <path d="M18 11l1.5 1.5L22 10"/>
+            </svg>
+            <span>[ Imagen: Panel principal de NutriFollow ]</span>
+          </div>
+          <div class="hero-accent-blob"  aria-hidden="true"></div>
+          <div class="hero-accent-circle" aria-hidden="true"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         TRUST BADGES
+    ═══════════════════════════════════════════════════════ -->
+    <section id="trust-badges" aria-label="Compromisos clave de la plataforma">
+      <div class="trust-inner">
+
+        <div class="trust-badge fade-up">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          IA que no almacena datos de tus pacientes
+        </div>
+
+        <div class="trust-divider" aria-hidden="true"></div>
+
+        <div class="trust-badge fade-up delay-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          100% privado
+        </div>
+
+        <div class="trust-divider" aria-hidden="true"></div>
+
+        <div class="trust-badge fade-up delay-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Diseñado para nutricionistas
+        </div>
+
+        <div class="trust-divider" aria-hidden="true"></div>
+
+        <div class="trust-badge fade-up delay-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          Todo en un solo lugar
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         FEATURES — ALTERNADAS
+    ═══════════════════════════════════════════════════════ -->
+    <section id="features" aria-label="Funcionalidades de NutriFollow">
+
+      <!-- Feature 1: Menús con IA — texto izquierda, imagen derecha -->
+      <article class="feature-row" aria-labelledby="feature-1-heading">
+        <div class="feature-row-inner">
+
+          <div class="feature-content fade-up">
+            <div class="feature-number" aria-label="Función 01">01 — Menús con IA</div>
+            <h2 id="feature-1-heading">
+              Menús semanales generados con inteligencia artificial
+            </h2>
+            <p>
+              La IA genera planes alimentarios personalizados basados en las plantillas
+              que tú misma has creado y ajustado a tu estilo de práctica. Cada menú considera
+              los datos clínicos reales de tu paciente: composición corporal, objetivos
+              calóricos, preferencias y restricciones alimentarias.
+            </p>
+            <div class="feature-highlight">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              La IA no almacena ni usa información privada de tus pacientes. Los datos
+              de cada sesión se procesan y descartan sin ser utilizados para entrenar modelos externos.
+            </div>
+          </div>
+
+          <div class="feature-image-wrap fade-up delay-1">
+            <div id="image-feature-1" class="img-placeholder aspect-16-9">
+              <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                <rect x="9" y="3" width="6" height="4" rx="2"/>
+                <path d="M9 12h6M9 16h4"/>
+                <circle cx="17" cy="17" r="3"/>
+                <path d="M16 17h2M17 16v2"/>
+              </svg>
+              <span>[ Imagen: Generador de menús con IA ]</span>
+            </div>
+          </div>
+
+        </div>
+      </article>
+
+      <!-- Feature 2: Laboratorios — imagen izquierda, texto derecha -->
+      <article class="feature-row reverse" aria-labelledby="feature-2-heading">
+        <div class="feature-row-inner">
+
+          <div class="feature-content fade-up">
+            <div class="feature-number" aria-label="Función 02">02 — Laboratorios</div>
+            <h2 id="feature-2-heading">
+              Análisis inteligente de resultados de laboratorio
+            </h2>
+            <p>
+              Sube los resultados de laboratorio de tu paciente y obtén un análisis
+              nutricional detallado al instante. La IA interpreta los valores y los relaciona
+              con el estado nutricional, ayudándote a identificar deficiencias y ajustar el
+              plan alimentario con evidencia clínica real.
+            </p>
+            <div class="feature-highlight">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              El análisis se adapta al prompt personalizado que configuras en tu perfil,
+              para alinearse con tu enfoque clínico y tus criterios de interpretación.
+            </div>
+          </div>
+
+          <div class="feature-image-wrap fade-up delay-1">
+            <div id="image-feature-2" class="img-placeholder aspect-16-9">
+              <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <path d="M14.5 2v17.5c0 1.4-1.1 2.5-2.5 2.5s-2.5-1.1-2.5-2.5V2"/>
+                <path d="M8.5 2h7"/>
+                <path d="M7 14c-1 1-2 3-2 4a7 7 0 0 0 14 0c0-1-1-3-2-4"/>
+              </svg>
+              <span>[ Imagen: Interpretación de laboratorios con IA ]</span>
+            </div>
+          </div>
+
+        </div>
+      </article>
+
+      <!-- Feature 3: Tracking — texto izquierda, imagen derecha -->
+      <article class="feature-row" aria-labelledby="feature-3-heading">
+        <div class="feature-row-inner">
+
+          <div class="feature-content fade-up">
+            <div class="feature-number" aria-label="Función 03">03 — Seguimiento</div>
+            <h2 id="feature-3-heading">
+              Tracking completo de la evolución del paciente
+            </h2>
+            <p>
+              Registra y compara medidas antropométricas, datos de bioimpedancia y
+              fotos de progreso a lo largo del tiempo. Visualiza la evolución de cada
+              paciente con gráficas claras, analiza la somatocarta y detecta tendencias
+              en la composición corporal consulta a consulta.
+            </p>
+            <div class="feature-highlight">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              Incluye somatocarta XY, cálculo de somatotipo y comparación histórica
+              de todas las evaluaciones en el tiempo.
+            </div>
+          </div>
+
+          <div class="feature-image-wrap fade-up delay-1">
+            <div id="image-feature-3" class="img-placeholder aspect-16-9">
+              <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                <line x1="2" y1="20" x2="22" y2="20"/>
+              </svg>
+              <span>[ Imagen: Gráficas de evolución del paciente ]</span>
+            </div>
+          </div>
+
+        </div>
+      </article>
+
+      <!-- Feature 4: Cálculo nutricional — imagen izquierda, texto derecha -->
+      <article class="feature-row reverse" aria-labelledby="feature-4-heading">
+        <div class="feature-row-inner">
+
+          <div class="feature-content fade-up">
+            <div class="feature-number" aria-label="Función 04">04 — Cálculo nutricional</div>
+            <h2 id="feature-4-heading">
+              Cálculo nutricional preciso y automatizado
+            </h2>
+            <p>
+              Calcula automáticamente el VET, macronutrientes y porciones necesarias
+              para construir el menú ideal según el perfil de cada paciente. Las fórmulas
+              de composición corporal, índice de masa corporal, masa muscular y requerimientos
+              energéticos se aplican de forma automática sobre los datos reales de la evaluación.
+            </p>
+            <div class="feature-highlight">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+              Compatible con múltiples fórmulas clínicas: Harris-Benedict, Mifflin-St Jeor,
+              pliegues cutáneos y bioimpedancia.
+            </div>
+          </div>
+
+          <div class="feature-image-wrap fade-up delay-1">
+            <div id="image-feature-4" class="img-placeholder aspect-16-9">
+              <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <rect x="4" y="2" width="16" height="20" rx="2"/>
+                <path d="M9 7h6M9 11h6M9 15h4"/>
+                <line x1="8" y1="7" x2="8.01" y2="7"/>
+                <line x1="8" y1="11" x2="8.01" y2="11"/>
+                <line x1="8" y1="15" x2="8.01" y2="15"/>
+              </svg>
+              <span>[ Imagen: Cálculo de macros y VET ]</span>
+            </div>
+          </div>
+
+        </div>
+      </article>
+
+      <!-- Feature 5: Recepción — texto izquierda, imagen derecha -->
+      <article class="feature-row" aria-labelledby="feature-5-heading">
+        <div class="feature-row-inner">
+
+          <div class="feature-content fade-up">
+            <div class="feature-number" aria-label="Función 05">05 — Trabajo en equipo</div>
+            <h2 id="feature-5-heading">
+              Vinculación con tu recepcionista
+            </h2>
+            <p>
+              Tu recepcionista tiene acceso al calendario y a la gestión de citas sin
+              poder ver los datos clínicos privados de tus pacientes. Cada rol tiene
+              acceso exactamente a lo que necesita — ni más, ni menos. Trabajo en equipo
+              sin comprometer la privacidad ni la confidencialidad clínica.
+            </p>
+            <div class="feature-highlight">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              Control de roles con tres niveles: administrador, nutricionista y
+              recepcionista — con acceso estrictamente delimitado.
+            </div>
+          </div>
+
+          <div class="feature-image-wrap fade-up delay-1">
+            <div id="image-feature-5" class="img-placeholder aspect-16-9">
+              <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8"  y1="2" x2="8"  y2="6"/>
+                <line x1="3"  y1="10" x2="21" y2="10"/>
+                <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
+              </svg>
+              <span>[ Imagen: Gestión de citas y roles ]</span>
+            </div>
+          </div>
+
+        </div>
+      </article>
+
+      <!-- Feature 6: Dashboard — imagen izquierda, texto derecha -->
+      <article class="feature-row reverse" aria-labelledby="feature-6-heading">
+        <div class="feature-row-inner">
+
+          <div class="feature-content fade-up">
+            <div class="feature-number" aria-label="Función 06">06 — Panel de control</div>
+            <h2 id="feature-6-heading">
+              Dashboard inteligente para tu día a día
+            </h2>
+            <p>
+              Nunca pierdas de vista lo que importa. El panel principal te muestra
+              de un vistazo las citas del día, pacientes con menús pendientes,
+              pagos por cobrar y seguimientos atrasados. Toda la información crítica
+              de tu práctica, organizada y accesible desde el primer momento del día.
+            </p>
+            <div class="feature-highlight">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <line x1="18" y1="20" x2="18" y2="10"/>
+                <line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6"  y1="20" x2="6"  y2="14"/>
+              </svg>
+              Incluye analíticas y gráficas interactivas para visualizar el crecimiento
+              y rendimiento de tu práctica a lo largo del tiempo.
+            </div>
+          </div>
+
+          <div class="feature-image-wrap fade-up delay-1">
+            <div id="image-feature-6" class="img-placeholder aspect-16-9">
+              <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"
+                   aria-hidden="true">
+                <rect x="3"  y="3"  width="7" height="7"/>
+                <rect x="14" y="3"  width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3"  y="14" width="7" height="7"/>
+              </svg>
+              <span>[ Imagen: Dashboard con analíticas ]</span>
+            </div>
+          </div>
+
+        </div>
+      </article>
+
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         MÁS QUE UN CRM
+    ═══════════════════════════════════════════════════════ -->
+    <section id="mas-que-crm" aria-labelledby="crm-heading">
+      <div class="crm-section-inner">
+
+        <div class="crm-eyebrow fade-up" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          Filosofía de diseño
+        </div>
+
+        <h2 id="crm-heading" class="fade-up">
+          Más que un CRM.<br />
+          <em>Un sistema completo</em> para tu clínica.
+        </h2>
+
+        <p class="crm-lead fade-up">
+          NutriFollow no es solo una agenda ni un simple formulario de pacientes.
+          Es una plataforma construida desde cero para acompañar el flujo real de trabajo
+          de un nutricionista — desde la primera consulta hasta el seguimiento a largo plazo.
+        </p>
+
+        <p class="crm-body fade-up">
+          Cada función del sistema fue diseñada pensando en los flujos reales de una clínica
+          nutricional. Las evaluaciones agrupan mediciones, dieta, archivos y menús en una
+          sola entidad clínica coherente. El sistema de roles garantiza que tu equipo tenga
+          acceso exactamente a lo que necesita. La integración con inteligencia artificial
+          no es un extra — está profundamente integrada en los flujos de generación de menús
+          e interpretación de resultados de laboratorio.
+        </p>
+
+        <p class="crm-body fade-up">
+          La privacidad de tus pacientes no es negociable. Toda la información clínica está
+          protegida bajo tu cuenta. La IA procesa los datos de cada consulta sin almacenarlos
+          ni utilizarlos para entrenar modelos externos. Tú mantienes el control total de
+          tu práctica y de los datos que la conforman.
+        </p>
+
+        <!-- Tres pilares -->
+        <div class="crm-pillars">
+
+          <div class="crm-pillar fade-up">
+            <div class="crm-pillar-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <h3>Flujo clínico real</h3>
+            <p>
+              Diseñado con nutricionistas activos. Cada pantalla responde al flujo real
+              de una consulta, sin fricciones innecesarias ni pasos redundantes.
+            </p>
+          </div>
+
+          <div class="crm-pillar fade-up delay-1">
+            <div class="crm-pillar-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <h3>Privacidad por diseño</h3>
+            <p>
+              La confidencialidad de tus pacientes está en el núcleo del sistema.
+              Roles, permisos y uso responsable de la inteligencia artificial.
+            </p>
+          </div>
+
+          <div class="crm-pillar fade-up delay-2">
+            <div class="crm-pillar-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
+                   viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                <path d="M4.93 4.93a10 10 0 0 0 0 14.14"/>
+              </svg>
+            </div>
+            <h3>IA que trabaja para ti</h3>
+            <p>
+              La inteligencia artificial amplifica tu conocimiento clínico, no lo
+              reemplaza. Tú diriges la consulta, la IA te ayuda a ejecutar más rápido.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════
+         CTA FINAL
+    ═══════════════════════════════════════════════════════ -->
+    <section id="cta-final" aria-labelledby="cta-heading">
+      <div class="cta-inner">
+
+        <div class="cta-eyebrow fade-up" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+               viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          Empieza hoy
+        </div>
+
+        <h2 id="cta-heading" class="fade-up">
+          Tu clínica nutricional merece<br />
+          las mejores herramientas
+        </h2>
+
+        <p class="fade-up delay-1">
+          Únete y transforma la manera en que gestionas tu práctica.
+          Pacientes, evaluaciones, menús con IA, citas y más —
+          todo en una plataforma diseñada para nutricionistas como tú.
+        </p>
+
+        <div class="cta-actions fade-up delay-2">
+          <a href="/login" class="btn btn-white btn-lg">
+            Empieza Aquí
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </a>
+          <a href="#features" class="btn btn-ghost btn-lg">Ver funciones</a>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════
+       FOOTER
+  ═══════════════════════════════════════════════════════ -->
+  <footer id="footer" role="contentinfo">
+    <div class="footer-inner">
+
+      <div class="footer-top">
+        <a href="/" class="footer-logo" aria-label="NutriFollow — Inicio">
+          <div class="nav-logo-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="white" stroke-width="2.5" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <path d="M2 22l10-10"/>
+              <path d="M16 8c0 0-4 0-7 3s-3 7-3 7 4 0 7-3 3-7 3-7z"/>
+            </svg>
+          </div>
+          NutriFollow
+        </a>
+        <p class="footer-tagline">
+          Sistema de gestión de clínica nutricional<br />con inteligencia artificial integrada.
+        </p>
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2026 NutriFollow. Todos los derechos reservados.</p>
+        <nav class="footer-links" aria-label="Enlaces secundarios">
+          <a href="/login">Iniciar Sesión</a>
+          <a href="#features">Funciones</a>
+          <a href="#mas-que-crm">Filosofía</a>
+        </nav>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCRIPTS — sin dependencias externas
+  ═══════════════════════════════════════════════════════ -->
+  <script>
+    // ── Navbar: añade clase al hacer scroll ──
+    (function () {
+      var navbar = document.getElementById('navbar');
+      var lastScroll = 0;
+
+      function onScroll() {
+        var y = window.scrollY || window.pageYOffset;
+        if (y > 20) {
+          navbar.classList.add('scrolled');
+        } else {
+          navbar.classList.remove('scrolled');
+        }
+        lastScroll = y;
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll(); // Estado inicial
+    }());
+
+    // ── Fade-in con Intersection Observer ──
+    (function () {
+      var elements = document.querySelectorAll('.fade-up');
+
+      if (!('IntersectionObserver' in window)) {
+        // Fallback: mostrar todo de inmediato si no hay soporte
+        elements.forEach(function (el) { el.classList.add('visible'); });
+        return;
+      }
+
+      var observer = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      );
+
+      elements.forEach(function (el) { observer.observe(el); });
+
+      // Elementos ya visibles al cargar
+      requestAnimationFrame(function () {
+        elements.forEach(function (el) {
+          var rect = el.getBoundingClientRect();
+          if (rect.top < window.innerHeight - 40) {
+            el.classList.add('visible');
+            observer.unobserve(el);
+          }
+        });
+      });
+    }());
+
+    // ── Smooth scroll para enlaces de ancla ──
+    (function () {
+      document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
+        anchor.addEventListener('click', function (e) {
+          var target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
+    }());
+  </script>
+
+</body>
+</html>
