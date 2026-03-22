@@ -51,6 +51,7 @@ export interface ClinicalRecord {
   sport_age: string;
   competencia: string;
   sleep_hours: string;
+  othersNotes: string;
 }
 
 export interface Measurement {

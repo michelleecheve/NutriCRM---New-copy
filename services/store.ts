@@ -292,6 +292,7 @@ class Store {
         sport_age:          '',
         competencia:        '',
         sleep_hours:        '',
+        othersNotes:        '',
       },
       dietary:            { preferences: '' },
       dietaryEvaluations: [],
@@ -634,6 +635,20 @@ class Store {
       }
       save(this.K.evalSelected, this.selectedEvaluationByPatient);
     }
+  }
+
+  async deletePatientCompletely(patientId: string): Promise<void> {
+    await supabaseService.deletePatientCompletely(patientId);
+
+    // Limpiar estado local
+    this.evaluations = this.evaluations.filter(e => e.patientId !== patientId);
+    save(this.K.evaluations, this.evaluations);
+
+    delete this.selectedEvaluationByPatient[patientId];
+    save(this.K.evalSelected, this.selectedEvaluationByPatient);
+
+    this.patients = this.patients.filter(p => p.id !== patientId);
+    save(this.K.patients, this.patients);
   }
 
   getSelectedEvaluationId(patientId: string): string | null {

@@ -134,6 +134,7 @@ export const supabaseService = {
         sport_age:           patient.clinical.sport_age,
         competencia:         patient.clinical.competencia,
         sleep_hours:         patient.clinical.sleep_hours,
+        others_notes:        patient.clinical.othersNotes,
         sports_profile:      (patient.sportsProfile || []).map(({ patientId, ...rest }: any) => rest),
       })
       .select()
@@ -174,6 +175,7 @@ export const supabaseService = {
       if (c.sport_age          !== undefined) updateData.sport_age          = c.sport_age;
       if (c.competencia        !== undefined) updateData.competencia        = c.competencia;
       if (c.sleep_hours        !== undefined) updateData.sleep_hours        = c.sleep_hours;
+      if (c.othersNotes        !== undefined) updateData.others_notes       = c.othersNotes;
     }
 
     if (patient.sportsProfile !== undefined) {
@@ -192,6 +194,56 @@ export const supabaseService = {
 
   async deletePatient(id: string) {
     const { error } = await supabase.from('patients').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  async deletePatientCompletely(patientId: string): Promise<void> {
+    // 1. Obtener todas las evaluaciones del paciente
+    const { data: evaluations, error: evalError } = await supabase
+      .from('evaluations')
+      .select('id')
+      .eq('patient_id', patientId);
+    if (evalError) throw evalError;
+
+    const evalIds = (evaluations || []).map((e: any) => e.id);
+
+    // 2. Borrar registros hijos de cada evaluación
+    if (evalIds.length > 0) {
+      await supabase.from('measurements').delete().in('evaluation_id', evalIds);
+      await supabase.from('bioimpedancia_measurements').delete().in('evaluation_id', evalIds);
+      await supabase.from('dietary_evaluations').delete().in('evaluation_id', evalIds);
+      await supabase.from('somatotypes').delete().in('evaluation_id', evalIds);
+      await supabase.from('menus').delete().in('evaluation_id', evalIds);
+    }
+
+    // 3. Borrar evaluaciones
+    if (evalIds.length > 0) {
+      await supabase.from('evaluations').delete().in('id', evalIds);
+    }
+
+    // 4. Borrar archivos del paciente (labs y fotos) — también del Storage
+    const { data: files } = await supabase
+      .from('patient_files')
+      .select('id, path')
+      .eq('patient_id', patientId);
+
+    if (files && files.length > 0) {
+      const paths = files.map((f: any) => f.path).filter(Boolean);
+      if (paths.length > 0) {
+        await supabase.storage.from('patient-data').remove(paths);
+      }
+      await supabase.from('patient_files').delete().eq('patient_id', patientId);
+    }
+
+    // 5. Borrar menús vinculados directamente al paciente (sin evaluation_id)
+    await supabase.from('menus').delete().eq('patient_id', patientId);
+
+    // 6. Borrar citas e invoices
+    await supabase.from('appointments').delete().eq('patient_id', patientId);
+    await supabase.from('invoices').delete().eq('patient_id', patientId);
+
+    // 7. Finalmente borrar el paciente
+    const { error } = await supabase.from('patients').delete().eq('id', patientId);
     if (error) throw error;
   },
 
@@ -863,6 +915,7 @@ export const supabaseService = {
         sport_age:           dbPatient.sport_age          || '',
         competencia:         dbPatient.competencia        || '',
         sleep_hours:         dbPatient.sleep_hours        || '',
+        othersNotes:         dbPatient.others_notes       || '',
       },
       dietary: { preferences: dbPatient.dietary_preferences || '' },
       dietaryEvaluations: [],

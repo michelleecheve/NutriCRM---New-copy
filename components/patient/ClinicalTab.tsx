@@ -360,6 +360,17 @@ export const ClinicalTab: React.FC<{
               <ModernTextArea label="Otros" value={localPatient.clinical.menstrualOthers} onChange={(e: any) => updateClinical('menstrualOthers', e.target.value)} rows={2} placeholder="Otros detalles del periodo menstrual..." />
             </div>
           </div>
+
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <h4 className="text-sm font-bold text-emerald-800 mb-4">Otras Notas</h4>
+            <ModernTextArea
+              label=""
+              value={localPatient.clinical.othersNotes || ''}
+              onChange={(e: any) => updateClinical('othersNotes', e.target.value)}
+              rows={4}
+              placeholder="Notas adicionales..."
+            />
+          </div>
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Download, Upload, Settings, Save, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Download, Upload, Settings, AlertCircle, CheckCircle2, Trash2, X } from 'lucide-react';
 import { Patient } from '../../types';
 import { store } from '../../services/store';
 import { getTodayStr } from '../../src/utils/dateUtils';
@@ -7,12 +7,33 @@ import { getTodayStr } from '../../src/utils/dateUtils';
 interface PatientConfigTabProps {
   patient: Patient;
   onUpdate: (updatedPatient: Patient) => void;
+  onPatientDeleted?: () => void;
 }
 
-export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onUpdate }) => {
+export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onUpdate, onPatientDeleted }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  const fullName = `${patient.firstName} ${patient.lastName}`;
+  const nameMatches = deleteConfirmName.trim().toLowerCase() === fullName.toLowerCase();
+
+  const handleDeleteConfirmed = async () => {
+    if (!nameMatches) return;
+    setIsDeleting(true);
+    setDeleteError('');
+    try {
+      await store.deletePatientCompletely(patient.id);
+      onPatientDeleted?.();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Error al eliminar el paciente.');
+      setIsDeleting(false);
+    }
+  };
 
   const handleExport = () => {
     // 1. Obtener las evaluaciones vinculadas (los "links")
@@ -313,8 +334,101 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
               </p>
             </div>
           </div>
+
+          {/* Zona de peligro */}
+          <div className="mt-8 p-6 bg-red-50 rounded-2xl border border-red-200 flex items-center justify-between gap-4">
+            <div className="flex gap-4 items-start">
+              <div className="bg-red-100 p-2 h-fit rounded-lg">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h5 className="font-bold text-red-900 mb-1">Eliminar Paciente</h5>
+                <p className="text-sm text-red-700/80 leading-relaxed">
+                  Elimina permanentemente este paciente y todos sus registros: evaluaciones, medidas, menús, laboratorios, fotos, citas e invoices. Esta acción no se puede deshacer.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => { setShowDeleteModal(true); setDeleteConfirmName(''); setDeleteError(''); }}
+              className="shrink-0 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-sm shadow-red-600/20"
+            >
+              <Trash2 className="w-4 h-4" />
+              Eliminar Paciente
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Modal de confirmación */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="bg-red-100 p-2 rounded-xl">
+                  <Trash2 className="w-5 h-5 text-red-600" />
+                </div>
+                <h3 className="font-bold text-slate-900 text-lg">Confirmar eliminación</h3>
+              </div>
+              <button onClick={() => setShowDeleteModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-sm text-slate-600 mb-2 leading-relaxed">
+              Estás a punto de eliminar permanentemente a <span className="font-bold text-slate-900">{fullName}</span> y todos sus registros vinculados. Esta acción es irreversible.
+            </p>
+            <p className="text-sm text-slate-600 mb-5 leading-relaxed">
+              Para confirmar, escribe el nombre completo del paciente:
+            </p>
+
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">
+              Nombre de referencia
+            </p>
+            <p className="text-sm font-bold text-slate-700 bg-slate-100 px-3 py-2 rounded-lg mb-3 select-all">
+              {fullName}
+            </p>
+
+            <input
+              type="text"
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+              placeholder={`Escribe "${fullName}"`}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all mb-4"
+              autoFocus
+              onKeyDown={(e) => { if (e.key === 'Enter' && nameMatches) handleDeleteConfirmed(); }}
+            />
+
+            {deleteError && (
+              <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 mb-4 text-xs font-bold">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteConfirmed}
+                disabled={!nameMatches || isDeleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Eliminando...</>
+                ) : (
+                  <><Trash2 className="w-4 h-4" /> Eliminar definitivamente</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

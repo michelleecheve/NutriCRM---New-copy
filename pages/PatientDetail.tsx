@@ -173,7 +173,7 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack 
         {activeTab === 'menus' && <MenusTab patient={patient} onUpdate={handleUpdatePatient} onNavigateToEvaluations={navigateToEvaluations} />}
         {activeTab === 'labs' && <LabsTab patient={patient} onUpdate={handleUpdatePatient} onNavigateToEvaluations={navigateToEvaluations} />}
         {activeTab === 'photos' && <PhotosTab patient={patient} onUpdate={handleUpdatePatient} onNavigateToEvaluations={navigateToEvaluations} />}
-        {activeTab === 'config' && <PatientConfigTab patient={patient} onUpdate={handleUpdatePatient} />}
+        {activeTab === 'config' && <PatientConfigTab patient={patient} onUpdate={handleUpdatePatient} onPatientDeleted={onBack} />}
       </div>
     </div>
   );
