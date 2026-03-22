@@ -430,6 +430,8 @@ export interface BioimpedanciaRecord {
   evaluation_id: string;
   owner_id: string;
   date: string;
+  gender?: string;
+  age?: number;
   weight: number;
   height: number;
   imc: number;

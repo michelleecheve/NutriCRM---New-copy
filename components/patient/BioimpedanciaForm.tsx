@@ -4,6 +4,7 @@ import { X, Save, Activity, ChevronRight, Trash2, Star } from 'lucide-react';
 import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
 import { store } from '../../services/store';
+import { BioimpedanciaInterpretation } from './BioimpedanciaInterpretation';
 
 // Local version of GridInput with blue focus for Bioimpedancia
 const BlueGridInput = ({ label, value, onChange, type = "text", placeholder = "-", readOnly = false }: any) => (
@@ -31,6 +32,8 @@ export const BioimpedanciaForm: React.FC<{
   const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
   
   const [formData, setFormData] = useState({
+    gender: '',
+    age: '',
     weight: '',
     height: '',
     imc: '',
@@ -60,6 +63,8 @@ export const BioimpedanciaForm: React.FC<{
       const record = patient.bioimpedancias?.find(b => b.id === editingId);
       if (record) {
         setFormData({
+          gender: record.gender || '',
+          age: record.age?.toString() || '',
           weight: record.weight?.toString() || '',
           height: record.height?.toString() || '',
           imc: record.imc?.toString() || '',
@@ -224,10 +229,29 @@ export const BioimpedanciaForm: React.FC<{
           </h4>
           
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            <BlueGridInput 
-              label="Peso corporal (kg)" 
-              value={formData.weight} 
-              onChange={(e: any) => handleChange('weight', e.target.value)} 
+            {/* Género */}
+            <div className="flex flex-col">
+              <label className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">Género</label>
+              <select
+                value={formData.gender}
+                onChange={(e: any) => handleChange('gender', e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              >
+                <option value="">Seleccionar</option>
+                <option value="Femenino">Femenino</option>
+                <option value="Masculino">Masculino</option>
+              </select>
+            </div>
+            <BlueGridInput
+              label="Edad (años)"
+              value={formData.age}
+              onChange={(e: any) => handleChange('age', e.target.value)}
+              type="number"
+            />
+            <BlueGridInput
+              label="Peso corporal (kg)"
+              value={formData.weight}
+              onChange={(e: any) => handleChange('weight', e.target.value)}
               type="number"
             />
             <BlueGridInput 
@@ -368,6 +392,9 @@ export const BioimpedanciaForm: React.FC<{
             />
           </div>
         </div>
+
+        {/* Visual Interpretation */}
+        <BioimpedanciaInterpretation formData={formData} />
 
         {/* Delete Button at the end */}
         {editingId && (
