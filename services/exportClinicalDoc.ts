@@ -271,6 +271,13 @@ export async function exportClinicalDoc(patient: Patient): Promise<void> {
   );
 
   const doc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: { font: 'Arial' },
+        },
+      },
+    },
     sections: [
       {
         properties: {

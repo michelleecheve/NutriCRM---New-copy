@@ -4,6 +4,7 @@ import { Patient } from '../../types';
 import { store } from '../../services/store';
 import { getTodayStr } from '../../src/utils/dateUtils';
 import { exportClinicalDoc } from '../../services/exportClinicalDoc';
+import { exportEvaluationDoc } from '../../services/exportEvaluationDoc';
 
 interface PatientConfigTabProps {
   patient: Patient;
@@ -21,6 +22,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
   const [deleteError, setDeleteError] = useState('');
   const [showExportProfileModal, setShowExportProfileModal] = useState(false);
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
+  const [exportingEvaluationId, setExportingEvaluationId] = useState<string | null>(null);
 
   const fullName = `${patient.firstName} ${patient.lastName}`;
   const nameMatches = deleteConfirmName.trim().toLowerCase() === fullName.toLowerCase();
@@ -455,20 +457,31 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
                 <div className="pt-2 border-t border-slate-100">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Por Evaluación</p>
                   <div className="space-y-2">
-                    {evaluations.map((ev) => (
-                      <div key={ev.id} className="relative group">
+                    {evaluations.map((ev) => {
+                      const isExporting = exportingEvaluationId === ev.id;
+                      return (
                         <button
-                          disabled
-                          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed text-sm font-medium text-left"
+                          key={ev.id}
+                          onClick={async () => {
+                            setExportingEvaluationId(ev.id);
+                            try {
+                              await exportEvaluationDoc(patient, ev);
+                            } finally {
+                              setExportingEvaluationId(null);
+                              setShowExportProfileModal(false);
+                            }
+                          }}
+                          disabled={isExporting || isGeneratingDoc || exportingEvaluationId !== null}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-teal-100 bg-teal-50/40 hover:bg-teal-100 text-teal-700 text-sm font-medium text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          <Download className="w-4 h-4 shrink-0" />
-                          <span>Evaluación {ev.date}</span>
+                          {isExporting ? (
+                            <><Loader2 className="w-4 h-4 animate-spin shrink-0" /><span>Generando evaluación...</span></>
+                          ) : (
+                            <><FileDown className="w-4 h-4 shrink-0" /><span>Evaluación {ev.date}</span></>
+                          )}
                         </button>
-                        <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-8 bg-slate-800 text-white text-xs font-medium px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                          Próximamente
-                        </span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
