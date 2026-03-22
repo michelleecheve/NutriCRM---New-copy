@@ -94,9 +94,8 @@ export const EvaluationsTab: React.FC<{
         ) : (
           <div className="border border-slate-200 rounded-2xl overflow-hidden">
             <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-white text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200">
-              <div className="col-span-6">Evaluación</div>
+              <div className="col-span-8">Evaluación</div>
               <div className="col-span-3">Fecha</div>
-              <div className="col-span-2">ID</div>
               <div className="col-span-1" />
             </div>
 
@@ -110,7 +109,7 @@ export const EvaluationsTab: React.FC<{
                     onClick={() => handleOpenDetail(ev.id)}
                     className="w-full text-left grid grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-50 transition-colors items-center"
                   >
-                    <div className="col-span-6 flex items-center gap-4 min-w-0">
+                    <div className="col-span-8 flex items-center gap-4 min-w-0">
                       <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
                         <Calendar className="w-5 h-5 text-slate-400" />
                       </div>
@@ -132,10 +131,6 @@ export const EvaluationsTab: React.FC<{
 
                     <div className="col-span-3">
                       <p className="text-sm font-bold text-slate-700">{ev.date}</p>
-                    </div>
-
-                    <div className="col-span-2 min-w-0">
-                      <p className="text-xs font-mono text-slate-400 truncate">{ev.id}</p>
                     </div>
 
                     <div className="col-span-1 flex justify-end text-slate-300">

@@ -460,19 +460,13 @@ export const EvaluationDetail: React.FC<{
           )}
 
           <div className="mt-6 pt-6 border-t-2 border-slate-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 gap-5">
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Fecha</p>
                 <input type="date" value={draft.date}
                   onChange={(e) => setDraft({ ...draft, date: e.target.value })}
                   className="mt-2 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-200"
                 />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Evaluation ID</p>
-                <p className="mt-2 font-mono text-sm font-bold text-slate-700 break-all border border-slate-200 rounded-xl px-3 py-2 bg-white">
-                  {selected.id}
-                </p>
               </div>
             </div>
           </div>

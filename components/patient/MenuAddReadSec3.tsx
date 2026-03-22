@@ -484,7 +484,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Edad</label>
                 <input 
-                  type="number"
+                  type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   value={localInfo.age}
                   onChange={e => setLocalInfo({...localInfo, age: Number(e.target.value)})}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
@@ -493,7 +493,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Peso (kg)</label>
                 <input 
-                  type="number"
+                  type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   step="0.1"
                   value={localInfo.weight}
                   onChange={e => setLocalInfo({...localInfo, weight: Number(e.target.value)})}
@@ -506,7 +506,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">% Grasa</label>
                 <input 
-                  type="number"
+                  type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   step="0.1"
                   value={localInfo.fatPct}
                   onChange={e => setLocalInfo({...localInfo, fatPct: Number(e.target.value)})}
@@ -516,7 +516,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Meta (kcal)</label>
                 <input 
-                  type="number"
+                  type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   value={localInfo.kcal}
                   onChange={e => setLocalInfo({...localInfo, kcal: Number(e.target.value)})}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
@@ -722,7 +722,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                     {(['lacteos', 'vegetales', 'frutas', 'cereales', 'carnes', 'grasas'] as Array<keyof MealPortions>).map(group => (
                       <td key={group} className="p-2 border-b">
                         <input 
-                          type="number" 
+                          type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()} 
                           step="0.5"
                           min="0"
                           value={localPortions.byMeal[meal.id]?.[group] || 0}
@@ -1507,22 +1507,25 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
 
   return (
     <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+      <div
+        onClick={() => setIsVisible(!isVisible)}
+        className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors"
+      >
         <div className="flex items-center gap-3">
           <div className="bg-indigo-100 p-2 rounded-xl">
             <Sparkles className="w-5 h-5 text-indigo-600" />
           </div>
           <h2 className="text-lg font-bold text-slate-800">Generación y Preview</h2>
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setIsVisible(!isVisible)}
+            <button
               className="p-1.5 hover:bg-white rounded-lg transition-colors text-slate-400 hover:text-indigo-600"
             >
               {isVisible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
             {onSave && (
               <button
-                onClick={async () => {
+                onClick={async (e) => {
+                  e.stopPropagation();
                   const ok = await onSave();
                   if (ok) {
                     setShowSuccess(true);
@@ -1549,7 +1552,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         </div>
         {/* Lock toggle — siempre visible en el header */}
         <button
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             const next = !isLocked;
             setIsLocked(next);
             try { localStorage.setItem('nutriflow_menu_locked', String(next)); } catch {}

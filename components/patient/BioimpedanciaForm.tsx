@@ -10,13 +10,14 @@ import { BioimpedanciaInterpretation } from './BioimpedanciaInterpretation';
 const BlueGridInput = ({ label, value, onChange, type = "text", placeholder = "-", readOnly = false }: any) => (
   <div className="flex flex-col">
     <label className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide">{label}</label>
-    <input 
-      type={type} 
-      value={value || ''} 
+    <input
+      type={type}
+      value={value || ''}
       onChange={onChange}
+      onWheel={(e) => (e.target as HTMLInputElement).blur()}
       placeholder={placeholder}
       readOnly={readOnly}
-      className={`w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-300 ${readOnly ? 'bg-slate-100 cursor-default' : 'focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}`} 
+      className={`w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-300 ${readOnly ? 'bg-slate-100 cursor-default' : 'focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}`}
     />
   </div>
 );

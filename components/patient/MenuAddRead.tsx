@@ -551,7 +551,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         </section>
 
         <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <div
+            onClick={() => setIsCalculationVisible(!isCalculationVisible)}
+            className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors"
+          >
             <div className="flex items-center gap-3">
               <div className="bg-emerald-100 p-2 rounded-xl">
                 <Calculator className="w-5 h-5 text-emerald-600" />
@@ -559,13 +562,13 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
               <h2 className="text-lg font-bold text-slate-800">Cálculo Nutricional</h2>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setIsCalculationVisible(!isCalculationVisible)}
                   className="p-1.5 hover:bg-white rounded-lg transition-colors text-slate-400 hover:text-emerald-600"
                 >
                   {isCalculationVisible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
                 <button
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    e.stopPropagation();
                     const ok = await handleSaveOnly();
                     if (ok) {
                       setSection1Success(true);

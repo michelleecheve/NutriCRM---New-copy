@@ -231,7 +231,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-500 uppercase ml-1">Edad</label>
             <input 
-              type="number"
+              type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
               value={vetData.age || ''}
               onChange={(e) => updateVetField('age', parseInt(e.target.value) || 0)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
@@ -240,7 +240,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-500 uppercase ml-1">Peso kg</label>
             <input 
-              type="number"
+              type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
               step="0.1"
               value={vetData.weight || ''}
               onChange={(e) => updateVetField('weight', parseFloat(e.target.value) || 0)}
@@ -250,7 +250,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-500 uppercase ml-1">Talla cm</label>
             <input 
-              type="number"
+              type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
               step="0.1"
               value={vetData.height || ''}
               onChange={(e) => updateVetField('height', parseFloat(e.target.value) || 0)}
@@ -343,7 +343,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-500 uppercase ml-1">KCAL a Trabajar</label>
           <input 
-            type="number"
+            type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
             placeholder="Ingresa las calorías objetivo..."
             value={vetData.kcalToWork || ''}
             onChange={(e) => updateVetField('kcalToWork', parseInt(e.target.value) || 0)}
@@ -383,9 +383,10 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <input 
-                    type="number"
-                    value={macros.cho.pct}
+                  <input
+                    type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                    value={macros.cho.pct || ''}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => updateMacroField('cho', 'pct', parseInt(e.target.value) || 0)}
                     className="w-20 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                   />
@@ -422,9 +423,10 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <input 
-                    type="number"
-                    value={macros.chon.pct}
+                  <input
+                    type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                    value={macros.chon.pct || ''}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => updateMacroField('chon', 'pct', parseInt(e.target.value) || 0)}
                     className="w-20 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                   />
@@ -461,9 +463,10 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <input 
-                    type="number"
-                    value={macros.fat.pct}
+                  <input
+                    type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                    value={macros.fat.pct || ''}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => updateMacroField('fat', 'pct', parseInt(e.target.value) || 0)}
                     className="w-20 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                   />
@@ -500,9 +503,10 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <input 
-                    type="number"
+                  <input
+                    type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     value={macros.totalKcal || ''}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => {
                       const val = parseInt(e.target.value) || 0;
                       setMacros(prev => ({ ...prev, totalKcal: val }));
@@ -555,7 +559,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
                   <td className="px-6 py-3 text-sm font-bold text-slate-700">{ref.name}</td>
                   <td className="px-6 py-3">
                     <input 
-                      type="number"
+                      type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       step="0.5"
                       value={portions[key as keyof PortionsRecord] || ''}
                       onChange={(e) => updatePortionField(key as keyof PortionsRecord, parseFloat(e.target.value) || 0)}

@@ -82,7 +82,10 @@ export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient
   return (
     <div className="space-y-6">
       {/* Medidas Antropométricas Card */}
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div
+        onClick={() => setShowAnthro(!showAnthro)}
+        className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors"
+      >
         <div className="flex items-center gap-3">
           <div className="bg-emerald-50 p-2 rounded-lg">
             <History className="w-5 h-5 text-emerald-600" />
@@ -93,7 +96,7 @@ export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
           <button
             onClick={() => setShowAnthro(!showAnthro)}
             className="p-2.5 hover:bg-slate-50 rounded-xl transition-colors text-slate-400 hover:text-emerald-600 border border-slate-200"
@@ -144,7 +147,10 @@ export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient
       )}
 
       {/* Medidas Bioimpedancia Card */}
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div
+        onClick={() => setShowBio(!showBio)}
+        className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors"
+      >
         <div className="flex items-center gap-3">
           <div className="bg-blue-50 p-2 rounded-lg">
             <Activity className="w-5 h-5 text-blue-600" />
@@ -155,7 +161,7 @@ export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
           <button
             onClick={() => setShowBio(!showBio)}
             className="p-2.5 hover:bg-slate-50 rounded-xl transition-colors text-slate-400 hover:text-blue-600 border border-slate-200"

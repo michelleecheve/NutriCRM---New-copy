@@ -23,11 +23,11 @@ export const MenuWrapper: React.FC<MenuWrapperProps> = ({
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300 mb-6">
       {/* Header / Trigger */}
-      <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-white">
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left flex-1"
-        >
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between p-6 border-b border-slate-100 bg-white cursor-pointer hover:bg-slate-50 transition-colors"
+      >
+        <div className="flex items-center gap-3 text-left flex-1">
           <div className="bg-emerald-50 p-2 rounded-xl">
             {icon}
           </div>
@@ -38,20 +38,21 @@ export const MenuWrapper: React.FC<MenuWrapperProps> = ({
           <div className={`ml-2 p-1.5 rounded-lg transition-colors ${isOpen ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
             {isOpen ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
           </div>
-        </button>
+        </div>
 
         <div className="flex items-center gap-3">
-          {headerActions}
-          <button 
-            onClick={() => setIsOpen(!isOpen)}
-            className="p-2 hover:bg-slate-50 rounded-lg transition-colors"
-          >
+          {headerActions && (
+            <div onClick={e => e.stopPropagation()}>
+              {headerActions}
+            </div>
+          )}
+          <div className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
             {isOpen ? (
               <ChevronUp className="w-5 h-5 text-slate-400" />
             ) : (
               <ChevronDown className="w-5 h-5 text-slate-400" />
             )}
-          </button>
+          </div>
         </div>
       </div>
 

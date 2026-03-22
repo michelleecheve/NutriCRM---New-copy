@@ -45,9 +45,11 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
   };
 
   const handleToggleTempId = (id: string) => {
-    setTempSelectedIds(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
+    setTempSelectedIds(prev => {
+      if (prev.includes(id)) return prev.filter(i => i !== id);
+      if (prev.length >= 3) return prev;
+      return [...prev, id];
+    });
   };
 
   const handleConfirmSelection = () => {
@@ -69,22 +71,25 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
 
   return (
     <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+      <div
+        onClick={() => setIsVisible(!isVisible)}
+        className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors"
+      >
         <div className="flex items-center gap-3">
           <div className="bg-indigo-100 p-2 rounded-xl">
             <BookOpen className="w-5 h-5 text-indigo-600" />
           </div>
           <h2 className="text-lg font-bold text-slate-800">Plantilla + Referencias</h2>
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setIsVisible(!isVisible)}
+            <button
               className="p-1.5 hover:bg-white rounded-lg transition-colors text-slate-400 hover:text-indigo-600"
             >
               {isVisible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
             {onSave && (
               <button
-                onClick={async () => {
+                onClick={async (e) => {
+                  e.stopPropagation();
                   const ok = await onSave();
                   if (ok) {
                     setShowSuccess(true);
@@ -187,9 +192,12 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
           {showSelector && (
             <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 space-y-6 animate-in slide-in-from-top-4 duration-300">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                  {selectorType === 'references' ? 'Seleccionar Referencias' : 'Seleccionar Recomendaciones'}
-                </h3>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                    {selectorType === 'references' ? 'Elige hasta 3 referencias' : 'Elige hasta 3 recomendaciones'}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{tempSelectedIds.length}/3 seleccionadas</p>
+                </div>
                 <button 
                   onClick={() => setShowSelector(false)}
                   className="text-slate-400 hover:text-slate-600"
@@ -207,14 +215,18 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
                   ) : (
                     allReferences.map(ref => {
                       const isSelected = tempSelectedIds.includes(ref.id);
+                      const isDisabled = !isSelected && tempSelectedIds.length >= 3;
                       return (
                         <button
                           key={ref.id}
                           onClick={() => handleToggleTempId(ref.id)}
+                          disabled={isDisabled}
                           className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between group ${
-                            isSelected 
-                              ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200' 
-                              : 'bg-white border-slate-200 hover:border-indigo-200'
+                            isSelected
+                              ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200'
+                              : isDisabled
+                                ? 'bg-slate-50 border-slate-100 opacity-40 cursor-not-allowed'
+                                : 'bg-white border-slate-200 hover:border-indigo-200'
                           }`}
                         >
                           <div>
@@ -242,14 +254,18 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
                   ) : (
                     allRecommendations.map(rec => {
                       const isSelected = tempSelectedIds.includes(rec.id);
+                      const isDisabled = !isSelected && tempSelectedIds.length >= 3;
                       return (
                         <button
                           key={rec.id}
                           onClick={() => handleToggleTempId(rec.id)}
+                          disabled={isDisabled}
                           className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between group ${
-                            isSelected 
-                              ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200' 
-                              : 'bg-white border-slate-200 hover:border-indigo-200'
+                            isSelected
+                              ? 'bg-indigo-50 border-indigo-200 ring-1 ring-indigo-200'
+                              : isDisabled
+                                ? 'bg-slate-50 border-slate-100 opacity-40 cursor-not-allowed'
+                                : 'bg-white border-slate-200 hover:border-indigo-200'
                           }`}
                         >
                           <div>
