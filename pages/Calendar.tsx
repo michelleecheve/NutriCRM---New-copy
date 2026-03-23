@@ -3,7 +3,7 @@ import { Appointment, Patient, AppUser } from '../types';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
 import { supabase } from '../services/supabase';
-import { Plus, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { getTodayStr } from '../src/utils/dateUtils';
 import { CalendarGrid } from '../components/calendar_components/CalendarGrid';
 import { CalendarSidebar } from '../components/calendar_components/CalendarSidebar';
@@ -23,6 +23,9 @@ export const CalendarPage: React.FC = () => {
   const [linkedNutritionists, setLinkedNutritionists] = useState<AppUser[]>([]);
 
   const [canViewCalendar, setCanViewCalendar] = useState(true);
+  const [isLoadingAccess, setIsLoadingAccess] = useState(
+    currentAppUser?.role === 'recepcionista'
+  );
 
   const showCalendarSelector = authStore.canAccessModule('calendar', 'calendar-selector');
   const canCreateAppointments = !showCalendarSelector || linkedNutritionists.length > 0;
@@ -39,35 +42,38 @@ export const CalendarPage: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
 
   useEffect(() => {
-    // Si es recepcionista y selecciona nutri, valida vínculo en DB
-    if (currentAppUser?.role === 'recepcionista' && targetNutritionistId) {
-      supabase
-        .from('profile_links')
-        .select('id')
-        .eq('nutritionist_id', targetNutritionistId)
-        .eq('receptionist_id', currentAppUser.id)
-        .then(({ data, error }) => {
-          if (error) {
-            console.error(error);
-            setCanViewCalendar(false);
-          } else {
-            setCanViewCalendar(Boolean(data && data.length > 0));
-          }
-        });
-    } else {
-      setCanViewCalendar(true);
-    }
-  }, [currentAppUser, targetNutritionistId]);
+    if (currentAppUser?.role !== 'recepcionista') return;
 
-  useEffect(() => {
-    authStore.getLinkedNutritionists().then(nutris => {
+    const initReceptionistAccess = async () => {
+      setIsLoadingAccess(true);
+
+      // 1. Obtener nutricionistas vinculadas (usa cache si ya cargó)
+      const nutris = await authStore.getLinkedNutritionists();
       setLinkedNutritionists(nutris);
-      if (nutris.length > 0 && !selectedNutritionistId) {
-        setSelectedNutritionistId(nutris[0].id); // ✅ solo autoselecciona nutricionistas vinculadas
+
+      let resolvedNutritionistId = selectedNutritionistId;
+      if (nutris.length > 0 && !resolvedNutritionistId) {
+        resolvedNutritionistId = nutris[0].id;
+        setSelectedNutritionistId(nutris[0].id);
       }
-      // Si no hay vinculadas, selectedNutritionistId queda null
-    });
-  }, []);
+
+      // 2. Verificar acceso al vínculo en DB
+      if (resolvedNutritionistId) {
+        const { data, error } = await supabase
+          .from('profile_links')
+          .select('id')
+          .eq('nutritionist_id', resolvedNutritionistId)
+          .eq('receptionist_id', currentAppUser.id);
+        setCanViewCalendar(!error && Boolean(data && data.length > 0));
+      } else {
+        setCanViewCalendar(false);
+      }
+
+      setIsLoadingAccess(false);
+    };
+
+    initReceptionistAccess();
+  }, [currentAppUser?.id]);
 
   
 
@@ -139,6 +145,15 @@ export const CalendarPage: React.FC = () => {
     setSelectedNutritionistId(nutritionistId);
     authStore.setSelectedNutritionistId(nutritionistId);
   };
+
+  if (isLoadingAccess) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-slate-400">
+        <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />
+        <p className="text-sm font-medium">Verificando acceso al calendario...</p>
+      </div>
+    );
+  }
 
   if (!canViewCalendar) {
     return (

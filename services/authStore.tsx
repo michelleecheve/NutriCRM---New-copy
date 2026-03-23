@@ -47,6 +47,11 @@ export const DEFAULT_PERMISSIONS: PagePermission[] = [
         label: 'Vinculación con Nutricionistas',
         roles: ['admin', 'recepcionista'],
       },
+      {
+        moduleId: 'profile-ai-config',
+        label: 'Configurador de IA (AI Configurator)',
+        roles: ['admin', 'nutricionista'],
+      },
     ],
   },
   { pageId: 'admin', label: 'Panel de Administración', roles: ['admin'] },
@@ -150,6 +155,7 @@ type AuthListener = () => void;
 class AuthStore {
   private currentUser: AppUser | null = null;
   private permissions: PagePermission[] = [];
+  private _linkedNutritionistsCache: AppUser[] | null = null;
   private selectedNutritionistId: string | null = null;
   public isLoading: boolean = true;
   private listeners: AuthListener[] = [];
@@ -357,6 +363,7 @@ class AuthStore {
   }
 
   async getLinkedNutritionists(): Promise<AppUser[]> {
+    if (this._linkedNutritionistsCache !== null) return this._linkedNutritionistsCache;
     const current = this.currentUser;
     if (!current) return [];
     // 1. Buscar los nutritionist_id donde el receptionist_id es el usuario actual
@@ -366,7 +373,7 @@ class AuthStore {
       .eq('receptionist_id', current.id);
     if (error || !links) return [];
     const ids = links.map((l: any) => l.nutritionist_id);
-    if (ids.length === 0) return [];
+    if (ids.length === 0) { this._linkedNutritionistsCache = []; return []; }
     // 2. Traer los perfiles de esos IDs sólo si son nutricionistas
     const { data, error: profErr } = await supabase
       .from('profiles')
@@ -374,7 +381,13 @@ class AuthStore {
       .in('id', ids)
       .eq('role', 'nutricionista');
     if (profErr || !data) return [];
-    return data.map(mapProfileToAppUser);
+    const result = data.map(mapProfileToAppUser);
+    this._linkedNutritionistsCache = result;
+    return result;
+  }
+
+  clearLinkedNutritionistsCache() {
+    this._linkedNutritionistsCache = null;
   }
 
   // ── Vinculación ───────────────────────────────────────────────────────────
@@ -414,6 +427,7 @@ class AuthStore {
       .insert([{ nutritionist_id: nutri.id, receptionist_id: current.id }]);
     if (linkError && linkError.code === '23505') return { ok: false, message: 'Ya está vinculada.' };
     if (linkError) return { ok: false, message: 'Error inesperado.' };
+    this.clearLinkedNutritionistsCache();
     return { ok: true, message: `Nutricionista ${nutri.name} vinculada correctamente.` };
   }
 
@@ -438,6 +452,7 @@ class AuthStore {
       .eq('nutritionist_id', nutritionistId)
       .eq('receptionist_id', current.id);
     if (error) return { ok: false, message: 'Error al desvincular.' };
+    this.clearLinkedNutritionistsCache();
     return { ok: true, message: 'Nutricionista desvinculada correctamente.' };
   }
 

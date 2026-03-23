@@ -376,6 +376,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const showSistema = authStore.canAccessModule('profile', 'profile-sistema');
   const showVinculacionRecepcionistas = authStore.canAccessModule('profile', 'profile-vinculacion-recepcionistas');
   const showVinculacionNutricionistas = authStore.canAccessModule('profile', 'profile-vinculacion-nutricionistas');
+  const showAIConfig = authStore.canAccessModule('profile', 'profile-ai-config');
 
   const [formData, setFormData] = useState<UserProfile>(authStore.getUserProfile());
   const [isSaved, setIsSaved] = useState(false);
@@ -544,7 +545,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               <TextAreaField label="Dirección" icon={MapPin} value={formData.address || ''} onChange={(e: any) => setFormData({ ...formData, address: e.target.value })} placeholder="Ingresa la dirección de tu clínica..." rows={3} />
             </div>
 
-            <ProfileAIConfig />
+            {showAIConfig && <ProfileAIConfig />}
 
             {showVinculacionRecepcionistas && <VinculacionNutricionista onUnlinkRequest={handleUnlinkRequest} />}
             {showVinculacionNutricionistas && <VinculacionRecepcionista onUnlinkRequest={handleUnlinkRequest} />}
