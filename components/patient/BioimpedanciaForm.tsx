@@ -1,10 +1,58 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Patient } from '../../types';
-import { X, Save, Activity, ChevronRight, Trash2, Star } from 'lucide-react';
+import { X, Save, Activity, ChevronRight, Trash2, Star, Info } from 'lucide-react';
 import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
 import { store } from '../../services/store';
 import { BioimpedanciaInterpretation } from './BioimpedanciaInterpretation';
+
+const calcDecimalAge = (birthdate: string, refDate: string): number => {
+  const birth = new Date(birthdate);
+  const ref = refDate ? new Date(refDate) : new Date();
+  let years = ref.getFullYear() - birth.getFullYear();
+  let months = ref.getMonth() - birth.getMonth();
+  if (ref.getDate() < birth.getDate()) months--;
+  if (months < 0) { years--; months += 12; }
+  return parseFloat((years + months / 12).toFixed(2));
+};
+
+const AgeHintTooltip: React.FC<{ birthdate?: string; refDate: string }> = ({ birthdate, refDate }) => {
+  const [show, setShow] = useState(false);
+
+  let content: string;
+  if (!birthdate) {
+    content = 'El paciente no tiene fecha de nacimiento registrada para calcular la edad exacta.';
+  } else {
+    const ref = refDate || new Date().toISOString().slice(0, 10);
+    const decimal = calcDecimalAge(birthdate, ref);
+    const birth = new Date(birthdate);
+    const refD = new Date(ref);
+    let years = refD.getFullYear() - birth.getFullYear();
+    let months = refD.getMonth() - birth.getMonth();
+    if (refD.getDate() < birth.getDate()) months--;
+    if (months < 0) { years--; months += 12; }
+    content = `Según fecha de nacimiento, la edad exacta es ${decimal} años\n(${years} años, ${months} meses)`;
+  }
+
+  return (
+    <div className="relative inline-block ml-1">
+      <button
+        type="button"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        className="cursor-help text-slate-400 hover:text-blue-500 transition-colors focus:outline-none"
+      >
+        <Info className="w-3.5 h-3.5" />
+      </button>
+      {show && (
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-slate-900 text-white text-xs rounded-xl shadow-xl min-w-[220px] max-w-[300px] animate-in fade-in zoom-in duration-200" style={{ whiteSpace: 'pre-wrap' }}>
+          {content}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Local version of GridInput with blue focus for Bioimpedancia
 const BlueGridInput = ({ label, value, onChange, type = "text", placeholder = "-", readOnly = false }: any) => (
@@ -98,6 +146,16 @@ export const BioimpedanciaForm: React.FC<{
     const evals = store.getEvaluations(patient.id);
     return evals.length > 0 ? evals : (patient.evaluations || []);
   }, [patient.id, patient.evaluations]);
+
+  const evaluation = useMemo(() => evaluationId ? store.getEvaluationById(evaluationId) ?? null : null, [evaluationId]);
+  const linkedDate = evaluation?.date ?? '';
+
+  // Auto-fill age from birthdate when evaluation date changes (new records only)
+  useEffect(() => {
+    if (!editingId && patient.clinical?.birthdate && linkedDate) {
+      setFormData(prev => ({ ...prev, age: calcDecimalAge(patient.clinical!.birthdate!, linkedDate).toString() }));
+    }
+  }, [linkedDate, editingId]);
 
   // Calculate IMC automatically
   useEffect(() => {
@@ -243,12 +301,20 @@ export const BioimpedanciaForm: React.FC<{
                 <option value="Masculino">Masculino</option>
               </select>
             </div>
-            <BlueGridInput
-              label="Edad (años)"
-              value={formData.age}
-              onChange={(e: any) => handleChange('age', e.target.value)}
-              type="number"
-            />
+            <div className="flex flex-col">
+              <label className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wide flex items-center">
+                Edad (años)
+                <AgeHintTooltip birthdate={patient.clinical?.birthdate} refDate={linkedDate} />
+              </label>
+              <input
+                type="number"
+                value={formData.age || ''}
+                onChange={(e: any) => handleChange('age', e.target.value)}
+                onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                placeholder="-"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              />
+            </div>
             <BlueGridInput
               label="Peso corporal (kg)"
               value={formData.weight}
