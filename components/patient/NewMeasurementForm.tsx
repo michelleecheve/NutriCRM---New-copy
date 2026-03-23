@@ -171,6 +171,54 @@ const InfoModal: React.FC<{
   </div>
 );
 
+const calcDecimalAge = (birthdate: string, refDate: string): number => {
+  const birth = new Date(birthdate);
+  const ref = refDate ? new Date(refDate) : new Date();
+  let years = ref.getFullYear() - birth.getFullYear();
+  let months = ref.getMonth() - birth.getMonth();
+  if (ref.getDate() < birth.getDate()) months--;
+  if (months < 0) { years--; months += 12; }
+  return parseFloat((years + months / 12).toFixed(2));
+};
+
+const AgeHintTooltip: React.FC<{ birthdate?: string; refDate: string }> = ({ birthdate, refDate }) => {
+  const [show, setShow] = useState(false);
+
+  let content: string;
+  if (!birthdate) {
+    content = 'El paciente no tiene fecha de nacimiento registrada para calcular la edad exacta.';
+  } else {
+    const ref = refDate || new Date().toISOString().slice(0, 10);
+    const decimal = calcDecimalAge(birthdate, ref);
+    const birth = new Date(birthdate);
+    const refD = new Date(ref);
+    let years = refD.getFullYear() - birth.getFullYear();
+    let months = refD.getMonth() - birth.getMonth();
+    if (refD.getDate() < birth.getDate()) months--;
+    if (months < 0) { years--; months += 12; }
+    content = `Según fecha de nacimiento, la edad exacta es ${decimal} años\n(${years} años, ${months} meses)`;
+  }
+
+  return (
+    <div className="relative inline-block ml-1">
+      <button
+        type="button"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        className="cursor-help text-slate-400 hover:text-blue-500 transition-colors focus:outline-none"
+      >
+        <Info className="w-3.5 h-3.5" />
+      </button>
+      {show && (
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-slate-900 text-white text-xs rounded-xl shadow-xl min-w-[220px] max-w-[300px] animate-in fade-in zoom-in duration-200" style={{ whiteSpace: 'pre-wrap' }}>
+          {content}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
+        </div>
+      )}
+    </div>
+  );
+};
+
 const FormulaTooltip: React.FC<{ formula: string }> = ({ formula }) => {
   const [show, setShow] = useState(false);
   return (
@@ -275,7 +323,13 @@ export const NewMeasurementForm: React.FC<{
 
   useEffect(() => {
     if (!evaluation) return;
-    setFormData(prev => calculateAnthropometry({ ...prev, date: evaluation.date }));
+    setFormData(prev => {
+      const base = { ...prev, date: evaluation.date };
+      if (patient.clinical?.birthdate && evaluation.date) {
+        base.age = calcDecimalAge(patient.clinical.birthdate, evaluation.date);
+      }
+      return calculateAnthropometry(base);
+    });
   }, [evaluation?.date]);
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -462,6 +516,25 @@ export const NewMeasurementForm: React.FC<{
                             <option key={opt} value={opt}>{opt}</option>
                           ))}
                         </select>
+                      </div>
+                    );
+                  }
+
+                  if (field.key === 'age') {
+                    return (
+                      <div key={field.key} className={`flex flex-col ${fieldWrapperClass}`}>
+                        <div className="flex items-center mb-1.5">
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">{field.label}</label>
+                          <AgeHintTooltip birthdate={patient.clinical?.birthdate} refDate={linkedDate} />
+                        </div>
+                        <input
+                          type="number"
+                          value={(formData as any).age ?? ''}
+                          onChange={(e) => handleFieldChange('age', parseFloat(e.target.value))}
+                          onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                          placeholder="-"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-300 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        />
                       </div>
                     );
                   }
