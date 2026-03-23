@@ -6,17 +6,21 @@ import { store } from "../../../services/store";
 export function MenuReferenceDataToMenuPlanData(data: MenuReferenceData): MenuPlanData {
   const profile = store.getUserProfile();
 
+  const template = store.getMenuTemplate();
   const nutritionist: MenuPlanData["nutritionist"] = {
-    name:          profile.name,
-    title:         profile.specialty,
-    licenseNumber: profile.licenseNumber || "",
-    whatsapp:      profile.phone,
-    personalPhone: profile.personalPhone || "",
-    email:         profile.contactEmail || profile.email,
-    instagram:     profile.instagramHandle ? `@${profile.instagramHandle}` : "",
-    website:       profile.website || "",
-    avatar:        profile.avatar,
-    logoUrl:       undefined,
+    name:              profile.name,
+    professionalTitle: profile.professionalTitle || "",
+    title:             profile.specialty,
+    licenseNumber:     profile.licenseNumber || "",
+    whatsapp:          profile.phone,
+    personalPhone:     profile.personalPhone || "",
+    email:             profile.contactEmail || profile.email,
+    instagram:         profile.instagramHandle ? `@${profile.instagramHandle}` : "",
+    website:           profile.website || "",
+    address:           profile.address || "",
+    avatar:            profile.avatar,
+    logoUrl:           undefined,
+    footerConfig:      template?.footerConfig,
   };
 
   // ── Portions ────────────────────────────────────────────────────────────────

@@ -157,6 +157,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
 
     return {
       name: profile.name,
+      professionalTitle: profile.professionalTitle || '',
       title: profile.specialty,
       licenseNumber: profile.licenseNumber || '',
       whatsapp: profile.phone,
@@ -164,8 +165,10 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       email: profile.contactEmail || profile.email,
       instagram: profile.instagramHandle ? `@${profile.instagramHandle}` : '',
       website: profile.website || '',
+      address: profile.address || '',
       avatar: profile.avatar,
       logoUrl,
+      footerConfig: template?.footerConfig,
     };
   };
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Layout, Eye, Trash2, Save, CheckCircle } from 'lucide-react';
+import { Layout, Eye, EyeOff, Trash2, Save, CheckCircle, ChevronDown } from 'lucide-react';
+import type { MenuFooterConfig } from '../types';
 import { MenuTemplateV1, MenuTemplateV2, MenuPlanData } from '../components/menus_components/MenuDesignTemplates';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
@@ -105,6 +106,7 @@ const buildMockData = (
     },
     nutritionist: {
       name: profile.name,
+      professionalTitle: profile.professionalTitle || '',
       title: profile.specialty,
       licenseNumber: profile.licenseNumber || '',
       whatsapp: profile.phone,
@@ -112,12 +114,37 @@ const buildMockData = (
       email: profile.contactEmail || profile.email,
       instagram: profile.instagramHandle ? `@${profile.instagramHandle}` : '',
       website: profile.website || '',
+      address: profile.address || '',
       avatar: profile.avatar,
     },
   };
 };
 
 // ─── Sección 1: Gestión de Plantilla Base ─────────────────────────────────────
+const DEFAULT_FOOTER_CONFIG: MenuFooterConfig = {
+  showName: true,
+  showSpecialty: true,
+  showLicense: true,
+  showClinicPhone: true,
+  showPersonalPhone: true,
+  showEmail: true,
+  showInstagram: true,
+  showWebsite: true,
+  showAddress: true,
+};
+
+const FOOTER_FIELDS: { key: keyof MenuFooterConfig; label: string }[] = [
+  { key: 'showName',          label: 'Nombre Completo' },
+  { key: 'showSpecialty',     label: 'Especialidad' },
+  { key: 'showLicense',       label: 'No. Colegiado' },
+  { key: 'showClinicPhone',   label: 'Tel. Clínica' },
+  { key: 'showPersonalPhone', label: 'Tel. Personal' },
+  { key: 'showEmail',         label: 'Correo Electrónico' },
+  { key: 'showInstagram',     label: 'Usuario Instagram' },
+  { key: 'showWebsite',       label: 'Página Web' },
+  { key: 'showAddress',       label: 'Dirección' },
+];
+
 const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boolean }> = ({ hideHeader, hideContainer }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
@@ -127,6 +154,9 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
   const [templateId, setTemplateId] = useState<string | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [footerConfig, setFooterConfig] = useState<MenuFooterConfig>(DEFAULT_FOOTER_CONFIG);
+  const [membreteOpen, setMembreteOpen] = useState(false);
+  const [footerOpen, setFooterOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [userProfile, setUserProfile] = useState(() => store.getUserProfile());
@@ -150,6 +180,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
         setHeaderMode(cached.headerMode);
         setLogoUrl(cached.logoUrl || undefined);
         setSelectedTemplate(cached.templateDesign);
+        if (cached.footerConfig) setFooterConfig(cached.footerConfig);
         return;
       }
 
@@ -162,6 +193,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
           setHeaderMode(template.headerMode);
           setLogoUrl(template.logoUrl || undefined);
           setSelectedTemplate(template.templateDesign);
+          if (template.footerConfig) setFooterConfig(template.footerConfig);
           // Actualizar store para futuras navegaciones
           (store as any).menuTemplate = template;
         }
@@ -176,6 +208,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
     headerMode?: 'default' | 'logo';
     logoUrl?: string | undefined;
     templateDesign?: string;
+    footerConfig?: MenuFooterConfig;
   }) => {
     const userId = authStore.getCurrentUser()?.id;
     if (!userId) return;
@@ -188,6 +221,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
         logoUrl:        updates.logoUrl !== undefined ? updates.logoUrl : logoUrl,
         templateDesign: updates.templateDesign ?? selectedTemplate,
         isDefault:      true,
+        footerConfig:   updates.footerConfig ?? footerConfig,
       });
       setTemplateId(saved.id);
     } catch (err) {
@@ -299,6 +333,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
     nutritionist: {
       ...mockData.nutritionist,
       logoUrl: headerMode === 'logo' ? logoUrl : undefined,
+      footerConfig,
     },
   };
 
@@ -391,38 +426,41 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
 
       {/* Info cards — dinámicas según plantilla */}
       <div className="p-6 bg-slate-50/50 border-b border-slate-100">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <div className="text-emerald-600 font-bold text-xs uppercase tracking-wide mb-1">Formato</div>
-            <div className="text-slate-800 font-semibold">A4 Portrait</div>
-            <div className="text-slate-500 text-xs mt-0.5">Listo para imprimir o PDF</div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <div className="text-emerald-600 font-bold text-xs uppercase tracking-wide mb-1">Estructura</div>
-            <div className="text-slate-800 font-semibold">Header + Porciones + Menú</div>
+            <span className="text-emerald-600 font-bold text-xs uppercase tracking-wide">Estructura: </span>
+            <span className="text-slate-800 font-semibold text-sm">Hoja 1: Menú + Hoja 2: Recomendaciones</span>
             <div className="text-slate-500 text-xs mt-0.5">
-              {selectedTemplate === 'plantilla_v2' ? 'Tabla Menú 3 x 4' : 'Tabla Menú 3 x 3.'}
+              {selectedTemplate === 'plantilla_v2' ? 'Tabla Porciones + Menu Semanal' : 'Tabla Porciones + Menu 6 dias'}
             </div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <div className="text-emerald-600 font-bold text-xs uppercase tracking-wide mb-1">Versión</div>
-            <div className="text-slate-800 font-semibold">
+            <span className="text-emerald-600 font-bold text-xs uppercase tracking-wide">Versión: </span>
+            <span className="text-slate-800 font-semibold text-sm">
               {selectedTemplate === 'plantilla_v2' ? 'Plantilla V2' : 'Plantilla V1'}
-            </div>
+            </span>
             <div className="text-slate-500 text-xs mt-0.5">
-              {selectedTemplate === 'plantilla_v2' ? 'Menú 7 días' : 'Menú 6 días + Domingo libre'}
+              {selectedTemplate === 'plantilla_v2' ? 'Menú 7 días + nota corta' : 'Menú 6 días + Domingo libre'}
             </div>
           </div>
         </div>
       </div>
 
       {/* Personalizar Membrete */}
-      <div className="p-6 border-b border-slate-100">
-        <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-          <span className="bg-emerald-100 text-emerald-600 p-1 rounded">🖼️</span>
-          Personalizar Membrete
-        </h4>
+      <div className="border-b border-slate-100">
+        <button
+          onClick={() => setMembreteOpen(o => !o)}
+          className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+        >
+          <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <span className="bg-emerald-100 text-emerald-600 p-1 rounded">🖼️</span>
+            Personalizar Membrete
+          </h4>
+          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${membreteOpen ? 'rotate-180' : ''}`} />
+        </button>
 
+        {membreteOpen && (
+        <div className="px-6 pb-6">
         <div className="flex gap-3 items-center flex-wrap">
           <button
             onClick={() => handleHeaderModeChange('default')}
@@ -487,6 +525,48 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
           </p>
         )}
         {logoError && <p className="mt-2 text-xs text-red-500 font-medium">⚠️ {logoError}</p>}
+        </div>
+        )}
+      </div>
+
+      {/* Personalizar Pie de Página */}
+      <div className="border-b border-slate-100">
+        <button
+          onClick={() => setFooterOpen(o => !o)}
+          className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+        >
+          <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <span className="bg-emerald-100 text-emerald-600 p-1 rounded">📋</span>
+            Personalizar Pie de Página
+          </h4>
+          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${footerOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {footerOpen && (
+        <div className="px-6 pb-6">
+        <p className="text-xs text-slate-500 mb-3">Selecciona qué información aparece en el pie de página del menú.</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {FOOTER_FIELDS.map(({ key, label }) => (
+            <label
+              key={key}
+              className="flex items-center gap-2 cursor-pointer select-none px-3 py-2 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all"
+            >
+              <input
+                type="checkbox"
+                checked={footerConfig[key]}
+                onChange={async (e) => {
+                  const updated = { ...footerConfig, [key]: e.target.checked };
+                  setFooterConfig(updated);
+                  await saveTemplate({ footerConfig: updated });
+                }}
+                className="w-3.5 h-3.5 accent-emerald-600"
+              />
+              <span className="text-xs text-slate-700 font-medium">{label}</span>
+            </label>
+          ))}
+        </div>
+        </div>
+        )}
       </div>
 
       {/* Preview A4 */}

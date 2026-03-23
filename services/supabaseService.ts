@@ -821,6 +821,7 @@ export const supabaseService = {
     logoUrl?: string;
     templateDesign: string;
     isDefault?: boolean;
+    footerConfig?: import('../types').MenuFooterConfig;
   }) {
     const payload: any = {
       owner_id:        template.ownerId,
@@ -829,6 +830,7 @@ export const supabaseService = {
       logo_url:        template.logoUrl || null,
       template_design: template.templateDesign,
       is_default:      template.isDefault ?? true,
+      footer_config:   template.footerConfig ?? null,
       updated_at:      new Date().toISOString(),
     };
     if (template.id) payload.id = template.id;
@@ -880,6 +882,7 @@ export const supabaseService = {
       logoUrl:        db.logo_url || undefined,
       templateDesign: db.template_design,
       isDefault:      db.is_default,
+      footerConfig:   db.footer_config || undefined,
       createdAt:      db.created_at,
       updatedAt:      db.updated_at,
     };

@@ -181,6 +181,11 @@ class Store {
           timezone:          profile.timezone           || 'UTC±00:00',
           avatar:            profile.avatar             || '',
           phone:             profile.phone              || '',
+          personalPhone:     profile.personal_phone     || '',
+          contactEmail:      profile.contact_email      || '',
+          instagramHandle:   profile.instagram_handle   || '',
+          website:           profile.website            || '',
+          address:           profile.address            || '',
           menuAIConfig:      profile.menu_ai_config,
           labAIPrompt:       profile.lab_ai_prompt      || '',
         };

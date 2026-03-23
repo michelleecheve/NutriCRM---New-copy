@@ -391,6 +391,18 @@ export interface MenuRecommendationRecord {
 export type MenuTemplateDesign = 'plantilla_v1' | 'plantilla_v2';
 export type MenuHeaderMode = 'default' | 'logo';
 
+export interface MenuFooterConfig {
+  showName: boolean;
+  showSpecialty: boolean;
+  showLicense: boolean;
+  showClinicPhone: boolean;
+  showPersonalPhone: boolean;
+  showEmail: boolean;
+  showInstagram: boolean;
+  showWebsite: boolean;
+  showAddress: boolean;
+}
+
 export interface MenuTemplate {
   id: string;
   ownerId: string;
@@ -399,6 +411,7 @@ export interface MenuTemplate {
   logoUrl?: string;
   templateDesign: MenuTemplateDesign;
   isDefault: boolean;
+  footerConfig?: MenuFooterConfig;
   createdAt?: string;
   updatedAt?: string;
 }

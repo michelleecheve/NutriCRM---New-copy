@@ -1,4 +1,5 @@
 import React from 'react';
+import type { MenuFooterConfig } from '../../types';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 export interface MealPortions {
@@ -82,6 +83,7 @@ export interface MenuPlanData {
   recommendations?: MenuRecommendations;
   nutritionist: {
     name: string;
+    professionalTitle: string;
     title: string;
     licenseNumber: string;
     whatsapp: string;
@@ -89,8 +91,10 @@ export interface MenuPlanData {
     email: string;
     instagram: string;
     website: string;
+    address?: string;
     avatar: string;
     logoUrl?: string;
+    footerConfig?: MenuFooterConfig;
   };
 }
 
@@ -394,48 +398,66 @@ const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => (
   </table>
 );
 
-// ── Footer: reemplazar span flex del instagram con tabla inline ────────────────
-const Footer: React.FC<{ nutritionist: MenuPlanData['nutritionist'] }> = ({ nutritionist }) => (
-  <div style={{ width: '100%' }}>
-    <div style={{ fontWeight: 800, fontSize: '8px', color: '#1e293b', marginBottom: '2px' }}>
-      {(nutritionist.title || '').toUpperCase().includes('LIC') || (nutritionist.title || '').toUpperCase().includes('DR')
-        ? (nutritionist.title || '').toUpperCase() : 'LICDA.'}{' '}
-      {(nutritionist.name || '').toUpperCase()}
-      {nutritionist.licenseNumber && ` - NUTRICIONISTA COLEGIADO #${nutritionist.licenseNumber}`}
+// ── Footer ─────────────────────────────────────────────────────────────────────
+const Footer: React.FC<{ nutritionist: MenuPlanData['nutritionist'] }> = ({ nutritionist }) => {
+  const cfg = nutritionist.footerConfig;
+  const show = (key: keyof MenuFooterConfig): boolean => !cfg || cfg[key];
+
+  // ── Row 1 left: bold name + specialty ──
+  const nameLeft: string[] = [];
+  if (show('showName') && nutritionist.name) {
+    const prefix = (nutritionist.professionalTitle || '').toUpperCase();
+    nameLeft.push(prefix ? `${prefix} ${nutritionist.name.toUpperCase()}` : nutritionist.name.toUpperCase());
+  }
+  if (show('showSpecialty') && nutritionist.title) nameLeft.push(`- ${nutritionist.title.toUpperCase()}`);
+
+  // ── Row 2: license first, then contact fields, address last ──
+  const contactItems: { label: string; value: string }[] = [];
+  if (show('showLicense') && nutritionist.licenseNumber)       contactItems.push({ label: 'Colegiado #',   value: nutritionist.licenseNumber });
+  if (show('showClinicPhone') && nutritionist.whatsapp)        contactItems.push({ label: 'Tel. Clínica',  value: nutritionist.whatsapp });
+  if (show('showPersonalPhone') && nutritionist.personalPhone) contactItems.push({ label: 'Tel. Personal', value: nutritionist.personalPhone });
+  if (show('showEmail') && nutritionist.email)                 contactItems.push({ label: 'Email',         value: nutritionist.email });
+  if (show('showInstagram') && nutritionist.instagram)         contactItems.push({ label: 'Instagram',     value: nutritionist.instagram });
+  if (show('showAddress') && nutritionist.address)             contactItems.push({ label: 'Dirección',     value: nutritionist.address });
+
+  const showWebsite = show('showWebsite') && !!nutritionist.website;
+
+  return (
+    <div style={{ width: '100%' }}>
+      {/* Row 1: bold name/specialty, website inline after (not bold) */}
+      {(nameLeft.length > 0 || showWebsite) && (
+        <div style={{ fontSize: '8px', color: '#1e293b', marginBottom: '2px' }}>
+          <span style={{ fontWeight: 800 }}>{nameLeft.join(' ')}</span>
+          {showWebsite && (
+            <>
+              <span style={{ fontWeight: 800, color: '#1e293b', margin: '0 6px' }}>|</span>
+              <span style={{ fontWeight: 400, color: '#475569', textTransform: 'uppercase' }}>
+                {nutritionist.website}
+              </span>
+            </>
+          )}
+        </div>
+      )}
+      {/* Row 2: colegiado + contact + address */}
+      {contactItems.length > 0 && (
+        <table style={{ borderCollapse: 'collapse', fontSize: '7.5px', color: '#475569' }}>
+          <tbody>
+            <tr>
+              {contactItems.map((item, i) => (
+                <td
+                  key={i}
+                  style={{ paddingRight: i < contactItems.length - 1 ? '14px' : undefined, verticalAlign: 'middle', whiteSpace: 'nowrap' }}
+                >
+                  {item.label}: {item.value}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      )}
     </div>
-    <table style={{ borderCollapse: 'collapse', fontSize: '7.5px', color: '#475569' }}>
-      <tbody>
-        <tr>
-          {nutritionist.whatsapp && (
-            <td style={{ paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-              Teléfono Clínica: {nutritionist.whatsapp}
-            </td>
-          )}
-          {nutritionist.personalPhone && (
-            <td style={{ paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-              Teléfono Personal: {nutritionist.personalPhone}
-            </td>
-          )}
-          {nutritionist.email && (
-            <td style={{ paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-              Email: {nutritionist.email}
-            </td>
-          )}
-          {nutritionist.instagram && (
-            <td style={{ paddingRight: '14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-              Instagram: {nutritionist.instagram}
-            </td>
-          )}
-          {nutritionist.website && (
-            <td style={{ verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-              Web: {nutritionist.website}
-            </td>
-          )}
-        </tr>
-      </tbody>
-    </table>
-  </div>
-);
+  );
+};
 
 // ─── Shared A4 wrapper ─────────────────────────────────────────────────────────
 // Uses a full-height table so the footer is always at the bottom of the 296mm
