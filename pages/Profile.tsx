@@ -5,7 +5,7 @@ import { compressImage } from '../services/imageUtils';
 import { UserProfile, AppUser } from '../types';
 import {
   Save, User, Mail, Phone, Award, Camera, Check, Loader2,
-  MapPin, Globe, ChevronDown, Clock, Link2, UserPlus, Trash2, Copy, Users, AlertTriangle, LogOut
+  MapPin, Globe, ChevronDown, Clock, Link2, UserPlus, Trash2, Copy, Users, AlertTriangle, LogOut, Calendar
 } from 'lucide-react';
 
 import { ProfileAIConfig } from '../components/profile_config/ProfileAIConfig';
@@ -78,6 +78,7 @@ const VinculacionNutricionista: React.FC<{
   onUnlinkRequest: (id: string, name: string, type: 'receptionist') => void;
   }> = ({ onUnlinkRequest }) => {
   const currentUser: any = authStore.getCurrentUser();
+  const [isOpen, setIsOpen] = useState(false);
   const [linkCode, setLinkCode] = useState('');
   const [copied, setCopied] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -112,124 +113,133 @@ const VinculacionNutricionista: React.FC<{
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-        <Link2 className="w-5 h-5 text-emerald-600" />
-        <h3 className="font-bold text-slate-800">Vinculación con Recepcionistas</h3>
-      </div>
-
-      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 space-y-3">
-    <div>
-      <p className="text-sm font-bold text-emerald-800">Tu código de vinculación</p>
-      <p className="text-xs text-emerald-600 mt-0.5">
-        Comparte este código con tu recepcionista para que pueda vincularse a tu cuenta.
-      </p>
-    </div>
-    <div className="flex gap-3">
-      {myLinkCode ? (
-        <>
-          <div className="flex-1 bg-white border border-emerald-200 rounded-xl px-4 py-3 font-mono text-base font-bold tracking-wide text-emerald-700 select-all">
-            {myLinkCode}
-          </div>
-          <button
-            type="button"
-            onClick={handleCopyMyCode}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
-              copied ? 'bg-emerald-600 text-white' : 'bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-            }`}
-          >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            {copied ? 'Copiado' : 'Copiar'}
-          </button>
-        </>
-      ) : (
-        <button
-          type="button"
-          onClick={async () => {
-            setMsg({ type: 'ok', text: 'Generando código...' });
-            const code = await authStore.generateAndSaveLinkCode();
-            setMsg({ type: 'ok', text: `Código generado: ${code}` });
-            setTimeout(() => setMsg(null), 2000);
-            // Aquí puedes recargar, volver a llamar a setRefreshKey(x => x + 1), o setear localmente tu estado:
-            window.location.reload(); // fuerza el refetch y la recarga de código
-          }}
-          className="px-5 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all text-sm"
-        >
-          Generar código de vinculación
-        </button>
-      )}
-    </div>
-    {msg && (
-      <p className={`text-sm font-medium px-1 ${msg.type === 'ok' ? 'text-emerald-600' : 'text-red-500'}`}>
-        {msg.text}
-      </p>
-    )}
-  </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-bold text-slate-700 block">Vincular recepcionista por código</label>
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400">
-              <Copy className="w-5 h-5" />
-            </div>
-            <input
-              type="text"
-              value={linkCode}
-              onChange={e => setLinkCode(e.target.value)}
-              placeholder="RECEP-9Z1P0A"
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-mono font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleLinkReceptionist}
-            className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all text-sm"
-          >
-            <UserPlus className="w-4 h-4" />
-            Vincular
-          </button>
+      <button
+        type="button"
+        onClick={() => setIsOpen(o => !o)}
+        className="w-full flex items-center justify-between pb-2 border-b border-slate-100 group"
+      >
+        <div className="flex items-center gap-2">
+          <Link2 className="w-5 h-5 text-emerald-600" />
+          <h3 className="font-bold text-slate-800">Vinculación con Recepcionistas</h3>
         </div>
-        {msg && (
-          <p className={`text-sm font-medium px-1 ${msg.type === 'ok' ? 'text-emerald-600' : 'text-red-500'}`}>
-            {msg.text}
-          </p>
-        )}
-      </div>
+        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
 
-      <div className="space-y-3">
-        <p className="text-sm font-bold text-slate-700">
-          Recepcionistas vinculadas ({linkedReceptionists.length})
-        </p>
-        {linkedReceptionists.length === 0 ? (
-          <div className="bg-slate-50 rounded-xl p-5 text-center text-sm text-slate-400">
-            No tienes recepcionistas vinculadas aún.
+      {isOpen && (
+        <div className="space-y-6">
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 space-y-3">
+            <div>
+              <p className="text-sm font-bold text-emerald-800">Tu código de vinculación</p>
+              <p className="text-xs text-emerald-600 mt-0.5">
+                Comparte este código con tu recepcionista para que pueda vincularse a tu cuenta.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              {myLinkCode ? (
+                <>
+                  <div className="flex-1 bg-white border border-emerald-200 rounded-xl px-4 py-3 font-mono text-base font-bold tracking-wide text-emerald-700 select-all">
+                    {myLinkCode}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyMyCode}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                      copied ? 'bg-emerald-600 text-white' : 'bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                    }`}
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copied ? 'Copiado' : 'Copiar'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setMsg({ type: 'ok', text: 'Generando código...' });
+                    const code = await authStore.generateAndSaveLinkCode();
+                    setMsg({ type: 'ok', text: `Código generado: ${code}` });
+                    setTimeout(() => setMsg(null), 2000);
+                    window.location.reload();
+                  }}
+                  className="px-5 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all text-sm"
+                >
+                  Generar código de vinculación
+                </button>
+              )}
+            </div>
+            {msg && (
+              <p className={`text-sm font-medium px-1 ${msg.type === 'ok' ? 'text-emerald-600' : 'text-red-500'}`}>
+                {msg.text}
+              </p>
+            )}
           </div>
-        ) : (
-        linkedReceptionists.map(recep => {
-          // Usar fallback seguro para el nombre
-          const recepName = recep.profile?.name ?? recep.name ?? "Sin nombre";
-          return (
-            <div key={recep.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-4">
-              <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
-                {recepName.charAt(0)}
+
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 block">Vincular recepcionista por código</label>
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400">
+                  <Copy className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  value={linkCode}
+                  onChange={e => setLinkCode(e.target.value)}
+                  placeholder="RECEP-9Z1P0A"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-mono font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-800 truncate">{recepName}</p>
-                <p className="text-xs text-slate-400 truncate">{recep.email}</p>
-              </div>
-              <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">Activa</span>
               <button
                 type="button"
-                onClick={() => onUnlinkRequest(recep.id, recepName, 'receptionist')}
-                className="w-8 h-8 flex items-center justify-center bg-white border border-red-100 text-red-400 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                onClick={handleLinkReceptionist}
+                className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all text-sm"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <UserPlus className="w-4 h-4" />
+                Vincular
               </button>
             </div>
-          );
-        })
-        )}
-      </div>
+            {msg && (
+              <p className={`text-sm font-medium px-1 ${msg.type === 'ok' ? 'text-emerald-600' : 'text-red-500'}`}>
+                {msg.text}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm font-bold text-slate-700">
+              Recepcionistas vinculadas ({linkedReceptionists.length})
+            </p>
+            {linkedReceptionists.length === 0 ? (
+              <div className="bg-slate-50 rounded-xl p-5 text-center text-sm text-slate-400">
+                No tienes recepcionistas vinculadas aún.
+              </div>
+            ) : (
+              linkedReceptionists.map(recep => {
+                const recepName = recep.profile?.name ?? recep.name ?? "Sin nombre";
+                return (
+                  <div key={recep.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-4">
+                    <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
+                      {recepName.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800 truncate">{recepName}</p>
+                      <p className="text-xs text-slate-400 truncate">{recep.email}</p>
+                    </div>
+                    <span className="text-xs font-bold bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">Activa</span>
+                    <button
+                      type="button"
+                      onClick={() => onUnlinkRequest(recep.id, recepName, 'receptionist')}
+                      className="w-8 h-8 flex items-center justify-center bg-white border border-red-100 text-red-400 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -238,6 +248,7 @@ const VinculacionRecepcionista: React.FC<{
   onUnlinkRequest: (id: string, name: string, type: 'nutritionist') => void;
 }> = ({ onUnlinkRequest }) => {
   const currentUser: any = authStore.getCurrentUser();
+  const [isOpen, setIsOpen] = useState(false);
   const [linkCode, setLinkCode] = useState('');
   const [copied, setCopied] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -272,96 +283,107 @@ const VinculacionRecepcionista: React.FC<{
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-        <Users className="w-5 h-5 text-blue-600" />
-        <h3 className="font-bold text-slate-800">Vinculación con Nutricionistas</h3>
-      </div>
-
-      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-3">
-        <div>
-          <p className="text-sm font-bold text-blue-800">Tu código de vinculación</p>
-          <p className="text-xs text-blue-600 mt-0.5">
-            Comparte este código con la nutricionista para que pueda vincularse a tu cuenta.
-          </p>
+      <button
+        type="button"
+        onClick={() => setIsOpen(o => !o)}
+        className="w-full flex items-center justify-between pb-2 border-b border-slate-100 group"
+      >
+        <div className="flex items-center gap-2">
+          <Users className="w-5 h-5 text-blue-600" />
+          <h3 className="font-bold text-slate-800">Vinculación con Nutricionistas</h3>
         </div>
-        <div className="flex gap-3">
-          <div className="flex-1 bg-white border border-blue-200 rounded-xl px-4 py-3 font-mono text-base font-bold tracking-wide text-blue-700 select-all">
-            {myLinkCode}
-          </div>
-          <button
-            type="button"
-            onClick={handleCopyMyCode}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
-              copied ? 'bg-blue-600 text-white' : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
-            }`}
-          >
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            {copied ? 'Copiado' : 'Copiar'}
-          </button>
-        </div>
-      </div>
+        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
 
-      <div className="space-y-2">
-        <label className="text-sm font-bold text-slate-700 block">Vincular nutricionista por código</label>
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400">
-              <Copy className="w-5 h-5" />
+      {isOpen && (
+        <div className="space-y-6">
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-3">
+            <div>
+              <p className="text-sm font-bold text-blue-800">Tu código de vinculación</p>
+              <p className="text-xs text-blue-600 mt-0.5">
+                Comparte este código con la nutricionista para que pueda vincularse a tu cuenta.
+              </p>
             </div>
-            <input
-              type="text"
-              value={linkCode}
-              onChange={e => setLinkCode(e.target.value)}
-              placeholder="NUTRI-4K8D2Q"
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-mono font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleLinkNutritionist}
-            className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all text-sm"
-          >
-            <UserPlus className="w-4 h-4" />
-            Vincular
-          </button>
-        </div>
-        {msg && (
-          <p className={`text-sm font-medium px-1 ${msg.type === 'ok' ? 'text-blue-600' : 'text-red-500'}`}>
-            {msg.text}
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-3">
-        <p className="text-sm font-bold text-slate-700">
-          Nutricionistas vinculadas ({linkedNutritionists.length})
-        </p>
-        {linkedNutritionists.length === 0 ? (
-          <div className="bg-slate-50 rounded-xl p-5 text-center text-sm text-slate-400">
-            No tienes nutricionistas vinculadas aún.
-          </div>
-        ) : (
-          linkedNutritionists.map(nutri => (
-            <div key={nutri.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-4">
-              <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm flex-shrink-0">
-                {nutri.profile.name.charAt(0)}
+            <div className="flex gap-3">
+              <div className="flex-1 bg-white border border-blue-200 rounded-xl px-4 py-3 font-mono text-base font-bold tracking-wide text-blue-700 select-all">
+                {myLinkCode}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-800 truncate">{nutri.profile.name}</p>
-                <p className="text-xs text-slate-400 truncate">{nutri.email}</p>
-              </div>
-              <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">Activa</span>
               <button
                 type="button"
-                onClick={() => onUnlinkRequest(nutri.id, nutri.profile.name, 'nutritionist')}
-                className="w-8 h-8 flex items-center justify-center bg-white border border-red-100 text-red-400 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                onClick={handleCopyMyCode}
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                  copied ? 'bg-blue-600 text-white' : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
+                }`}
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'Copiado' : 'Copiar'}
               </button>
             </div>
-          ))
-        )}
-      </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-slate-700 block">Vincular nutricionista por código</label>
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400">
+                  <Copy className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  value={linkCode}
+                  onChange={e => setLinkCode(e.target.value)}
+                  placeholder="NUTRI-4K8D2Q"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-mono font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleLinkNutritionist}
+                className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all text-sm"
+              >
+                <UserPlus className="w-4 h-4" />
+                Vincular
+              </button>
+            </div>
+            {msg && (
+              <p className={`text-sm font-medium px-1 ${msg.type === 'ok' ? 'text-blue-600' : 'text-red-500'}`}>
+                {msg.text}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm font-bold text-slate-700">
+              Nutricionistas vinculadas ({linkedNutritionists.length})
+            </p>
+            {linkedNutritionists.length === 0 ? (
+              <div className="bg-slate-50 rounded-xl p-5 text-center text-sm text-slate-400">
+                No tienes nutricionistas vinculadas aún.
+              </div>
+            ) : (
+              linkedNutritionists.map(nutri => (
+                <div key={nutri.id} className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-4">
+                  <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm flex-shrink-0">
+                    {nutri.profile.name.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-800 truncate">{nutri.profile.name}</p>
+                    <p className="text-xs text-slate-400 truncate">{nutri.email}</p>
+                  </div>
+                  <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full">Activa</span>
+                  <button
+                    type="button"
+                    onClick={() => onUnlinkRequest(nutri.id, nutri.profile.name, 'nutritionist')}
+                    className="w-8 h-8 flex items-center justify-center bg-white border border-red-100 text-red-400 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -381,6 +403,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [formData, setFormData] = useState<UserProfile>(authStore.getUserProfile());
   const [isSaved, setIsSaved] = useState(false);
   const [isProcessingImg, setIsProcessingImg] = useState(false);
+  const [isSistemaOpen, setIsSistemaOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estados para modal de desvinculación
@@ -552,27 +575,58 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 
             {showSistema && (
               <div className="space-y-6">
-                <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                  <Clock className="w-5 h-5 text-emerald-600" />
-                  <h3 className="font-bold text-slate-800">Configuración de Sistema</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 block">Zona Horaria (UTC)</label>
-                    <div className="relative">
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><Globe className="w-5 h-5" /></div>
-                      <select
-                        value={formData.timezone || 'UTC±00:00'}
-                        onChange={e => setFormData({ ...formData, timezone: e.target.value })}
-                        className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 appearance-none"
-                      >
-                        {UTC_TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><ChevronDown className="w-4 h-4" /></div>
-                    </div>
-                    <p className="text-[10px] text-slate-400 px-1">Esto asegura que la "Agenda de Hoy" muestre las citas correctas según tu hora local.</p>
+                <button
+                  type="button"
+                  onClick={() => setIsSistemaOpen(o => !o)}
+                  className="w-full flex items-center justify-between pb-2 border-b border-slate-100 group"
+                >
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-emerald-600" />
+                    <h3 className="font-bold text-slate-800">Configuración de Sistema</h3>
                   </div>
-                </div>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isSistemaOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isSistemaOpen && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700 block">Zona Horaria (UTC)</label>
+                      <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><Globe className="w-5 h-5" /></div>
+                        <select
+                          value={formData.timezone || 'UTC±00:00'}
+                          onChange={e => setFormData({ ...formData, timezone: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 appearance-none"
+                        >
+                          {UTC_TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><ChevronDown className="w-4 h-4" /></div>
+                      </div>
+                      <p className="text-[10px] text-slate-400 px-1">Esto asegura que la "Agenda de Hoy" muestre las citas correctas según tu hora local.</p>
+                    </div>
+
+                    <InputField
+                      label="País"
+                      icon={MapPin}
+                      value={formData.country || ''}
+                      onChange={(e: any) => setFormData({ ...formData, country: e.target.value })}
+                      placeholder="Ej. Guatemala"
+                    />
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700 block">Fecha de Nacimiento</label>
+                      <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><Calendar className="w-5 h-5" /></div>
+                        <input
+                          type="date"
+                          value={formData.dateOfBirth || ''}
+                          onChange={e => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

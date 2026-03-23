@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Lock, Mail, ArrowRight, AlertCircle, User, Globe, Camera, ArrowLeft } from 'lucide-react';
+import React, { useState } from 'react';
+import { Lock, Mail, ArrowRight, AlertCircle, User, Globe, Camera, ArrowLeft, MapPin, Calendar } from 'lucide-react';
 import { authStore } from '../services/authStore';
 import { supabaseService } from '../services/supabaseService';
 import { compressImage } from '../services/imageUtils';
@@ -10,39 +10,71 @@ interface RegisterProps {
   onSuccess: () => void;
 }
 
+const COUNTRIES = [
+  'Afganistán','Albania','Alemania','Andorra','Angola','Antigua y Barbuda','Arabia Saudita',
+  'Argelia','Argentina','Armenia','Australia','Austria','Azerbaiyán','Bahamas','Bahrein',
+  'Bangladesh','Barbados','Bélgica','Belice','Benín','Bielorrusia','Bolivia','Bosnia y Herzegovina',
+  'Botsuana','Brasil','Brunéi','Bulgaria','Burkina Faso','Burundi','Bután','Cabo Verde',
+  'Camboya','Camerún','Canadá','Catar','Chad','Chile','China','Chipre','Colombia','Comoras',
+  'Congo','Corea del Norte','Corea del Sur','Costa de Marfil','Costa Rica','Croacia','Cuba',
+  'Dinamarca','Djibouti','Dominica','Ecuador','Egipto','El Salvador','Emiratos Árabes Unidos',
+  'Eritrea','Eslovaquia','Eslovenia','España','Estados Unidos','Estonia','Esuatini','Etiopía',
+  'Filipinas','Finlandia','Fiyi','Francia','Gabón','Gambia','Georgia','Ghana','Granada',
+  'Grecia','Guatemala','Guinea','Guinea-Bisáu','Guinea Ecuatorial','Guyana','Haití','Honduras',
+  'Hungría','India','Indonesia','Irak','Irán','Irlanda','Islandia','Islas Marshall',
+  'Islas Salomón','Israel','Italia','Jamaica','Japón','Jordania','Kazajistán','Kenia',
+  'Kirguistán','Kiribati','Kosovo','Kuwait','Laos','Lesoto','Letonia','Líbano','Liberia',
+  'Libia','Liechtenstein','Lituania','Luxemburgo','Madagascar','Malasia','Malaui','Maldivas',
+  'Malí','Malta','Marruecos','Mauricio','Mauritania','México','Micronesia','Moldavia','Mónaco',
+  'Mongolia','Montenegro','Mozambique','Namibia','Nauru','Nepal','Nicaragua','Níger','Nigeria',
+  'Noruega','Nueva Zelanda','Omán','Países Bajos','Pakistán','Palaos','Palestina','Panamá',
+  'Papúa Nueva Guinea','Paraguay','Perú','Polonia','Portugal','Reino Unido','República Centroafricana',
+  'República Checa','República Democrática del Congo','República Dominicana','Ruanda','Rumanía',
+  'Rusia','Samoa','San Cristóbal y Nieves','San Marino','San Vicente y las Granadinas',
+  'Santa Lucía','Santo Tomé y Príncipe','Senegal','Serbia','Seychelles','Sierra Leona',
+  'Singapur','Siria','Somalia','Sri Lanka','Sudáfrica','Sudán','Sudán del Sur','Suecia',
+  'Suiza','Surinam','Tailandia','Tanzania','Tayikistán','Timor Oriental','Togo','Tonga',
+  'Trinidad y Tobago','Túnez','Turkmenistán','Turquía','Tuvalu','Ucrania','Uganda','Uruguay',
+  'Uzbekistán','Vanuatu','Venezuela','Vietnam','Yemen','Yibuti','Zambia','Zimbabue',
+];
+
+const UTC_TIMEZONES = [
+  "UTC-12:00","UTC-11:00","UTC-10:00","UTC-09:30","UTC-09:00","UTC-08:00",
+  "UTC-07:00","UTC-06:00","UTC-05:00","UTC-04:00","UTC-03:30","UTC-03:00",
+  "UTC-02:00","UTC-01:00","UTC±00:00","UTC+01:00","UTC+02:00","UTC+03:00",
+  "UTC+03:30","UTC+04:00","UTC+04:30","UTC+05:00","UTC+05:30","UTC+05:45",
+  "UTC+06:00","UTC+06:30","UTC+07:00","UTC+08:00","UTC+08:45","UTC+09:00",
+  "UTC+09:30","UTC+10:00","UTC+10:30","UTC+11:00","UTC+12:00","UTC+12:45",
+  "UTC+13:00","UTC+14:00"
+];
+
+const getLocalTimezone = (): string => {
+  const offset = new Date().getTimezoneOffset();
+  if (offset === 0) return "UTC±00:00";
+  const absOffset = Math.abs(offset);
+  const h = Math.floor(absOffset / 60);
+  const m = absOffset % 60;
+  const sign = offset > 0 ? "-" : "+";
+  return `UTC${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
 export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<UserRole>('nutricionista');
   const [timezone, setTimezone] = useState(() => {
-    try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone;
-    } catch (e) {
-      return 'America/Guatemala';
-    }
+    const local = getLocalTimezone();
+    return UTC_TIMEZONES.includes(local) ? local : 'UTC±00:00';
   });
-
-  const getTimezones = () => {
-    try {
-      return (Intl as any).supportedValuesOf('timeZone');
-    } catch (e) {
-      return [
-        'America/Guatemala',
-        'America/Mexico_City',
-        'America/Bogota',
-        'America/Lima',
-        'America/Santiago',
-        'America/Argentina/Buenos_Aires',
-        'Europe/Madrid',
-        'UTC'
-      ];
-    }
-  };
+  const [country, setCountry] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const isFormComplete = fullName.trim() !== '' && email.trim() !== '' && password.length >= 6 && country !== '' && dateOfBirth !== '';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -70,7 +102,7 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
       // Or we can use a temporary ID or just update after.
       // Actually, my updated authStore.signUp creates the profile.
       
-      const result = await authStore.signUp(email, password, fullName, role, timezone);
+      const result = await authStore.signUp(email, password, fullName, role, timezone, undefined, country, dateOfBirth);
       
       if (!result.ok) {
         setError(result.message || 'Error al registrarse.');
@@ -135,7 +167,7 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
                   <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                 </label>
               </div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Foto de perfil (opcional)</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Foto de Logo (opcional)</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -199,18 +231,51 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Zona Horaria</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Zona Horaria (UTC)</label>
               <div className="relative">
-                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <select
                   value={timezone}
                   onChange={(e) => setTimezone(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-slate-900 font-medium appearance-none"
                 >
-                  {getTimezones().map((tz: string) => (
+                  {UTC_TIMEZONES.map((tz) => (
                     <option key={tz} value={tz}>{tz}</option>
                   ))}
                 </select>
+              </div>
+              <p className="text-[10px] text-slate-400 px-1 mt-1">Detectada automáticamente. Ajústala si es necesario.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">País</label>
+                <div className="relative">
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
+                  <select
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className={`w-full pl-12 pr-4 py-3 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium appearance-none ${country === '' ? 'text-slate-400' : 'text-slate-900'}`}
+                  >
+                    <option value="" disabled>Selecciona tu país</option>
+                    {COUNTRIES.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Fecha de Nacimiento</label>
+                <div className="relative">
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-slate-900 font-medium"
+                  />
+                </div>
               </div>
             </div>
 
@@ -221,10 +286,17 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
               </div>
             )}
 
+            {!isFormComplete && !isLoading && (
+              <div className="flex items-center gap-2 text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-sm font-medium">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                Por favor llena todos los campos.
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-70 mt-6"
+              disabled={isLoading || !isFormComplete}
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-60 disabled:cursor-not-allowed mt-6"
             >
               {isLoading ? (
                 <span>Creando cuenta...</span>

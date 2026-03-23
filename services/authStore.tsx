@@ -144,6 +144,8 @@ const mapProfileToAppUser = (p: any): AppUser => ({
     instagramHandle:   p.instagram_handle   || '',
     website:           p.website            || '',
     address:           p.address            || '',
+    country:           p.country            || '',
+    dateOfBirth:       p.date_of_birth      || '',
   } as any,
 });
 
@@ -279,7 +281,7 @@ class AuthStore {
   return this.currentUser;
   }
 
-  async signUp(email: string, password: string, name: string, role: UserRole, timezone: string, avatar?: string): Promise<{ ok: boolean; message?: string }> {
+  async signUp(email: string, password: string, name: string, role: UserRole, timezone: string, avatar?: string, country?: string, dateOfBirth?: string): Promise<{ ok: boolean; message?: string }> {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -290,7 +292,7 @@ class AuthStore {
 
     const { error: profileError } = await supabase
       .from('profiles')
-      .upsert({ id: data.user.id, name, role, timezone, avatar: avatar || '', email }, { onConflict: 'id' });
+      .upsert({ id: data.user.id, name, role, timezone, avatar: avatar || '', email, country: country || '', date_of_birth: dateOfBirth || null }, { onConflict: 'id' });
 
     if (profileError) {
       console.error('Error creating profile:', profileError);
@@ -502,6 +504,8 @@ class AuthStore {
         instagram_handle:   profile.instagramHandle,
         website:            profile.website,
         address:            profile.address,
+        country:            profile.country,
+        date_of_birth:      profile.dateOfBirth || null,
       })
       .eq('id', this.currentUser.id);
     if (error) {

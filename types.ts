@@ -308,6 +308,8 @@ export interface UserProfile {
   website?: string;
   avatar?: string;
   timezone?: string;
+  country?: string;
+  dateOfBirth?: string;
   menuAIConfig?: MenuAIConfig;
   labAIPrompt?: string;
 }
