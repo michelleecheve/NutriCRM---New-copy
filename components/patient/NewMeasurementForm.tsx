@@ -54,7 +54,7 @@ const FORM_SECTIONS: any[] = [
       { key: 'thigh', label: 'Muslo', type: 'number', isManual: true },
       { key: 'calf', label: 'Pantorrilla', type: 'number', isManual: true },
       { key: 'iliacCrest', label: 'Cresta Ilíaca', type: 'number', isManual: true },
-      { key: 'skinfoldSum', label: 'SUM. PLIEGUES', isCalculated: true, formula: 'Suma de los 8 pliegues' },
+      { key: 'skinfoldSum', label: 'SUM. PLIEGUES', isCalculated: true, formula: 'Suma de los 8 pliegues\nBíceps + Tríceps + Subescapular + Supraespinal + Abdomen + Muslo + Pantorrilla + Cresta Ilíaca' },
     ]
   },
   {
@@ -82,25 +82,25 @@ const FORM_SECTIONS: any[] = [
   {
     title: 'COMPOSICIÓN CORPORAL',
     fields: [
-      { key: 'imc', label: 'IMC', isCalculated: true, formula: 'Peso / (Talla/100)²' },
-      { key: 'bodyFat', label: '% Grasa', isCalculated: true, formula: 'M: (Σ 6 Pliegues * 0.097) + 3.64 | F: (Σ 6 Pliegues * 0.143) + 4.56' },
-      { key: 'fatKg', label: 'Peso Grasa (kg)', isCalculated: true, formula: '(% Grasa * Peso) / 100' },
-      { key: 'leanMassKg', label: 'Peso Libre de Grasa (kg)', isCalculated: true, formula: 'Peso - Peso Grasa' },
-      { key: 'leanMassPct', label: '% Peso Libre de Grasa', isCalculated: true, formula: '(Peso Libre Grasa / Peso) * 100' },
-      { key: 'aks', label: 'AKS', isCalculated: true, formula: '(Peso Libre Grasa * 1000) / (Talla³ * 0.01)' },
-      { key: 'boneMass', label: 'Masa Ósea (kg)', isCalculated: true, formula: '3.02 * ((Talla² * Muñeca * Húmero * 4) / 10⁶)^0.712' },
-      { key: 'residualMass', label: 'PesRES (kg)', isCalculated: true, formula: 'M: Peso * 0.241 | F: Peso * 0.209' },
-      { key: 'muscleKg', label: 'Peso Músculo (kg)', isCalculated: true, formula: 'Peso - (Masa Ósea + Peso Grasa + PesRES)' },
+      { key: 'imc', label: 'IMC', isCalculated: true, formula: 'Peso (kg) / (Talla (cm) / 100)²' },
+      { key: 'bodyFat', label: '% Grasa', isCalculated: true, formula: 'FÓRMULA MENORES (Slaughter)\nNiño (M):\n  Si edad < 12:      1.21×(Tríc+Sub) − 0.008×(Tríc+Sub)² − 1.7\n  Si edad 12.1–13:   1.21×(Tríc+Sub) − 0.008×(Tríc+Sub)² − 3.4\n  Si edad 13.1–16:   1.21×(Tríc+Sub) − 0.008×(Tríc+Sub)² − 5.5\nNiña (F):\n  Si edad 5–14:      1.33×(Tríc+Sub) − 0.013×(Tríc+Sub)² − 2.5\n\nFÓRMULA ADULTOS (Yuhász)\nHombre: Si edad > 16.1: Σ6 × 0.097 + 3.64\nMujer:  Si edad > 14.1: Σ6 × 0.143 + 4.56\n\nΣ6 = Tríc + Sub + Supra + Abd + Muslo + Pantorrilla' },
+      { key: 'fatKg', label: 'Peso Grasa (kg)', isCalculated: true, formula: '(% Grasa × Peso) / 100' },
+      { key: 'leanMassKg', label: 'Peso Libre de Grasa (kg)', isCalculated: true, formula: 'Peso − Peso Grasa (kg)' },
+      { key: 'leanMassPct', label: '% Peso Libre de Grasa', isCalculated: true, formula: '(Peso Libre de Grasa / Peso) × 100' },
+      { key: 'aks', label: 'AKS', isCalculated: true, formula: '(Peso Libre de Grasa × 1000) / (Talla³ × 0.01)' },
+      { key: 'boneMass', label: 'Masa Ósea (kg)', isCalculated: true, formula: 'Martin & Drinkwater (1991)\n3.02 × ((Talla² × Muñeca × Húmero × 4) / 1,000,000)^0.712' },
+      { key: 'residualMass', label: 'PesRES (kg)', isCalculated: true, formula: 'M: Peso × 0.241\nF: Peso × 0.209' },
+      { key: 'muscleKg', label: 'Peso Músculo (kg)', isCalculated: true, formula: 'Peso − (Masa Ósea + Peso Grasa + Masa Residual)' },
     ]
   },
   {
     title: 'SOMATOTIPO',
     fields: [
-      { key: 'endomorfo', label: 'Endomorfo', isCalculated: true, formula: 'Carter & Heath (1990) - Coef: 0.145' },
-      { key: 'mesomorfo', label: 'Mesomorfo', isCalculated: true, formula: 'Carter & Heath (1990)' },
-      { key: 'ectomorfo', label: 'Ectomorfo', isCalculated: true, formula: 'Carter & Heath (1990) - 2 Rangos' },
-      { key: 'x', label: 'X', isCalculated: true, formula: 'Ecto - Endo' },
-      { key: 'y', label: 'Y', isCalculated: true, formula: '(2 * Meso) - (Endo + Ecto)' },
+      { key: 'endomorfo', label: 'Endomorfo', isCalculated: true, formula: 'Carter & Heath (1990)\n\nPaso 1 — Suma corregida:\n  X = (Tríc + Sub + Supra) × (170.18 / Talla)\n\nPaso 2 — Endomorfo:\n  Endo = −0.7182 + 0.145×X − 0.00068×X² + 0.0000014×X³' },
+      { key: 'mesomorfo', label: 'Mesomorfo', isCalculated: true, formula: 'Carter & Heath (1990)\n\nPaso 1 — Correcciones:\n  BrazoCorr  = Brazo cont. − (Tríceps / 10)\n  PiernaCorr = Pantorrilla − (Pantorrilla pl. / 10)\n\nPaso 2 — Mesomorfo:\n  Meso = 0.858×Húmero + 0.601×Fémur\n       + 0.188×BrazoCorr + 0.161×PiernaCorr\n       − 0.131×Talla + 4.5' },
+      { key: 'ectomorfo', label: 'Ectomorfo', isCalculated: true, formula: 'Carter & Heath (1990)\n\nPaso 1 — Índice altura/peso:\n  HWR = Talla / ∛Peso\n\nPaso 2 — Ectomorfo:\n  Si HWR > 40.75:  Ecto = 0.732×HWR − 28.58\n  Si HWR ≤ 40.75:  Ecto = 0.463×HWR − 17.63' },
+      { key: 'x', label: 'X', isCalculated: true, formula: 'Ectomorfo − Endomorfo' },
+      { key: 'y', label: 'Y', isCalculated: true, formula: '(2 × Mesomorfo) − (Endomorfo + Ectomorfo)' },
     ]
   },
   {
@@ -170,6 +170,28 @@ const InfoModal: React.FC<{
     </div>
   </div>
 );
+
+const FormulaTooltip: React.FC<{ formula: string }> = ({ formula }) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative inline-block ml-0.5">
+      <button
+        type="button"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        className="cursor-help text-emerald-400 hover:text-emerald-600 transition-colors focus:outline-none"
+      >
+        <Info className="w-3.5 h-3.5" />
+      </button>
+      {show && (
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-slate-900 text-white text-xs rounded-xl shadow-xl min-w-[220px] max-w-[320px] animate-in fade-in zoom-in duration-200" style={{ whiteSpace: 'pre-wrap' }}>
+          {formula}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const NewMeasurementForm: React.FC<{
   patient: Patient;
@@ -403,9 +425,9 @@ export const NewMeasurementForm: React.FC<{
                     return (
                       <div key={field.key} className={`bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50 ${fieldWrapperClass}`}>
                         <label className="text-xs font-bold text-emerald-800 mb-1 block uppercase">{field.label}</label>
-                        <div className="text-lg font-bold text-emerald-700">{displayVal}</div>
-                        <div className="text-[10px] text-emerald-600/60 mt-1 flex items-center gap-1">
-                          <Info className="w-3 h-3" /> {field.formula}
+                        <div className="flex items-center gap-1.5">
+                          <div className="text-lg font-bold text-emerald-700">{displayVal}</div>
+                          {field.formula && <FormulaTooltip formula={field.formula} />}
                         </div>
                       </div>
                     );
