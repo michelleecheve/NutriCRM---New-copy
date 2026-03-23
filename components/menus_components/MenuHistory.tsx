@@ -210,11 +210,11 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
             
             <div className="flex-1 overflow-y-auto p-8 bg-slate-100/50">
               <div className="max-w-[800px] mx-auto">
-                {selectedEntry.menu.menuPreviewData ? (
-                  <MenuPreview 
-                    data={selectedEntry.menu.menuPreviewData} 
+                {selectedEntry.menu.menuData ? (
+                  <MenuPreview
+                    data={selectedEntry.menu.menuData}
                     elementId={`menu-history-${selectedEntry.menu.id}`}
-                    selectedTemplate={selectedEntry.menu.selectedTemplateId || 'base_v1'}
+                    selectedTemplate={selectedEntry.menu.templateId || 'plantilla_v1'}
                     hideTemplateSelector={true}
                   />
                 ) : (
