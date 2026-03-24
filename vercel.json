@@ -1,13 +1,8 @@
 {
-  "routes": [
-    { "src": "^/$", "dest": "/landing.html" },
-
-    { "src": "^/p/.*", "dest": "/" },
-    { "src": "^/login$", "dest": "/" },
-
-    // 🔥 IMPORTANTE: dejar pasar archivos estáticos
-    { "src": "^/(assets|static|.*\\..*)", "dest": "/$1" },
-
-    { "src": "/(.*)", "dest": "/" }
+  "rewrites": [
+    { "source": "/", "destination": "/landing.html" },
+    { "source": "/p/:path*", "destination": "/" },
+    { "source": "/login", "destination": "/" },
+    { "source": "/:path*", "destination": "/" }
   ]
 }
