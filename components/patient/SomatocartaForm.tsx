@@ -71,26 +71,30 @@ export const SomatocartaForm: React.FC<{
 
     if (existingRecord) {
       // ✅ EDITAR — reemplaza solo el record con ese id
-      recordToSave = { ...existingRecord, linkedEvaluationId: evaluationId || '', date: linkedDate, x: xVal, y: yVal };
+      recordToSave = { ...existingRecord, linkedEvaluationId: evaluationId || '', date: linkedDate, x: xVal, y: yVal, patientId: patient.id };
       updatedSomatotypes = (patient.somatotypes || []).map(s =>
         s.id === existingRecord.id ? recordToSave : s
       );
     } else {
       // ✅ CREAR NUEVO — siempre agrega, nunca sobreescribe
       recordToSave = {
-        id: Math.random().toString(36).substring(7),
+        id: crypto.randomUUID(),
         linkedEvaluationId: evaluationId || '',
         date: linkedDate,
         x: xVal,
         y: yVal,
+        patientId: patient.id,
       };
       updatedSomatotypes = [recordToSave, ...(patient.somatotypes || [])];
     }
 
     if (evaluationId) {
       try {
-        await store.saveSomatotype(evaluationId, recordToSave);
-        onSavePatient({ ...patient, somatotypes: updatedSomatotypes });
+        const savedRecord = await store.saveSomatotype(evaluationId, recordToSave);
+        const finalSomatotypes = updatedSomatotypes.map(s =>
+          s.id === recordToSave.id ? savedRecord : s
+        );
+        onSavePatient({ ...patient, somatotypes: finalSomatotypes });
       } catch (error) {
         console.error('Error saving somatotype to Supabase:', error);
       }

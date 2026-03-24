@@ -192,6 +192,7 @@ export const BioimpedanciaForm: React.FC<{
         ...formData,
         id: editingId || undefined,
         date: selectedEval.date,
+        patientId: patient.id,
       };
 
       await store.saveBioimpedancia(evaluationId, recordToSave);

@@ -171,11 +171,23 @@ export interface PortionsRecord {
   azu: number;
 }
 
+export interface TrackingRow {
+  id: string;
+  patientId: string;
+  menuId: string;
+  durationDays: number;
+  menuStartDate: string | null;
+  menuEndDate: string | null;
+  trackingData: Record<string, any>;
+  updatedAt: string;
+}
+
 export interface GeneratedMenu {
   id: string;
   linkedEvaluationId: string;
   patientId?: string;
   date: string;
+  createdAt?: string;
   
   // VET Calculation Basics (Individual columns)
   age?: number;
@@ -282,6 +294,10 @@ export interface Patient {
   labs: LabResult[];
   photos: Photo[];
   evaluations?: PatientEvaluation[]; // Para export/import
+  // Portal digital
+  portalActive?: boolean;
+  accessToken?: string | null;
+  accessCode?: string | null;
 }
 
 export interface Invoice {

@@ -74,45 +74,10 @@ function buildEditZones(
   const z: EditZone[] = [];
 
   if (cbs.onEditPatientInfo)
-    z.push({ id: 'patient', top: 84, left: 386, onClick: cbs.onEditPatientInfo, title: 'Editar info paciente' });
+    z.push({ id: 'patient', top: 58, left: 386, onClick: cbs.onEditPatientInfo, title: 'Editar info paciente' });
 
   if (cbs.onEditPortions)
     z.push({ id: 'portions', top: 130, right: 24, onClick: cbs.onEditPortions, title: 'Editar tabla de porciones' });
-
-  // Row 1: Lunes, Martes, Miércoles — same in both templates
-  (['lunes', 'martes', 'miercoles'] as const).forEach((day, i) => {
-    if (cbs.onEditDay)
-      z.push({ id: day, top: 356, left: COL3_LEFT[i], onClick: () => cbs.onEditDay!(day), title: `Editar ${day}` });
-  });
-
-  if (template === 'plantilla_v1') {
-    // Row 2: 3 cols (Jueves, Viernes, Sábado)
-    (['jueves', 'viernes', 'sabado'] as const).forEach((day, i) => {
-      if (cbs.onEditDay)
-        z.push({ id: day, top: 526, left: COL3_LEFT[i], onClick: () => cbs.onEditDay!(day), title: `Editar ${day}` });
-    });
-    // DomingoRow V1: abre popup de Día Libre (nota únicamente)
-    const domingoLibreCb = cbs.onEditDomingoLibre ?? (cbs.onEditDay ? () => cbs.onEditDay!('domingo') : undefined);
-    if (domingoLibreCb)
-      z.push({ id: 'domingo', top: 704, left: 420, onClick: domingoLibreCb, title: 'Editar domingo (día libre)' });
-    if (cbs.onEditHydration)
-      z.push({ id: 'hydration', top: 704, right: 24, onClick: cbs.onEditHydration, title: 'Editar meta de hidratación' });
-  } else {
-    // Row 2: 4 cols (Jueves, Viernes, Sábado, Domingo completo)
-    (['jueves', 'viernes', 'sabado'] as const).forEach((day, i) => {
-      if (cbs.onEditDay)
-        z.push({ id: day, top: 526, left: COL4_LEFT[i], onClick: () => cbs.onEditDay!(day), title: `Editar ${day}` });
-    });
-    // DayCard Domingo V2: abre popup de Menú Completo
-    const domingoCompletoCb = cbs.onEditDomingoCompleto ?? (cbs.onEditDay ? () => cbs.onEditDay!('domingo') : undefined);
-    if (domingoCompletoCb)
-      z.push({ id: 'domingo', top: 526, left: COL4_LEFT[3], onClick: domingoCompletoCb, title: 'Editar domingo (menú completo)' });
-    // NOTAS row: note (center) + hydration (right)
-    if (cbs.onEditTemplateNote)
-      z.push({ id: 'note', top: 704, left: 420, onClick: cbs.onEditTemplateNote, title: 'Editar notas' });
-    if (cbs.onEditHydration)
-      z.push({ id: 'hydration', top: 704, right: 24, onClick: cbs.onEditHydration, title: 'Editar meta de hidratación' });
-  }
 
   // Page 2: 4 recommendation cards (2×2 grid)
   (['preparacion', 'restricciones', 'habitos', 'organizacion'] as const).forEach((section, i) => {
@@ -271,6 +236,69 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
 
       {/* ── Preview area ── */}
       <div className="relative">
+
+        {/* Side edit panel — posicionado sobre la zona gris, mitad de página 1 */}
+        {editMode && currentPage === 1 && (onEditDay || onEditDomingoLibre || onEditDomingoCompleto || onEditHydration || onEditTemplateNote) && (
+          <div
+            data-html2canvas-ignore="true"
+            className="absolute left-2 z-20 flex flex-col gap-1"
+            style={{ top: '30%' }}
+          >
+            {(['lunes','martes','miercoles','jueves','viernes','sabado'] as const).map((day, i) => {
+              const labels = ['lun','mar','mier','jue','vie','sáb'];
+              return onEditDay ? (
+                <button
+                  key={day}
+                  onClick={() => onEditDay(day)}
+                  title={`Editar ${day}`}
+                  className="px-2 py-1 rounded-lg text-[10px] font-bold bg-indigo-600/50 hover:bg-indigo-600 text-white transition-all shadow-sm whitespace-nowrap"
+                >
+                  {labels[i]}
+                </button>
+              ) : null;
+            })}
+
+            {currentTemplate === 'plantilla_v1' && onEditDomingoLibre && (
+              <button
+                onClick={onEditDomingoLibre}
+                title="Editar domingo (día libre)"
+                className="px-2 py-1 rounded-lg text-[10px] font-bold bg-indigo-600/50 hover:bg-indigo-600 text-white transition-all shadow-sm whitespace-nowrap"
+              >
+                dom
+              </button>
+            )}
+            {currentTemplate === 'plantilla_v2' && onEditDomingoCompleto && (
+              <button
+                onClick={onEditDomingoCompleto}
+                title="Editar domingo (menú completo)"
+                className="px-2 py-1 rounded-lg text-[10px] font-bold bg-indigo-600/50 hover:bg-indigo-600 text-white transition-all shadow-sm whitespace-nowrap"
+              >
+                dom
+              </button>
+            )}
+
+            {currentTemplate === 'plantilla_v2' && onEditTemplateNote && (
+              <button
+                onClick={onEditTemplateNote}
+                title="Editar notas"
+                className="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-500/50 hover:bg-slate-600 text-white transition-all shadow-sm whitespace-nowrap"
+              >
+                notas
+              </button>
+            )}
+
+            {onEditHydration && (
+              <button
+                onClick={onEditHydration}
+                title="Editar meta de hidratación"
+                className="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-500/50 hover:bg-slate-600 text-white transition-all shadow-sm whitespace-nowrap"
+              >
+                hidrat.
+              </button>
+            )}
+          </div>
+        )}
+
         <div
           ref={scrollRef}
           onScroll={handleScroll}

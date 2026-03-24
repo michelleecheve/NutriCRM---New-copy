@@ -95,8 +95,9 @@ id, owner_id, first_name, last_name, age, birthdate, sex, email, phone, cui,
 occupation, study, status, dietary_preferences, consultmotive,
 clinicalbackground, diagnosis, family_history, medications, supplements,
 allergies, regular_period, period_duration, first_period_age, menstrual_others,
-categ_discipline, sport_age, competencia, sleep_hours,
-sports_profile (jsonb), registered_at, created_at
+categ_discipline, sport_age, competencia, sleep_hours, others_notes,
+sports_profile (jsonb), registered_at, created_at,
+access_token (uuid), access_code (text), portal_active (boolean)
 ```
 
 ### `measurements` (Antropometría — snake_case)
@@ -113,7 +114,7 @@ meta_complied (boolean), created_at
 
 ### `bioimpedancia_measurements` (⚠️ columnas en camelCase)
 ```
-id, owner_id, evaluation_id, date, weight, height, imc,
+id, owner_id, evaluation_id, date, weight, height, imc, age, gender,
 body_fat_pct, water_pct, muscle_mass, bone_mass, visceral_fat,
 bmr, metabolic_age, physique_rating,
 waist, umbilical, hip, thighLeft, thighRight, abdominalLow,
@@ -139,14 +140,15 @@ id, evaluation_id, date, x (numeric), y (numeric), created_at
 id, patient_id, evaluation_id, date, name, age, gender,
 weight_kg, height_cm, kcal_to_work,
 vet_details (jsonb), macros (jsonb), portions (jsonb), menu_data (jsonb),
-templates_references, content, ai_rationale, created_at
+templates_references, template_id (text, default 'plantilla_v1'),
+content, ai_rationale, created_at
 ```
 > ⚠️ `menus` no tiene `owner_id` propio — se infiere via `patient_id` o `evaluation_id`.
 
 ### `menu_templates`
 ```
 id, owner_id, name, template_design, header_mode, logo_url,
-is_default (boolean), created_at, updated_at
+is_default (boolean), footer_config (jsonb), created_at, updated_at
 ```
 
 ### `menu_references`
@@ -157,6 +159,12 @@ id, owner_id, type, kcal (integer), data (jsonb), created_at
 ### `menu_recommendations`
 ```
 id, owner_id, name, data (jsonb), created_at
+```
+
+### `patient_digital_tracking`
+```
+id, patient_id (uuid → patients.id), menu_id (uuid → menus.id),
+tracking_data (jsonb, default '{}'), updated_at
 ```
 
 ### `patient_files`
@@ -185,7 +193,7 @@ role (USER-DEFINED: admin | nutricionista | recepcionista),
 specialty, professional_title, license_number, address, avatar,
 instagram_handle, website, timezone, link_code,
 menu_ai_config (jsonb), lab_ai_prompt (text),
-patient_statuses (ARRAY), created_at
+patient_statuses (ARRAY), country, date_of_birth (date), created_at
 ```
 
 ### `profile_links`

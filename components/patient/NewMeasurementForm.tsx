@@ -373,7 +373,7 @@ export const NewMeasurementForm: React.FC<{
 
     try {
       // 1. Guarda en Supabase
-      await store.saveMeasurement(evaluationId, normalized); // Actualiza la tabla measurements
+      await store.saveMeasurement(evaluationId, { ...normalized, patientId: patient.id }); // Actualiza la tabla measurements
       
       // 2. Actualiza la UI (ahora después del save para asegurar consistencia con el re-fetch de PatientDetail)
       onUpdate(updatedPatient);

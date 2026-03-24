@@ -383,24 +383,26 @@ class Store {
     }
   }
 
-  async saveSomatotype(evaluationId: string, record: SomatotypeRecord): Promise<void> {
-    await supabaseService.saveSomatotype(evaluationId, record);
-    
+  async saveSomatotype(evaluationId: string, record: SomatotypeRecord): Promise<SomatotypeRecord> {
+    const saved = await supabaseService.saveSomatotype(evaluationId, record);
+    const savedRecord: SomatotypeRecord = { ...record, id: saved.id };
+
     // Update local state
     const evalObj = this.getEvaluationById(evaluationId);
-    if (!evalObj) return;
-    
+    if (!evalObj) return savedRecord;
+
     const patient = this.patients.find(p => p.id === evalObj.patientId);
     if (patient) {
-      const exists = patient.somatotypes.some(s => s.id === record.id);
+      const exists = patient.somatotypes.some(s => s.id === record.id || s.id === saved.id);
       const updatedSomatotypes = exists
-        ? patient.somatotypes.map(s => s.id === record.id ? record : s)
-        : [record, ...patient.somatotypes];
-      
+        ? patient.somatotypes.map(s => (s.id === record.id || s.id === saved.id) ? savedRecord : s)
+        : [savedRecord, ...patient.somatotypes];
+
       const updatedPatient = { ...patient, somatotypes: updatedSomatotypes };
       this.patients = this.patients.map(p => p.id === updatedPatient.id ? updatedPatient : p);
       save(this.K.patients, this.patients);
     }
+    return savedRecord;
   }
 
   async deleteSomatotype(id: string): Promise<void> {

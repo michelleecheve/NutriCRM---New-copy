@@ -4,6 +4,7 @@ import { Plus, Calculator } from 'lucide-react';
 import { store } from '../../services/store';
 import { MenuAddRead } from './MenuAddRead';
 import { MenuCard } from './MenuCard';
+import { PatientDigitalMenu } from './PatientDigitalMenu';
 
 export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void; onNavigateToEvaluations: () => void }> = ({ patient, onUpdate, onNavigateToEvaluations }) => {
   const [isStarted, setIsStarted] = useState(false);
@@ -78,6 +79,9 @@ export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => vo
             ))}
           </div>
         )}
+
+        {/* Portal digital */}
+        <PatientDigitalMenu patient={patient} onUpdate={onUpdate} />
       </div>
     );
   }

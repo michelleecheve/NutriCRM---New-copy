@@ -5,6 +5,7 @@ import {
   MeasurementRecord,
   DietaryEvaluation,
   GeneratedMenu,
+  TrackingRow,
   Appointment,
   Invoice,
   UserProfile,
@@ -192,6 +193,26 @@ export const supabaseService = {
     return this.mapPatientFromDb(data);
   },
 
+  async updatePatientPortal(id: string, patch: {
+    portalActive?: boolean;
+    accessToken?: string;
+    accessCode?: string;
+  }): Promise<Patient> {
+    const updateData: any = {};
+    if (patch.portalActive !== undefined) updateData.portal_active = patch.portalActive;
+    if (patch.accessToken  !== undefined) updateData.access_token  = patch.accessToken;
+    if (patch.accessCode   !== undefined) updateData.access_code   = patch.accessCode;
+
+    const { data, error } = await supabase
+      .from('patients')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return this.mapPatientFromDb(data);
+  },
+
   async deletePatient(id: string) {
     const { error } = await supabase.from('patients').delete().eq('id', id);
     if (error) throw error;
@@ -281,6 +302,7 @@ export const supabaseService = {
     // Incluye el id si existe, siempre
     const payload: any = {
       evaluation_id:       evaluationId,
+      patient_id:          measurement.patientId,
       date:                measurement.date,
       gender:              measurement.gender,
       age:                 measurement.age,
@@ -353,6 +375,7 @@ export const supabaseService = {
 
     const payload: any = {
       evaluation_id:   evaluationId,
+      patient_id:      record.patientId,
       owner_id:        user.id,
       date:            record.date,
       gender:          record.gender || null,
@@ -428,9 +451,11 @@ export const supabaseService = {
   },
 
   async saveSomatotype(evaluationId: string, record: SomatotypeRecord) {
+    const payload: any = { evaluation_id: evaluationId, patient_id: record.patientId, date: record.date, x: record.x, y: record.y };
+    if (record.id) payload.id = record.id;
     const { data, error } = await supabase
       .from('somatotypes')
-      .upsert({ evaluation_id: evaluationId, date: record.date, x: record.x, y: record.y })
+      .upsert(payload, { onConflict: 'id' })
       .select()
       .single();
     if (error) throw error;
@@ -476,6 +501,86 @@ export const supabaseService = {
 
   async deleteMenu(id: string) {
     const { error } = await supabase.from('menus').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  // ─── Patient Digital Tracking ───────────────────────────────────────────────
+
+  async getPatientTracking(patientId: string, menuId: string): Promise<TrackingRow | null> {
+    const { data, error } = await supabase
+      .from('patient_digital_tracking')
+      .select('*')
+      .eq('patient_id', patientId)
+      .eq('menu_id', menuId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return {
+      id:            data.id,
+      patientId:     data.patient_id,
+      menuId:        data.menu_id,
+      durationDays:  data.duration_days  ?? 28,
+      menuStartDate: data.menu_start_date ?? null,
+      menuEndDate:   data.menu_end_date   ?? null,
+      trackingData:  data.tracking_data   ?? {},
+      updatedAt:     data.updated_at,
+    };
+  },
+
+  // Upsert de configuración: si ya existe solo actualiza duration_days (NO toca start/end/tracking)
+  async savePatientTrackingConfig(patientId: string, menuId: string, durationDays: number): Promise<TrackingRow> {
+    const { data: existing } = await supabase
+      .from('patient_digital_tracking')
+      .select('id')
+      .eq('patient_id', patientId)
+      .eq('menu_id', menuId)
+      .maybeSingle();
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from('patient_digital_tracking')
+        .update({ duration_days: durationDays })
+        .eq('patient_id', patientId)
+        .eq('menu_id', menuId)
+        .select()
+        .single();
+      if (error) throw error;
+      return {
+        id:            data.id,
+        patientId:     data.patient_id,
+        menuId:        data.menu_id,
+        durationDays:  data.duration_days  ?? 28,
+        menuStartDate: data.menu_start_date ?? null,
+        menuEndDate:   data.menu_end_date   ?? null,
+        trackingData:  data.tracking_data   ?? {},
+        updatedAt:     data.updated_at,
+      };
+    } else {
+      const { data, error } = await supabase
+        .from('patient_digital_tracking')
+        .insert({ patient_id: patientId, menu_id: menuId, duration_days: durationDays, tracking_data: {} })
+        .select()
+        .single();
+      if (error) throw error;
+      return {
+        id:            data.id,
+        patientId:     data.patient_id,
+        menuId:        data.menu_id,
+        durationDays:  data.duration_days  ?? 28,
+        menuStartDate: data.menu_start_date ?? null,
+        menuEndDate:   data.menu_end_date   ?? null,
+        trackingData:  data.tracking_data   ?? {},
+        updatedAt:     data.updated_at,
+      };
+    }
+  },
+
+  async extendPlanEndDate(patientId: string, menuId: string, newEndDate: string): Promise<void> {
+    const { error } = await supabase
+      .from('patient_digital_tracking')
+      .update({ menu_end_date: newEndDate })
+      .eq('patient_id', patientId)
+      .eq('menu_id', menuId);
     if (error) throw error;
   },
 
@@ -930,6 +1035,9 @@ export const supabaseService = {
       sportsProfile:      dbPatient.sports_profile || [],
       labs:               [],
       photos:             [],
+      portalActive:       dbPatient.portal_active  ?? false,
+      accessToken:        dbPatient.access_token   ?? null,
+      accessCode:         dbPatient.access_code    ?? null,
     };
   },
 
@@ -1101,6 +1209,7 @@ export const supabaseService = {
       content:             menu.content,
       aiRationale:         menu.ai_rationale,
       menuPreviewData:     menu.menu_preview_data,
+      createdAt:           menu.created_at,
     };
   },
 
