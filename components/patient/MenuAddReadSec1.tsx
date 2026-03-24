@@ -43,6 +43,54 @@ const EXCHANGE_LIST = {
   azu: { name: 'AZU', kcal: 45, cho: 12, chon: 0, fat: 0 },
 };
 
+const calcDecimalAge = (birthdate: string, refDate: string): number => {
+  const birth = new Date(birthdate);
+  const ref = refDate ? new Date(refDate) : new Date();
+  let years = ref.getFullYear() - birth.getFullYear();
+  let months = ref.getMonth() - birth.getMonth();
+  if (ref.getDate() < birth.getDate()) months--;
+  if (months < 0) { years--; months += 12; }
+  return parseFloat((years + months / 12).toFixed(2));
+};
+
+const AgeHintTooltip: React.FC<{ birthdate?: string; refDate: string }> = ({ birthdate, refDate }) => {
+  const [show, setShow] = useState(false);
+
+  let content: string;
+  if (!birthdate) {
+    content = 'El paciente no tiene fecha de nacimiento registrada para calcular la edad exacta.';
+  } else {
+    const ref = refDate || new Date().toISOString().slice(0, 10);
+    const decimal = calcDecimalAge(birthdate, ref);
+    const birth = new Date(birthdate);
+    const refD = new Date(ref);
+    let years = refD.getFullYear() - birth.getFullYear();
+    let months = refD.getMonth() - birth.getMonth();
+    if (refD.getDate() < birth.getDate()) months--;
+    if (months < 0) { years--; months += 12; }
+    content = `Según fecha de nacimiento, la edad exacta es ${decimal} años\n(${years} años, ${months} meses)`;
+  }
+
+  return (
+    <div className="relative inline-block ml-1">
+      <button
+        type="button"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        className="cursor-help text-slate-400 hover:text-emerald-600 transition-colors focus:outline-none"
+      >
+        <Info className="w-3.5 h-3.5" />
+      </button>
+      {show && (
+        <div className="absolute z-50 bottom-full left-0 mb-2 p-3 bg-slate-900 text-white text-xs rounded-xl shadow-xl min-w-[220px] max-w-[300px] animate-in fade-in zoom-in duration-200" style={{ whiteSpace: 'pre-wrap' }}>
+          {content}
+          <div className="absolute top-full left-3 border-8 border-transparent border-t-slate-900" />
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Tooltip = ({ children, content }: { children: React.ReactNode, content: React.ReactNode }) => {
   const [show, setShow] = useState(false);
   return (
@@ -71,6 +119,8 @@ interface MenuAddReadSec1Props {
   setMacros: React.Dispatch<React.SetStateAction<MacrosRecord>>;
   portions: PortionsRecord;
   setPortions: React.Dispatch<React.SetStateAction<PortionsRecord>>;
+  birthdate?: string;
+  evaluationDate?: string;
 }
 
 export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
@@ -79,7 +129,9 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
   macros,
   setMacros,
   portions,
-  setPortions
+  setPortions,
+  birthdate,
+  evaluationDate = '',
 }) => {
   const [showExchangeModal, setShowExchangeModal] = useState(false);
 
@@ -229,8 +281,11 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
         {/* Fila 1: Manual Fields */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase ml-1">Edad</label>
-            <input 
+            <label className="text-xs font-bold text-slate-500 uppercase ml-1 flex items-center">
+              Edad
+              <AgeHintTooltip birthdate={birthdate} refDate={evaluationDate} />
+            </label>
+            <input
               type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
               value={vetData.age || ''}
               onChange={(e) => updateVetField('age', parseInt(e.target.value) || 0)}

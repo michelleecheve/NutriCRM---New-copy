@@ -7,6 +7,16 @@ import { MenuAddReadSec2 } from './MenuAddReadSec2';
 import { MenuAddReadSec3 } from './MenuAddReadSec3';
 import { MenuPlanData } from '../menus_components/MenuDesignTemplates';
 
+const calcDecimalAge = (birthdate: string, refDate: string): number => {
+  const birth = new Date(birthdate);
+  const ref = refDate ? new Date(refDate) : new Date();
+  let years = ref.getFullYear() - birth.getFullYear();
+  let months = ref.getMonth() - birth.getMonth();
+  if (ref.getDate() < birth.getDate()) months--;
+  if (months < 0) { years--; months += 12; }
+  return parseFloat((years + months / 12).toFixed(2));
+};
+
 interface MenuAddReadProps {
   patient: Patient;
   onUpdate: (p: Patient) => void;
@@ -248,6 +258,13 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
 
     setEvalSelectorOpen(false);
   }, [currentMenuId, patient.id]);
+
+  // Auto-fill age from birthdate when evaluation date changes (new menus only)
+  useEffect(() => {
+    if (!currentMenuId && patient.clinical?.birthdate && formEvaluation?.date) {
+      setVetData(prev => ({ ...prev, age: calcDecimalAge(patient.clinical!.birthdate!, formEvaluation!.date) }));
+    }
+  }, [formEvaluation?.date, currentMenuId]);
 
   const handleSaveAndClose = async () => {
     if (!formEvaluationId) {
@@ -614,6 +631,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
               setMacros={setMacros}
               portions={portions}
               setPortions={setPortions}
+              birthdate={patient.clinical?.birthdate}
+              evaluationDate={formEvaluation?.date ?? ''}
             />
           )}
         </section>
