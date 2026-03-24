@@ -328,12 +328,19 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
       .eq('patient_id', patientId)
       .order('updated_at', { ascending: false }),
 
+    // measurements: no tiene patient_id, se accede vía evaluation_id → evaluations.patient_id
     (async () => {
       try {
+        const { data: evals } = await supabase
+          .from('evaluations')
+          .select('id')
+          .eq('patient_id', patientId);
+        const evalIds = (evals ?? []).map((e: any) => e.id as string);
+        if (evalIds.length === 0) return { data: null };
         return await supabase
           .from('measurements')
           .select('date, weight, height, imc, body_fat_pct, lean_mass_kg, lean_mass_pct, muscle_mass_kg, bone_mass')
-          .eq('patient_id', patientId)
+          .in('evaluation_id', evalIds)
           .order('date', { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -342,10 +349,16 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
 
     (async () => {
       try {
+        const { data: evals } = await supabase
+          .from('evaluations')
+          .select('id')
+          .eq('patient_id', patientId);
+        const evalIds = (evals ?? []).map((e: any) => e.id as string);
+        if (evalIds.length === 0) return { data: null };
         return await supabase
           .from('bioimpedancia_measurements')
           .select('date, weight, body_fat_pct, muscle_mass, metabolic_age, bmr, visceral_fat, water_pct')
-          .eq('patient_id', patientId)
+          .in('evaluation_id', evalIds)
           .order('date', { ascending: false })
           .limit(1)
           .maybeSingle();

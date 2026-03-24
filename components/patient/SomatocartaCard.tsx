@@ -17,7 +17,7 @@ export const SomatocartaCard: React.FC<{
   showDelete?: boolean;
 }> = ({ record, onView, onEdit, onDelete, onLink, showDelete = true }) => {
   return (
-    <div className="border rounded-xl p-4 hover:shadow-md transition-all bg-white relative group border-slate-200">
+    <div className="border rounded-xl p-4 hover:shadow-md transition-all bg-white relative group border-slate-200 cursor-pointer" onClick={onView}>
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <Calendar className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -27,7 +27,7 @@ export const SomatocartaCard: React.FC<{
         <div className="flex gap-1 shrink-0">
           <button
             type="button"
-            onClick={onLink}
+            onClick={(e) => { e.stopPropagation(); onLink?.(); }}
             className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
             title="Vincular A Evaluación"
           >
@@ -36,7 +36,7 @@ export const SomatocartaCard: React.FC<{
 
           <button
             type="button"
-            onClick={onView}
+            onClick={(e) => { e.stopPropagation(); onView(); }}
             className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
             title="Ver Gráfico"
           >
@@ -45,7 +45,7 @@ export const SomatocartaCard: React.FC<{
 
           <button
             type="button"
-            onClick={onEdit}
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
             className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
             title="Editar"
           >
@@ -55,7 +55,7 @@ export const SomatocartaCard: React.FC<{
           {showDelete && (
             <button
               type="button"
-              onClick={onDelete}
+              onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
               className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
               title="Eliminar"
             >
