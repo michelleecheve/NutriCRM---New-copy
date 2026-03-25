@@ -421,6 +421,23 @@ export const ProfileView: React.FC<Props> = ({ token, patient, nutritionist, act
           )}
         </div>
 
+        {/* ── Powered by ── */}
+        <div className="flex flex-col items-center gap-1.5 pt-2 pb-2">
+          <span style={{ color: '#B0BDB8', fontSize: '10px', fontWeight: 500, letterSpacing: '0.06em' }}>
+            Powered by
+          </span>
+          <div className="flex items-center gap-1.5">
+            <img
+              src="/logo_nutrifollow.png"
+              alt="NutriFollow"
+              style={{ height: '20px', width: 'auto', opacity: 0.45 }}
+            />
+            <span style={{ color: '#B0BDB8', fontSize: '13px', fontWeight: 600, opacity: 0.8 }}>
+              NutriFollow.app
+            </span>
+          </div>
+        </div>
+
       </div>
     </div>
   );

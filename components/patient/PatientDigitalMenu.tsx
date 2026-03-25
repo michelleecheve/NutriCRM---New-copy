@@ -92,6 +92,8 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedPin, setCopiedPin] = useState(false);
   const [selectedMenuId, setSelectedMenuId] = useState<string>(menus[0]?.id ?? '');
+  const [pinInput, setPinInput] = useState(patient.accessCode ?? '');
+  const [savingPin, setSavingPin] = useState(false);
 
   // ── Tracking state ──
   const [tracking, setTracking] = useState<TrackingRow | null | undefined>(undefined);
@@ -183,14 +185,33 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
     }
   }
 
+  // ── Sync pinInput when patient.accessCode changes externally ──
+  useEffect(() => {
+    setPinInput(patient.accessCode ?? '');
+  }, [patient.accessCode]);
+
   // ── Regenerate PIN ──
   async function handleRegeneratePin() {
     setLoading(true);
     try {
-      const updated = await supabaseService.updatePatientPortal(patient.id, { accessCode: generatePin() });
+      const newPin = generatePin();
+      const updated = await supabaseService.updatePatientPortal(patient.id, { accessCode: newPin });
       onUpdate({ ...patient, ...updated });
+      setPinInput(newPin);
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ── Save custom PIN ──
+  async function handleSavePin() {
+    if (!pinInput.trim() || pinInput === patient.accessCode) return;
+    setSavingPin(true);
+    try {
+      const updated = await supabaseService.updatePatientPortal(patient.id, { accessCode: pinInput.trim() });
+      onUpdate({ ...patient, ...updated });
+    } finally {
+      setSavingPin(false);
     }
   }
 
@@ -303,72 +324,90 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       ) : (
         <div className="px-5 py-4 space-y-4">
 
-          {/* ── Link compartible ── */}
+          {/* ── Paso 1: Link + PIN ── */}
           <div>
-            <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
-              Link del portal
-            </label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 font-mono truncate">
-                {portalUrl ?? '—'}
-              </div>
-              {portalUrl && (
-                <>
-                  <a
-                    href={portalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors flex-shrink-0"
-                    title="Abrir portal"
-                  >
-                    <ExternalLink className="w-4 h-4 text-slate-500" />
-                  </a>
-                  <button
-                    onClick={() => copyToClipboard(portalUrl, 'link')}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0"
-                    title="Copiar link"
-                  >
-                    {copiedLink
-                      ? <Check className="w-4 h-4 text-emerald-600" />
-                      : <Copy className="w-4 h-4 text-emerald-600" />}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* ── PIN ── */}
-          <div>
-            <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
-              PIN de acceso
-            </label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-                <span className="text-2xl font-bold tracking-[0.35em] text-slate-800">
-                  {patient.accessCode ?? '—'}
-                </span>
-              </div>
-              <button
-                onClick={() => patient.accessCode && copyToClipboard(patient.accessCode, 'pin')}
-                className="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0"
-                title="Copiar PIN"
-              >
-                {copiedPin
-                  ? <Check className="w-4 h-4 text-emerald-600" />
-                  : <Copy className="w-4 h-4 text-emerald-600" />}
-              </button>
-              <button
-                onClick={handleRegeneratePin}
-                disabled={loading}
-                className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors flex-shrink-0 disabled:opacity-50"
-                title="Regenerar PIN"
-              >
-                <RefreshCw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              El paciente ingresa este PIN la primera vez que abre el link.
+            <p className="text-sm font-semibold text-slate-700 mb-3">
+              Paso 1. Compartir Link del Portal y Pin de acceso a paciente
             </p>
+            <div className="grid grid-cols-2 gap-4">
+
+              {/* Columna izquierda: Link del portal */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
+                  Link del portal
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 font-mono truncate min-w-0">
+                    {portalUrl ?? '—'}
+                  </div>
+                  {portalUrl && (
+                    <>
+                      <a
+                        href={portalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors flex-shrink-0"
+                        title="Abrir portal"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                      </a>
+                      <button
+                        onClick={() => copyToClipboard(portalUrl, 'link')}
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0"
+                        title="Copiar link"
+                      >
+                        {copiedLink
+                          ? <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          : <Copy className="w-3.5 h-3.5 text-emerald-600" />}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Columna derecha: Pin de acceso */}
+              <div>
+                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
+                  Pin de acceso
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={pinInput}
+                    onChange={(e) => setPinInput(e.target.value)}
+                    onBlur={handleSavePin}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSavePin()}
+                    maxLength={12}
+                    placeholder="—"
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-300 min-w-0"
+                  />
+                  {savingPin && (
+                    <RefreshCw className="w-3.5 h-3.5 text-slate-400 animate-spin flex-shrink-0" />
+                  )}
+                  <button
+                    onClick={() => pinInput && copyToClipboard(pinInput, 'pin')}
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0"
+                    title="Copiar PIN"
+                  >
+                    {copiedPin
+                      ? <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      : <Copy className="w-3.5 h-3.5 text-emerald-600" />}
+                  </button>
+                  <button
+                    onClick={handleRegeneratePin}
+                    disabled={loading}
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors flex-shrink-0 disabled:opacity-50"
+                    title="Generar PIN aleatorio"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  El paciente ingresa este PIN la primera vez. Puedes personalizarlo.
+                </p>
+              </div>
+
+            </div>
           </div>
 
           {/* ── Objetivo del paciente ── */}

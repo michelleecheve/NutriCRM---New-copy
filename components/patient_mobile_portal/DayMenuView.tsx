@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { ChevronDown, ChevronUp, Sun, UtensilsCrossed, Moon, Star, Flame } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { GeneratedMenu, TrackingRow } from '../../types';
 import { MealCard, MealCardInfo, MealData, MealUpdate } from './MealCard';
@@ -34,6 +35,16 @@ const MEAL_LABELS: Record<string, string> = {
   cena:       'Cena',
 };
 
+const DAY_FULL_NAMES: Record<string, string> = {
+  lunes:     'Lunes',
+  martes:    'Martes',
+  miercoles: 'Miércoles',
+  jueves:    'Jueves',
+  viernes:   'Viernes',
+  sabado:    'Sábado',
+  domingo:   'Domingo',
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function toLocalDateStr(d: Date): string {
@@ -44,7 +55,6 @@ function jsDayToDaysIdx(jsDay: number): number {
   return jsDay === 0 ? 6 : jsDay - 1;
 }
 
-/** DAYS array reordered to start from the menu's start day of week */
 function getOrderedDays(menuStartDate: string | null) {
   const startIdx = menuStartDate
     ? jsDayToDaysIdx(new Date(menuStartDate + 'T12:00:00').getDay())
@@ -52,7 +62,6 @@ function getOrderedDays(menuStartDate: string | null) {
   return [...DAYS.slice(startIdx), ...DAYS.slice(0, startIdx)];
 }
 
-/** Days elapsed from menuStartDate to today (local time) */
 function getDiffDays(menuStartDate: string | null): number {
   if (!menuStartDate) return 0;
   const start = new Date(menuStartDate + 'T12:00:00');
@@ -61,17 +70,14 @@ function getDiffDays(menuStartDate: string | null): number {
   return Math.max(0, Math.round((today.getTime() - start.getTime()) / 86400000));
 }
 
-/** 0-based week index today falls in relative to menuStartDate */
 function getTodayWeekIndex(menuStartDate: string | null): number {
   return Math.floor(getDiffDays(menuStartDate) / 7);
 }
 
-/** Position of today within its week (0 = same weekday as menu start) */
 function getTodayPosIndex(menuStartDate: string | null): number {
   return getDiffDays(menuStartDate) % 7;
 }
 
-/** Local date string for day position dayPos in week weekIdx (both 0-based) */
 function getDateForPos(dayPos: number, menuStartDate: string | null, weekIdx: number = 0): string {
   if (!menuStartDate) return toLocalDateStr(new Date());
   const start = new Date(menuStartDate + 'T12:00:00');
@@ -80,7 +86,6 @@ function getDateForPos(dayPos: number, menuStartDate: string | null, weekIdx: nu
   return toLocalDateStr(target);
 }
 
-/** Meal compliance stats for a given week, respecting menu durationDays */
 function getWeekStats(
   weekIdx: number,
   menuStartDate: string | null,
@@ -91,7 +96,7 @@ function getWeekStats(
 ): { done: number; total: number } {
   let done = 0, total = 0;
   for (let i = 0; i < 7; i++) {
-    if (weekIdx * 7 + i >= durationDays) break; // stop at menu end
+    if (weekIdx * 7 + i >= durationDays) break;
     const date = getDateForPos(i, menuStartDate, weekIdx);
     const dd = getDayData(menu, orderedDays[i].key);
     const mm = buildMeals(dd);
@@ -101,6 +106,29 @@ function getWeekStats(
     }
   }
   return { done, total };
+}
+
+function calcStreak(trackingData: Record<string, any>, startDate: string | null): number {
+  if (!startDate) return 0;
+  let streak = 0;
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  for (let i = 0; i < 365; i++) {
+    const key = toLocalDateStr(d);
+    if (key < startDate) break;
+    const dayData = trackingData[key];
+    const hasCompleted = dayData && typeof dayData === 'object' &&
+      Object.values(dayData as Record<string, any>).some(
+        (m): m is { completed: boolean } => typeof m === 'object' && m !== null && (m as any).completed === true,
+      );
+    if (hasCompleted) {
+      streak++;
+    } else if (i > 0) {
+      break;
+    }
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
 }
 
 function getDayData(menu: GeneratedMenu, dayKey: string): any {
@@ -142,74 +170,73 @@ function getMealData(trackingData: Record<string, any>, dateKey: string, mealKey
 export const DayMenuView: React.FC<Props> = ({
   patient, menu, tracking, nutritionist, onTrackingUpdate,
 }) => {
-  const [selectedIdx, setSelectedIdx] = useState(() => getTodayPosIndex(tracking.menuStartDate));
-  const [weekIndex, setWeekIndex] = useState(() => getTodayWeekIndex(tracking.menuStartDate));
-  const [expanded, setExpanded] = useState(false);
+  const [selectedIdx, setSelectedIdx]   = useState(() => getTodayPosIndex(tracking.menuStartDate));
+  const [weekIndex, setWeekIndex]       = useState(() => getTodayWeekIndex(tracking.menuStartDate));
+  const [expanded, setExpanded]         = useState(false);
   const [showCompletion, setShowCompletion] = useState(
     () => getDiffDays(tracking.menuStartDate) >= (tracking.durationDays ?? 28)
   );
-  // Local tracking data for optimistic updates
   const [localTracking, setLocalTracking] = useState<Record<string, any>>(tracking.trackingData);
   const savingRef = useRef<Record<string, boolean>>({});
   const [savingKeys, setSavingKeys] = useState<Set<string>>(new Set());
 
-  // Sync local tracking if parent updates (e.g., after onboarding start)
   useEffect(() => {
     setLocalTracking(tracking.trackingData);
   }, [tracking.id, tracking.menuId]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Scroll active day pill into view on mount
   useEffect(() => {
     const el = scrollRef.current?.children[selectedIdx] as HTMLElement;
     el?.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
   }, []);
 
-  const orderedDays = getOrderedDays(tracking.menuStartDate);
-  const totalWeeks = Math.max(1, Math.ceil((tracking.durationDays ?? 28) / 7));
+  const orderedDays     = getOrderedDays(tracking.menuStartDate);
+  const totalWeeks      = Math.max(1, Math.ceil((tracking.durationDays ?? 28) / 7));
   const daysInCurrentWeek = Math.min(7, (tracking.durationDays ?? 28) - weekIndex * 7);
-  const selectedDay = orderedDays[Math.min(selectedIdx, daysInCurrentWeek - 1)];
-  const clampedIdx = Math.min(selectedIdx, daysInCurrentWeek - 1);
-  const dateKey = getDateForPos(clampedIdx, tracking.menuStartDate, weekIndex);
-  const dayData = getDayData(menu, selectedDay.key);
-  const meals = buildMeals(dayData);
+  const selectedDay     = orderedDays[Math.min(selectedIdx, daysInCurrentWeek - 1)];
+  const clampedIdx      = Math.min(selectedIdx, daysInCurrentWeek - 1);
+  const dateKey         = getDateForPos(clampedIdx, tracking.menuStartDate, weekIndex);
+  const dayData         = getDayData(menu, selectedDay.key);
+  const meals           = buildMeals(dayData);
 
-  // ── Card stats (for currently viewed week) ──
-  const todayWeekIdx = getTodayWeekIndex(tracking.menuStartDate);
-  const todayPos = getTodayPosIndex(tracking.menuStartDate);
+  const todayWeekIdx    = getTodayWeekIndex(tracking.menuStartDate);
+  const todayPos        = getTodayPosIndex(tracking.menuStartDate);
   const weekProgressPct = weekIndex < todayWeekIdx ? 100
     : weekIndex > todayWeekIdx ? 0
     : Math.round(((todayPos + 1) / 7) * 100);
-  const { done: mealsDone, total: mealsTotal } = getWeekStats(weekIndex, tracking.menuStartDate, menu, orderedDays, localTracking, tracking.durationDays ?? 28);
+
+  const { done: mealsDone, total: mealsTotal } = getWeekStats(
+    weekIndex, tracking.menuStartDate, menu, orderedDays, localTracking, tracking.durationDays ?? 28
+  );
   const mealsPct = mealsTotal > 0 ? Math.round((mealsDone / mealsTotal) * 100) : 0;
 
-  // Total meals completed across entire plan (for completion screen)
+  const streak = calcStreak(localTracking, tracking.menuStartDate);
+
   const totalPointsEarned = Object.values(localTracking).reduce((acc, dayData) => {
     if (!dayData || typeof dayData !== 'object') return acc;
     return acc + Object.values(dayData as Record<string, any>).filter((m: any) => m?.completed === true).length;
   }, 0);
 
+  const isToday = (weekIdx: number, pos: number) =>
+    weekIdx === todayWeekIdx && pos === todayPos;
+
   // ── Optimistic update + upsert ──
   const handleUpdate = useCallback(
     async (mealKey: string, update: MealUpdate) => {
-      const prevData = localTracking[dateKey]?.[mealKey] ?? {};
+      const prevData   = localTracking[dateKey]?.[mealKey] ?? {};
       const newMealData = { ...prevData, ...update };
 
-      // Remove null/undefined keys for cleanliness
       if (newMealData.completed === null) delete newMealData.completed;
       if (newMealData.rating    === null) delete newMealData.rating;
       if (newMealData.note      === '')  delete newMealData.note;
 
       const newDayData = { ...(localTracking[dateKey] ?? {}), [mealKey]: newMealData };
-      // Clean up empty meal entries
       if (Object.keys(newMealData).length === 0) delete newDayData[mealKey];
 
       const newTracking = { ...localTracking, [dateKey]: newDayData };
-      // Clean up empty day entries
       if (Object.keys(newDayData).length === 0) delete newTracking[dateKey];
 
-      // Optimistic update
       setLocalTracking(newTracking);
 
       const saveKey = `${dateKey}_${mealKey}`;
@@ -219,10 +246,7 @@ export const DayMenuView: React.FC<Props> = ({
       try {
         const { data, error } = await supabase
           .from('patient_digital_tracking')
-          .update({
-            tracking_data: newTracking,
-            updated_at: new Date().toISOString(),
-          })
+          .update({ tracking_data: newTracking, updated_at: new Date().toISOString() })
           .eq('patient_id', patient.id)
           .eq('menu_id', tracking.menuId)
           .select()
@@ -241,7 +265,6 @@ export const DayMenuView: React.FC<Props> = ({
           updatedAt:     data.updated_at,
         });
       } catch (e) {
-        // Rollback optimistic update on error
         setLocalTracking(tracking.trackingData);
         console.error('Error saving meal:', e);
       } finally {
@@ -253,174 +276,319 @@ export const DayMenuView: React.FC<Props> = ({
   );
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div style={{ minHeight: '100vh', backgroundColor: '#F2F7F4', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Greeting card ── */}
-      <div className="px-4 pb-4" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
-        <div
-          className="rounded-2xl p-4 cursor-pointer select-none"
-          style={{ backgroundColor: '#2D5A4B' }}
-          onClick={() => setExpanded(e => !e)}
-        >
-          {/* Header row */}
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-semibold mb-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                {new Date().toLocaleDateString('es-GT', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </p>
-              <h1 className="text-2xl font-extrabold text-white">
-                Hola {patient.firstName}
-              </h1>
-            </div>
-            <span className="text-xs font-semibold mt-1 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.6)' }}>
-              {expanded ? 'Ver menos ▲' : 'Ver más ▼'}
-            </span>
+      {/* ─── Hero ─────────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          backgroundColor: '#1A2E25',
+          borderRadius: '0 0 28px 28px',
+          paddingTop: 'max(1.5rem, env(safe-area-inset-top))',
+          paddingBottom: '20px',
+          paddingLeft: '20px',
+          paddingRight: '20px',
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+        onClick={() => setExpanded(e => !e)}
+      >
+        {/* Greeting + expand toggle */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div>
+            {/* Time-of-day icon */}
+            {(() => {
+              const h = new Date().getHours();
+              const isMorning   = h >= 5  && h < 12;
+              const isAfternoon = h >= 12 && h < 19;
+              const Icon = isMorning ? Sun : isAfternoon ? UtensilsCrossed : Moon;
+              const iconBg    = isMorning ? 'rgba(251,191,36,0.18)'  : isAfternoon ? 'rgba(96,165,250,0.18)'  : 'rgba(167,139,250,0.18)';
+              const iconColor = isMorning ? '#FCD34D'                : isAfternoon ? '#93C5FD'                : '#C4B5FD';
+              return (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 38, height: 38, borderRadius: '12px',
+                  backgroundColor: iconBg,
+                  color: iconColor,
+                  marginBottom: '10px',
+                }}>
+                  <Icon size={20} />
+                </div>
+              );
+            })()}
+            <h1 style={{ color: 'white', fontSize: '24px', fontWeight: 800, lineHeight: 1.2 }}>
+              {(() => {
+                const h = new Date().getHours();
+                if (h >= 5  && h < 12) return `¡Buenos días, ${patient.firstName}!`;
+                if (h >= 12 && h < 19) return `¡Buenas tardes, ${patient.firstName}!`;
+                return `¡Buenas noches, ${patient.firstName}!`;
+              })()}
+            </h1>
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: 500, marginTop: '4px' }}>
+              Tu menú de hoy está listo
+            </p>
           </div>
-
-          {/* Week progress */}
-          <div className="mt-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>
-                Semana {weekIndex + 1}
-              </p>
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                {weekProgressPct}%
-              </p>
-            </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${weekProgressPct}%`, backgroundColor: 'rgba(255,255,255,0.7)' }}
-              />
-            </div>
-          </div>
-
-          {/* Meal compliance */}
-          <div className="mt-2.5">
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>
-                Tiempos de Comida Cumplidos
-              </p>
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                {mealsDone}/{mealsTotal}
-                {mealsTotal > 0 && mealsDone === mealsTotal && ' ✓'}
-              </p>
-            </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${mealsPct}%`, backgroundColor: 'rgba(255,255,255,0.7)' }}
-              />
-            </div>
-          </div>
-
-          {/* Expandable week selector */}
-          {expanded && (
-            <div
-              className="mt-3 pt-3 flex gap-2"
-              style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}
-              onClick={e => e.stopPropagation()}
-            >
-              {Array.from({ length: totalWeeks }, (_, wi) => {
-                const stats = getWeekStats(wi, tracking.menuStartDate, menu, orderedDays, localTracking, tracking.durationDays ?? 28);
-                const isActive = wi === weekIndex;
-                return (
-                  <button
-                    key={wi}
-                    onClick={() => { setWeekIndex(wi); setExpanded(false); setShowCompletion(false); }}
-                    className="flex-1 rounded-xl py-2.5 px-1 flex flex-col items-center transition-all"
-                    style={{
-                      backgroundColor: isActive ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
-                      border: isActive ? '1.5px solid rgba(255,255,255,0.5)' : '1.5px solid transparent',
-                      gap: '3px',
-                    }}
-                  >
-                    <span className="text-xs font-bold text-white">Sem {wi + 1}</span>
-                    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>
-                      {stats.done}/{stats.total}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <span style={{ color: 'rgba(255,255,255,0.45)', flexShrink: 0, marginTop: '4px' }}>
+            {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </span>
         </div>
+
+        {/* Progress stats row */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {/* Week progress */}
+          <div style={{
+            flex: 1, backgroundColor: 'rgba(255,255,255,0.08)',
+            borderRadius: '14px', padding: '10px 12px',
+            border: '1px solid rgba(255,255,255,0.07)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '11px', fontWeight: 600 }}>
+                Semana {weekIndex + 1}
+              </span>
+              <span style={{ color: '#6EE7B7', fontSize: '11px', fontWeight: 700 }}>
+                {weekProgressPct}%
+              </span>
+            </div>
+            <div style={{ height: '4px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '99px', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: `${weekProgressPct}%`,
+                background: 'linear-gradient(90deg, #6EE7B7, #34D399)',
+                borderRadius: '99px',
+                transition: 'width 0.5s ease',
+              }} />
+            </div>
+          </div>
+
+          {/* Meals progress */}
+          <div style={{
+            flex: 1, backgroundColor: 'rgba(255,255,255,0.08)',
+            borderRadius: '14px', padding: '10px 12px',
+            border: '1px solid rgba(255,255,255,0.07)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: '11px', fontWeight: 600 }}>
+                Comidas
+              </span>
+              <span style={{ color: '#6EE7B7', fontSize: '11px', fontWeight: 700 }}>
+                {mealsDone}/{mealsTotal}
+              </span>
+            </div>
+            <div style={{ height: '4px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '99px', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: `${mealsPct}%`,
+                background: 'linear-gradient(90deg, #6EE7B7, #34D399)',
+                borderRadius: '99px',
+                transition: 'width 0.5s ease',
+              }} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Expandable week selector ── */}
+        {expanded && (
+          <div
+            style={{
+              marginTop: '14px',
+              paddingTop: '14px',
+              borderTop: '1px solid rgba(255,255,255,0.12)',
+              display: 'flex',
+              gap: '8px',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {Array.from({ length: totalWeeks }, (_, wi) => {
+              const stats = getWeekStats(wi, tracking.menuStartDate, menu, orderedDays, localTracking, tracking.durationDays ?? 28);
+              const isActive = wi === weekIndex;
+              const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+              return (
+                <button
+                  key={wi}
+                  onClick={() => { setWeekIndex(wi); setExpanded(false); setShowCompletion(false); }}
+                  style={{
+                    flex: 1,
+                    borderRadius: '12px',
+                    padding: '10px 4px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backgroundColor: isActive ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.06)',
+                    border: isActive ? '1.5px solid rgba(255,255,255,0.45)' : '1.5px solid transparent',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <span style={{ color: 'white', fontSize: '12px', fontWeight: 700 }}>Sem {wi + 1}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>{stats.done}/{stats.total}</span>
+                  {/* Mini progress */}
+                  <div style={{ width: '80%', height: '3px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '99px', overflow: 'hidden', marginTop: '2px' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: '#6EE7B7', borderRadius: '99px', transition: 'width 0.4s ease' }} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* ── Day selector ── */}
-      <div className="pb-4 px-5">
+      {/* ─── Day selector ─────────────────────────────────────────────────── */}
+      <div style={{ padding: '16px 16px 8px' }}>
         <div
           ref={scrollRef}
-          className="flex gap-2 overflow-x-auto"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
         >
           {orderedDays.slice(0, daysInCurrentWeek).map((day, i) => {
-            const active = i === clampedIdx;
-            const dayNumber = parseInt(getDateForPos(i, tracking.menuStartDate, weekIndex).slice(8), 10);
+            const active     = i === clampedIdx;
+            const todayMark  = isToday(weekIndex, i);
+            const dayNumber  = parseInt(getDateForPos(i, tracking.menuStartDate, weekIndex).slice(8), 10);
             return (
               <button
                 key={day.key}
                 onClick={() => { setSelectedIdx(i); setShowCompletion(false); }}
-                className="flex-shrink-0 flex flex-col items-center px-4 py-2 rounded-full font-semibold transition-all"
                 style={{
+                  flexShrink: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  padding: '8px 14px 6px',
+                  borderRadius: '14px',
+                  minWidth: '52px',
                   backgroundColor: active ? '#2D5A4B' : 'white',
-                  color:            active ? 'white'   : '#374151',
-                  border:           active ? '1.5px solid #2D5A4B' : '1.5px solid #E0E8E3',
-                  minHeight: '48px',
-                  gap: '1px',
+                  border: active ? '1.5px solid #2D5A4B' : '1.5px solid #E0E8E3',
+                  boxShadow: active ? '0 4px 14px rgba(45,90,75,0.28)' : '0 1px 4px rgba(0,0,0,0.05)',
+                  color: active ? 'white' : '#374151',
+                  gap: '2px',
+                  transition: 'all 0.15s ease',
                 }}
               >
-                <span style={{ fontSize: '12px' }}>{day.short}</span>
-                <span style={{ fontSize: '11px', opacity: active ? 0.85 : 0.5, fontWeight: 700 }}>{dayNumber}</span>
+                <span style={{ fontSize: '10px', fontWeight: 600, opacity: active ? 0.75 : 0.55, letterSpacing: '0.02em' }}>
+                  {day.short}
+                </span>
+                <span style={{ fontSize: '17px', fontWeight: 800, lineHeight: 1 }}>
+                  {dayNumber}
+                </span>
+                {/* Today dot */}
+                <span style={{
+                  width: '5px', height: '5px', borderRadius: '50%', marginTop: '2px',
+                  backgroundColor: todayMark
+                    ? (active ? 'rgba(110,231,183,0.9)' : '#2D5A4B')
+                    : 'transparent',
+                  transition: 'background-color 0.15s',
+                }} />
               </button>
             );
           })}
 
-          {/* Menú completado badge — solo aparece en la última semana parcial */}
+          {/* Menú completado badge */}
           {daysInCurrentWeek < 7 && (
             <button
               onClick={() => setShowCompletion(true)}
-              className="flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full transition-all active:scale-95"
               style={{
-                backgroundColor: showCompletion ? '#2D5A4B' : '#E8F0EC',
-                border: '1.5px solid #2D5A4B',
-                minHeight: '48px',
+                flexShrink: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 12px',
+                borderRadius: '14px',
+                minWidth: '52px',
+                minHeight: '64px',
+                backgroundColor: showCompletion ? '#2D5A4B' : 'white',
+                border: showCompletion ? '1.5px solid #2D5A4B' : '1.5px solid #E0E8E3',
+                boxShadow: showCompletion ? '0 4px 14px rgba(45,90,75,0.28)' : '0 1px 4px rgba(0,0,0,0.05)',
                 gap: '1px',
+                transition: 'all 0.15s ease',
               }}
             >
-              <span style={{ fontSize: '10px', fontWeight: 700, color: showCompletion ? 'white' : '#2D5A4B', whiteSpace: 'nowrap' }}>Menú</span>
-              <span style={{ fontSize: '10px', fontWeight: 700, color: showCompletion ? 'white' : '#2D5A4B', whiteSpace: 'nowrap' }}>completado</span>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: showCompletion ? 'white' : '#374151', whiteSpace: 'nowrap' }}>Menú</span>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: showCompletion ? 'white' : '#374151', whiteSpace: 'nowrap' }}>completado</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* ── Completion screen ── */}
+      {/* ─── Selected day header ──────────────────────────────────────────── */}
+      {!showCompletion && (
+        <div style={{ padding: '6px 20px 10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '15px', fontWeight: 700, color: '#1F2937' }}>
+            {DAY_FULL_NAMES[selectedDay.key] ?? selectedDay.short}, {parseInt(dateKey.slice(8), 10)} de{' '}
+            {new Date(dateKey + 'T12:00:00').toLocaleDateString('es-GT', { month: 'long' })}
+          </span>
+          {isToday(weekIndex, clampedIdx) && (
+            <span style={{
+              backgroundColor: '#ECFDF5',
+              color: '#065F46',
+              fontSize: '9px',
+              fontWeight: 700,
+              letterSpacing: '0.07em',
+              padding: '3px 8px',
+              borderRadius: '99px',
+              border: '1px solid #D1FAE5',
+              textTransform: 'uppercase',
+            }}>Hoy</span>
+          )}
+        </div>
+      )}
+
+      {/* ─── Completion screen ────────────────────────────────────────────── */}
       {showCompletion && (
-        <div className="px-4 pb-6 flex-1 flex flex-col items-center justify-center text-center gap-4">
-          <div className="text-6xl">🎉</div>
+        <div style={{
+          padding: '16px 20px 32px',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          gap: '20px',
+        }}>
+          <div style={{ fontSize: '72px', lineHeight: 1 }}>🎉</div>
+
           <div>
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-1">¡Felicidades, lo lograste!</h2>
-            <p className="text-sm text-gray-500">Completaste tu plan alimenticio</p>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#111827', marginBottom: '6px' }}>
+              ¡Felicidades, lo lograste!
+            </h2>
+            <p style={{ fontSize: '14px', color: '#9CA3AF' }}>Completaste tu plan alimenticio</p>
           </div>
 
-          {/* Points */}
+          {/* Stats strip */}
           <div
-            className="w-full rounded-2xl p-4 flex flex-col items-center"
-            style={{ backgroundColor: '#E8F0EC', border: '1px solid #C6D9CF' }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              borderRadius: '20px',
+              overflow: 'hidden',
+              background: 'linear-gradient(135deg, #1A2E25 0%, #2D5A4B 100%)',
+              boxShadow: '0 6px 24px rgba(26,46,37,0.28)',
+            }}
           >
-            <p className="text-4xl font-extrabold" style={{ color: '#2D5A4B' }}>
-              {totalPointsEarned}
-            </p>
-            <p className="text-xs mt-1 text-center" style={{ color: '#6B7C73' }}>tiempos de comida completados 🏆</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '14px 20px' }}>
+              <Star style={{ width: 15, height: 15, flexShrink: 0, color: '#6EE7B7', fill: '#6EE7B7' }} />
+              <span style={{ color: '#FFFFFF', fontSize: '22px', fontWeight: 900, lineHeight: 1 }}>
+                {totalPointsEarned}
+              </span>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', maxWidth: '120px', lineHeight: 1.3 }}>
+                tiempos de comida completados
+              </span>
+            </div>
+            <div style={{ width: '1px', height: '28px', backgroundColor: 'rgba(255,255,255,0.12)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '14px 20px' }}>
+              <Flame style={{ width: 15, height: 15, flexShrink: 0, color: '#FCA5A5', fill: '#FCA5A5' }} />
+              <span style={{ color: '#FFFFFF', fontSize: '22px', fontWeight: 900, lineHeight: 1 }}>
+                {streak}
+              </span>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', lineHeight: 1.3 }}>
+                días racha
+              </span>
+            </div>
           </div>
 
           {/* Next step message */}
-          <div className="text-center">
-            <p className="text-sm font-semibold text-gray-800 mb-1">
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '15px', fontWeight: 700, color: '#1F2937', marginBottom: '6px' }}>
               Es hora de tu siguiente Evaluación
             </p>
-            <p className="text-xs text-gray-500">
+            <p style={{ fontSize: '13px', color: '#9CA3AF', lineHeight: 1.5 }}>
               Mide tu progreso con tu nutricionista y celebra tus resultados juntos.
             </p>
           </div>
@@ -428,14 +596,28 @@ export const DayMenuView: React.FC<Props> = ({
           {/* WhatsApp button */}
           {(nutritionist.personalPhone ?? nutritionist.phone) && (() => {
             const waPhone = (nutritionist.personalPhone ?? nutritionist.phone ?? '').replace(/\D/g, '');
-            const waMsg = `¡Hola! Completé mi plan alimenticio 🎉 Acumulé ${totalPointsEarned} tiempos de comida cumplidos. ¡Quiero agendar mi siguiente evaluación!`;
+            const waMsg   = `¡Hola! Completé mi plan alimenticio 🎉 Acumulé ${totalPointsEarned} tiempos de comida cumplidos. ¡Quiero agendar mi siguiente evaluación!`;
             return (
               <a
                 href={`https://wa.me/${waPhone}?text=${encodeURIComponent(waMsg)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-95"
-                style={{ backgroundColor: '#25D366' }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  padding: '16px',
+                  borderRadius: '16px',
+                  backgroundColor: '#25D366',
+                  color: 'white',
+                  fontWeight: 700,
+                  fontSize: '15px',
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 14px rgba(37,211,102,0.35)',
+                  transition: 'transform 0.15s',
+                }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
@@ -448,76 +630,60 @@ export const DayMenuView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* ── Meal list ── */}
-      {!showCompletion && <div className="px-4 pb-6 space-y-3 flex-1">
-        {meals.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-4xl mb-3">🍽️</p>
-            <p className="text-sm text-gray-400">
-              No hay menú para {selectedDay.short}.
-            </p>
-          </div>
-        ) : (
-          <>
-            {meals.map((meal) => {
-              const saveKey = `${dateKey}_${meal.key}`;
-              return (
-                <MealCard
-                  key={meal.key}
-                  meal={meal}
-                  data={getMealData(localTracking, dateKey, meal.key)}
-                  onUpdate={(u) => handleUpdate(meal.key, u)}
-                  saving={savingKeys.has(saveKey)}
-                />
-              );
-            })}
+      {/* ─── Meal list ────────────────────────────────────────────────────── */}
+      {!showCompletion && (
+        <div style={{ padding: '0 16px 28px', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {meals.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '64px 0' }}>
+              <p style={{ fontSize: '48px', marginBottom: '12px' }}>🍽️</p>
+              <p style={{ fontSize: '14px', color: '#9CA3AF' }}>
+                No hay menú para {selectedDay.short}.
+              </p>
+            </div>
+          ) : (
+            <>
+              {meals.map((meal) => {
+                const saveKey = `${dateKey}_${meal.key}`;
+                return (
+                  <MealCard
+                    key={meal.key}
+                    meal={meal}
+                    data={getMealData(localTracking, dateKey, meal.key)}
+                    onUpdate={(u) => handleUpdate(meal.key, u)}
+                    saving={savingKeys.has(saveKey)}
+                  />
+                );
+              })}
 
-            {/* Domingo note (old format) */}
-            {selectedDay.key === 'domingo' && !dayData && menu.menuData?.weeklyMenu?.domingo?.note && (
-              <div
-                className="p-4 rounded-2xl"
-                style={{ backgroundColor: '#F9FBF9', border: '1px solid #E0E8E3' }}
-              >
-                <p className="text-xs font-bold uppercase mb-1" style={{ color: '#6B7C73' }}>Nota del domingo</p>
-                <p className="text-sm text-gray-700">{menu.menuData.weeklyMenu.domingo.note}</p>
-                {menu.menuData.weeklyMenu.domingo.hydration && (
-                  <>
-                    <p className="text-xs font-bold uppercase mt-3 mb-1" style={{ color: '#6B7C73' }}>Hidratación</p>
-                    <p className="text-sm text-gray-700">{menu.menuData.weeklyMenu.domingo.hydration}</p>
-                  </>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      </div>}
-
-      {/* ── Footer nutricionista ── */}
-      <div className="px-5 pb-6 pt-4" style={{ borderTop: '1px solid #E0E8E3' }}>
-        <p className="text-xs font-semibold mb-3" style={{ color: '#9CA3AF' }}>
-          Plan Alimenticio Por:
-        </p>
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: '#E8F0EC' }}
-          >
-            {nutritionist.avatar ? (
-              <img src={nutritionist.avatar} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <span className="font-bold text-sm" style={{ color: '#2D5A4B' }}>
-                {nutritionist.name.charAt(0)}
-              </span>
-            )}
-          </div>
-          <div>
-            {nutritionist.professionalTitle && (
-              <p className="text-xs" style={{ color: '#6B7C73' }}>{nutritionist.professionalTitle}</p>
-            )}
-            <p className="text-sm font-bold text-gray-900">{nutritionist.name}</p>
-          </div>
+              {/* Domingo legacy note */}
+              {selectedDay.key === 'domingo' && !dayData && menu.menuData?.weeklyMenu?.domingo?.note && (
+                <div style={{
+                  padding: '16px',
+                  borderRadius: '16px',
+                  backgroundColor: 'white',
+                  border: '1px solid #E0E8E3',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                }}>
+                  <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6B7C73', marginBottom: '4px' }}>
+                    Nota del domingo
+                  </p>
+                  <p style={{ fontSize: '14px', color: '#374151' }}>{menu.menuData.weeklyMenu.domingo.note}</p>
+                  {menu.menuData.weeklyMenu.domingo.hydration && (
+                    <>
+                      <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6B7C73', marginTop: '12px', marginBottom: '4px' }}>
+                        Hidratación
+                      </p>
+                      <p style={{ fontSize: '14px', color: '#374151' }}>{menu.menuData.weeklyMenu.domingo.hydration}</p>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
-      </div>
+      )}
+
+
     </div>
   );
 };

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { UtensilsCrossed, TrendingUp, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { UtensilsCrossed, TrendingUp, User, Lock } from 'lucide-react';
 import { GeneratedMenu, TrackingRow } from '../../types';
 import { OnboardingView } from './OnboardingView';
 import { DayMenuView } from './DayMenuView';
@@ -222,6 +222,13 @@ export const PortalShell: React.FC<Props> = ({
   nutritionist, measurements, bioMeasurements, onTrackingUpdate,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('menu');
+  const [lockedToast, setLockedToast] = useState(false);
+
+  useEffect(() => {
+    if (!lockedToast) return;
+    const t = setTimeout(() => setLockedToast(false), 2500);
+    return () => clearTimeout(t);
+  }, [lockedToast]);
 
   const menuView = (() => {
     if (!activeTracking)                return 'no_plan';
@@ -236,9 +243,9 @@ export const PortalShell: React.FC<Props> = ({
     : (menus[0] ?? null);
 
   const tabs: { key: Tab; label: string; Icon: React.FC<{ className?: string }> }[] = [
-    { key: 'menu',     label: 'MENÚ',     Icon: UtensilsCrossed },
-    { key: 'progreso', label: 'PROGRESO', Icon: TrendingUp },
-    { key: 'perfil',   label: 'PERFIL',   Icon: User },
+    { key: 'menu',     label: 'Menú',     Icon: UtensilsCrossed },
+    { key: 'progreso', label: 'Progreso', Icon: TrendingUp },
+    { key: 'perfil',   label: 'Perfil',   Icon: User },
   ];
 
   return (
@@ -247,7 +254,7 @@ export const PortalShell: React.FC<Props> = ({
       {/* ── Content ── */}
       <div
         className="flex-1 overflow-y-auto"
-        style={{ paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
+        style={{ paddingBottom: 'calc(72px + env(safe-area-inset-bottom, 0px))' }}
       >
         {activeTab === 'menu' && (
           <>
@@ -300,37 +307,105 @@ export const PortalShell: React.FC<Props> = ({
         )}
       </div>
 
+      {/* ── Locked toast ── */}
+      {lockedToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 50,
+          backgroundColor: '#1A2E25',
+          color: 'white',
+          borderRadius: '14px',
+          padding: '10px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '13px',
+          fontWeight: 600,
+          boxShadow: '0 6px 24px rgba(0,0,0,0.22)',
+          whiteSpace: 'nowrap',
+          animation: 'fadeInUp 0.2s ease',
+        }}>
+          <Lock size={14} strokeWidth={2.5} />
+          Inicia tu plan para desbloquear
+        </div>
+      )}
+
       {/* ── Tab bar ── */}
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white border-t flex"
+        className="fixed bottom-0 left-0 right-0 flex items-end"
         style={{
-          borderColor: '#E0E8E3',
-          height: 'calc(64px + env(safe-area-inset-bottom, 0px))',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           zIndex: 30,
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
-        {tabs.map(({ key, label, Icon }) => {
-          const isActive = activeTab === key;
-          return (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className="flex-1 flex flex-col items-center justify-center gap-1 transition-colors"
-              style={{
-                backgroundColor: isActive ? '#E8F0EC' : 'white',
-                color: isActive ? '#2D5A4B' : '#6B7C73',
-                minHeight: '64px',
-                border: 'none',
-                outline: 'none',
-              }}
-            >
-              <Icon className="w-5 h-5" />
-              <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em' }}>{label}</span>
-            </button>
-          );
-        })}
+        <div
+          className="w-full flex items-center px-3"
+          style={{
+            height: '72px',
+            background: 'rgba(255,255,255,0.92)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderTop: '1px solid rgba(45,90,75,0.08)',
+            boxShadow: '0 -4px 24px rgba(45,90,75,0.10)',
+          }}
+        >
+          {tabs.map(({ key, label, Icon }) => {
+            const isActive = activeTab === key;
+            const isLocked = menuView === 'onboarding' && (key === 'progreso' || key === 'perfil');
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  if (isLocked) { setLockedToast(true); return; }
+                  setActiveTab(key);
+                }}
+                className="flex-1 flex flex-col items-center justify-center gap-1 relative transition-all duration-200"
+                style={{ border: 'none', outline: 'none', background: 'transparent', minHeight: '56px', opacity: isLocked ? 0.45 : 1 }}
+              >
+                {/* Active pill background */}
+                {isActive && (
+                  <span
+                    className="absolute inset-x-2 top-1 bottom-1 rounded-2xl"
+                    style={{
+                      background: 'linear-gradient(135deg, #2D5A4B 0%, #3d7a63 100%)',
+                      boxShadow: '0 4px 14px rgba(45,90,75,0.35)',
+                    }}
+                  />
+                )}
+                <span className="relative flex flex-col items-center gap-0.5">
+                  {isLocked ? (
+                    <Lock style={{ width: '16px', height: '16px', color: '#8FA89E', strokeWidth: 2 }} />
+                  ) : (
+                    <Icon
+                      className="transition-all duration-200"
+                      style={{
+                        width: isActive ? '20px' : '19px',
+                        height: isActive ? '20px' : '19px',
+                        color: isActive ? '#ffffff' : '#8FA89E',
+                        strokeWidth: isActive ? 2.2 : 1.8,
+                      }}
+                    />
+                  )}
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: isActive ? 700 : 500,
+                      letterSpacing: isActive ? '0.04em' : '0.02em',
+                      color: isActive ? '#ffffff' : '#8FA89E',
+                    }}
+                  >
+                    {label}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
+      <style>{`@keyframes fadeInUp { from { opacity:0; transform:translateX(-50%) translateY(8px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }`}</style>
     </div>
   );
 };
