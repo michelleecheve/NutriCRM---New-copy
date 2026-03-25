@@ -38,7 +38,8 @@ export const supabaseService = {
     if (profile.licenseNumber)     updateData.license_number     = profile.licenseNumber;
     if (profile.avatar)            updateData.avatar             = profile.avatar;
     if (profile.menuAIConfig)      updateData.menu_ai_config     = profile.menuAIConfig;
-    if (profile.labAIPrompt !== undefined) updateData.lab_ai_prompt = profile.labAIPrompt;
+    if (profile.labAIPrompt             !== undefined) updateData.lab_ai_prompt             = profile.labAIPrompt;
+    if (profile.shareDigitalMenuMessage !== undefined) updateData.share_digital_menu_message = profile.shareDigitalMenuMessage;
 
     const { data, error } = await supabase
       .from('profiles')

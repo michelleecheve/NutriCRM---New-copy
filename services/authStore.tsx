@@ -259,7 +259,8 @@ class AuthStore {
         contactEmail:      profile?.contact_email       || '',
         instagramHandle:   profile?.instagram_handle    || '',
         website:           profile?.website             || '',
-        address:           profile?.address             || '',
+        address:               profile?.address                    || '',
+        shareDigitalMenuMessage: profile?.share_digital_menu_message || undefined,
       } as any,
     };
 

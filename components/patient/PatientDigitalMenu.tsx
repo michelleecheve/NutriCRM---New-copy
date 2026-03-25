@@ -12,10 +12,12 @@ import {
   AlertTriangle,
   CalendarClock,
   TrendingUp,
+  Settings,
 } from "lucide-react";
 import { Patient, GeneratedMenu, TrackingRow } from "../../types";
 import { supabaseService } from "../../services/supabaseService";
 import { supabase } from "../../services/supabase";
+import { authStore } from "../../services/authStore";
 
 interface Props {
   patient: Patient;
@@ -51,10 +53,20 @@ function formatDate(dateStr: string): string {
 // ─── Plan compliance (based on full menu structure) ──────────────────────────
 
 const PLAN_DAY_KEYS = [
-  "lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo",
+  "lunes",
+  "martes",
+  "miercoles",
+  "jueves",
+  "viernes",
+  "sabado",
+  "domingo",
 ];
 const PLAN_MEAL_ORDER = [
-  "desayuno", "refaccion1", "almuerzo", "refaccion2", "cena",
+  "desayuno",
+  "refaccion1",
+  "almuerzo",
+  "refaccion2",
+  "cena",
 ];
 
 function getMenuDayData(menu: GeneratedMenu, dayKey: string): any {
@@ -70,15 +82,19 @@ function getMenuDayData(menu: GeneratedMenu, dayKey: string): any {
 
 function getMealKeys(dayData: any): string[] {
   if (!dayData) return [];
-  const order: string[] =
-    dayData.mealsOrder?.length ? dayData.mealsOrder : PLAN_MEAL_ORDER;
+  const order: string[] = dayData.mealsOrder?.length
+    ? dayData.mealsOrder
+    : PLAN_MEAL_ORDER;
   return order.filter((k: string) => dayData[k]?.title);
 }
 
 function getOrderedDayKeys(menuStartDate: string): string[] {
   const jsDay = new Date(menuStartDate + "T12:00:00").getDay();
   const startIdx = jsDay === 0 ? 6 : jsDay - 1;
-  return [...PLAN_DAY_KEYS.slice(startIdx), ...PLAN_DAY_KEYS.slice(0, startIdx)];
+  return [
+    ...PLAN_DAY_KEYS.slice(startIdx),
+    ...PLAN_DAY_KEYS.slice(0, startIdx),
+  ];
 }
 
 /** Count total meal slots from the menu structure × plan duration, and completed from tracking_data */
@@ -127,6 +143,12 @@ function getPlanStatus(tracking: TrackingRow | null | undefined): PlanStatus {
   return "active";
 }
 
+// ─── Message template ─────────────────────────────────────────────────────────
+
+const DEFAULT_MESSAGE_TEMPLATE = `¡Hola! Te comparto tu menú digital. Puedes acceder a través del siguiente link: {link} y accede con este pin de acceso: {pin}. Te recomiendo usar esta página todos los días para poder medir tu progreso y llevar contigo tu plan alimenticio.`;
+
+const MESSAGE_TEMPLATE_KEY = "nutriflow_portal_message_template";
+
 // ─── Banner dismiss key ───────────────────────────────────────────────────────
 
 function bannerDismissKey(patientId: string): string {
@@ -164,6 +186,16 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   const [portalGoal, setPortalGoal] = useState(patient.portalGoal ?? "");
   const [savingGoal, setSavingGoal] = useState(false);
   const [savedGoal, setSavedGoal] = useState(false);
+
+  // ── Message template state ──
+  const [messageTemplate, setMessageTemplate] = useState<string>(() => {
+    const profileMsg = authStore.getCurrentUser()?.profile?.shareDigitalMenuMessage;
+    if (profileMsg) return profileMsg;
+    return localStorage.getItem(MESSAGE_TEMPLATE_KEY) ?? DEFAULT_MESSAGE_TEMPLATE;
+  });
+  const [copiedMessage, setCopiedMessage] = useState(false);
+  const saveTemplateTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState(false);
 
   // ── Extend plan state ──
   const [extendMode, setExtendMode] = useState(false);
@@ -381,6 +413,11 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
     };
   })();
 
+  // ── Composed share message ──
+  const composedMessage = messageTemplate
+    .replace("{link}", portalUrl ?? "—")
+    .replace("{pin}", pinInput || patient.accessCode || "—");
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
@@ -432,7 +469,6 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
         </div>
       ) : (
         <div className="px-5 py-5 space-y-4">
-
           {/* ── Banner: menú más reciente ── */}
           {bannerVisible && newerMenu && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
@@ -469,8 +505,8 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
             <p className="text-sm font-semibold text-slate-700">
               Paso 1. Selecciona Menú Activo Para Seguimiento
             </p>
-            <div className="grid grid-cols-2 gap-4">
-              {/* Columna izquierda: selector de menú */}
+            <div className="grid grid-cols-3 gap-4">
+              {/* Columna 1: selector de menú */}
               <div ref={menuSelectorRef}>
                 <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
                   Menú activo
@@ -502,177 +538,177 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                 )}
               </div>
 
-              {/* Columna derecha: duración del plan */}
+              {/* Columna 2: duración del plan */}
               <div>
                 <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
                   Duración del plan (días)
                 </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={1}
-                    max={365}
-                    value={durationDays}
-                    onChange={(e) =>
-                      setDurationDays(Math.max(1, Number(e.target.value)))
-                    }
-                    className="w-24 bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                  />
-                  <button
-                    onClick={handleSaveConfig}
-                    disabled={savingConfig || !selectedMenuId || menus.length === 0}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-semibold rounded-xl transition-all"
-                  >
-                    {savingConfig ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Save className="w-3.5 h-3.5" />
-                    )}
-                    Guardar
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Indicador de estado */}
-            {menus.length > 0 && (
-              <div>
-                {trackingLoading ? (
-                  <div className="h-8 bg-slate-200 animate-pulse rounded-xl" />
-                ) : (
-                  <>
-                    {status === "unconfigured" && (
-                      <span className="inline-flex items-center gap-1.5 bg-white text-slate-500 text-xs font-medium px-3 py-1.5 rounded-full border border-slate-200">
-                        <span className="w-2 h-2 rounded-full bg-slate-400" />
-                        Portal no configurado aún
-                      </span>
-                    )}
-                    {status === "not_started" && (
-                      <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-xs font-medium px-3 py-1.5 rounded-full border border-amber-200">
-                        <span className="w-2 h-2 rounded-full bg-amber-400" />
-                        Paciente aún no ha iniciado
-                      </span>
-                    )}
-                    {status === "active" &&
-                      tracking?.menuStartDate &&
-                      tracking.menuEndDate && (
-                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-medium px-3 py-1.5 rounded-full border border-emerald-200">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                          Activo — Inició el {formatDate(tracking.menuStartDate)}{" "}
-                          · Finaliza el {formatDate(tracking.menuEndDate)}
-                        </span>
-                      )}
-                    {status === "finished" && tracking?.menuEndDate && (
-                      <div className="space-y-2">
-                        <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-xs font-medium px-3 py-1.5 rounded-full border border-red-200">
-                          <span className="w-2 h-2 rounded-full bg-red-500" />
-                          Plan finalizado el {formatDate(tracking.menuEndDate)}
-                        </span>
-                        <div className="flex gap-2 pt-1">
-                          {extendMode ? (
-                            <div className="flex items-center gap-2 w-full">
-                              <input
-                                type="date"
-                                value={newEndDate}
-                                min={todayStr()}
-                                onChange={(e) => setNewEndDate(e.target.value)}
-                                className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                              />
-                              <button
-                                onClick={handleExtendPlan}
-                                disabled={!newEndDate || extendLoading}
-                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors"
-                              >
-                                {extendLoading ? "Guardando..." : "Confirmar"}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setExtendMode(false);
-                                  setNewEndDate("");
-                                }}
-                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-xl transition-colors"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => setExtendMode(true)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors"
-                              >
-                                <CalendarClock className="w-3.5 h-3.5" />
-                                Extender plan
-                              </button>
-                              <button
-                                onClick={() =>
-                                  menuSelectorRef.current?.scrollIntoView({
-                                    behavior: "smooth",
-                                    block: "center",
-                                  })
-                                }
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-xl transition-colors"
-                              >
-                                Asignar nuevo menú
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* ── Resumen visual (solo cuando activo) ── */}
-          {status === "active" && progressData && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-semibold text-slate-700">
-                  Resumen del seguimiento
-                </span>
-              </div>
-
-              {/* Día X de Y */}
-              <div className="text-xs font-medium text-slate-600">
-                Día {progressData.elapsed} de {durationDays}
-              </div>
-
-              {/* Barra de progreso del plan */}
-              <div className="h-2 bg-emerald-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                  style={{ width: `${progressData.pct}%` }}
+                <input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={durationDays}
+                  onChange={(e) =>
+                    setDurationDays(Math.max(1, Number(e.target.value)))
+                  }
+                  className="w-24 bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-300"
                 />
               </div>
 
-              {/* Cumplimiento */}
-              {progressData.total > 0 ? (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Cumplimiento general</span>
-                  <span
-                    className={`font-semibold ${
-                      progressData.compliancePct >= 75
-                        ? "text-emerald-600"
-                        : progressData.compliancePct >= 50
-                          ? "text-amber-500"
-                          : "text-red-500"
-                    }`}
-                  >
-                    {progressData.completed} / {progressData.total} tiempos de comida —{" "}
-                    {progressData.compliancePct}%
-                  </span>
+              {/* Columna 3: resumen del seguimiento */}
+              {status === "active" && progressData ? (
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-xs font-semibold text-slate-600">
+                      Seguimiento
+                    </span>
+                  </div>
+                  <div className="text-xs font-medium text-slate-600 mb-1.5">
+                    Día {progressData.elapsed} de {durationDays}
+                  </div>
+                  <div className="h-1.5 bg-emerald-200 rounded-full overflow-hidden mb-1.5">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                      style={{ width: `${progressData.pct}%` }}
+                    />
+                  </div>
+                  {progressData.total > 0 ? (
+                    <div className="text-xs text-slate-500">
+                      <span
+                        className={`font-semibold ${
+                          progressData.compliancePct >= 75
+                            ? "text-emerald-600"
+                            : progressData.compliancePct >= 50
+                              ? "text-amber-500"
+                              : "text-red-500"
+                        }`}
+                      >
+                        {progressData.compliancePct}%
+                      </span>{" "}
+                      cumplimiento ({progressData.completed}/
+                      {progressData.total})
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400">Sin registros aún.</p>
+                  )}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400">
-                  Sin registros de comidas aún.
-                </p>
+                <div />
               )}
             </div>
-          )}
+
+            {/* Indicador de estado + botón guardar */}
+            {menus.length > 0 && (
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  {trackingLoading ? (
+                    <div className="h-8 bg-slate-200 animate-pulse rounded-xl" />
+                  ) : (
+                    <>
+                      {status === "unconfigured" && (
+                        <span className="inline-flex items-center gap-1.5 bg-white text-slate-500 text-xs font-medium px-3 py-1.5 rounded-full border border-slate-200">
+                          <span className="w-2 h-2 rounded-full bg-slate-400" />
+                          Portal no configurado aún
+                        </span>
+                      )}
+                      {status === "not_started" && (
+                        <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-xs font-medium px-3 py-1.5 rounded-full border border-amber-200">
+                          <span className="w-2 h-2 rounded-full bg-amber-400" />
+                          Paciente aún no ha iniciado
+                        </span>
+                      )}
+                      {status === "active" &&
+                        tracking?.menuStartDate &&
+                        tracking.menuEndDate && (
+                          <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-medium px-3 py-1.5 rounded-full border border-emerald-200">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            Activo — Inició el{" "}
+                            {formatDate(tracking.menuStartDate)} · Finaliza el{" "}
+                            {formatDate(tracking.menuEndDate)}
+                          </span>
+                        )}
+                      {status === "finished" && tracking?.menuEndDate && (
+                        <div className="space-y-2">
+                          <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-600 text-xs font-medium px-3 py-1.5 rounded-full border border-red-200">
+                            <span className="w-2 h-2 rounded-full bg-red-500" />
+                            Plan finalizado el{" "}
+                            {formatDate(tracking.menuEndDate)}
+                          </span>
+                          <div className="flex gap-2 pt-1">
+                            {extendMode ? (
+                              <div className="flex items-center gap-2 w-full">
+                                <input
+                                  type="date"
+                                  value={newEndDate}
+                                  min={todayStr()}
+                                  onChange={(e) =>
+                                    setNewEndDate(e.target.value)
+                                  }
+                                  className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                                />
+                                <button
+                                  onClick={handleExtendPlan}
+                                  disabled={!newEndDate || extendLoading}
+                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors"
+                                >
+                                  {extendLoading ? "Guardando..." : "Confirmar"}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setExtendMode(false);
+                                    setNewEndDate("");
+                                  }}
+                                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-xl transition-colors"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => setExtendMode(true)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors"
+                                >
+                                  <CalendarClock className="w-3.5 h-3.5" />
+                                  Extender plan
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    menuSelectorRef.current?.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "center",
+                                    })
+                                  }
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-xl transition-colors"
+                                >
+                                  Asignar nuevo menú
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+                <button
+                  onClick={handleSaveConfig}
+                  disabled={
+                    savingConfig || !selectedMenuId || menus.length === 0
+                  }
+                  className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-semibold rounded-xl transition-all flex-shrink-0"
+                >
+                  {savingConfig ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5" />
+                  )}
+                  Guardar
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* ── Paso 2: Objetivo del paciente ── */}
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
@@ -791,12 +827,98 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                   </button>
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
-                  El paciente ingresa este PIN la primera vez. Puedes personalizarlo.
+                  El paciente ingresa este PIN la primera vez. Puedes
+                  personalizarlo.
                 </p>
               </div>
             </div>
-          </div>
 
+            {/* ── Copia y envía mensaje ── */}
+            <div className="pt-1">
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2 block">
+                Copia y envía este mensaje a tu paciente
+              </label>
+              <div className="flex gap-2">
+                <textarea
+                  readOnly
+                  value={composedMessage}
+                  rows={4}
+                  className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 resize-none focus:outline-none"
+                />
+                <div className="flex flex-col gap-1.5">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard
+                        .writeText(composedMessage)
+                        .then(() => {
+                          setCopiedMessage(true);
+                          setTimeout(() => setCopiedMessage(false), 2000);
+                        });
+                    }}
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                    title="Copiar mensaje"
+                  >
+                    {copiedMessage ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5 text-emerald-600" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setEditingTemplate((v) => !v)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors ${
+                      editingTemplate
+                        ? "bg-slate-200 text-slate-700"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-500"
+                    }`}
+                    title="Configurar mensaje predeterminado"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {editingTemplate && (
+                <div className="mt-2 space-y-1.5">
+                  <p className="text-xs text-slate-400">
+                    Configura la plantilla base del mensaje a compartir. Usa{" "}
+                    <code className="bg-slate-100 px-1 rounded">
+                      {"{link}"}
+                    </code>{" "}
+                    y{" "}
+                    <code className="bg-slate-100 px-1 rounded">{"{pin}"}</code>{" "}
+                    como marcadores de posición.
+                  </p>
+                  <textarea
+                    value={messageTemplate}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setMessageTemplate(val);
+                      localStorage.setItem(MESSAGE_TEMPLATE_KEY, val);
+                      if (saveTemplateTimeout.current) clearTimeout(saveTemplateTimeout.current);
+                      saveTemplateTimeout.current = setTimeout(() => {
+                        const userId = authStore.getCurrentUser()?.id;
+                        if (userId) supabaseService.updateProfile(userId, { shareDigitalMenuMessage: val });
+                      }, 800);
+                    }}
+                    rows={4}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  />
+                  <button
+                    onClick={() => {
+                      setMessageTemplate(DEFAULT_MESSAGE_TEMPLATE);
+                      localStorage.removeItem(MESSAGE_TEMPLATE_KEY);
+                      const userId = authStore.getCurrentUser()?.id;
+                      if (userId) supabaseService.updateProfile(userId, { shareDigitalMenuMessage: DEFAULT_MESSAGE_TEMPLATE });
+                    }}
+                    className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    Restaurar predeterminado
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

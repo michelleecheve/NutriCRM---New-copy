@@ -329,6 +329,7 @@ export interface UserProfile {
   dateOfBirth?: string;
   menuAIConfig?: MenuAIConfig;
   labAIPrompt?: string;
+  shareDigitalMenuMessage?: string;
 }
 
 export type MealTimeKey = 'desayuno' | 'refaccion' | 'almuerzo' | 'merienda' | 'cena';

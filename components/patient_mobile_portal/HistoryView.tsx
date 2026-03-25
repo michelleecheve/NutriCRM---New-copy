@@ -100,7 +100,7 @@ const ExpandedMenu: React.FC<{ menu: GeneratedMenu }> = ({ menu }) => {
                     className="font-bold flex-shrink-0 w-20"
                     style={{ color: color, fontSize: '11px' }}
                   >
-                    {MEAL_LABELS[mealKey] ?? mealKey}
+                    {dayData[mealKey]?.label ?? MEAL_LABELS[mealKey] ?? mealKey}
                   </span>
                   <span
                     className="leading-relaxed"

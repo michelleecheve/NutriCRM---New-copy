@@ -352,24 +352,6 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
         setEditingDay(null);
       };
 
-      const MealItem = ({ meal, idx }: { meal: { id: string; label: string; title: string }; idx: number }) => (
-        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col gap-1">
-              <button onClick={() => moveMeal(idx, 'up')} disabled={idx === 0} className="p-1 hover:bg-white rounded-md disabled:opacity-30"><MoveUp className="w-3 h-3" /></button>
-              <button onClick={() => moveMeal(idx, 'down')} disabled={idx === meals.length - 1} className="p-1 hover:bg-white rounded-md disabled:opacity-30"><MoveDown className="w-3 h-3" /></button>
-            </div>
-            <div className="flex-1 space-y-3">
-              <input value={meal.label} onChange={e => { const n = [...meals]; n[idx].label = e.target.value; setMeals(n); }}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="Etiqueta (Ej: Desayuno)" />
-              <textarea value={meal.title} onChange={e => { const n = [...meals]; n[idx].title = e.target.value; setMeals(n); }}
-                rows={3} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" placeholder="Contenido del menú..." />
-            </div>
-            <button onClick={() => removeMeal(meal.id)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
-          </div>
-        </div>
-      );
-
       return (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl animate-in zoom-in-95 duration-200 my-8">
@@ -414,7 +396,25 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
                             <Plus className="w-3.5 h-3.5" />Agregar Tiempo
                           </button>
                         </div>
-                        <div className="space-y-4">{meals.map((meal, idx) => <MealItem key={meal.id} meal={meal} idx={idx} />)}</div>
+                        <div className="space-y-4">
+                          {meals.map((meal, idx) => (
+                            <div key={meal.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
+                              <div className="flex items-center gap-3">
+                                <div className="flex flex-col gap-1">
+                                  <button onClick={() => moveMeal(idx, 'up')} disabled={idx === 0} className="p-1 hover:bg-white rounded-md disabled:opacity-30"><MoveUp className="w-3 h-3" /></button>
+                                  <button onClick={() => moveMeal(idx, 'down')} disabled={idx === meals.length - 1} className="p-1 hover:bg-white rounded-md disabled:opacity-30"><MoveDown className="w-3 h-3" /></button>
+                                </div>
+                                <div className="flex-1 space-y-3">
+                                  <input value={meal.label} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], label: e.target.value }; setMeals(n); }}
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="Etiqueta (Ej: Desayuno)" />
+                                  <textarea value={meal.title} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], title: e.target.value }; setMeals(n); }}
+                                    rows={3} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" placeholder="Contenido del menú..." />
+                                </div>
+                                <button onClick={() => removeMeal(meal.id)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -428,7 +428,23 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
                     </button>
                   </div>
                   <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {meals.map((meal, idx) => <MealItem key={meal.id} meal={meal} idx={idx} />)}
+                    {meals.map((meal, idx) => (
+                      <div key={meal.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col gap-1">
+                            <button onClick={() => moveMeal(idx, 'up')} disabled={idx === 0} className="p-1 hover:bg-white rounded-md disabled:opacity-30"><MoveUp className="w-3 h-3" /></button>
+                            <button onClick={() => moveMeal(idx, 'down')} disabled={idx === meals.length - 1} className="p-1 hover:bg-white rounded-md disabled:opacity-30"><MoveDown className="w-3 h-3" /></button>
+                          </div>
+                          <div className="flex-1 space-y-3">
+                            <input value={meal.label} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], label: e.target.value }; setMeals(n); }}
+                              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="Etiqueta (Ej: Desayuno)" />
+                            <textarea value={meal.title} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], title: e.target.value }; setMeals(n); }}
+                              rows={3} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" placeholder="Contenido del menú..." />
+                          </div>
+                          <button onClick={() => removeMeal(meal.id)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -612,9 +628,9 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
                         <button onClick={() => moveMeal(idx, 'down')} disabled={idx === meals.length - 1} className="p-1 hover:bg-white rounded-md disabled:opacity-30"><MoveDown className="w-3 h-3" /></button>
                       </div>
                       <div className="flex-1 space-y-3">
-                        <input value={meal.label} onChange={e => { const n = [...meals]; n[idx].label = e.target.value; setMeals(n); }}
+                        <input value={meal.label} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], label: e.target.value }; setMeals(n); }}
                           className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="Etiqueta (Ej: Desayuno)" />
-                        <textarea value={meal.title} onChange={e => { const n = [...meals]; n[idx].title = e.target.value; setMeals(n); }}
+                        <textarea value={meal.title} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], title: e.target.value }; setMeals(n); }}
                           rows={3} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" placeholder="Contenido del menú..." />
                       </div>
                       <button onClick={() => removeMeal(meal.id)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>

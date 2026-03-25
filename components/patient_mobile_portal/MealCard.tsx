@@ -60,23 +60,17 @@ const RATINGS: ('😊' | '😐' | '😔')[] = ['😊', '😐', '😔'];
 export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving }) => {
   const mealStyle = getMealStyle(meal.key);
 
-  // Left accent border
-  const borderLeft =
-    data.completed === true  ? '4px solid #16A34A' :
-    data.completed === false ? '4px solid #EF4444' :
-    '4px solid #D1D5DB';
-
   // Subtle border color
   const borderColor =
     data.completed === true  ? '#BBF7D0' :
     data.completed === false ? '#FECACA' :
     '#E5E7EB';
 
-  // Glow shadow based on completion state
+  // Soft glow shadow based on completion state
   const glowShadow =
-    data.completed === true  ? '0 0 0 2px #16A34A, 0 4px 18px rgba(22,163,74,0.22)' :
-    data.completed === false ? '0 0 0 2px #EF4444, 0 4px 18px rgba(239,68,68,0.22)' :
-    '0 2px 12px rgba(0,0,0,0.05)';
+    data.completed === true  ? '0 2px 8px rgba(22,163,74,0.38)' :
+    data.completed === false ? '0 2px 8px rgba(239,68,68,0.38)' :
+    '0 2px 8px rgba(0,0,0,0.05)';
 
   return (
     <div
@@ -84,7 +78,6 @@ export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving }) => {
         backgroundColor: '#FFFFFF',
         borderRadius: '16px',
         border: `1px solid ${borderColor}`,
-        borderLeft,
         boxShadow: glowShadow,
         opacity: saving ? 0.65 : 1,
         transition: 'all 0.2s ease',
