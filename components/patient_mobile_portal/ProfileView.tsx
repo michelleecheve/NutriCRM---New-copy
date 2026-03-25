@@ -68,7 +68,7 @@ export const ProfileView: React.FC<Props> = ({ token, patient, nutritionist, act
         className="mx-4 mt-5 p-5 rounded-3xl"
         style={{ backgroundColor: '#2D5A4B' }}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
           {/* Text */}
           <div className="flex-1">
             <p className="text-white font-extrabold text-lg leading-snug">
@@ -78,16 +78,15 @@ export const ProfileView: React.FC<Props> = ({ token, patient, nutritionist, act
               estás en el camino de una vida más sana.
             </p>
           </div>
-          {/* Avatar initials */}
-          <div
-            className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-lg font-extrabold"
-            style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
-          >
-            {patient.firstName.charAt(0)}{patient.lastName.charAt(0)}
-          </div>
         </div>
         {/* Decorative line */}
         <div className="mt-4 h-0.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.25)' }} />
+        {patient.accessCode && (
+          <p className="text-white text-xs mt-3 opacity-80">
+            Recuerda que tu código de acceso es{' '}
+            <span className="font-extrabold tracking-widest">{patient.accessCode}</span>
+          </p>
+        )}
       </div>
 
       {/* ── Card 2: Tu Objetivo ── */}
@@ -155,6 +154,10 @@ export const ProfileView: React.FC<Props> = ({ token, patient, nutritionist, act
         className="mx-4 mt-3 p-5 rounded-3xl"
         style={{ backgroundColor: 'white', border: '1.5px solid #E0E8E3' }}
       >
+        {/* Header label */}
+        <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: '#6B7C73' }}>
+          Plan Alimenticio Compartido por:
+        </p>
         {/* Nutri info row */}
         <div className="flex items-center gap-3 mb-4">
           <div

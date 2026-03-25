@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Star, Flame, CalendarDays, Flag, TrendingUp, Zap } from 'lucide-react';
 import { GeneratedMenu, TrackingRow } from '../../types';
 import { MeasurementsView } from './MeasurementsView';
 import { HistoryView } from './HistoryView';
@@ -14,7 +15,9 @@ interface Props {
   bioMeasurements?: BioEntry[];
 }
 
-// ─── Metric helpers ───────────────────────────────────────────────────────────
+type Tab = 'medidas' | 'historial';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function todayStr(): string { return new Date().toISOString().slice(0, 10); }
 
@@ -24,19 +27,16 @@ function calcDayNumber(startDate: string): number {
   return Math.max(1, Math.round((today.getTime() - start.getTime()) / 86400000) + 1);
 }
 
-function calcCompliance(trackingData: Record<string, any>): { completed: number; total: number } {
-  let completed = 0; let total = 0;
+function calcCompliance(trackingData: Record<string, any>): { completed: number } {
+  let completed = 0;
   for (const day of Object.values(trackingData)) {
     if (!day || typeof day !== 'object') continue;
     for (const meal of Object.values(day)) {
       if (!meal || typeof meal !== 'object') continue;
-      if ('completed' in (meal as any)) {
-        total++;
-        if ((meal as any).completed === true) completed++;
-      }
+      if ('completed' in (meal as any) && (meal as any).completed === true) completed++;
     }
   }
-  return { completed, total };
+  return { completed };
 }
 
 function calcStreak(trackingData: Record<string, any>, startDate: string): number {
@@ -53,110 +53,79 @@ function calcStreak(trackingData: Record<string, any>, startDate: string): numbe
     if (hasCompleted) {
       streak++;
     } else if (i > 0) {
-      break; // allow today to be empty
+      break;
     }
     d.setDate(d.getDate() - 1);
   }
   return streak;
 }
 
-function calcDaysFullyCompleted(
-  trackingData: Record<string, any>,
-  weeklyMenu: any,
-  startDate: string,
-): number {
-  const JS_DAY_KEYS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-  let count = 0;
-  const d = new Date(startDate + 'T12:00:00');
-  const todayD = new Date(todayStr() + 'T12:00:00');
-  while (d <= todayD) {
-    const key = d.toISOString().slice(0, 10);
-    const dayData = trackingData[key];
-    if (dayData) {
-      const jsDay = d.getDay();
-      const dayKey = JS_DAY_KEYS[jsDay];
-      const menuDay = dayKey === 'domingo'
-        ? (weeklyMenu?.domingoV2?.desayuno ? weeklyMenu.domingoV2 : weeklyMenu?.domingo)
-        : weeklyMenu?.[dayKey];
-      const expectedMeals: string[] = menuDay?.mealsOrder?.length
-        ? menuDay.mealsOrder
-        : ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'].filter(
-            (k: string) => menuDay?.[k]?.title,
-          );
-      if (expectedMeals.length > 0) {
-        const allDone = expectedMeals.every(
-          (mk) => dayData[mk]?.completed === true,
-        );
-        if (allDone) count++;
-      }
-    }
-    d.setDate(d.getDate() + 1);
-  }
-  return count;
+function formatShortDate(d: string): string {
+  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const [y, m, day] = d.split('-');
+  return `${parseInt(day)} ${months[parseInt(m) - 1]} ${y}`;
 }
 
-function calcTotalPossibleMeals(weeklyMenu: any, startDate: string, durationDays: number): number {
-  const JS_DAY_KEYS = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-  const today = todayStr();
-  let total = 0;
-  const d = new Date(startDate + 'T12:00:00');
-  const endDate = new Date(
-    new Date(startDate + 'T12:00:00').getTime() + durationDays * 86400000,
-  )
-    .toISOString()
-    .slice(0, 10);
-  const end = endDate < today ? endDate : today;
-  const endD = new Date(end + 'T12:00:00');
-  while (d <= endD) {
-    const jsDay = d.getDay();
-    const dayKey = JS_DAY_KEYS[jsDay];
-    const menuDay = dayKey === 'domingo'
-      ? (weeklyMenu?.domingoV2?.desayuno ? weeklyMenu.domingoV2 : weeklyMenu?.domingo)
-      : weeklyMenu?.[dayKey];
-    if (menuDay?.mealsOrder?.length) {
-      total += menuDay.mealsOrder.length;
-    } else if (menuDay) {
-      const keys = ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
-      total += keys.filter((k) => menuDay[k]?.title).length;
-    }
-    d.setDate(d.getDate() + 1);
-  }
-  return Math.max(total, 1);
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + days - 1);
+  return d.toISOString().slice(0, 10);
 }
 
-// ─── Stat card ────────────────────────────────────────────────────────────────
+// ─── Ring SVG ─────────────────────────────────────────────────────────────────
 
-const StatCard: React.FC<{
-  emoji: string;
-  value: string | number;
-  label: string;
-  highlight?: boolean;
-}> = ({ emoji, value, label, highlight }) => (
-  <div
-    className="flex-1 p-3 rounded-2xl text-center"
+const ProgressRing: React.FC<{ currentDay: number; totalDays: number }> = ({
+  currentDay, totalDays,
+}) => {
+  const R = 52;
+  const CX = 68;
+  const CY = 68;
+  const CIRC = 2 * Math.PI * R;
+  const progress = Math.min(Math.max(currentDay / totalDays, 0), 1);
+  const offset = CIRC * (1 - progress);
+
+  return (
+    <svg viewBox="0 0 136 136" width={160} height={160}>
+      <circle cx={CX} cy={CY} r={R} fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth={10} />
+      <circle
+        cx={CX} cy={CY} r={R}
+        fill="none"
+        stroke="#6EE7B7"
+        strokeWidth={10}
+        strokeLinecap="round"
+        strokeDasharray={CIRC}
+        strokeDashoffset={offset}
+        style={{ transform: 'rotate(-90deg)', transformOrigin: '68px 68px', transition: 'stroke-dashoffset 0.7s ease' }}
+      />
+    </svg>
+  );
+};
+
+// ─── Tab button ───────────────────────────────────────────────────────────────
+
+const TabBtn: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({
+  label, active, onClick,
+}) => (
+  <button
+    onClick={onClick}
     style={{
-      backgroundColor: highlight ? '#E8F0EC' : '#F9FAFB',
-      border: `1.5px solid ${highlight ? '#A7D4BE' : '#E0E8E3'}`,
+      flex: 1,
+      padding: '9px 0',
+      borderRadius: '12px',
+      backgroundColor: active ? '#FFFFFF' : 'transparent',
+      color: active ? '#1A2E25' : 'rgba(255,255,255,0.5)',
+      fontWeight: 700,
+      fontSize: '13px',
+      border: 'none',
+      outline: 'none',
+      boxShadow: active ? '0 1px 6px rgba(0,0,0,0.14)' : 'none',
+      transition: 'all 0.2s ease',
+      cursor: 'pointer',
+      letterSpacing: '-0.01em',
     }}
   >
-    <span className="text-xl">{emoji}</span>
-    <p
-      className="text-xl font-extrabold leading-none mt-1"
-      style={{ color: highlight ? '#2D5A4B' : '#111827' }}
-    >
-      {value}
-    </p>
-    <p className="text-xs mt-1 leading-tight" style={{ color: '#6B7C73' }}>{label}</p>
-  </div>
-);
-
-// ─── Section header ───────────────────────────────────────────────────────────
-
-const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
-  <div className="px-4 pt-6 pb-3">
-    <h3 className="text-base font-extrabold text-gray-900">{title}</h3>
-    <div className="mt-1 h-0.5 w-8 rounded-full" style={{ backgroundColor: '#2D5A4B' }} />
-  </div>
+    {label}
+  </button>
 );
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -165,128 +134,159 @@ export const ProgressView: React.FC<Props> = ({
   patient, menus, activeTracking, allTracking,
   activeMenu, measurements, bioMeasurements,
 }) => {
+  const [activeTab, setActiveTab] = useState<Tab>('medidas');
+
   const isActive = !!activeTracking?.menuStartDate;
   const tracking = activeTracking;
   const trackingData = tracking?.trackingData ?? {};
-  const weeklyMenu = activeMenu?.menuData?.weeklyMenu;
-
   const durationDays = tracking?.durationDays ?? 28;
 
+  const dayNumber = isActive ? calcDayNumber(tracking!.menuStartDate!) : 0;
   const diasTranscurridos = isActive
-    ? Math.floor((new Date(todayStr() + 'T12:00:00').getTime() - new Date(tracking!.menuStartDate! + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24))
+    ? Math.floor(
+        (new Date(todayStr() + 'T12:00:00').getTime() -
+          new Date(tracking!.menuStartDate! + 'T12:00:00').getTime()) /
+          (1000 * 60 * 60 * 24),
+      )
     : 0;
-  const compPct = isActive
-    ? Math.min(Math.floor((diasTranscurridos / durationDays) * 100), 100)
-    : 0;
-  const diasRestantes = Math.max(0, durationDays - diasTranscurridos);
+  const compPct = isActive ? Math.min(Math.floor((diasTranscurridos / durationDays) * 100), 100) : 0;
+  const endDateStr = isActive ? addDays(tracking!.menuStartDate!, durationDays) : null;
 
   const { completed } = calcCompliance(trackingData);
   const streak = isActive ? calcStreak(trackingData, tracking!.menuStartDate!) : 0;
 
-  // Badge
-  const badge =
-    compPct >= 80 ? { text: '¡Vas por muy buen camino! 🌟', color: '#2D5A4B', bg: '#E8F0EC' } :
-    compPct >= 50 ? { text: '¡Sigue adelante! 💪', color: '#B45309', bg: '#FEF9C3' } :
-                    { text: '¡Tú puedes mejorar! 🔥', color: '#C2410C', bg: '#FFEDD5' };
+  const badgeConfig = isActive && compPct >= 50
+    ? compPct >= 80
+      ? { text: 'Vas por muy buen camino', Icon: TrendingUp, color: '#6EE7B7', bg: 'rgba(110,231,183,0.16)' }
+      : { text: 'Sigue adelante',          Icon: Zap,         color: '#FCD34D', bg: 'rgba(252,211,77,0.16)'  }
+    : null;
 
   return (
-    <div
-      className="min-h-screen bg-white"
-      style={{ paddingTop: 'max(0px, env(safe-area-inset-top))' }}
-    >
-      {/* ── Page title ── */}
-      <div className="px-4 pt-5 pb-2">
-        <h2 className="text-2xl font-extrabold text-gray-900">Mi Progreso</h2>
-      </div>
+    <div className="min-h-screen" style={{ backgroundColor: '#F0F4F1' }}>
 
-      {/* ════════════════════════════════════════
-          SECCIÓN 1 — Cumplimiento mensual
-          ════════════════════════════════════════ */}
-      <div className="px-4 pb-2">
-        <div
-          className="p-4 rounded-2xl"
-          style={{ backgroundColor: 'white', border: '1.5px solid #E0E8E3' }}
-        >
-          {/* Label */}
-          <p
-            className="text-xs font-bold uppercase tracking-widest mb-3"
-            style={{ color: '#6B7C73', fontSize: '10px' }}
-          >
-            Cumplimiento mensual
-          </p>
+      {/* ════════ HERO VERDE ════════ */}
+      <div style={{ backgroundColor: '#1A2E25', borderBottomLeftRadius: '32px', borderBottomRightRadius: '32px' }}>
+        <div style={{ paddingTop: 'max(20px, env(safe-area-inset-top))' }}>
 
-          {/* Big % */}
-          <div className="flex items-end gap-3 mb-3">
-            <p className="text-5xl font-extrabold leading-none" style={{ color: '#2D5A4B' }}>
-              {compPct}
-              <span className="text-2xl">%</span>
-            </p>
-            {isActive && (
-              <span
-                className="text-xs font-semibold px-2 py-1 rounded-full mb-1"
-                style={{ backgroundColor: badge.bg, color: badge.color }}
+          <div className="px-5 pb-2">
+
+            {/* Badge */}
+            {badgeConfig && (
+              <div
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3"
+                style={{ backgroundColor: badgeConfig.bg }}
               >
-                {badge.text}
-              </span>
+                <badgeConfig.Icon className="w-3 h-3" style={{ color: badgeConfig.color }} />
+                <span className="font-semibold" style={{ color: badgeConfig.color, fontSize: '11px' }}>
+                  {badgeConfig.text}
+                </span>
+              </div>
             )}
+            {/* spacer when no badge */}
+            {!badgeConfig && <div style={{ height: '8px' }} />}
+
+            {/* Ring */}
+            <div className="relative flex items-center justify-center mb-3">
+              <ProgressRing currentDay={dayNumber} totalDays={durationDays} />
+              <div className="absolute flex flex-col items-center pointer-events-none">
+                <span className="font-bold uppercase" style={{ color: '#6EE7B7', fontSize: '9px', letterSpacing: '0.14em' }}>
+                  DÍA
+                </span>
+                <span className="font-black" style={{ color: '#FFFFFF', fontSize: '46px', lineHeight: 1 }}>
+                  {isActive ? dayNumber : '—'}
+                </span>
+                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px', marginTop: '2px' }}>
+                  de {durationDays}
+                </span>
+              </div>
+            </div>
+
+            {/* Dates */}
+            {isActive && tracking?.menuStartDate && endDateStr ? (
+              <div className="flex items-center justify-center gap-5 mb-4">
+                <div className="flex items-center gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }} />
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+                    {formatShortDate(tracking.menuStartDate)}
+                  </span>
+                </div>
+                <span style={{ color: 'rgba(255,255,255,0.18)' }}>—</span>
+                <div className="flex items-center gap-1.5">
+                  <Flag className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }} />
+                  <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>
+                    {formatShortDate(endDateStr)}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center mb-4" style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>
+                Inicia tu plan para ver tu progreso.
+              </p>
+            )}
+
+            {/* Stats strip */}
+            {isActive && (
+              <div className="flex justify-center mb-5">
+                <div
+                  className="inline-flex items-center rounded-2xl overflow-hidden"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}
+                >
+                  <div className="flex items-center gap-1.5 px-4 py-2.5">
+                    <Star className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#6EE7B7', fill: '#6EE7B7' }} />
+                    <span className="font-black" style={{ color: '#FFFFFF', fontSize: '16px', lineHeight: 1 }}>
+                      {completed}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.38)', fontSize: '11px' }}>
+                      Puntos
+                    </span>
+                  </div>
+                  <div style={{ width: '1px', height: '20px', backgroundColor: 'rgba(255,255,255,0.12)' }} />
+                  <div className="flex items-center gap-1.5 px-4 py-2.5">
+                    <Flame className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#FCA5A5', fill: '#FCA5A5' }} />
+                    <span className="font-black" style={{ color: '#FFFFFF', fontSize: '16px', lineHeight: 1 }}>
+                      {streak}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.38)', fontSize: '11px' }}>
+                      Días racha
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {!isActive && <div style={{ height: '8px' }} />}
           </div>
 
-          {/* Progress bar */}
-          <div className="h-3 rounded-full overflow-hidden mb-2" style={{ backgroundColor: '#E8F0EC' }}>
+          {/* Tab selector */}
+          <div className="px-4 pb-5">
             <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${compPct}%`, backgroundColor: '#2D5A4B' }}
-            />
+              className="flex p-1 gap-1 rounded-2xl"
+              style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
+            >
+              <TabBtn label="Medidas"         active={activeTab === 'medidas'}   onClick={() => setActiveTab('medidas')}   />
+              <TabBtn label="Historial Menús" active={activeTab === 'historial'} onClick={() => setActiveTab('historial')} />
+            </div>
           </div>
 
-          {/* Remaining days */}
-          {isActive && (
-            <p className="text-xs" style={{ color: '#6B7C73' }}>
-              {diasRestantes > 0
-                ? `Faltan ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} para completar tu menú del mes`
-                : '¡Has completado tu menú del mes! 🎉'}
-            </p>
-          )}
-          {!isActive && (
-            <p className="text-xs" style={{ color: '#9CA3AF' }}>
-              Inicia tu plan para ver tu progreso aquí.
-            </p>
-          )}
         </div>
       </div>
 
-      {/* 1x2 stats row */}
-      {isActive && (
-        <div className="px-4 pb-4">
-          <div className="flex gap-2">
-            <StatCard emoji="⭐" value={completed} label="Puntos acumulados" highlight />
-            <StatCard emoji="🔥" value={streak}    label="Racha actual (días)" highlight />
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════════════════════════════
-          SECCIÓN 2 — Medidas
-          ════════════════════════════════════════ */}
-      <div className="border-t" style={{ borderColor: '#F0F4F1' }}>
-        <SectionHeader title="Medidas" />
-        <MeasurementsView
-          measurements={measurements ?? []}
-          bioMeasurements={bioMeasurements ?? []}
-        />
+      {/* ════════ CONTENIDO ════════ */}
+      <div>
+        {activeTab === 'medidas' && (
+          <MeasurementsView
+            measurements={measurements ?? []}
+            bioMeasurements={bioMeasurements ?? []}
+          />
+        )}
+        {activeTab === 'historial' && (
+          <HistoryView
+            menus={menus}
+            allTracking={allTracking}
+            activeMenuId={activeTracking?.menuId}
+          />
+        )}
       </div>
 
-      {/* ════════════════════════════════════════
-          SECCIÓN 3 — Historial de menús
-          ════════════════════════════════════════ */}
-      <div className="border-t" style={{ borderColor: '#F0F4F1' }}>
-        <SectionHeader title="Menús Historial" />
-        <HistoryView
-          menus={menus}
-          allTracking={allTracking}
-          activeMenuId={activeTracking?.menuId}
-        />
-      </div>
     </div>
   );
 };

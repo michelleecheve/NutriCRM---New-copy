@@ -10,6 +10,7 @@ interface PortalSession {
   patientId: string;
   firstName: string;
   lastName: string;
+  accessCode: string;
   validatedAt: number;
 }
 
@@ -99,6 +100,7 @@ const AccessGate: React.FC<AccessGateProps> = ({ token, onSuccess }) => {
         patientId: data.id,
         firstName: data.first_name,
         lastName: data.last_name,
+        accessCode: pin,
         validatedAt: Date.now(),
       };
       saveSession(session);
@@ -507,6 +509,7 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session }) => {
         id:             session.patientId,
         firstName:      session.firstName,
         lastName:       session.lastName,
+        accessCode:     session.accessCode,
         consultmotive:  portalData.patient.consultmotive,
       }}
       menus={portalData.menus}

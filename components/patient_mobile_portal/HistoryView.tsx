@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, UtensilsCrossed, Eye } from 'lucide-react';
+import { ChevronDown, ChevronUp, BookOpen, Flame } from 'lucide-react';
 import { GeneratedMenu, TrackingRow } from '../../types';
 
 interface Props {
@@ -10,9 +10,10 @@ interface Props {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(d: string): string {
+function formatDateLong(d: string): string {
+  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const [y, m, day] = d.split('-');
-  return `${day}/${m}/${y}`;
+  return `${parseInt(day)} ${months[parseInt(m) - 1]} ${y}`;
 }
 
 function calcDayProgress(
@@ -29,13 +30,13 @@ function calcDayProgress(
 }
 
 const DAYS_ORDERED = [
-  { key: 'lunes',     label: 'Lunes' },
-  { key: 'martes',    label: 'Martes' },
-  { key: 'miercoles', label: 'Miércoles' },
-  { key: 'jueves',    label: 'Jueves' },
-  { key: 'viernes',   label: 'Viernes' },
-  { key: 'sabado',    label: 'Sábado' },
-  { key: 'domingo',   label: 'Domingo' },
+  { key: 'lunes',     label: 'Lunes',      color: '#2D5A4B' },
+  { key: 'martes',    label: 'Martes',     color: '#0369A1' },
+  { key: 'miercoles', label: 'Miércoles',  color: '#7C3AED' },
+  { key: 'jueves',    label: 'Jueves',     color: '#B45309' },
+  { key: 'viernes',   label: 'Viernes',    color: '#0E7490' },
+  { key: 'sabado',    label: 'Sábado',     color: '#9D174D' },
+  { key: 'domingo',   label: 'Domingo',    color: '#1E40AF' },
 ];
 
 const MEAL_LABELS: Record<string, string> = {
@@ -43,15 +44,21 @@ const MEAL_LABELS: Record<string, string> = {
   refaccion2: 'Merienda', cena: 'Cena',
 };
 
-// ─── Expanded day row ─────────────────────────────────────────────────────────
+// ─── Expanded menu ────────────────────────────────────────────────────────────
 
 const ExpandedMenu: React.FC<{ menu: GeneratedMenu }> = ({ menu }) => {
   const wm = menu.menuData?.weeklyMenu;
-  if (!wm) return <p className="text-xs text-gray-400 px-2 py-2">Sin datos de menú.</p>;
+  if (!wm) {
+    return (
+      <p className="text-xs py-3 text-center" style={{ color: '#9CA3AF' }}>
+        Sin datos de menú.
+      </p>
+    );
+  }
 
   return (
-    <div className="mt-3 space-y-3">
-      {DAYS_ORDERED.map(({ key, label }) => {
+    <div className="mt-3 space-y-4">
+      {DAYS_ORDERED.map(({ key, label, color }) => {
         const dayData = key === 'domingo'
           ? (wm.domingoV2?.desayuno ? wm.domingoV2 : (wm.domingo?.desayuno ? wm.domingo : null))
           : wm[key];
@@ -66,20 +73,39 @@ const ExpandedMenu: React.FC<{ menu: GeneratedMenu }> = ({ menu }) => {
 
         return (
           <div key={key}>
-            <p className="text-xs font-bold uppercase tracking-wide mb-1.5" style={{ color: '#6B7C73' }}>
-              {label}
-            </p>
-            <div className="space-y-1">
+            {/* Day header */}
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-1 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+              <p
+                className="font-bold uppercase"
+                style={{ color: '#4B5E57', fontSize: '10px', letterSpacing: '0.08em' }}
+              >
+                {label}
+              </p>
+            </div>
+
+            {/* Meal rows — dot + label use day color, food title stays dark */}
+            <div className="space-y-1.5">
               {meals.map((mealKey: string) => (
                 <div
                   key={mealKey}
-                  className="flex items-start gap-2 px-3 py-2 rounded-xl"
+                  className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl"
                   style={{ backgroundColor: '#F9FAFB' }}
                 >
-                  <span className="text-xs font-semibold w-20 flex-shrink-0 pt-0.5" style={{ color: '#4B5563' }}>
+                  <div
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5"
+                    style={{ backgroundColor: color }}
+                  />
+                  <span
+                    className="font-bold flex-shrink-0 w-20"
+                    style={{ color: color, fontSize: '11px' }}
+                  >
                     {MEAL_LABELS[mealKey] ?? mealKey}
                   </span>
-                  <span className="text-xs text-gray-700 leading-relaxed">
+                  <span
+                    className="leading-relaxed"
+                    style={{ color: '#1A2E25', fontSize: '12px' }}
+                  >
                     {dayData[mealKey]?.title}
                   </span>
                 </div>
@@ -99,22 +125,32 @@ export const HistoryView: React.FC<Props> = ({ menus, allTracking, activeMenuId 
 
   if (menus.length === 0) {
     return (
-      <div className="text-center py-10 px-6">
-        <p className="text-3xl mb-3">📚</p>
-        <p className="text-sm text-gray-400">Sin historial de planes aún.</p>
+      <div className="text-center py-12 px-6">
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+          style={{ backgroundColor: '#EEF2FF' }}
+        >
+          <BookOpen className="w-5 h-5" style={{ color: '#4338CA' }} />
+        </div>
+        <p className="text-sm" style={{ color: '#9CA3AF' }}>
+          Sin historial de planes aún.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="pb-4">
-      <div className="px-4 pt-1 pb-2">
-        <p className="text-xs text-gray-400">
-          {menus.length} plan{menus.length !== 1 ? 'es' : ''} registrado{menus.length !== 1 ? 's' : ''}
-        </p>
-      </div>
+    <div className="px-4 pt-4 pb-8">
 
-      <div className="px-4 space-y-3">
+      {/* Count label */}
+      <p
+        className="font-bold uppercase mb-3"
+        style={{ color: '#9CA3AF', fontSize: '10px', letterSpacing: '0.08em' }}
+      >
+        {menus.length} plan{menus.length !== 1 ? 'es' : ''} registrado{menus.length !== 1 ? 's' : ''}
+      </p>
+
+      <div className="space-y-3">
         {menus.map((menu, i) => {
           const tracking = allTracking.find(t => t.menuId === menu.id);
           const { currentDay, totalDays, pct } = calcDayProgress(tracking);
@@ -124,77 +160,88 @@ export const HistoryView: React.FC<Props> = ({ menus, allTracking, activeMenuId 
           return (
             <div
               key={menu.id}
+              className="rounded-2xl overflow-hidden"
               style={{
-                backgroundColor: 'white',
-                borderRadius: '16px',
-                border: `1.5px solid ${isActive ? '#A7D4BE' : '#E0E8E3'}`,
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 2px 14px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.03)',
+                cursor: 'pointer',
               }}
+              onClick={() => setExpandedId(isExpanded ? null : menu.id)}
             >
-              {/* ── Header row ── */}
-              <div className="flex items-center gap-3 p-4">
-                {/* Icon */}
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: isActive ? '#2D5A4B' : '#F3F4F6' }}
-                >
-                  <UtensilsCrossed className="w-4 h-4" style={{ color: isActive ? 'white' : '#6B7280' }} />
-                </div>
+              {/* Header */}
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-2">
+                  {/* Title + badge */}
+                  <div className="flex-1 min-w-0 pr-3">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <p className="font-bold" style={{ color: '#1A2E25', fontSize: '13px' }}>
+                        {menu.name || `Plan #${menus.length - i}`}
+                      </p>
+                      {isActive && (
+                        <span
+                          className="font-bold uppercase px-2 py-0.5 rounded-md"
+                          style={{ backgroundColor: '#ECFDF5', color: '#065F46', fontSize: '8px', letterSpacing: '0.08em' }}
+                        >
+                          ACTIVO
+                        </span>
+                      )}
+                    </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-gray-900 truncate">
-                      {menu.name || `Plan #${menus.length - i}`}
-                    </p>
-                    {isActive && (
-                      <span
-                        className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: '#2D5A4B', color: 'white' }}
-                      >
-                        Activo
+                    {/* Date + kcal stats */}
+                    <div className="flex items-center gap-3">
+                      <span style={{ color: '#9CA3AF', fontSize: '11px' }}>
+                        {formatDateLong(menu.date)}
                       </span>
-                    )}
+                      {menu.kcalToWork != null && (
+                        <>
+                          <div className="w-1 h-1 rounded-full" style={{ backgroundColor: '#D1D5DB' }} />
+                          <div className="flex items-center gap-1">
+                            <Flame className="w-3 h-3" style={{ color: '#F59E0B' }} />
+                            <span className="font-semibold" style={{ color: '#B45309', fontSize: '11px' }}>
+                              {menu.kcalToWork} kcal
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs mt-0.5" style={{ color: '#9CA3AF' }}>
-                    {formatDate(menu.date)}
-                    {menu.kcalToWork ? ` · ${menu.kcalToWork} kcal` : ''}
-                  </p>
+
+                  {/* Chevron indicator (visual only) */}
+                  <div
+                    className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: isExpanded ? '#ECFDF5' : '#F4F6F5' }}
+                  >
+                    {isExpanded
+                      ? <ChevronUp   className="w-3.5 h-3.5" style={{ color: '#2D5A4B' }} />
+                      : <ChevronDown className="w-3.5 h-3.5" style={{ color: '#6B7C73' }} />
+                    }
+                  </div>
                 </div>
 
-                {/* Eye/expand button */}
-                <button
-                  onClick={() => setExpandedId(isExpanded ? null : menu.id)}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors"
-                  style={{ backgroundColor: isExpanded ? '#E8F0EC' : '#F3F4F6' }}
-                  aria-label="Ver menú"
-                >
-                  {isExpanded
-                    ? <ChevronUp className="w-4 h-4" style={{ color: '#2D5A4B' }} />
-                    : <Eye className="w-4 h-4" style={{ color: '#6B7280' }} />
-                  }
-                </button>
+                {/* Day progress bar */}
+                {totalDays > 0 && (
+                  <div className="mt-3">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-semibold" style={{ color: '#2D5A4B', fontSize: '11px' }}>
+                        Día {currentDay}
+                      </span>
+                      <span style={{ color: '#9CA3AF', fontSize: '11px' }}>
+                        de {totalDays}
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: '#F0F4F1' }}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${pct}%`, backgroundColor: '#2D5A4B', transition: 'width 0.4s ease' }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* ── Day progress bar (only if has tracking start date) ── */}
-              {totalDays > 0 && (
-                <div className="px-4 pb-3">
-                  <div className="flex justify-between text-xs mb-1.5" style={{ color: '#6B7C73' }}>
-                    <span className="font-semibold" style={{ color: '#2D5A4B' }}>
-                      Día {currentDay} de {totalDays}
-                    </span>
-                  </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#E8F0EC' }}>
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${pct}%`, backgroundColor: '#2D5A4B', transition: 'width 0.4s' }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* ── Expanded menu ── */}
+              {/* Expanded */}
               {isExpanded && (
-                <div className="px-4 pb-4 border-t" style={{ borderColor: '#F0F4F1' }}>
+                <div className="px-4 pb-5" style={{ borderTop: '1px solid #F4F6F5' }}>
                   <ExpandedMenu menu={menu} />
                 </div>
               )}

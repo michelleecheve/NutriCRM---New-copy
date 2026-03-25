@@ -12,6 +12,7 @@ export interface PortalPatient {
   id: string;
   firstName: string;
   lastName: string;
+  accessCode?: string;
   consultmotive?: string;
 }
 

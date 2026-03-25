@@ -52,29 +52,55 @@ function getOrderedDays(menuStartDate: string | null) {
   return [...DAYS.slice(startIdx), ...DAYS.slice(0, startIdx)];
 }
 
-/** Index of today within the ordered week (0 = first day of menu week) */
-function getTodayPosIndex(menuStartDate: string | null): number {
-  const startIdx = menuStartDate
-    ? jsDayToDaysIdx(new Date(menuStartDate + 'T12:00:00').getDay())
-    : 0;
-  return (jsDayToDaysIdx(new Date().getDay()) - startIdx + 7) % 7;
-}
-
-/** Local date string for position i in the current ordered week */
-function getDateForPos(i: number, menuStartDate: string | null): string {
-  const todayPos = getTodayPosIndex(menuStartDate);
+/** Days elapsed from menuStartDate to today (local time) */
+function getDiffDays(menuStartDate: string | null): number {
+  if (!menuStartDate) return 0;
+  const start = new Date(menuStartDate + 'T12:00:00');
   const today = new Date();
   today.setHours(12, 0, 0, 0);
-  const target = new Date(today);
-  target.setDate(today.getDate() + (i - todayPos));
+  return Math.max(0, Math.round((today.getTime() - start.getTime()) / 86400000));
+}
+
+/** 0-based week index today falls in relative to menuStartDate */
+function getTodayWeekIndex(menuStartDate: string | null): number {
+  return Math.floor(getDiffDays(menuStartDate) / 7);
+}
+
+/** Position of today within its week (0 = same weekday as menu start) */
+function getTodayPosIndex(menuStartDate: string | null): number {
+  return getDiffDays(menuStartDate) % 7;
+}
+
+/** Local date string for day position dayPos in week weekIdx (both 0-based) */
+function getDateForPos(dayPos: number, menuStartDate: string | null, weekIdx: number = 0): string {
+  if (!menuStartDate) return toLocalDateStr(new Date());
+  const start = new Date(menuStartDate + 'T12:00:00');
+  const target = new Date(start);
+  target.setDate(start.getDate() + weekIdx * 7 + dayPos);
   return toLocalDateStr(target);
 }
 
-function getWeekNumber(startDate: string): number {
-  const start = new Date(startDate + 'T12:00:00');
-  const today = new Date(new Date().toISOString().slice(0, 10) + 'T12:00:00');
-  const diffDays = Math.max(0, Math.round((today.getTime() - start.getTime()) / 86400000));
-  return Math.floor(diffDays / 7) + 1;
+/** Meal compliance stats for a given week, respecting menu durationDays */
+function getWeekStats(
+  weekIdx: number,
+  menuStartDate: string | null,
+  menu: GeneratedMenu,
+  orderedDays: ReturnType<typeof getOrderedDays>,
+  trackingData: Record<string, any>,
+  durationDays: number,
+): { done: number; total: number } {
+  let done = 0, total = 0;
+  for (let i = 0; i < 7; i++) {
+    if (weekIdx * 7 + i >= durationDays) break; // stop at menu end
+    const date = getDateForPos(i, menuStartDate, weekIdx);
+    const dd = getDayData(menu, orderedDays[i].key);
+    const mm = buildMeals(dd);
+    total += mm.length;
+    for (const m of mm) {
+      if (trackingData[date]?.[m.key]?.completed === true) done++;
+    }
+  }
+  return { done, total };
 }
 
 function getDayData(menu: GeneratedMenu, dayKey: string): any {
@@ -117,6 +143,11 @@ export const DayMenuView: React.FC<Props> = ({
   patient, menu, tracking, nutritionist, onTrackingUpdate,
 }) => {
   const [selectedIdx, setSelectedIdx] = useState(() => getTodayPosIndex(tracking.menuStartDate));
+  const [weekIndex, setWeekIndex] = useState(() => getTodayWeekIndex(tracking.menuStartDate));
+  const [expanded, setExpanded] = useState(false);
+  const [showCompletion, setShowCompletion] = useState(
+    () => getDiffDays(tracking.menuStartDate) >= (tracking.durationDays ?? 28)
+  );
   // Local tracking data for optimistic updates
   const [localTracking, setLocalTracking] = useState<Record<string, any>>(tracking.trackingData);
   const savingRef = useRef<Record<string, boolean>>({});
@@ -136,27 +167,28 @@ export const DayMenuView: React.FC<Props> = ({
   }, []);
 
   const orderedDays = getOrderedDays(tracking.menuStartDate);
-  const selectedDay = orderedDays[selectedIdx];
-  const dateKey = getDateForPos(selectedIdx, tracking.menuStartDate);
+  const totalWeeks = Math.max(1, Math.ceil((tracking.durationDays ?? 28) / 7));
+  const daysInCurrentWeek = Math.min(7, (tracking.durationDays ?? 28) - weekIndex * 7);
+  const selectedDay = orderedDays[Math.min(selectedIdx, daysInCurrentWeek - 1)];
+  const clampedIdx = Math.min(selectedIdx, daysInCurrentWeek - 1);
+  const dateKey = getDateForPos(clampedIdx, tracking.menuStartDate, weekIndex);
   const dayData = getDayData(menu, selectedDay.key);
   const meals = buildMeals(dayData);
-  const weekNumber = getWeekNumber(tracking.menuStartDate!);
 
-  // ── Card stats ──
+  // ── Card stats (for currently viewed week) ──
+  const todayWeekIdx = getTodayWeekIndex(tracking.menuStartDate);
   const todayPos = getTodayPosIndex(tracking.menuStartDate);
-  const weekProgressPct = Math.round(((todayPos + 1) / 7) * 100);
-
-  let mealsDone = 0; let mealsTotal = 0;
-  for (let i = 0; i < orderedDays.length; i++) {
-    const dk = getDateForPos(i, tracking.menuStartDate);
-    const dd = getDayData(menu, orderedDays[i].key);
-    const mm = buildMeals(dd);
-    mealsTotal += mm.length;
-    for (const m of mm) {
-      if (localTracking[dk]?.[m.key]?.completed === true) mealsDone++;
-    }
-  }
+  const weekProgressPct = weekIndex < todayWeekIdx ? 100
+    : weekIndex > todayWeekIdx ? 0
+    : Math.round(((todayPos + 1) / 7) * 100);
+  const { done: mealsDone, total: mealsTotal } = getWeekStats(weekIndex, tracking.menuStartDate, menu, orderedDays, localTracking, tracking.durationDays ?? 28);
   const mealsPct = mealsTotal > 0 ? Math.round((mealsDone / mealsTotal) * 100) : 0;
+
+  // Total meals completed across entire plan (for completion screen)
+  const totalPointsEarned = Object.values(localTracking).reduce((acc, dayData) => {
+    if (!dayData || typeof dayData !== 'object') return acc;
+    return acc + Object.values(dayData as Record<string, any>).filter((m: any) => m?.completed === true).length;
+  }, 0);
 
   // ── Optimistic update + upsert ──
   const handleUpdate = useCallback(
@@ -225,19 +257,31 @@ export const DayMenuView: React.FC<Props> = ({
 
       {/* ── Greeting card ── */}
       <div className="px-4 pb-4" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
-        <div className="rounded-2xl p-4" style={{ backgroundColor: '#2D5A4B' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            {new Date().toLocaleDateString('es-GT', { month: 'long', day: 'numeric', year: 'numeric' })}
-          </p>
-          <h1 className="text-2xl font-extrabold text-white">
-            Hola {patient.firstName}
-          </h1>
+        <div
+          className="rounded-2xl p-4 cursor-pointer select-none"
+          style={{ backgroundColor: '#2D5A4B' }}
+          onClick={() => setExpanded(e => !e)}
+        >
+          {/* Header row */}
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-semibold mb-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                {new Date().toLocaleDateString('es-GT', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </p>
+              <h1 className="text-2xl font-extrabold text-white">
+                Hola {patient.firstName}
+              </h1>
+            </div>
+            <span className="text-xs font-semibold mt-1 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              {expanded ? 'Ver menos ▲' : 'Ver más ▼'}
+            </span>
+          </div>
 
           {/* Week progress */}
           <div className="mt-3">
             <div className="flex items-center justify-between mb-1.5">
               <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>
-                Semana {weekNumber}
+                Semana {weekIndex + 1}
               </p>
               <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
                 {weekProgressPct}%
@@ -269,6 +313,37 @@ export const DayMenuView: React.FC<Props> = ({
               />
             </div>
           </div>
+
+          {/* Expandable week selector */}
+          {expanded && (
+            <div
+              className="mt-3 pt-3 flex gap-2"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {Array.from({ length: totalWeeks }, (_, wi) => {
+                const stats = getWeekStats(wi, tracking.menuStartDate, menu, orderedDays, localTracking, tracking.durationDays ?? 28);
+                const isActive = wi === weekIndex;
+                return (
+                  <button
+                    key={wi}
+                    onClick={() => { setWeekIndex(wi); setExpanded(false); setShowCompletion(false); }}
+                    className="flex-1 rounded-xl py-2.5 px-1 flex flex-col items-center transition-all"
+                    style={{
+                      backgroundColor: isActive ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
+                      border: isActive ? '1.5px solid rgba(255,255,255,0.5)' : '1.5px solid transparent',
+                      gap: '3px',
+                    }}
+                  >
+                    <span className="text-xs font-bold text-white">Sem {wi + 1}</span>
+                    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)' }}>
+                      {stats.done}/{stats.total}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -279,13 +354,13 @@ export const DayMenuView: React.FC<Props> = ({
           className="flex gap-2 overflow-x-auto"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {orderedDays.map((day, i) => {
-            const active = i === selectedIdx;
-            const dayNumber = parseInt(getDateForPos(i, tracking.menuStartDate).slice(8), 10);
+          {orderedDays.slice(0, daysInCurrentWeek).map((day, i) => {
+            const active = i === clampedIdx;
+            const dayNumber = parseInt(getDateForPos(i, tracking.menuStartDate, weekIndex).slice(8), 10);
             return (
               <button
                 key={day.key}
-                onClick={() => setSelectedIdx(i)}
+                onClick={() => { setSelectedIdx(i); setShowCompletion(false); }}
                 className="flex-shrink-0 flex flex-col items-center px-4 py-2 rounded-full font-semibold transition-all"
                 style={{
                   backgroundColor: active ? '#2D5A4B' : 'white',
@@ -300,11 +375,81 @@ export const DayMenuView: React.FC<Props> = ({
               </button>
             );
           })}
+
+          {/* Menú completado badge — solo aparece en la última semana parcial */}
+          {daysInCurrentWeek < 7 && (
+            <button
+              onClick={() => setShowCompletion(true)}
+              className="flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full transition-all active:scale-95"
+              style={{
+                backgroundColor: showCompletion ? '#2D5A4B' : '#E8F0EC',
+                border: '1.5px solid #2D5A4B',
+                minHeight: '48px',
+                gap: '1px',
+              }}
+            >
+              <span style={{ fontSize: '10px', fontWeight: 700, color: showCompletion ? 'white' : '#2D5A4B', whiteSpace: 'nowrap' }}>Menú</span>
+              <span style={{ fontSize: '10px', fontWeight: 700, color: showCompletion ? 'white' : '#2D5A4B', whiteSpace: 'nowrap' }}>completado</span>
+            </button>
+          )}
         </div>
       </div>
 
+      {/* ── Completion screen ── */}
+      {showCompletion && (
+        <div className="px-4 pb-6 flex-1 flex flex-col items-center justify-center text-center gap-4">
+          <div className="text-6xl">🎉</div>
+          <div>
+            <h2 className="text-2xl font-extrabold text-gray-900 mb-1">¡Felicidades, lo lograste!</h2>
+            <p className="text-sm text-gray-500">Completaste tu plan alimenticio</p>
+          </div>
+
+          {/* Points */}
+          <div
+            className="w-full rounded-2xl p-4 flex flex-col items-center"
+            style={{ backgroundColor: '#E8F0EC', border: '1px solid #C6D9CF' }}
+          >
+            <p className="text-4xl font-extrabold" style={{ color: '#2D5A4B' }}>
+              {totalPointsEarned}
+            </p>
+            <p className="text-xs mt-1 text-center" style={{ color: '#6B7C73' }}>tiempos de comida completados 🏆</p>
+          </div>
+
+          {/* Next step message */}
+          <div className="text-center">
+            <p className="text-sm font-semibold text-gray-800 mb-1">
+              Es hora de tu siguiente Evaluación
+            </p>
+            <p className="text-xs text-gray-500">
+              Mide tu progreso con tu nutricionista y celebra tus resultados juntos.
+            </p>
+          </div>
+
+          {/* WhatsApp button */}
+          {(nutritionist.personalPhone ?? nutritionist.phone) && (() => {
+            const waPhone = (nutritionist.personalPhone ?? nutritionist.phone ?? '').replace(/\D/g, '');
+            const waMsg = `¡Hola! Completé mi plan alimenticio 🎉 Acumulé ${totalPointsEarned} tiempos de comida cumplidos. ¡Quiero agendar mi siguiente evaluación!`;
+            return (
+              <a
+                href={`https://wa.me/${waPhone}?text=${encodeURIComponent(waMsg)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-95"
+                style={{ backgroundColor: '#25D366' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.859L.057 23.535a.75.75 0 00.921.921l5.676-1.476A11.953 11.953 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.718 9.718 0 01-4.964-1.362l-.355-.212-3.686.958.977-3.566-.232-.368A9.718 9.718 0 012.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
+                </svg>
+                Compartir con mi nutricionista
+              </a>
+            );
+          })()}
+        </div>
+      )}
+
       {/* ── Meal list ── */}
-      <div className="px-4 pb-6 space-y-3 flex-1">
+      {!showCompletion && <div className="px-4 pb-6 space-y-3 flex-1">
         {meals.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">🍽️</p>
@@ -345,7 +490,7 @@ export const DayMenuView: React.FC<Props> = ({
             )}
           </>
         )}
-      </div>
+      </div>}
 
       {/* ── Footer nutricionista ── */}
       <div className="px-5 pb-6 pt-4" style={{ borderTop: '1px solid #E0E8E3' }}>
