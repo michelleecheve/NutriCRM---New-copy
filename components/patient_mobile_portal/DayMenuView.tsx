@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Sun, UtensilsCrossed, Moon, Star, Flame, Smile } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sun, UtensilsCrossed, Moon, Star, Flame, Smile, ClipboardList } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { GeneratedMenu, TrackingRow } from '../../types';
 import { MealCard, MealCardInfo, MealData, MealUpdate } from './MealCard';
@@ -179,6 +179,7 @@ export const DayMenuView: React.FC<Props> = ({
   const [localTracking, setLocalTracking] = useState<Record<string, any>>(tracking.trackingData);
   const savingRef = useRef<Record<string, boolean>>({});
   const [savingKeys, setSavingKeys] = useState<Set<string>>(new Set());
+  const [showRecs, setShowRecs] = useState(false);
 
   useEffect(() => {
     setLocalTracking(tracking.trackingData);
@@ -632,7 +633,8 @@ export const DayMenuView: React.FC<Props> = ({
 
       {/* ─── Meal list ────────────────────────────────────────────────────── */}
       {!showCompletion && (
-        <div style={{ padding: '0 16px 28px', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '0 16px 28px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {/* Domingo día libre — plantilla v1 */}
           {selectedDay.key === 'domingo' && menu.templateId === 'plantilla_v1' ? (
             <div style={{
@@ -678,6 +680,198 @@ export const DayMenuView: React.FC<Props> = ({
               );
             })
           )}
+        </div>
+
+        {/* ─── Recomendaciones y Hábitos ──────────────────────────────────── */}
+        {(() => {
+          const recs = menu.menuData?.recommendations;
+          const hasRecs = recs && (
+            (recs.preparacion?.length > 0) ||
+            (recs.restricciones?.length > 0) ||
+            (recs.habitos?.length > 0) ||
+            (recs.organizacion?.length > 0)
+          );
+          if (!hasRecs) return null;
+
+          const sections = [
+            {
+              key: 'preparacion' as const,
+              title: 'Preparación de Alimentos',
+              accent: '#F59E0B',
+              border: '#FDE68A',
+            },
+            {
+              key: 'restricciones' as const,
+              title: 'Restricciones Específicas',
+              accent: '#F43F5E',
+              border: '#FECDD3',
+            },
+            {
+              key: 'habitos' as const,
+              title: 'Hábitos Saludables',
+              accent: '#10B981',
+              border: '#A7F3D0',
+            },
+            {
+              key: 'organizacion' as const,
+              title: 'Organización y Horarios',
+              accent: '#6366F1',
+              border: '#C7D2FE',
+            },
+          ];
+
+          return (
+            <div style={{ padding: '0 16px 36px' }}>
+              {/* Accordion header */}
+              <button
+                onClick={() => setShowRecs(r => !r)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '16px 20px',
+                  borderRadius: '18px',
+                  background: showRecs
+                    ? 'linear-gradient(135deg, #1A2E25 0%, #2D5A4B 100%)'
+                    : 'white',
+                  border: showRecs ? 'none' : '1.5px solid #D1FAE5',
+                  boxShadow: showRecs
+                    ? '0 6px 20px rgba(45,90,75,0.30)'
+                    : '0 2px 10px rgba(0,0,0,0.05)',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease',
+                  marginBottom: showRecs ? '14px' : 0,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    backgroundColor: showRecs ? 'rgba(255,255,255,0.15)' : '#ECFDF5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <ClipboardList size={20} color={showRecs ? 'white' : '#2D5A4B'} strokeWidth={1.8} />
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <p style={{
+                      fontSize: '14px',
+                      fontWeight: 800,
+                      color: showRecs ? 'white' : '#111827',
+                      margin: 0,
+                      lineHeight: 1.2,
+                    }}>Recomendaciones y Hábitos</p>
+                    <p style={{
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      color: showRecs ? 'rgba(255,255,255,0.6)' : '#9CA3AF',
+                      margin: 0,
+                      marginTop: '3px',
+                    }}>Guía personalizada de tu nutricionista</p>
+                  </div>
+                </div>
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '8px',
+                  backgroundColor: showRecs ? 'rgba(255,255,255,0.15)' : '#F3F4F6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'transform 0.25s ease',
+                  transform: showRecs ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}>
+                  <ChevronDown size={15} color={showRecs ? 'white' : '#6B7280'} />
+                </div>
+              </button>
+
+              {/* Expanded content */}
+              {showRecs && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {sections.map(({ key, title, accent, border }) => {
+                    const items: string[] = recs[key] ?? [];
+                    if (items.length === 0) return null;
+                    return (
+                      <div key={key} style={{
+                        borderRadius: '16px',
+                        backgroundColor: 'white',
+                        boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                        border: `1.5px solid ${border}`,
+                        overflow: 'hidden',
+                      }}>
+                        {/* Section header */}
+                        <div style={{
+                          padding: '12px 16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          borderBottom: `1px solid ${border}`,
+                        }}>
+                          <div style={{
+                            width: '4px',
+                            height: '16px',
+                            borderRadius: '999px',
+                            backgroundColor: accent,
+                            flexShrink: 0,
+                          }} />
+                          <p style={{
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            color: accent,
+                            margin: 0,
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                          }}>{title}</p>
+                        </div>
+
+                        {/* Bullet list */}
+                        <div style={{
+                          padding: '14px 16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                        }}>
+                          {items.map((item, i) => {
+                            const lines = item.split('\n').filter(l => l.trim() !== '');
+                            return (
+                              <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                                <div style={{
+                                  width: '6px',
+                                  height: '6px',
+                                  borderRadius: '50%',
+                                  backgroundColor: accent,
+                                  flexShrink: 0,
+                                  marginTop: '6px',
+                                  opacity: 0.8,
+                                }} />
+                                <div style={{ flex: 1 }}>
+                                  {lines.map((line, li) => (
+                                    <p key={li} style={{
+                                      fontSize: '13px',
+                                      color: '#374151',
+                                      lineHeight: 1.6,
+                                      margin: 0,
+                                      marginBottom: li < lines.length - 1 ? '4px' : 0,
+                                    }}>{line}</p>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
         </div>
       )}
 

@@ -312,6 +312,19 @@ export const PortalShell: React.FC<Props> = ({
           overflow: "hidden",
         }}
       >
+        {/* ── Status bar fill ── */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "env(safe-area-inset-top, 0px)",
+            backgroundColor: "#1A2E25",
+            zIndex: 10,
+          }}
+        />
+
         {/* ── Content ── */}
         <div
           className="flex-1 overflow-y-auto"
