@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Sun, UtensilsCrossed, Moon, Star, Flame } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sun, UtensilsCrossed, Moon, Star, Flame, Smile } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { GeneratedMenu, TrackingRow } from '../../types';
 import { MealCard, MealCardInfo, MealData, MealUpdate } from './MealCard';
@@ -151,7 +151,7 @@ function buildMeals(dayData: any): MealCardInfo[] {
     .filter((k) => dayData[k]?.title)
     .map((k) => ({
       key: k,
-      label: MEAL_LABELS[k] ?? k,
+      label: dayData[k]?.label ?? MEAL_LABELS[k] ?? k,
       title: dayData[k]?.title ?? '',
     }));
 }
@@ -633,7 +633,31 @@ export const DayMenuView: React.FC<Props> = ({
       {/* ─── Meal list ────────────────────────────────────────────────────── */}
       {!showCompletion && (
         <div style={{ padding: '0 16px 28px', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {meals.length === 0 ? (
+          {/* Domingo día libre — plantilla v1 */}
+          {selectedDay.key === 'domingo' && menu.templateId === 'plantilla_v1' ? (
+            <div style={{
+              padding: '20px',
+              borderRadius: '16px',
+              backgroundColor: 'white',
+              border: '1px solid #E0E8E3',
+              borderLeft: '4px solid #6EE7B7',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <Smile size={18} color="#2D5A4B" />
+                <p style={{ fontSize: '13px', fontWeight: 800, color: '#1F2937', margin: 0 }}>Día Libre</p>
+              </div>
+              {menu.menuData?.weeklyMenu?.domingo?.note ? (
+                <p style={{ fontSize: '14px', color: '#374151', lineHeight: 1.5 }}>
+                  {menu.menuData.weeklyMenu.domingo.note}
+                </p>
+              ) : (
+                <p style={{ fontSize: '14px', color: '#9CA3AF' }}>
+                  Disfruta tu día de descanso.
+                </p>
+              )}
+            </div>
+          ) : meals.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '64px 0' }}>
               <p style={{ fontSize: '48px', marginBottom: '12px' }}>🍽️</p>
               <p style={{ fontSize: '14px', color: '#9CA3AF' }}>
@@ -641,44 +665,18 @@ export const DayMenuView: React.FC<Props> = ({
               </p>
             </div>
           ) : (
-            <>
-              {meals.map((meal) => {
-                const saveKey = `${dateKey}_${meal.key}`;
-                return (
-                  <MealCard
-                    key={meal.key}
-                    meal={meal}
-                    data={getMealData(localTracking, dateKey, meal.key)}
-                    onUpdate={(u) => handleUpdate(meal.key, u)}
-                    saving={savingKeys.has(saveKey)}
-                  />
-                );
-              })}
-
-              {/* Domingo legacy note */}
-              {selectedDay.key === 'domingo' && !dayData && menu.menuData?.weeklyMenu?.domingo?.note && (
-                <div style={{
-                  padding: '16px',
-                  borderRadius: '16px',
-                  backgroundColor: 'white',
-                  border: '1px solid #E0E8E3',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                }}>
-                  <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6B7C73', marginBottom: '4px' }}>
-                    Nota del domingo
-                  </p>
-                  <p style={{ fontSize: '14px', color: '#374151' }}>{menu.menuData.weeklyMenu.domingo.note}</p>
-                  {menu.menuData.weeklyMenu.domingo.hydration && (
-                    <>
-                      <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6B7C73', marginTop: '12px', marginBottom: '4px' }}>
-                        Hidratación
-                      </p>
-                      <p style={{ fontSize: '14px', color: '#374151' }}>{menu.menuData.weeklyMenu.domingo.hydration}</p>
-                    </>
-                  )}
-                </div>
-              )}
-            </>
+            meals.map((meal) => {
+              const saveKey = `${dateKey}_${meal.key}`;
+              return (
+                <MealCard
+                  key={meal.key}
+                  meal={meal}
+                  data={getMealData(localTracking, dateKey, meal.key)}
+                  onUpdate={(u) => handleUpdate(meal.key, u)}
+                  saving={savingKeys.has(saveKey)}
+                />
+              );
+            })
           )}
         </div>
       )}

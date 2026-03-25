@@ -106,9 +106,11 @@ export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving }) => {
             </p>
           </div>
           {meal.title && (
-            <p className="text-sm leading-snug mt-0.5" style={{ color: '#6B7280' }}>
-              {meal.title}
-            </p>
+            <div className="text-sm leading-snug mt-0.5" style={{ color: '#6B7280' }}>
+              {meal.title.split('\n').map((line, i) => (
+                <p key={i} style={{ margin: 0 }}>{line}</p>
+              ))}
+            </div>
           )}
         </div>
 
