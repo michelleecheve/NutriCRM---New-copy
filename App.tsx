@@ -44,11 +44,6 @@ function App() {
           return prev;
         });
       } else {
-        // Si el usuario no está autenticado y está en la raíz, enviarlo a la landing
-        if (window.location.pathname === '/') {
-          window.location.replace('/landing.html');
-          return;
-        }
         setCurrentRoute(prev => {
           if (prev !== AppRoute.REGISTER && prev !== AppRoute.RESET_PASSWORD) return AppRoute.LOGIN;
           return prev;

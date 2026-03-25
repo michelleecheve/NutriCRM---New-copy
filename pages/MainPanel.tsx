@@ -110,7 +110,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Hola, {user.name} 👋</h1>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Hola, {user.name}</h1>
           <p className="text-slate-500 mt-1">Aquí tienes el resumen de tu clínica.</p>
         </div>
         <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2">
