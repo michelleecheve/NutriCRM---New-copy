@@ -24,27 +24,27 @@
       }
 
       :root {
-        --sky: #38b6ff;
-        --sky-dark: #1a9fee;
-        --sky-dim: rgba(56, 182, 255, 0.1);
-        --sky-border: rgba(56, 182, 255, 0.22);
-        --mint: #3ddbb4;
-        --mint-dim: rgba(61, 219, 180, 0.12);
-        --mint-dark: #2bc9a2;
+        --sky: #a78bfa;
+        --sky-dark: #7c3aed;
+        --sky-dim: rgba(167, 139, 250, 0.1);
+        --sky-border: rgba(167, 139, 250, 0.22);
+        --mint: #4ade80;
+        --mint-dim: rgba(74, 222, 128, 0.13);
+        --mint-dark: #16a34a;
 
         --bg: #ffffff;
-        --bg2: #f4f9fc;
-        --bg3: #eaf4fb;
+        --bg2: #ffffff;
+        --bg3: #f8f8f8;
 
-        --text: #0d1b2a;
-        --text-muted: #5c7a90;
-        --text-dim: #a8bfcc;
+        --text: #0d1a10;
+        --text-muted: #4a6558;
+        --text-dim: #a0bfaa;
 
-        --border: rgba(56, 182, 255, 0.18);
-        --border2: #e4eef5;
+        --border: rgba(167, 139, 250, 0.2);
+        --border2: #e8f5ec;
 
-        --shadow: 0 4px 20px rgba(13, 27, 42, 0.07);
-        --shadow-lg: 0 16px 52px rgba(13, 27, 42, 0.11);
+        --shadow: 0 4px 20px rgba(10, 30, 15, 0.07);
+        --shadow-lg: 0 16px 52px rgba(10, 30, 15, 0.11);
 
         --radius: 20px;
         --radius-sm: 12px;
@@ -306,7 +306,7 @@
         padding: 96px 0 72px;
         position: relative;
         overflow: hidden;
-        background: linear-gradient(155deg, #fff 50%, #e8f5ff 100%);
+        background: #ffffff;
       }
       .hero-blob1 {
         position: absolute;
@@ -352,9 +352,8 @@
       }
       .hero-h1 em {
         font-style: normal;
-        background: linear-gradient(90deg, var(--sky-dark), var(--mint-dark));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: var(--mint-dark);
+        -webkit-text-fill-color: var(--mint-dark);
       }
       .hero-sub {
         font-size: 16px;
@@ -578,9 +577,8 @@
       }
       .section-h2 em {
         font-style: normal;
-        background: linear-gradient(90deg, var(--sky-dark), var(--mint-dark));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: var(--mint-dark);
+        -webkit-text-fill-color: var(--mint-dark);
       }
       .section-lead {
         font-size: 15px;
@@ -767,9 +765,8 @@
       }
       .hl-h2 em {
         font-style: normal;
-        background: linear-gradient(90deg, var(--sky-dark), var(--mint-dark));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: var(--mint-dark);
+        -webkit-text-fill-color: var(--mint-dark);
       }
       .hl-p {
         font-size: 14px;
@@ -811,123 +808,199 @@
         font-weight: 600;
       }
       .hl-visual {
-        background: linear-gradient(140deg, var(--bg3) 0%, #d8eeff 100%);
+        background: linear-gradient(140deg, var(--bg3) 0%, #ede9fe 100%);
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 44px 36px;
       }
-      /* Phone */
+      /* ── Phone mockup — DayMenuView replica ── */
       .phone-mock {
-        width: 210px;
-        background: #fff;
+        width: 218px;
+        background: #F2F7F4;
         border-radius: 34px;
-        border: 1.5px solid var(--border2);
+        border: 1.5px solid #c8ddd2;
         overflow: hidden;
-        box-shadow: 0 20px 56px rgba(13, 27, 42, 0.14);
+        box-shadow: 0 20px 56px rgba(13, 27, 42, 0.18);
       }
-      .phone-notch {
-        height: 9px;
-        background: var(--bg2);
-        margin: 11px auto 0;
-        width: 60px;
-        border-radius: 5px;
+      /* Hero header — covers from very top of phone */
+      .phone-hero {
+        background: #1A2E25;
+        border-radius: 0 0 20px 20px;
+        padding: 14px 14px 14px;
       }
-      .phone-header {
-        padding: 11px 16px 9px;
-        border-bottom: 1px solid var(--border2);
-      }
+      .phone-hero-icon { display: none; }
       .phone-greeting {
-        font-size: 10px;
-        color: var(--text-muted);
-        font-weight: 500;
-      }
-      .phone-name {
-        font-weight: 700;
-        font-size: 13px;
-      }
-      .phone-days {
-        display: flex;
-        gap: 5px;
-        padding: 11px 12px 0;
-      }
-      .phone-day {
-        flex-shrink: 0;
-        width: 46px;
-        background: var(--bg2);
-        border-radius: 9px;
-        padding: 8px 6px;
-        text-align: center;
-        cursor: pointer;
-        border: 1.5px solid transparent;
-        transition: all 0.18s;
-      }
-      .phone-day.active {
-        background: linear-gradient(135deg, var(--sky), var(--mint));
         color: #fff;
-      }
-      .phone-day .pd-n {
-        font-weight: 700;
-        font-size: 10px;
-        margin-bottom: 1px;
-      }
-      .phone-day .pd-l {
-        opacity: 0.65;
-        font-size: 9px;
-      }
-      .phone-meal-card {
-        margin: 11px 12px 0;
-        background: var(--bg2);
-        border-radius: 11px;
-        padding: 12px;
-      }
-      .pmc-label {
-        font-size: 10px;
-        color: var(--text-muted);
-        font-weight: 600;
-        margin-bottom: 4px;
-      }
-      .pmc-meal {
         font-size: 12px;
-        font-weight: 700;
-        margin-bottom: 5px;
-        color: var(--text);
-        line-height: 1.3;
-        transition: opacity 0.18s;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 2px;
       }
-      .pmc-macros {
-        display: flex;
-        gap: 8px;
-      }
-      .pmc-macro {
-        font-size: 10px;
-        color: var(--text-muted);
+      .phone-hero-sub {
+        color: rgba(255,255,255,0.5);
+        font-size: 8.5px;
         font-weight: 500;
+        margin-bottom: 10px;
       }
-      .pmc-macro span {
-        color: var(--sky-dark);
-        font-weight: 700;
+      .phone-prog-row {
+        display: flex;
+        gap: 6px;
       }
-      .phone-cals {
-        margin: 9px 12px 12px;
-        border-radius: 9px;
-        padding: 9px 13px;
-        background: linear-gradient(90deg, var(--sky-dim), var(--mint-dim));
-        border: 1px solid var(--border);
+      .phone-prog-box {
+        flex: 1;
+        background: rgba(255,255,255,0.08);
+        border-radius: 8px;
+        padding: 7px 8px;
+        border: 1px solid rgba(255,255,255,0.07);
+      }
+      .phone-prog-top {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: 5px;
       }
-      .pc-label {
-        font-size: 10px;
-        color: var(--text-muted);
+      .phone-prog-name {
+        color: rgba(255,255,255,0.65);
+        font-size: 8px;
         font-weight: 600;
       }
-      .pc-value {
-        font-weight: 800;
+      .phone-prog-val {
+        color: #6EE7B7;
+        font-size: 8px;
+        font-weight: 700;
+      }
+      .phone-prog-track {
+        height: 3px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .phone-prog-fill {
+        height: 100%;
+        border-radius: 99px;
+        background: linear-gradient(90deg, #6EE7B7, #34D399);
+      }
+      /* Day selector */
+      .phone-days {
+        display: flex;
+        gap: 5px;
+        padding: 10px 10px 4px;
+        overflow: hidden;
+      }
+      .phone-day {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 6px 4px 4px;
+        border-radius: 10px;
+        background: white;
+        border: 1.5px solid #E0E8E3;
+        gap: 1px;
+      }
+      .phone-day.active {
+        background: #2D5A4B;
+        border-color: #2D5A4B;
+        box-shadow: 0 3px 10px rgba(45,90,75,0.28);
+      }
+      .pd-label {
+        font-size: 7.5px;
+        font-weight: 600;
+        color: rgba(55,65,81,0.5);
+        letter-spacing: 0.02em;
+      }
+      .phone-day.active .pd-label { color: rgba(255,255,255,0.7); }
+      .pd-num {
         font-size: 13px;
-        color: var(--sky-dark);
-        transition: opacity 0.18s;
+        font-weight: 800;
+        color: #374151;
+        line-height: 1;
+      }
+      .phone-day.active .pd-num { color: white; }
+      .pd-dot {
+        width: 4px; height: 4px;
+        border-radius: 50%;
+        background: transparent;
+        margin-top: 1px;
+      }
+      .phone-day.active .pd-dot { background: rgba(110,231,183,0.9); }
+      /* Day title */
+      .phone-day-title {
+        padding: 5px 12px 3px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .phone-day-title span {
+        font-size: 9.5px;
+        font-weight: 700;
+        color: #1F2937;
+      }
+      .phone-today-badge {
+        font-size: 7px;
+        font-weight: 700;
+        background: #ECFDF5;
+        color: #065F46;
+        padding: 2px 5px;
+        border-radius: 99px;
+        border: 1px solid #D1FAE5;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      /* Meal cards */
+      .phone-meals {
+        padding: 3px 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .phone-meal {
+        background: white;
+        border-radius: 11px;
+        border: 1px solid #E5E7EB;
+        padding: 8px 9px;
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      }
+      .phone-meal.done { border-color: #BBF7D0; box-shadow: 0 1px 5px rgba(22,163,74,0.18); }
+      .pm-icon {
+        width: 26px; height: 26px;
+        border-radius: 7px;
+        flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px;
+      }
+      .pm-text { flex: 1; min-width: 0; }
+      .pm-label {
+        font-size: 8.5px;
+        font-weight: 700;
+        color: #1F2937;
+        margin-bottom: 1px;
+      }
+      .pm-title {
+        font-size: 8px;
+        color: #6B7280;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pm-check {
+        width: 18px; height: 18px;
+        border-radius: 50%;
+        border: 1.5px solid #D1FAE5;
+        background: #F9FAFB;
+        flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 9px;
+        color: transparent;
+      }
+      .pm-check.checked {
+        background: #22c55e;
+        border-color: #22c55e;
+        color: white;
       }
       @media (max-width: 900px) {
         .highlight-wrap {
@@ -1055,7 +1128,7 @@
         font-weight: 800;
       }
       .btn-white:hover {
-        background: #f0f9ff;
+        background: #f5f3ff;
         transform: translateY(-1px);
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
       }
@@ -1426,43 +1499,91 @@
             </div>
             <div class="hl-visual">
               <div class="phone-mock">
-                <div class="phone-notch"></div>
-                <div class="phone-header">
-                  <div class="phone-greeting">Hola, María 👋</div>
-                  <div class="phone-name">Tu plan semanal</div>
+                <!-- Hero header (starts at top, includes notch) -->
+                <div class="phone-hero">
+                  <div class="phone-greeting">¡Buenos días, María!</div>
+                  <div class="phone-hero-sub">Tu menú de hoy está listo</div>
+                  <div class="phone-prog-row">
+                    <div class="phone-prog-box">
+                      <div class="phone-prog-top">
+                        <span class="phone-prog-name">Semana 1</span>
+                        <span class="phone-prog-val">75%</span>
+                      </div>
+                      <div class="phone-prog-track">
+                        <div class="phone-prog-fill" style="width:75%"></div>
+                      </div>
+                    </div>
+                    <div class="phone-prog-box">
+                      <div class="phone-prog-top">
+                        <span class="phone-prog-name">Comidas</span>
+                        <span class="phone-prog-val">3/4</span>
+                      </div>
+                      <div class="phone-prog-track">
+                        <div class="phone-prog-fill" style="width:75%"></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+                <!-- Day selector -->
                 <div class="phone-days">
-                  <div class="phone-day active" data-day="0">
-                    <div class="pd-n">LUN</div>
-                    <div class="pd-l">Hoy</div>
+                  <div class="phone-day">
+                    <div class="pd-label">Lun</div>
+                    <div class="pd-num">24</div>
+                    <div class="pd-dot"></div>
                   </div>
-                  <div class="phone-day" data-day="1">
-                    <div class="pd-n">MAR</div>
-                    <div class="pd-l"></div>
+                  <div class="phone-day active">
+                    <div class="pd-label">Mar</div>
+                    <div class="pd-num">25</div>
+                    <div class="pd-dot"></div>
                   </div>
-                  <div class="phone-day" data-day="2">
-                    <div class="pd-n">MIÉ</div>
-                    <div class="pd-l"></div>
+                  <div class="phone-day">
+                    <div class="pd-label">Mié</div>
+                    <div class="pd-num">26</div>
+                    <div class="pd-dot"></div>
                   </div>
-                  <div class="phone-day" data-day="3">
-                    <div class="pd-n">JUE</div>
-                    <div class="pd-l"></div>
-                  </div>
-                </div>
-                <div class="phone-meal-card">
-                  <div class="pmc-label">🌅 Desayuno</div>
-                  <div class="pmc-meal" id="mealName">
-                    Avena con fruta y yogur
-                  </div>
-                  <div class="pmc-macros">
-                    <div class="pmc-macro">P: <span id="mp">22g</span></div>
-                    <div class="pmc-macro">C: <span id="mc">45g</span></div>
-                    <div class="pmc-macro">G: <span id="mg">8g</span></div>
+                  <div class="phone-day">
+                    <div class="pd-label">Jue</div>
+                    <div class="pd-num">27</div>
+                    <div class="pd-dot"></div>
                   </div>
                 </div>
-                <div class="phone-cals">
-                  <div class="pc-label">Calorías del día</div>
-                  <div class="pc-value" id="phoneCals">1,850 kcal</div>
+                <!-- Day label -->
+                <div class="phone-day-title">
+                  <span>Martes, 25 de marzo</span>
+                  <span class="phone-today-badge">Hoy</span>
+                </div>
+                <!-- Meals -->
+                <div class="phone-meals">
+                  <div class="phone-meal done">
+                    <div class="pm-icon" style="background:#FEF3C7;color:#D97706;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+                    </div>
+                    <div class="pm-text">
+                      <div class="pm-label">Desayuno</div>
+                      <div class="pm-title">Avena con fruta y yogur</div>
+                    </div>
+                    <div class="pm-check checked">✓</div>
+                  </div>
+                  <div class="phone-meal done">
+                    <div class="pm-icon" style="background:#DBEAFE;color:#2563EB;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+                    </div>
+                    <div class="pm-text">
+                      <div class="pm-label">Almuerzo</div>
+                      <div class="pm-title">Pollo, arroz y verduras</div>
+                    </div>
+                    <div class="pm-check checked">✓</div>
+                  </div>
+                  <div class="phone-meal">
+                    <div class="pm-icon" style="background:#EDE9FE;color:#7C3AED;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </div>
+                    <div class="pm-text">
+                      <div class="pm-label">Cena</div>
+                      <div class="pm-title">Ensalada con proteína</div>
+                    </div>
+                    <div class="pm-check"></div>
+                  </div>
                 </div>
               </div>
             </div>
