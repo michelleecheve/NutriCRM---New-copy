@@ -36,18 +36,38 @@ const MEAL_LABELS: Record<string, string> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getCurrentDayIndex(): number {
-  const js = new Date().getDay();
-  return js === 0 ? 6 : js - 1; // 0=Lun, ..., 6=Dom
+function toLocalDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-/** Date of a given DAYS index within the current week (Mon=0..Sun=6) */
-function getDateForIndex(idx: number): string {
+function jsDayToDaysIdx(jsDay: number): number {
+  return jsDay === 0 ? 6 : jsDay - 1;
+}
+
+/** DAYS array reordered to start from the menu's start day of week */
+function getOrderedDays(menuStartDate: string | null) {
+  const startIdx = menuStartDate
+    ? jsDayToDaysIdx(new Date(menuStartDate + 'T12:00:00').getDay())
+    : 0;
+  return [...DAYS.slice(startIdx), ...DAYS.slice(0, startIdx)];
+}
+
+/** Index of today within the ordered week (0 = first day of menu week) */
+function getTodayPosIndex(menuStartDate: string | null): number {
+  const startIdx = menuStartDate
+    ? jsDayToDaysIdx(new Date(menuStartDate + 'T12:00:00').getDay())
+    : 0;
+  return (jsDayToDaysIdx(new Date().getDay()) - startIdx + 7) % 7;
+}
+
+/** Local date string for position i in the current ordered week */
+function getDateForPos(i: number, menuStartDate: string | null): string {
+  const todayPos = getTodayPosIndex(menuStartDate);
   const today = new Date();
-  const todayIdx = getCurrentDayIndex();
-  const d = new Date(today);
-  d.setDate(today.getDate() + (idx - todayIdx));
-  return d.toISOString().slice(0, 10);
+  today.setHours(12, 0, 0, 0);
+  const target = new Date(today);
+  target.setDate(today.getDate() + (i - todayPos));
+  return toLocalDateStr(target);
 }
 
 function getWeekNumber(startDate: string): number {
@@ -96,7 +116,7 @@ function getMealData(trackingData: Record<string, any>, dateKey: string, mealKey
 export const DayMenuView: React.FC<Props> = ({
   patient, menu, tracking, nutritionist, onTrackingUpdate,
 }) => {
-  const [selectedIdx, setSelectedIdx] = useState(getCurrentDayIndex);
+  const [selectedIdx, setSelectedIdx] = useState(() => getTodayPosIndex(tracking.menuStartDate));
   // Local tracking data for optimistic updates
   const [localTracking, setLocalTracking] = useState<Record<string, any>>(tracking.trackingData);
   const savingRef = useRef<Record<string, boolean>>({});
@@ -115,11 +135,28 @@ export const DayMenuView: React.FC<Props> = ({
     el?.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
   }, []);
 
-  const selectedDay = DAYS[selectedIdx];
-  const dateKey = getDateForIndex(selectedIdx);
+  const orderedDays = getOrderedDays(tracking.menuStartDate);
+  const selectedDay = orderedDays[selectedIdx];
+  const dateKey = getDateForPos(selectedIdx, tracking.menuStartDate);
   const dayData = getDayData(menu, selectedDay.key);
   const meals = buildMeals(dayData);
   const weekNumber = getWeekNumber(tracking.menuStartDate!);
+
+  // ── Card stats ──
+  const todayPos = getTodayPosIndex(tracking.menuStartDate);
+  const weekProgressPct = Math.round(((todayPos + 1) / 7) * 100);
+
+  let mealsDone = 0; let mealsTotal = 0;
+  for (let i = 0; i < orderedDays.length; i++) {
+    const dk = getDateForPos(i, tracking.menuStartDate);
+    const dd = getDayData(menu, orderedDays[i].key);
+    const mm = buildMeals(dd);
+    mealsTotal += mm.length;
+    for (const m of mm) {
+      if (localTracking[dk]?.[m.key]?.completed === true) mealsDone++;
+    }
+  }
+  const mealsPct = mealsTotal > 0 ? Math.round((mealsDone / mealsTotal) * 100) : 0;
 
   // ── Optimistic update + upsert ──
   const handleUpdate = useCallback(
@@ -186,37 +223,53 @@ export const DayMenuView: React.FC<Props> = ({
   return (
     <div className="min-h-screen bg-white flex flex-col">
 
-      {/* ── Top bar ── */}
-      <div
-        className="px-5 pb-3 flex items-center justify-between"
-        style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}
-      >
-        <div>
-          <p className="text-xs font-semibold" style={{ color: '#6B7C73' }}>{nutritionist.specialty}</p>
-          <p className="font-bold text-gray-900 text-sm">{nutritionist.name}</p>
-        </div>
-        <div
-          className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: '#E8F0EC' }}
-        >
-          {nutritionist.avatar ? (
-            <img src={nutritionist.avatar} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <span className="font-bold text-sm" style={{ color: '#2D5A4B' }}>
-              {nutritionist.name.charAt(0)}
-            </span>
-          )}
-        </div>
-      </div>
+      {/* ── Greeting card ── */}
+      <div className="px-4 pb-4" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+        <div className="rounded-2xl p-4" style={{ backgroundColor: '#2D5A4B' }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
+            {new Date().toLocaleDateString('es-GT', { month: 'long', day: 'numeric', year: 'numeric' })}
+          </p>
+          <h1 className="text-2xl font-extrabold text-white">
+            Hola {patient.firstName}
+          </h1>
 
-      {/* ── Greeting + week ── */}
-      <div className="px-5 pb-4">
-        <h1 className="text-2xl font-extrabold text-gray-900">
-          Hola {patient.firstName} 👋
-        </h1>
-        <p className="text-sm mt-0.5 font-semibold" style={{ color: '#2D5A4B' }}>
-          Semana {weekNumber}
-        </p>
+          {/* Week progress */}
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                Semana {weekNumber}
+              </p>
+              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                {weekProgressPct}%
+              </p>
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${weekProgressPct}%`, backgroundColor: 'rgba(255,255,255,0.7)' }}
+              />
+            </div>
+          </div>
+
+          {/* Meal compliance */}
+          <div className="mt-2.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                Tiempos de Comida Cumplidos
+              </p>
+              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                {mealsDone}/{mealsTotal}
+                {mealsTotal > 0 && mealsDone === mealsTotal && ' ✓'}
+              </p>
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${mealsPct}%`, backgroundColor: 'rgba(255,255,255,0.7)' }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── Day selector ── */}
@@ -226,21 +279,24 @@ export const DayMenuView: React.FC<Props> = ({
           className="flex gap-2 overflow-x-auto"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {DAYS.map((day, i) => {
+          {orderedDays.map((day, i) => {
             const active = i === selectedIdx;
+            const dayNumber = parseInt(getDateForPos(i, tracking.menuStartDate).slice(8), 10);
             return (
               <button
                 key={day.key}
                 onClick={() => setSelectedIdx(i)}
-                className="flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all"
+                className="flex-shrink-0 flex flex-col items-center px-4 py-2 rounded-full font-semibold transition-all"
                 style={{
                   backgroundColor: active ? '#2D5A4B' : 'white',
                   color:            active ? 'white'   : '#374151',
                   border:           active ? '1.5px solid #2D5A4B' : '1.5px solid #E0E8E3',
-                  minHeight: '36px',
+                  minHeight: '48px',
+                  gap: '1px',
                 }}
               >
-                {day.short}
+                <span style={{ fontSize: '12px' }}>{day.short}</span>
+                <span style={{ fontSize: '11px', opacity: active ? 0.85 : 0.5, fontWeight: 700 }}>{dayNumber}</span>
               </button>
             );
           })}
@@ -289,6 +345,33 @@ export const DayMenuView: React.FC<Props> = ({
             )}
           </>
         )}
+      </div>
+
+      {/* ── Footer nutricionista ── */}
+      <div className="px-5 pb-6 pt-4" style={{ borderTop: '1px solid #E0E8E3' }}>
+        <p className="text-xs font-semibold mb-3" style={{ color: '#9CA3AF' }}>
+          Plan Alimenticio Por:
+        </p>
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: '#E8F0EC' }}
+          >
+            {nutritionist.avatar ? (
+              <img src={nutritionist.avatar} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="font-bold text-sm" style={{ color: '#2D5A4B' }}>
+                {nutritionist.name.charAt(0)}
+              </span>
+            )}
+          </div>
+          <div>
+            {nutritionist.professionalTitle && (
+              <p className="text-xs" style={{ color: '#6B7C73' }}>{nutritionist.professionalTitle}</p>
+            )}
+            <p className="text-sm font-bold text-gray-900">{nutritionist.name}</p>
+          </div>
+        </div>
       </div>
     </div>
   );

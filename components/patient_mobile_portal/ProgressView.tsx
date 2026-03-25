@@ -2,7 +2,7 @@ import React from 'react';
 import { GeneratedMenu, TrackingRow } from '../../types';
 import { MeasurementsView } from './MeasurementsView';
 import { HistoryView } from './HistoryView';
-import { PortalPatient, LatestMeasurement, LatestBio } from './PortalShell';
+import { PortalPatient, MeasurementEntry, BioEntry } from './PortalShell';
 
 interface Props {
   patient: PortalPatient;
@@ -10,8 +10,8 @@ interface Props {
   activeTracking: TrackingRow | null;
   allTracking: TrackingRow[];
   activeMenu: GeneratedMenu | null;
-  latestMeasurement?: LatestMeasurement | null;
-  latestBio?: LatestBio | null;
+  measurements?: MeasurementEntry[];
+  bioMeasurements?: BioEntry[];
 }
 
 // ─── Metric helpers ───────────────────────────────────────────────────────────
@@ -163,26 +163,25 @@ const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
 
 export const ProgressView: React.FC<Props> = ({
   patient, menus, activeTracking, allTracking,
-  activeMenu, latestMeasurement, latestBio,
+  activeMenu, measurements, bioMeasurements,
 }) => {
   const isActive = !!activeTracking?.menuStartDate;
   const tracking = activeTracking;
   const trackingData = tracking?.trackingData ?? {};
   const weeklyMenu = activeMenu?.menuData?.weeklyMenu;
 
-  const dayNumber   = isActive ? calcDayNumber(tracking!.menuStartDate!)  : 0;
   const durationDays = tracking?.durationDays ?? 28;
-  const totalWeeks  = Math.ceil(durationDays / 7);
-  const currentWeek = isActive ? Math.min(Math.ceil(dayNumber / 7), totalWeeks) : 0;
 
-  const { completed, total } = calcCompliance(trackingData);
-  const compPct    = total > 0 ? Math.round((completed / total) * 100) : 0;
-  const streak     = isActive ? calcStreak(trackingData, tracking!.menuStartDate!)   : 0;
-  const daysDone   = isActive ? calcDaysFullyCompleted(trackingData, weeklyMenu, tracking!.menuStartDate!) : 0;
-  const totalPossible = isActive && weeklyMenu
-    ? calcTotalPossibleMeals(weeklyMenu, tracking!.menuStartDate!, durationDays)
+  const diasTranscurridos = isActive
+    ? Math.floor((new Date(todayStr() + 'T12:00:00').getTime() - new Date(tracking!.menuStartDate! + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24))
     : 0;
-  const remaining  = Math.max(0, totalPossible - completed);
+  const compPct = isActive
+    ? Math.min(Math.floor((diasTranscurridos / durationDays) * 100), 100)
+    : 0;
+  const diasRestantes = Math.max(0, durationDays - diasTranscurridos);
+
+  const { completed } = calcCompliance(trackingData);
+  const streak = isActive ? calcStreak(trackingData, tracking!.menuStartDate!) : 0;
 
   // Badge
   const badge =
@@ -240,12 +239,12 @@ export const ProgressView: React.FC<Props> = ({
             />
           </div>
 
-          {/* Remaining points */}
-          {isActive && totalPossible > 0 && (
+          {/* Remaining days */}
+          {isActive && (
             <p className="text-xs" style={{ color: '#6B7C73' }}>
-              {remaining > 0
-                ? `Faltan ${remaining} punto${remaining !== 1 ? 's' : ''} para alcanzar tu meta`
-                : '¡Has alcanzado tu meta de cumplimiento! 🎉'}
+              {diasRestantes > 0
+                ? `Faltan ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} para completar tu menú del mes`
+                : '¡Has completado tu menú del mes! 🎉'}
             </p>
           )}
           {!isActive && (
@@ -256,16 +255,12 @@ export const ProgressView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* 2x2 stats grid */}
+      {/* 1x2 stats row */}
       {isActive && (
         <div className="px-4 pb-4">
-          <div className="flex gap-2 mb-2">
+          <div className="flex gap-2">
             <StatCard emoji="⭐" value={completed} label="Puntos acumulados" highlight />
             <StatCard emoji="🔥" value={streak}    label="Racha actual (días)" highlight />
-          </div>
-          <div className="flex gap-2">
-            <StatCard emoji="✅" value={daysDone}     label="Días completados" />
-            <StatCard emoji="📅" value={`S${currentWeek}`} label={`de ${totalWeeks} semanas`} />
           </div>
         </div>
       )}
@@ -276,8 +271,8 @@ export const ProgressView: React.FC<Props> = ({
       <div className="border-t" style={{ borderColor: '#F0F4F1' }}>
         <SectionHeader title="Medidas" />
         <MeasurementsView
-          latestMeasurement={latestMeasurement}
-          latestBio={latestBio}
+          measurements={measurements ?? []}
+          bioMeasurements={bioMeasurements ?? []}
         />
       </div>
 

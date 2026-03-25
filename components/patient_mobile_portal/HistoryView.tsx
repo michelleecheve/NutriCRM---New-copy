@@ -15,23 +15,17 @@ function formatDate(d: string): string {
   return `${day}/${m}/${y}`;
 }
 
-function calcMenuCompliance(
+function calcDayProgress(
   tracking: TrackingRow | undefined,
-): { completed: number; total: number; pct: number } {
-  if (!tracking) return { completed: 0, total: 0, pct: 0 };
-  let completed = 0; let total = 0;
-  for (const day of Object.values(tracking.trackingData)) {
-    if (!day || typeof day !== 'object') continue;
-    for (const meal of Object.values(day)) {
-      if (!meal || typeof meal !== 'object') continue;
-      if ('completed' in (meal as any)) {
-        total++;
-        if ((meal as any).completed === true) completed++;
-      }
-    }
-  }
-  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-  return { completed, total, pct };
+): { currentDay: number; totalDays: number; pct: number } {
+  if (!tracking?.menuStartDate) return { currentDay: 0, totalDays: 0, pct: 0 };
+  const totalDays = tracking.durationDays ?? 28;
+  const today = new Date(new Date().toISOString().slice(0, 10) + 'T12:00:00');
+  const start = new Date(tracking.menuStartDate + 'T12:00:00');
+  const elapsed = Math.floor((today.getTime() - start.getTime()) / 86400000);
+  const currentDay = Math.min(Math.max(elapsed + 1, 1), totalDays);
+  const pct = Math.min(Math.floor((elapsed / totalDays) * 100), 100);
+  return { currentDay, totalDays, pct };
 }
 
 const DAYS_ORDERED = [
@@ -82,7 +76,7 @@ const ExpandedMenu: React.FC<{ menu: GeneratedMenu }> = ({ menu }) => {
                   className="flex items-start gap-2 px-3 py-2 rounded-xl"
                   style={{ backgroundColor: '#F9FAFB' }}
                 >
-                  <span className="text-xs font-semibold w-20 flex-shrink-0 pt-0.5" style={{ color: '#9CA3AF' }}>
+                  <span className="text-xs font-semibold w-20 flex-shrink-0 pt-0.5" style={{ color: '#4B5563' }}>
                     {MEAL_LABELS[mealKey] ?? mealKey}
                   </span>
                   <span className="text-xs text-gray-700 leading-relaxed">
@@ -123,7 +117,7 @@ export const HistoryView: React.FC<Props> = ({ menus, allTracking, activeMenuId 
       <div className="px-4 space-y-3">
         {menus.map((menu, i) => {
           const tracking = allTracking.find(t => t.menuId === menu.id);
-          const { completed, total, pct } = calcMenuCompliance(tracking);
+          const { currentDay, totalDays, pct } = calcDayProgress(tracking);
           const isActive = menu.id === activeMenuId;
           const isExpanded = expandedId === menu.id;
 
@@ -181,13 +175,12 @@ export const HistoryView: React.FC<Props> = ({ menus, allTracking, activeMenuId 
                 </button>
               </div>
 
-              {/* ── Compliance bar (only if has tracking) ── */}
-              {total > 0 && (
+              {/* ── Day progress bar (only if has tracking start date) ── */}
+              {totalDays > 0 && (
                 <div className="px-4 pb-3">
                   <div className="flex justify-between text-xs mb-1.5" style={{ color: '#6B7C73' }}>
-                    <span>Cumplimiento</span>
                     <span className="font-semibold" style={{ color: '#2D5A4B' }}>
-                      {pct}% · {completed}/{total} comidas
+                      Día {currentDay} de {totalDays}
                     </span>
                   </div>
                   <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#E8F0EC' }}>

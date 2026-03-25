@@ -241,7 +241,7 @@ const LoadingScreen: React.FC = () => (
 
 // ─── Portal data ──────────────────────────────────────────────────────────────
 
-import { LatestMeasurement, LatestBio } from '../components/patient_mobile_portal/PortalShell';
+import { MeasurementEntry, BioEntry } from '../components/patient_mobile_portal/PortalShell';
 
 interface PortalData {
   nutritionist: PortalNutritionist;
@@ -249,8 +249,8 @@ interface PortalData {
   menus: GeneratedMenu[];
   activeTracking: TrackingRow | null;
   allTracking: TrackingRow[];
-  latestMeasurement: LatestMeasurement | null;
-  latestBio: LatestBio | null;
+  measurements: MeasurementEntry[];
+  bioMeasurements: BioEntry[];
 }
 
 function mapMenuFromRaw(row: any): GeneratedMenu {
@@ -311,7 +311,7 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
     ownerId
       ? supabase
           .from('profiles')
-          .select('name, specialty, avatar, email, contact_email, phone, personal_phone, instagram_handle, website, address')
+          .select('name, specialty, professional_title, avatar, email, contact_email, phone, personal_phone, instagram_handle, website, address')
           .eq('id', ownerId)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -336,15 +336,13 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
           .select('id')
           .eq('patient_id', patientId);
         const evalIds = (evals ?? []).map((e: any) => e.id as string);
-        if (evalIds.length === 0) return { data: null };
+        if (evalIds.length === 0) return { data: [] };
         return await supabase
           .from('measurements')
-          .select('date, weight, height, imc, body_fat_pct, lean_mass_kg, lean_mass_pct, muscle_mass_kg, bone_mass')
+          .select('date, weight, height, imc, age, gender, body_fat_pct, lean_mass_pct, lean_mass_kg, fat_kg, muscle_mass_kg, bone_mass, residual_mass, biceps, triceps, subscapular, supraspinal, abdomen, thigh, calf, iliac_crest, skinfold_sum, humerus, femur, wrist, arm_relaxed, arm_contracted, waist, umbilical, hip, abdominal_low, thigh_right, thigh_left, calf_girth, endomorfo, mesomorfo, ectomorfo, diagnostic_n, subjective_valuation, meta_complied')
           .in('evaluation_id', evalIds)
-          .order('date', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-      } catch { return { data: null }; }
+          .order('date', { ascending: false });
+      } catch { return { data: [] }; }
     })(),
 
     (async () => {
@@ -354,59 +352,105 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
           .select('id')
           .eq('patient_id', patientId);
         const evalIds = (evals ?? []).map((e: any) => e.id as string);
-        if (evalIds.length === 0) return { data: null };
+        if (evalIds.length === 0) return { data: [] };
         return await supabase
           .from('bioimpedancia_measurements')
-          .select('date, weight, body_fat_pct, muscle_mass, metabolic_age, bmr, visceral_fat, water_pct')
+          .select('date, weight, height, imc, age, gender, body_fat_pct, water_pct, muscle_mass, bone_mass, visceral_fat, bmr, metabolic_age, physique_rating, waist, umbilical, hip, "thighLeft", "thighRight", "abdominalLow", "calfGirth", "armRelaxed", "armContracted", meta_complied')
           .in('evaluation_id', evalIds)
-          .order('date', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-      } catch { return { data: null }; }
+          .order('date', { ascending: false });
+      } catch { return { data: [] }; }
     })(),
   ]);
 
   const profile = profileResult.data;
   const nutritionist: PortalNutritionist = {
-    name:          profile?.name             ?? 'Tu nutricionista',
-    specialty:     profile?.specialty        ?? 'Nutrición',
-    avatar:        profile?.avatar           ?? undefined,
-    email:         profile?.contact_email    ?? profile?.email ?? undefined,
-    phone:         profile?.phone            ?? undefined,
-    personalPhone: profile?.personal_phone   ?? undefined,
-    instagram:     profile?.instagram_handle ?? undefined,
-    website:       profile?.website          ?? undefined,
-    address:       profile?.address          ?? undefined,
+    name:              profile?.name              ?? 'Tu nutricionista',
+    specialty:         profile?.specialty         ?? 'Nutrición',
+    professionalTitle: profile?.professional_title ?? undefined,
+    avatar:            profile?.avatar            ?? undefined,
+    email:             profile?.contact_email     ?? profile?.email ?? undefined,
+    phone:             profile?.phone             ?? undefined,
+    personalPhone:     profile?.personal_phone    ?? undefined,
+    instagram:         profile?.instagram_handle  ?? undefined,
+    website:           profile?.website           ?? undefined,
+    address:           profile?.address           ?? undefined,
   };
 
   const menus: GeneratedMenu[] = (menusResult.data ?? []).map(mapMenuFromRaw);
   const allTracking: TrackingRow[] = ((trackingAllResult as any).data ?? []).map(mapTrackingFromRaw);
   const activeTracking = allTracking.length > 0 ? allTracking[0] : null;
 
-  const mRow = (measurementResult as any).data;
-  const latestMeasurement: LatestMeasurement | null = mRow ? {
-    date:        mRow.date,
-    weight:      mRow.weight,
-    height:      mRow.height,
-    imc:         mRow.imc,
-    bodyFatPct:  mRow.body_fat_pct,
-    leanMassKg:  mRow.lean_mass_kg,
-    leanMassPct: mRow.lean_mass_pct,
-    muscleKg:    mRow.muscle_mass_kg,
-    boneMass:    mRow.bone_mass,
-  } : null;
+  const mRows: any[] = (measurementResult as any).data ?? [];
+  const measurements: MeasurementEntry[] = mRows.map(r => ({
+    date:               r.date,
+    weight:             r.weight,
+    height:             r.height,
+    imc:                r.imc,
+    age:                r.age,
+    gender:             r.gender,
+    bodyFatPct:         r.body_fat_pct,
+    leanMassPct:        r.lean_mass_pct,
+    leanMassKg:         r.lean_mass_kg,
+    fatKg:              r.fat_kg,
+    muscleKg:           r.muscle_mass_kg,
+    boneMass:           r.bone_mass,
+    residualMass:       r.residual_mass,
+    biceps:             r.biceps,
+    triceps:            r.triceps,
+    subscapular:        r.subscapular,
+    supraspinal:        r.supraspinal,
+    abdomen:            r.abdomen,
+    thigh:              r.thigh,
+    calf:               r.calf,
+    iliacCrest:         r.iliac_crest,
+    skinfoldSum:        r.skinfold_sum,
+    humerus:            r.humerus,
+    femur:              r.femur,
+    wrist:              r.wrist,
+    armRelaxed:         r.arm_relaxed,
+    armContracted:      r.arm_contracted,
+    waist:              r.waist,
+    umbilical:          r.umbilical,
+    hip:                r.hip,
+    abdominalLow:       r.abdominal_low,
+    thighRight:         r.thigh_right,
+    thighLeft:          r.thigh_left,
+    calfGirth:          r.calf_girth,
+    endomorfo:          r.endomorfo,
+    mesomorfo:          r.mesomorfo,
+    ectomorfo:          r.ectomorfo,
+    diagnosticN:        r.diagnostic_n,
+    subjectiveValuation: r.subjective_valuation,
+    metaComplied:       r.meta_complied,
+  }));
 
-  const bRow = (bioResult as any).data;
-  const latestBio: LatestBio | null = bRow ? {
-    date:          bRow.date,
-    weight:        bRow.weight,
-    bodyFatPct:    bRow.body_fat_pct,
-    muscleMass:    bRow.muscle_mass,
-    metabolicAge:  bRow.metabolic_age,
-    bmr:           bRow.bmr,
-    visceralFat:   bRow.visceral_fat,
-    waterPct:      bRow.water_pct,
-  } : null;
+  const bRows: any[] = (bioResult as any).data ?? [];
+  const bioMeasurements: BioEntry[] = bRows.map(r => ({
+    date:           r.date,
+    weight:         r.weight,
+    height:         r.height,
+    imc:            r.imc,
+    age:            r.age,
+    gender:         r.gender,
+    bodyFatPct:     r.body_fat_pct,
+    waterPct:       r.water_pct,
+    muscleMass:     r.muscle_mass,
+    boneMass:       r.bone_mass,
+    visceralFat:    r.visceral_fat,
+    bmr:            r.bmr,
+    metabolicAge:   r.metabolic_age,
+    physiqueRating: r.physique_rating,
+    waist:          r.waist,
+    umbilical:      r.umbilical,
+    hip:            r.hip,
+    thighLeft:      r.thighLeft,
+    thighRight:     r.thighRight,
+    abdominalLow:   r.abdominalLow,
+    calfGirth:      r.calfGirth,
+    armRelaxed:     r.armRelaxed,
+    armContracted:  r.armContracted,
+    metaComplied:   r.meta_complied,
+  }));
 
   return {
     nutritionist,
@@ -414,8 +458,8 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
     menus,
     activeTracking,
     allTracking,
-    latestMeasurement,
-    latestBio,
+    measurements,
+    bioMeasurements,
   };
 }
 
@@ -469,8 +513,8 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session }) => {
       activeTracking={activeTracking}
       allTracking={portalData.allTracking}
       nutritionist={portalData.nutritionist}
-      latestMeasurement={portalData.latestMeasurement}
-      latestBio={portalData.latestBio}
+      measurements={portalData.measurements}
+      bioMeasurements={portalData.bioMeasurements}
       onTrackingUpdate={setActiveTracking}
     />
   );

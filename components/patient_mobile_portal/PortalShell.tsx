@@ -18,6 +18,7 @@ export interface PortalPatient {
 export interface PortalNutritionist {
   name: string;
   specialty: string;
+  professionalTitle?: string;
   avatar?: string;
   email?: string;
   phone?: string;
@@ -27,27 +28,74 @@ export interface PortalNutritionist {
   address?: string;
 }
 
-export interface LatestMeasurement {
+export interface MeasurementEntry {
   date?: string;
   weight?: number;
   height?: number;
   imc?: number;
+  age?: number;
+  gender?: string;
   bodyFatPct?: number;
-  leanMassKg?: number;
   leanMassPct?: number;
+  leanMassKg?: number;
+  fatKg?: number;
   muscleKg?: number;
   boneMass?: number;
+  residualMass?: number;
+  biceps?: number;
+  triceps?: number;
+  subscapular?: number;
+  supraspinal?: number;
+  abdomen?: number;
+  thigh?: number;
+  calf?: number;
+  iliacCrest?: number;
+  skinfoldSum?: number;
+  humerus?: number;
+  femur?: number;
+  wrist?: number;
+  armRelaxed?: number;
+  armContracted?: number;
+  waist?: number;
+  umbilical?: number;
+  hip?: number;
+  abdominalLow?: number;
+  thighRight?: number;
+  thighLeft?: number;
+  calfGirth?: number;
+  endomorfo?: number;
+  mesomorfo?: number;
+  ectomorfo?: number;
+  diagnosticN?: string;
+  subjectiveValuation?: string;
+  metaComplied?: boolean;
 }
 
-export interface LatestBio {
+export interface BioEntry {
   date?: string;
   weight?: number;
+  height?: number;
+  imc?: number;
+  age?: number;
+  gender?: string;
   bodyFatPct?: number;
-  muscleMass?: number;
-  metabolicAge?: number;
-  bmr?: number;
-  visceralFat?: number;
   waterPct?: number;
+  muscleMass?: number;
+  boneMass?: number;
+  visceralFat?: number;
+  bmr?: number;
+  metabolicAge?: number;
+  physiqueRating?: number;
+  waist?: number;
+  umbilical?: number;
+  hip?: number;
+  thighLeft?: number;
+  thighRight?: number;
+  abdominalLow?: number;
+  calfGirth?: number;
+  armRelaxed?: number;
+  armContracted?: number;
+  metaComplied?: string;
 }
 
 interface Props {
@@ -57,8 +105,8 @@ interface Props {
   activeTracking: TrackingRow | null;
   allTracking: TrackingRow[];
   nutritionist: PortalNutritionist;
-  latestMeasurement?: LatestMeasurement | null;
-  latestBio?: LatestBio | null;
+  measurements?: MeasurementEntry[];
+  bioMeasurements?: BioEntry[];
   onTrackingUpdate: (t: TrackingRow) => void;
 }
 
@@ -170,7 +218,7 @@ const NoPlanScreen: React.FC<{ nutritionist: PortalNutritionist }> = ({ nutritio
 
 export const PortalShell: React.FC<Props> = ({
   token, patient, menus, activeTracking, allTracking,
-  nutritionist, latestMeasurement, latestBio, onTrackingUpdate,
+  nutritionist, measurements, bioMeasurements, onTrackingUpdate,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('menu');
 
@@ -236,8 +284,8 @@ export const PortalShell: React.FC<Props> = ({
             activeTracking={activeTracking}
             allTracking={allTracking}
             activeMenu={activeMenu}
-            latestMeasurement={latestMeasurement}
-            latestBio={latestBio}
+            measurements={measurements}
+            bioMeasurements={bioMeasurements}
           />
         )}
 
