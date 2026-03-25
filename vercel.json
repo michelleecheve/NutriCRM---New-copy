@@ -1,8 +1,5 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/landing.html" },
-    { "source": "/p/:path*", "destination": "/" },
-    { "source": "/login", "destination": "/" },
-    { "source": "/:path*", "destination": "/" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
