@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, MessageCircle, Globe, Instagram, Pencil, Check, X, Clock } from 'lucide-react';
+import { LogOut, MessageCircle, Globe, Instagram, Pencil, Check, X, Clock, KeyRound } from 'lucide-react';
 import { TrackingRow } from '../../types';
 import { PortalPatient, PortalNutritionist } from './PortalShell';
 import { supabase } from '../../services/supabase';
@@ -9,6 +9,7 @@ interface Props {
   patient: PortalPatient;
   nutritionist: PortalNutritionist;
   activeTracking: TrackingRow | null;
+  onAccessCodeUpdate?: (newCode: string) => void;
 }
 
 function sessionKey(token: string): string {
@@ -79,13 +80,19 @@ function tzLabel(value: string): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export const ProfileView: React.FC<Props> = ({ token, patient, nutritionist, activeTracking }) => {
+export const ProfileView: React.FC<Props> = ({ token, patient, nutritionist, activeTracking, onAccessCodeUpdate }) => {
   const [showConfirm, setShowConfirm] = useState(false);
 
   // ── Goal editing ──
   const [goalText, setGoalText] = useState(patient.portalGoal ?? '');
   const [editingGoal, setEditingGoal] = useState(false);
   const [savingGoal, setSavingGoal] = useState(false);
+
+  // ── PIN editing ──
+  const [editingPin, setEditingPin] = useState(false);
+  const [pinInput, setPinInput] = useState(patient.accessCode ?? '');
+  const [savingPin, setSavingPin] = useState(false);
+  const [pinError, setPinError] = useState('');
 
   // ── Timezone ──
   const [timezone, setTimezone] = useState<string>(() => {
@@ -96,6 +103,10 @@ export const ProfileView: React.FC<Props> = ({ token, patient, nutritionist, act
   useEffect(() => {
     setGoalText(patient.portalGoal ?? '');
   }, [patient.portalGoal]);
+
+  useEffect(() => {
+    setPinInput(patient.accessCode ?? '');
+  }, [patient.accessCode]);
 
   function handleLogout() {
     localStorage.removeItem(sessionKey(token));
@@ -115,6 +126,37 @@ export const ProfileView: React.FC<Props> = ({ token, patient, nutritionist, act
   function handleCancelGoal() {
     setGoalText(patient.portalGoal ?? '');
     setEditingGoal(false);
+  }
+
+  async function handleSavePin() {
+    const clean = pinInput.replace(/\D/g, '');
+    if (clean.length !== 4) {
+      setPinError('El PIN debe tener exactamente 4 dígitos.');
+      return;
+    }
+    setSavingPin(true);
+    setPinError('');
+    try {
+      await supabase.from('patients').update({ access_code: clean }).eq('id', patient.id);
+      // Update localStorage session so the displayed code stays in sync
+      const raw = localStorage.getItem(sessionKey(token));
+      if (raw) {
+        try {
+          const stored = JSON.parse(raw);
+          localStorage.setItem(sessionKey(token), JSON.stringify({ ...stored, accessCode: clean }));
+        } catch {}
+      }
+      onAccessCodeUpdate?.(clean);
+      setEditingPin(false);
+    } finally {
+      setSavingPin(false);
+    }
+  }
+
+  function handleCancelPin() {
+    setPinInput(patient.accessCode ?? '');
+    setPinError('');
+    setEditingPin(false);
   }
 
   function handleSaveTz(value: string) {
@@ -151,7 +193,7 @@ export const ProfileView: React.FC<Props> = ({ token, patient, nutritionist, act
             </p>
 
             {/* Access code */}
-            {patient.accessCode && (
+            {patient.accessCode && !editingPin && (
               <div
                 className="mt-4 inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl"
                 style={{ backgroundColor: 'rgba(255,255,255,0.07)' }}
@@ -163,6 +205,72 @@ export const ProfileView: React.FC<Props> = ({ token, patient, nutritionist, act
                   <span className="font-black tracking-widest mt-0.5" style={{ color: '#6EE7B7', fontSize: '16px', lineHeight: 1 }}>
                     {patient.accessCode}
                   </span>
+                </div>
+                <button
+                  onClick={() => setEditingPin(true)}
+                  className="flex items-center justify-center w-7 h-7 rounded-xl transition-opacity active:opacity-60"
+                  style={{ backgroundColor: 'rgba(110,231,183,0.15)' }}
+                  title="Cambiar PIN"
+                >
+                  <Pencil className="w-3.5 h-3.5" style={{ color: '#6EE7B7' }} />
+                </button>
+              </div>
+            )}
+
+            {/* PIN editor */}
+            {editingPin && (
+              <div className="mt-4 w-full max-w-xs px-2">
+                <div className="flex items-center gap-2 mb-2 justify-center">
+                  <KeyRound className="w-3.5 h-3.5" style={{ color: '#6EE7B7' }} />
+                  <span className="font-bold uppercase" style={{ color: 'rgba(255,255,255,0.55)', fontSize: '9px', letterSpacing: '0.10em' }}>
+                    Nuevo código de acceso
+                  </span>
+                </div>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  value={pinInput}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setPinInput(val);
+                    if (pinError) setPinError('');
+                  }}
+                  autoFocus
+                  className="w-full text-center rounded-xl px-3 py-2.5 font-black tracking-widest focus:outline-none"
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.10)',
+                    border: pinError ? '1.5px solid #F87171' : '1.5px solid rgba(110,231,183,0.40)',
+                    color: '#6EE7B7',
+                    fontSize: '22px',
+                    letterSpacing: '0.25em',
+                  }}
+                  placeholder="0000"
+                />
+                {pinError && (
+                  <p className="text-center mt-1" style={{ color: '#F87171', fontSize: '11px', fontWeight: 600 }}>
+                    {pinError}
+                  </p>
+                )}
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={handleSavePin}
+                    disabled={savingPin}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold text-white transition-opacity disabled:opacity-50"
+                    style={{ backgroundColor: '#2D5A4B' }}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {savingPin ? 'Guardando...' : 'Guardar'}
+                  </button>
+                  <button
+                    onClick={handleCancelPin}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-opacity"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.70)' }}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Cancelar
+                  </button>
                 </div>
               </div>
             )}

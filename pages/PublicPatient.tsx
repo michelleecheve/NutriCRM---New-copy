@@ -599,7 +599,8 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
 
 // ─── Portal view (after auth) ─────────────────────────────────────────────────
 
-const PortalLoader: React.FC<{ session: PortalSession }> = ({ session }) => {
+const PortalLoader: React.FC<{ session: PortalSession }> = ({ session: initialSession }) => {
+  const [session, setSession] = useState(initialSession);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [portalData, setPortalData] = useState<PortalData | null>(null);
   const [activeTracking, setActiveTracking] = useState<TrackingRow | null>(null);
@@ -613,6 +614,15 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session }) => {
       })
       .catch(() => setState('error'));
   }, [session.patientId]);
+
+  function handlePatientUpdate(updates: Partial<{ id: string; firstName: string; lastName: string; accessCode?: string; portalGoal?: string }>) {
+    if (updates.accessCode !== undefined) {
+      setSession(prev => ({ ...prev, accessCode: updates.accessCode! }));
+    }
+    if (updates.portalGoal !== undefined && portalData) {
+      setPortalData(prev => prev ? { ...prev, patient: { ...prev.patient, portalGoal: updates.portalGoal } } : prev);
+    }
+  }
 
   if (state === 'loading') return <LoadingScreen />;
 
@@ -651,6 +661,7 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session }) => {
       measurements={portalData.measurements}
       bioMeasurements={portalData.bioMeasurements}
       onTrackingUpdate={setActiveTracking}
+      onPatientUpdate={handlePatientUpdate}
     />
   );
 };

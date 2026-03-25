@@ -1038,6 +1038,7 @@ export const supabaseService = {
       portalActive:       dbPatient.portal_active  ?? false,
       accessToken:        dbPatient.access_token   ?? null,
       accessCode:         dbPatient.access_code    ?? null,
+      portalGoal:         dbPatient.portal_goal    ?? null,
     };
   },
 

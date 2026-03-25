@@ -109,6 +109,7 @@ interface Props {
   measurements?: MeasurementEntry[];
   bioMeasurements?: BioEntry[];
   onTrackingUpdate: (t: TrackingRow) => void;
+  onPatientUpdate?: (updates: Partial<PortalPatient>) => void;
 }
 
 type Tab = "menu" | "progreso" | "perfil";
@@ -256,6 +257,7 @@ export const PortalShell: React.FC<Props> = ({
   measurements,
   bioMeasurements,
   onTrackingUpdate,
+  onPatientUpdate,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>("menu");
   const [lockedToast, setLockedToast] = useState(false);
@@ -369,6 +371,7 @@ export const PortalShell: React.FC<Props> = ({
               patient={patient}
               nutritionist={nutritionist}
               activeTracking={activeTracking}
+              onAccessCodeUpdate={(newCode) => onPatientUpdate?.({ accessCode: newCode })}
             />
           )}
         </div>
