@@ -298,6 +298,7 @@ export interface Patient {
   portalActive?: boolean;
   accessToken?: string | null;
   accessCode?: string | null;
+  portalGoal?: string | null;
 }
 
 export interface Invoice {

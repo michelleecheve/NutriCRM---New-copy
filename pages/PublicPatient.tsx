@@ -247,7 +247,7 @@ import { MeasurementEntry, BioEntry } from '../components/patient_mobile_portal/
 
 interface PortalData {
   nutritionist: PortalNutritionist;
-  patient: { consultmotive?: string };
+  patient: { portalGoal?: string };
   menus: GeneratedMenu[];
   activeTracking: TrackingRow | null;
   allTracking: TrackingRow[];
@@ -293,10 +293,10 @@ function mapTrackingFromRaw(row: any): TrackingRow {
 }
 
 async function loadPortalData(patientId: string): Promise<PortalData> {
-  // 1. Get patient owner_id + consultmotive
+  // 1. Get patient owner_id + portal_goal
   const { data: patientRow } = await supabase
     .from('patients')
-    .select('owner_id, consultmotive')
+    .select('owner_id, portal_goal')
     .eq('id', patientId)
     .maybeSingle();
 
@@ -456,7 +456,7 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
 
   return {
     nutritionist,
-    patient: { consultmotive: patientRow?.consultmotive ?? undefined },
+    patient: { portalGoal: patientRow?.portal_goal ?? undefined },
     menus,
     activeTracking,
     allTracking,
@@ -506,11 +506,11 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session }) => {
     <PortalShell
       token={session.token}
       patient={{
-        id:             session.patientId,
-        firstName:      session.firstName,
-        lastName:       session.lastName,
-        accessCode:     session.accessCode,
-        consultmotive:  portalData.patient.consultmotive,
+        id:         session.patientId,
+        firstName:  session.firstName,
+        lastName:   session.lastName,
+        accessCode: session.accessCode,
+        portalGoal: portalData.patient.portalGoal,
       }}
       menus={portalData.menus}
       activeTracking={activeTracking}

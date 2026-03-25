@@ -13,7 +13,7 @@ export interface PortalPatient {
   firstName: string;
   lastName: string;
   accessCode?: string;
-  consultmotive?: string;
+  portalGoal?: string;
 }
 
 export interface PortalNutritionist {

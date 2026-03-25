@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Patient, GeneratedMenu, TrackingRow } from '../../types';
 import { supabaseService } from '../../services/supabaseService';
+import { supabase } from '../../services/supabase';
 
 interface Props {
   patient: Patient;
@@ -98,6 +99,11 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   const [durationDays, setDurationDays] = useState(28);
   const [savingConfig, setSavingConfig] = useState(false);
 
+  // ── Portal goal state ──
+  const [portalGoal, setPortalGoal] = useState(patient.portalGoal ?? '');
+  const [savingGoal, setSavingGoal] = useState(false);
+  const [savedGoal, setSavedGoal] = useState(false);
+
   // ── Extend plan state ──
   const [extendMode, setExtendMode] = useState(false);
   const [newEndDate, setNewEndDate] = useState('');
@@ -161,6 +167,19 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       onUpdate({ ...patient, ...updated });
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ── Save portal goal ──
+  async function handleSaveGoal() {
+    setSavingGoal(true);
+    try {
+      await supabase.from('patients').update({ portal_goal: portalGoal || null }).eq('id', patient.id);
+      onUpdate({ ...patient, portalGoal: portalGoal || null });
+      setSavedGoal(true);
+      setTimeout(() => setSavedGoal(false), 2000);
+    } finally {
+      setSavingGoal(false);
     }
   }
 
@@ -350,6 +369,39 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
             <p className="text-xs text-slate-400 mt-1">
               El paciente ingresa este PIN la primera vez que abre el link.
             </p>
+          </div>
+
+          {/* ── Objetivo del paciente ── */}
+          <div>
+            <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
+              Objetivo del paciente
+            </label>
+            <textarea
+              value={portalGoal}
+              onChange={(e) => setPortalGoal(e.target.value)}
+              rows={2}
+              placeholder="Ej: Bajar 5 kg en 3 meses, mejorar hábitos alimenticios..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            />
+            <div className="flex items-center justify-between mt-1.5">
+              <p className="text-xs text-slate-400">
+                El paciente lo verá en su portal y podrá editarlo.
+              </p>
+              <button
+                onClick={handleSaveGoal}
+                disabled={savingGoal}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-all"
+              >
+                {savingGoal ? (
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                ) : savedGoal ? (
+                  <Check className="w-3 h-3" />
+                ) : (
+                  <Save className="w-3 h-3" />
+                )}
+                {savedGoal ? 'Guardado' : 'Guardar'}
+              </button>
+            </div>
           </div>
 
           {/* ── Divider ── */}
