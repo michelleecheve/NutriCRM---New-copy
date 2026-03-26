@@ -447,6 +447,31 @@ export const DEFAULT_SECTION_TITLES: MenuSectionTitles = {
   organizacionTitle: 'ORGANIZACIÓN Y HORARIOS',
 };
 
+export interface VisualThemeColors {
+  primary: string;
+  secondary: string;
+  tertiary: string;
+}
+
+export type FontFamily = 'sans' | 'serif' | 'humanist';
+export type SizeScale  = 'compact' | 'normal' | 'spacious';
+
+export interface VisualThemeConfig {
+  theme: 'original' | 'minimalista';
+  colors: VisualThemeColors;
+  paletteId: string;
+  font: FontFamily;
+  sizeScale: SizeScale;
+}
+
+export const DEFAULT_VISUAL_THEME: VisualThemeConfig = {
+  theme: 'original',
+  colors: { primary: '#0f766e', secondary: '#1e293b', tertiary: '#f0fdf4' },
+  paletteId: 'default',
+  font: 'sans',
+  sizeScale: 'normal',
+};
+
 export interface MenuTemplate {
   id: string;
   ownerId: string;
@@ -457,6 +482,7 @@ export interface MenuTemplate {
   isDefault: boolean;
   footerConfig?: MenuFooterConfig;
   sectionTitles?: MenuSectionTitles;
+  visualTheme?: VisualThemeConfig;
   createdAt?: string;
   updatedAt?: string;
 }

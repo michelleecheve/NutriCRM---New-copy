@@ -1,6 +1,9 @@
 import React from 'react';
 import type { MenuFooterConfig, MenuSectionTitles } from '../../types';
 import { DEFAULT_SECTION_TITLES } from '../../types';
+import { store } from '../../services/store';
+import { getThemeStyles } from './menu_css_templates/menuThemes';
+import type { ThemeStyles } from './menu_css_templates/menuThemes';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 export interface MealPortions {
@@ -163,15 +166,16 @@ const TEMPLATE_STYLES = `
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
 const DayCard: React.FC<{ label: string; day: MenuDay; isFullWidth?: boolean }> = ({ label, day, isFullWidth }) => {
+  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
   const mealKeys = day.mealsOrder || MEAL_KEYS;
   return (
     <div style={{
-      border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden',
+      border: '1px solid #e2e8f0', borderRadius: ts.cardRadius, overflow: 'hidden',
       flex: isFullWidth ? 'none' : '1', width: isFullWidth ? '100%' : 'auto', minWidth: 0,
     }}>
       <div style={{
-        backgroundColor: '#0f766e', color: '#fff', textAlign: 'center',
-        padding: '5px 4px', fontWeight: 800, fontSize: '9px', letterSpacing: '1px',
+        backgroundColor: ts.colors.primary, color: '#fff', textAlign: 'center',
+        padding: '5px 4px', fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: '1px',
       }}>
         {label}
       </div>
@@ -182,10 +186,10 @@ const DayCard: React.FC<{ label: string; day: MenuDay; isFullWidth?: boolean }> 
           const displayLabel = m.label || (MEAL_LABELS[mealKey as MealKey] || mealKey);
           return (
             <div key={mealKey}>
-              <div style={{ color: '#0f766e', fontSize: '8.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '1px' }}>
+              <div style={{ color: ts.colors.primary, fontSize: `${8.5 * ts.fontSizeMultiplier}px`, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '1px' }}>
                 {displayLabel}
               </div>
-              <div style={{ color: '#1e293b', fontSize: '8px', fontWeight: 600, lineHeight: '1.3', whiteSpace: 'pre-line' }}>
+              <div style={{ color: '#1e293b', fontSize: `${8 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: '1.3', whiteSpace: 'pre-line' }}>
                 {m.title}
               </div>
             </div>
@@ -198,9 +202,13 @@ const DayCard: React.FC<{ label: string; day: MenuDay; isFullWidth?: boolean }> 
 
 // ── Header: sin flex para centrado vertical, usa padding explícito ─────────────
 const Header: React.FC<{ nutritionist: MenuPlanData['nutritionist']; planTitle?: string }> = ({ nutritionist, planTitle }) => {
+  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
   const titleParts = (planTitle || DEFAULT_SECTION_TITLES.planTitle).split('\n');
+  const headerStyle: React.CSSProperties = ts.headerBorderBottom !== 'none'
+    ? { width: '100%', borderCollapse: 'collapse', marginBottom: '12px', borderBottom: ts.headerBorderBottom, paddingBottom: '8px' }
+    : { width: '100%', borderCollapse: 'collapse', marginBottom: '12px' };
   return (
-  <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px' }}>
+  <table style={headerStyle}>
     <tbody>
       <tr>
         {/* Left: logo o nombre */}
@@ -216,7 +224,7 @@ const Header: React.FC<{ nutritionist: MenuPlanData['nutritionist']; planTitle?:
                   <td style={{ verticalAlign: 'middle', paddingRight: '10px' }}>
                     <div style={{
                       width: '42px', height: '42px', borderRadius: '50%',
-                      backgroundColor: '#0f766e', overflow: 'hidden',
+                      backgroundColor: ts.colors.primary, overflow: 'hidden',
                       textAlign: 'center', lineHeight: '42px',
                     }}>
                       {nutritionist.avatar ? (
@@ -231,10 +239,10 @@ const Header: React.FC<{ nutritionist: MenuPlanData['nutritionist']; planTitle?:
                   </td>
                   {/* Name + title */}
                   <td style={{ verticalAlign: 'middle' }}>
-                    <div style={{ fontWeight: 900, fontSize: '20px', color: '#0f172a', letterSpacing: '-0.5px', lineHeight: 1 }}>
+                    <div style={{ fontWeight: 900, fontSize: `${20 * ts.fontSizeMultiplier}px`, color: '#0f172a', letterSpacing: '-0.5px', lineHeight: 1 }}>
                       {(nutritionist.name || '').toUpperCase()}
                     </div>
-                    <div style={{ fontSize: '8px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginTop: '3px' }}>
+                    <div style={{ fontSize: `${8 * ts.fontSizeMultiplier}px`, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1.5px', marginTop: '3px' }}>
                       {(nutritionist.title || '').toUpperCase()}
                     </div>
                   </td>
@@ -246,12 +254,12 @@ const Header: React.FC<{ nutritionist: MenuPlanData['nutritionist']; planTitle?:
         {/* Right: plan title */}
         <td style={{ verticalAlign: 'middle', textAlign: 'right', padding: 0 }}>
           {titleParts[0] && (
-            <div style={{ color: '#0f766e', fontSize: '15px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', lineHeight: 1.15 }}>
+            <div style={{ color: ts.colors.primary, fontSize: `${15 * ts.fontSizeMultiplier}px`, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', lineHeight: 1.15 }}>
               {titleParts[0]}
             </div>
           )}
           {titleParts[1] && (
-            <div style={{ color: '#0f766e', fontSize: '13px', fontWeight: 700, letterSpacing: '0.5px', lineHeight: 1.15 }}>
+            <div style={{ color: ts.colors.primary, fontSize: `${13 * ts.fontSizeMultiplier}px`, fontWeight: 700, letterSpacing: '0.5px', lineHeight: 1.15 }}>
               {titleParts[1]}
             </div>
           )}
@@ -263,11 +271,13 @@ const Header: React.FC<{ nutritionist: MenuPlanData['nutritionist']; planTitle?:
 };
 
 // ── PatientBar: tabla en lugar de flex — verticalAlign resuelve el centrado ────
-const PatientBar: React.FC<{ patient: MenuPlanData['patient']; kcal: number }> = ({ patient, kcal }) => (
+const PatientBar: React.FC<{ patient: MenuPlanData['patient']; kcal: number }> = ({ patient, kcal }) => {
+  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  return (
   <table style={{
     width: '100%', borderCollapse: 'collapse',
     border: '1px solid #e2e8f0', borderRadius: '6px',
-    marginBottom: '12px', fontSize: '9px',
+    marginBottom: '12px', fontSize: `${9 * ts.fontSizeMultiplier}px`,
   }}>
     <tbody>
       <tr>
@@ -287,15 +297,15 @@ const PatientBar: React.FC<{ patient: MenuPlanData['patient']; kcal: number }> =
           <span style={{ color: '#64748b', fontWeight: 600 }}>GRASA: </span>
           <span style={{ color: '#0f172a', fontWeight: 700 }}>{patient?.fatPct || 0}%</span>
         </td>
-        {/* META — celda separada con borde izquierdo y fondo verde */}
+        {/* META — celda separada con borde izquierdo y fondo de acento */}
         <td style={{
           padding: '0', verticalAlign: 'middle', textAlign: 'right',
           borderLeft: '1px solid #e2e8f0', whiteSpace: 'nowrap',
         }}>
           <span style={{ color: '#64748b', fontWeight: 600, padding: '7px 8px 7px 12px', display: 'inline-block' }}>META:</span>
           <span style={{
-            color: '#0f766e', fontWeight: 900, fontSize: '10px',
-            backgroundColor: '#f0fdf4', borderLeft: '1px solid #bbf7d0',
+            color: ts.colors.primary, fontWeight: 900, fontSize: `${10 * ts.fontSizeMultiplier}px`,
+            backgroundColor: ts.colors.tertiary, borderLeft: `1px solid ${ts.colors.tertiaryBorder}`,
             padding: '7px 15px', display: 'inline-block',
           }}>
             {kcal.toLocaleString()} kcal
@@ -304,10 +314,12 @@ const PatientBar: React.FC<{ patient: MenuPlanData['patient']; kcal: number }> =
       </tr>
     </tbody>
   </table>
-);
+  );
+};
 
 // ── PortionsTable: ya era tabla, solo ajuste de verticalAlign en celdas ────────
 const PortionsTable: React.FC<{ portions: MenuPlanData['portions']; weeklyMenu: MenuPlanData['weeklyMenu'] }> = ({ portions, weeklyMenu }) => {
+  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
   const totals: MealPortions = {
     lacteos: portions.lacteos, vegetales: portions.vegetales, frutas: portions.frutas,
     cereales: portions.cereales, carnes: portions.carnes, grasas: portions.grasas,
@@ -316,10 +328,10 @@ const PortionsTable: React.FC<{ portions: MenuPlanData['portions']; weeklyMenu: 
 
   return (
     <div style={{ marginBottom: '12px' }}>
-      <div style={{ fontSize: '10px', fontWeight: 800, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5px' }}>
+      <div style={{ fontSize: `${10 * ts.fontSizeMultiplier}px`, fontWeight: 800, color: ts.colors.primary, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '5px' }}>
         GUÍA DIARIA DE PORCIONES
       </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: `${8 * ts.fontSizeMultiplier}px` }}>
         <thead>
           <tr style={{ backgroundColor: '#f8fafc' }}>
             <th style={{ padding: '5px 8px', textAlign: 'left', fontWeight: 700, color: '#475569', borderBottom: '2px solid #e2e8f0', width: '14%', verticalAlign: 'middle' }}>
@@ -353,10 +365,10 @@ const PortionsTable: React.FC<{ portions: MenuPlanData['portions']; weeklyMenu: 
               </tr>
             );
           })}
-          <tr style={{ backgroundColor: '#f0fdf4', borderTop: '2px solid #bbf7d0' }}>
-            <td style={{ padding: '5px 8px', fontWeight: 800, color: '#0f766e', fontSize: '8px', verticalAlign: 'middle' }}>TOTAL PORCIONES</td>
+          <tr style={{ backgroundColor: ts.colors.tertiary, borderTop: `2px solid ${ts.colors.tertiaryBorder}` }}>
+            <td style={{ padding: '5px 8px', fontWeight: 800, color: ts.colors.primary, fontSize: `${8 * ts.fontSizeMultiplier}px`, verticalAlign: 'middle' }}>TOTAL PORCIONES</td>
             {PORTION_GROUPS.map(g => (
-              <td key={g.key} style={{ padding: '5px 6px', textAlign: 'center', fontWeight: 800, color: '#0f766e', fontSize: '9px', verticalAlign: 'middle' }}>
+              <td key={g.key} style={{ padding: '5px 6px', textAlign: 'center', fontWeight: 800, color: ts.colors.primary, fontSize: `${9 * ts.fontSizeMultiplier}px`, verticalAlign: 'middle' }}>
                 {totals[g.key]}
               </td>
             ))}
@@ -368,14 +380,16 @@ const PortionsTable: React.FC<{ portions: MenuPlanData['portions']; weeklyMenu: 
 };
 
 // ── DomingoRow: tabla en lugar de flex — elimina todos los alignSelf/alignItems ─
-const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => (
-  <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => {
+  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  return (
+  <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #e2e8f0', borderRadius: ts.cardRadius, overflow: 'hidden' }}>
     <tbody>
       <tr>
         {/* DOMINGO label */}
         <td style={{
-          backgroundColor: '#1e293b', color: '#fff',
-          padding: '10px 14px', fontWeight: 800, fontSize: '9px',
+          backgroundColor: ts.colors.secondary, color: '#fff',
+          padding: '10px 14px', fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`,
           letterSpacing: '1px', whiteSpace: 'nowrap', verticalAlign: 'middle',
           width: '1%',
         }}>
@@ -383,10 +397,10 @@ const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => (
         </td>
         {/* Note */}
         <td style={{ padding: '8px 14px', verticalAlign: 'middle' }}>
-          <div style={{ fontSize: '7.5px', color: '#0f766e', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>
+          <div style={{ fontSize: `${7.5 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>
             DÍA LIBRE / OBSERVACIONES:
           </div>
-          <div style={{ fontSize: '8.5px', color: '#334155', fontWeight: 600 }}>
+          <div style={{ fontSize: `${8.5 * ts.fontSizeMultiplier}px`, color: '#334155', fontWeight: 600 }}>
             {domingo.note}
           </div>
         </td>
@@ -395,17 +409,18 @@ const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => (
           padding: '8px 14px', textAlign: 'right', verticalAlign: 'middle',
           borderLeft: '1px solid #f1f5f9', whiteSpace: 'nowrap', width: '1%',
         }}>
-          <div style={{ fontSize: '7px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600, marginBottom: '3px' }}>
+          <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600, marginBottom: '3px' }}>
             META HIDRATACIÓN
           </div>
-          <div style={{ fontSize: '9px', color: '#0f766e', fontWeight: 800 }}>
+          <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800 }}>
             💧 {domingo.hydration}
           </div>
         </td>
       </tr>
     </tbody>
   </table>
-);
+  );
+};
 
 // ── Footer ─────────────────────────────────────────────────────────────────────
 const Footer: React.FC<{ nutritionist: MenuPlanData['nutritionist'] }> = ({ nutritionist }) => {
@@ -472,11 +487,13 @@ const Footer: React.FC<{ nutritionist: MenuPlanData['nutritionist'] }> = ({ nutr
 // Uses a full-height table so the footer is always at the bottom of the 296mm
 // canvas — works correctly with both screen preview and html2pdf export.
 
-const A4Wrapper: React.FC<{ id?: string; children: React.ReactNode; footer: React.ReactNode }> = ({ id = "menu-print-area", children, footer }) => (
+const A4Wrapper: React.FC<{ id?: string; children: React.ReactNode; footer: React.ReactNode }> = ({ id = "menu-print-area", children, footer }) => {
+  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  return (
   <div
     id={id}
     style={{
-      fontFamily: "'Helvetica Neue', Arial, sans-serif",
+      fontFamily: ts.fontFamily,
       backgroundColor: '#ffffff',
       width: '210mm',
       height: '296mm',
@@ -524,15 +541,18 @@ const A4Wrapper: React.FC<{ id?: string; children: React.ReactNode; footer: Reac
       </div>
     </div>
   </div>
-);
+  );
+};
 
 
 // ─── RecommendationsPage: Segunda hoja con estética de tarjetas ────────────────
 const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
+  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
   const cardStyle: React.CSSProperties = {
-    backgroundColor: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: '16px',
+    backgroundColor: ts.recsCardBackground,
+    border: ts.recsCardBorder,
+    borderRadius: ts.recsCardRadius,
+    boxShadow: ts.recsCardShadow,
     padding: '16px',
     height: '100%',
     boxSizing: 'border-box',
@@ -542,7 +562,7 @@ const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
   };
 
   const sectionTitleStyle: React.CSSProperties = {
-    fontSize: '14px',
+    fontSize: `${14 * ts.fontSizeMultiplier}px`,
     fontWeight: 800,
     color: '#0f172a',
     display: 'flex',
@@ -568,7 +588,7 @@ const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
     justifyContent: 'center',
     flexShrink: 0,
     marginTop: '2px',
-    fontSize: '10px',
+    fontSize: `${10 * ts.fontSizeMultiplier}px`,
     color: '#fff',
   });
 
@@ -579,13 +599,13 @@ const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
   };
 
   const itemTitleStyle: React.CSSProperties = {
-    fontSize: '10px',
+    fontSize: `${10 * ts.fontSizeMultiplier}px`,
     fontWeight: 700,
     color: '#1e293b',
   };
 
   const itemDescStyle: React.CSSProperties = {
-    fontSize: '9px',
+    fontSize: `${9 * ts.fontSizeMultiplier}px`,
     color: '#64748b',
     lineHeight: '1.3',
   };
@@ -627,7 +647,7 @@ const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
       <Header nutritionist={data.nutritionist} planTitle={titles.planTitle} />
       <PatientBar patient={data.patient} kcal={data.kcal} />
 
-      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '15px', textAlign: 'center' }}>
+      <div style={{ fontSize: `${12 * ts.fontSizeMultiplier}px`, fontWeight: 800, color: ts.colors.primary, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '15px', textAlign: 'center' }}>
         {titles.page2Title}
       </div>
 
@@ -707,7 +727,9 @@ const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
 };
 
 // ─── Plantilla V1: Domingo día libre ──────────────────────────────────────────
-export const MenuTemplateV1: React.FC<{ data: MenuPlanData }> = ({ data }) => (
+export const MenuTemplateV1: React.FC<{ data: MenuPlanData }> = ({ data }) => {
+  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  return (
   <div className="menu-template-container">
     <style>{PRINT_STYLES}</style>
     <style>{TEMPLATE_STYLES}</style>
@@ -715,7 +737,7 @@ export const MenuTemplateV1: React.FC<{ data: MenuPlanData }> = ({ data }) => (
       <Header nutritionist={data.nutritionist} planTitle={(data.sectionTitles || DEFAULT_SECTION_TITLES).planTitle} />
       <PatientBar patient={data.patient} kcal={data.kcal} />
       <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
-      <div style={{ fontSize: '10px', fontWeight: 800, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+      <div style={{ fontSize: `${10 * ts.fontSizeMultiplier}px`, fontWeight: 800, color: ts.colors.primary, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
         MENÚ SEMANAL
       </div>
       <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
@@ -730,14 +752,16 @@ export const MenuTemplateV1: React.FC<{ data: MenuPlanData }> = ({ data }) => (
       </div>
       <DomingoRow domingo={data.weeklyMenu.domingo as DomingoData} />
     </A4Wrapper>
-    
+
     {/* Segunda Hoja */}
     <RecommendationsPage data={data} />
   </div>
-);
+  );
+};
 
 // ─── Plantilla V2: Domingo como día normal (grid 3+4) ─────────────────────────
 export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
+  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
   const domingoV1 = data.weeklyMenu.domingo;
   const domingoV2 = data.weeklyMenu.domingoV2;
 
@@ -749,7 +773,7 @@ export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
         <Header nutritionist={data.nutritionist} planTitle={(data.sectionTitles || DEFAULT_SECTION_TITLES).planTitle} />
         <PatientBar patient={data.patient} kcal={data.kcal} />
         <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
-        <div style={{ fontSize: '10px', fontWeight: 800, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
+        <div style={{ fontSize: `${10 * ts.fontSizeMultiplier}px`, fontWeight: 800, color: ts.colors.primary, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
           MENÚ SEMANAL
         </div>
 
@@ -768,15 +792,15 @@ export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
           {domingoV2 ? (
             <DayCard label="DOMINGO" day={domingoV2} />
           ) : (
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', flex: 1, minWidth: 0 }}>
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: ts.cardRadius, overflow: 'hidden', flex: 1, minWidth: 0 }}>
               <div style={{
-                backgroundColor: '#1e293b', color: '#fff', textAlign: 'center',
-                padding: '5px 4px', fontWeight: 800, fontSize: '9px', letterSpacing: '1px',
+                backgroundColor: ts.colors.secondary, color: '#fff', textAlign: 'center',
+                padding: '5px 4px', fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: '1px',
               }}>
                 DOMINGO
               </div>
               <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                <div style={{ color: '#334155', fontSize: '8px', fontWeight: 600, lineHeight: '1.3', whiteSpace: 'pre-line' }}>
+                <div style={{ color: '#334155', fontSize: `${8 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: '1.3', whiteSpace: 'pre-line' }}>
                   {domingoV1.note}
                 </div>
               </div>
@@ -784,20 +808,20 @@ export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
           )}
         </div>
 
-        {/* ✅ Barra NOTAS + Hidratación */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+        {/* Barra NOTAS + Hidratación */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #e2e8f0', borderRadius: ts.cardRadius, overflow: 'hidden' }}>
           <tbody>
             <tr>
               <td style={{
-                backgroundColor: '#1e293b', color: '#fff',
-                padding: '10px 14px', fontWeight: 800, fontSize: '9px',
+                backgroundColor: ts.colors.secondary, color: '#fff',
+                padding: '10px 14px', fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`,
                 letterSpacing: '1px', whiteSpace: 'nowrap', verticalAlign: 'middle',
                 width: '1%',
               }}>
                 NOTAS
               </td>
               <td style={{ padding: '8px 14px', verticalAlign: 'middle' }}>
-                <div style={{ fontSize: '8.5px', color: '#334155', fontWeight: 600 }}>
+                <div style={{ fontSize: `${8.5 * ts.fontSizeMultiplier}px`, color: '#334155', fontWeight: 600 }}>
                   {domingoV2?.note || domingoV1.note}
                 </div>
               </td>
@@ -805,10 +829,10 @@ export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
                 padding: '8px 14px', textAlign: 'right', verticalAlign: 'middle',
                 borderLeft: '1px solid #f1f5f9', whiteSpace: 'nowrap', width: '1%',
               }}>
-                <div style={{ fontSize: '7px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600, marginBottom: '3px' }}>
+                <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600, marginBottom: '3px' }}>
                   META HIDRATACIÓN
                 </div>
-                <div style={{ fontSize: '9px', color: '#0f766e', fontWeight: 800 }}>
+                <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800 }}>
                   💧 {domingoV2?.hydration || domingoV1.hydration}
                 </div>
               </td>

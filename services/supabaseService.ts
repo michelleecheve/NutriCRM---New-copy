@@ -929,6 +929,7 @@ export const supabaseService = {
     isDefault?: boolean;
     footerConfig?: import('../types').MenuFooterConfig;
     sectionTitles?: import('../types').MenuSectionTitles;
+    visualTheme?: import('../types').VisualThemeConfig;
   }) {
     const payload: any = {
       owner_id:        template.ownerId,
@@ -939,6 +940,7 @@ export const supabaseService = {
       is_default:      template.isDefault ?? true,
       footer_config:   template.footerConfig ?? null,
       section_titles:  template.sectionTitles ?? null,
+      visual_theme:    template.visualTheme ?? null,
       updated_at:      new Date().toISOString(),
     };
     if (template.id) payload.id = template.id;
@@ -992,6 +994,7 @@ export const supabaseService = {
       isDefault:      db.is_default,
       footerConfig:   db.footer_config || undefined,
       sectionTitles:  db.section_titles || undefined,
+      visualTheme:    db.visual_theme || undefined,
       createdAt:      db.created_at,
       updatedAt:      db.updated_at,
     };

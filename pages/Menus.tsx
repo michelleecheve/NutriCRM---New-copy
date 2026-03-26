@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Layout, Eye, EyeOff, Trash2, Save, CheckCircle, ChevronDown } from 'lucide-react';
-import type { MenuFooterConfig, MenuSectionTitles } from '../types';
-import { DEFAULT_SECTION_TITLES } from '../types';
+import type { MenuFooterConfig, MenuSectionTitles, VisualThemeConfig } from '../types';
+import { DEFAULT_SECTION_TITLES, DEFAULT_VISUAL_THEME } from '../types';
+import { PALETTES } from '../components/menus_components/menu_css_templates/menuThemes';
+import type { Palette } from '../components/menus_components/menu_css_templates/menuThemes';
 import { MenuTemplateV1, MenuTemplateV2, MenuPlanData } from '../components/menus_components/MenuDesignTemplates';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
@@ -160,6 +162,9 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
   const [footerOpen, setFooterOpen] = useState(false);
   const [titlesOpen, setTitlesOpen] = useState(false);
   const [sectionTitles, setSectionTitles] = useState<MenuSectionTitles>(DEFAULT_SECTION_TITLES);
+  const [visualTheme, setVisualTheme] = useState<VisualThemeConfig>(DEFAULT_VISUAL_THEME);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [designOpen, setDesignOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [userProfile, setUserProfile] = useState(() => store.getUserProfile());
@@ -185,6 +190,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
         setSelectedTemplate(cached.templateDesign);
         if (cached.footerConfig) setFooterConfig(cached.footerConfig);
         if (cached.sectionTitles) setSectionTitles(cached.sectionTitles);
+        if (cached.visualTheme) setVisualTheme(cached.visualTheme);
         return;
       }
 
@@ -199,6 +205,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
           setSelectedTemplate(template.templateDesign);
           if (template.footerConfig) setFooterConfig(template.footerConfig);
           if (template.sectionTitles) setSectionTitles(template.sectionTitles);
+          if (template.visualTheme) setVisualTheme(template.visualTheme);
           // Actualizar store para futuras navegaciones
           (store as any).menuTemplate = template;
         }
@@ -215,6 +222,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
     templateDesign?: string;
     footerConfig?: MenuFooterConfig;
     sectionTitles?: MenuSectionTitles;
+    visualTheme?: VisualThemeConfig;
   }) => {
     const userId = authStore.getCurrentUser()?.id;
     if (!userId) return;
@@ -229,6 +237,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
         isDefault:      true,
         footerConfig:   updates.footerConfig ?? footerConfig,
         sectionTitles:  updates.sectionTitles ?? sectionTitles,
+        visualTheme:    updates.visualTheme ?? visualTheme,
       });
       setTemplateId(saved.id);
     } catch (err) {
@@ -657,6 +666,232 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
               className="text-xs text-slate-400 hover:text-slate-600 underline transition-colors"
             >
               Restaurar valores por defecto
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Personalizar Diseño de Página */}
+      <div className="border-b border-slate-100">
+        <button
+          onClick={() => setDesignOpen(o => !o)}
+          className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+        >
+          <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <span className="bg-emerald-100 text-emerald-600 p-1 rounded">🎨</span>
+            Diseño Visual del PDF
+          </h4>
+          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${designOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {designOpen && (
+          <div className="px-6 pb-6 space-y-5">
+            <p className="text-xs text-slate-500">Personaliza la apariencia del PDF exportado. Elige un tema, paleta de colores, fuente y escala de texto.</p>
+
+            {/* Selector de tema */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Tema</label>
+              <div className="flex gap-3">
+                {(['original', 'minimalista'] as const).map(themeId => {
+                  const isActive = visualTheme.theme === themeId;
+                  const firstPalette = PALETTES[themeId][0];
+                  return (
+                    <button
+                      key={themeId}
+                      onClick={() => {
+                        const defaultPalette = PALETTES[themeId][0];
+                        const next: VisualThemeConfig = {
+                          ...visualTheme,
+                          theme: themeId,
+                          colors: { primary: defaultPalette.primary, secondary: defaultPalette.secondary, tertiary: defaultPalette.tertiary },
+                          paletteId: defaultPalette.id,
+                        };
+                        setVisualTheme(next);
+                        saveTemplate({ visualTheme: next });
+                      }}
+                      className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
+                        isActive
+                          ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
+                          : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      <span
+                        className="w-5 h-5 rounded-full flex-shrink-0 border border-white shadow-sm"
+                        style={{ backgroundColor: firstPalette.primary }}
+                      />
+                      <span className="capitalize">{themeId === 'original' ? 'Original' : 'Minimalista'}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Paletas predefinidas */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Paleta de Color</label>
+              <div className="flex gap-3 flex-wrap">
+                {PALETTES[visualTheme.theme].map((palette: Palette) => {
+                  const isActive = visualTheme.paletteId === palette.id;
+                  return (
+                    <button
+                      key={palette.id}
+                      title={palette.name}
+                      onClick={() => {
+                        const next: VisualThemeConfig = {
+                          ...visualTheme,
+                          colors: { primary: palette.primary, secondary: palette.secondary, tertiary: palette.tertiary },
+                          paletteId: palette.id,
+                        };
+                        setVisualTheme(next);
+                        saveTemplate({ visualTheme: next });
+                      }}
+                      className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
+                        isActive ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex gap-1">
+                        <span className="w-5 h-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: palette.primary }} />
+                        <span className="w-5 h-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: palette.secondary }} />
+                        <span className="w-5 h-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: palette.tertiary }} />
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-medium leading-none">{palette.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Acordeón colores avanzados */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setColorPickerOpen(o => !o)}
+                className="w-full px-4 py-2.5 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors text-xs font-bold text-slate-600 uppercase tracking-wide"
+              >
+                <span>▸ Personalizar colores</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${colorPickerOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {colorPickerOpen && (
+                <div className="p-4 space-y-3 bg-white">
+                  {(
+                    [
+                      { key: 'primary',   label: 'Color primario'   },
+                      { key: 'secondary', label: 'Color secundario' },
+                      { key: 'tertiary',  label: 'Color terciario'  },
+                    ] as { key: keyof VisualThemeConfig['colors']; label: string }[]
+                  ).map(({ key, label }) => (
+                    <div key={key} className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={visualTheme.colors[key]}
+                        onChange={e => {
+                          const next: VisualThemeConfig = {
+                            ...visualTheme,
+                            colors: { ...visualTheme.colors, [key]: e.target.value },
+                            paletteId: 'custom',
+                          };
+                          setVisualTheme(next);
+                        }}
+                        onBlur={() => saveTemplate({ visualTheme })}
+                        className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white"
+                      />
+                      <label className="text-xs text-slate-600 font-medium w-32 flex-shrink-0">{label}</label>
+                      <input
+                        type="text"
+                        value={visualTheme.colors[key]}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (/^#[0-9a-fA-F]{0,6}$/.test(val)) {
+                            setVisualTheme(prev => ({
+                              ...prev,
+                              colors: { ...prev.colors, [key]: val },
+                              paletteId: 'custom',
+                            }));
+                          }
+                        }}
+                        onBlur={e => {
+                          if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
+                            saveTemplate({ visualTheme });
+                          }
+                        }}
+                        maxLength={7}
+                        className="w-24 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-mono focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Selector de fuente */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Fuente</label>
+              <div className="flex gap-2">
+                {(
+                  [
+                    { value: 'sans',     label: 'Sans',      hint: 'Arial / Helvetica' },
+                    { value: 'serif',    label: 'Serif',     hint: 'Georgia' },
+                    { value: 'humanist', label: 'Humanista', hint: 'Trebuchet MS' },
+                  ] as { value: VisualThemeConfig['font']; label: string; hint: string }[]
+                ).map(opt => (
+                  <button
+                    key={opt.value}
+                    title={opt.hint}
+                    onClick={() => {
+                      const next: VisualThemeConfig = { ...visualTheme, font: opt.value };
+                      setVisualTheme(next);
+                      saveTemplate({ visualTheme: next });
+                    }}
+                    className={`flex-1 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
+                      visualTheme.font === opt.value
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Selector de escala */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Escala de Texto</label>
+              <div className="flex gap-2">
+                {(
+                  [
+                    { value: 'compact',  label: 'Compacto'  },
+                    { value: 'normal',   label: 'Normal'    },
+                    { value: 'spacious', label: 'Espacioso' },
+                  ] as { value: VisualThemeConfig['sizeScale']; label: string }[]
+                ).map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      const next: VisualThemeConfig = { ...visualTheme, sizeScale: opt.value };
+                      setVisualTheme(next);
+                      saveTemplate({ visualTheme: next });
+                    }}
+                    className={`flex-1 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
+                      visualTheme.sizeScale === opt.value
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Reset */}
+            <button
+              onClick={() => {
+                setVisualTheme(DEFAULT_VISUAL_THEME);
+                saveTemplate({ visualTheme: DEFAULT_VISUAL_THEME });
+              }}
+              className="text-xs text-slate-400 hover:text-slate-600 underline transition-colors"
+            >
+              Restaurar diseño por defecto
             </button>
           </div>
         )}
