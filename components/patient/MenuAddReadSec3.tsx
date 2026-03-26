@@ -132,6 +132,13 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   evaluationId,
   onSave
 }) => {
+  // ── Helper: merge current template sectionTitles into a MenuPlanData ──────────
+  const withTemplateTitles = (plan: MenuPlanData): MenuPlanData => {
+    const st = store.getMenuTemplate()?.sectionTitles;
+    if (!st) return plan;
+    return { ...plan, sectionTitles: plan.sectionTitles ?? st };
+  };
+
   const [isVisible, setIsVisible] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLocked, setIsLocked] = useState<boolean>(() => {
@@ -198,7 +205,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   // ─── Iniciar Menú en Blanco ────────────────────────────────────────────────
   const handleStartBlank = () => {
     const blank = buildBlankMenuPlanData(patient, vetData, getNutritionistData(), evaluationId);
-    setMenuPreviewData(blank);
+    setMenuPreviewData(withTemplateTitles(blank));
     setAiRationale('');
     setAiDraftText('');
   };
@@ -284,7 +291,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       recommendations: recommendations
     };
 
-    setMenuPreviewData(withPatient);
+    setMenuPreviewData(withTemplateTitles(withPatient));
     setAiRationale('');
     setAiDraftText('');
     setShowCopyRefModal(false);
@@ -375,24 +382,24 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       if (scope === 'page1') {
         // Keep existing recommendations if any
         const currentRecs = menuPreviewData?.recommendations;
-        setMenuPreviewData({
+        setMenuPreviewData(withTemplateTitles({
           ...finalPlan,
           recommendations: currentRecs || finalPlan.recommendations
-        });
+        }));
       } else if (scope === 'page2') {
         // Keep existing menu if any, but update patient info and recommendations
         if (menuPreviewData) {
-          setMenuPreviewData({
+          setMenuPreviewData(withTemplateTitles({
             ...menuPreviewData,
             patient: finalPlan.patient,
             kcal: finalPlan.kcal,
             recommendations: finalPlan.recommendations
-          });
+          }));
         } else {
-          setMenuPreviewData(finalPlan);
+          setMenuPreviewData(withTemplateTitles(finalPlan));
         }
       } else {
-        setMenuPreviewData(finalPlan);
+        setMenuPreviewData(withTemplateTitles(finalPlan));
       }
 
       setAiRationale(result.rationale);

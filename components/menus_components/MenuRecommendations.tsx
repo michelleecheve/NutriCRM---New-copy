@@ -3,7 +3,7 @@ import {
   FileText, Plus, Trash2, Eye, Save, X, 
   ChevronLeft, ChevronRight, ClipboardList
 } from 'lucide-react';
-import { MenuRecommendationRecord, MenuRecommendationData } from '../../types';
+import { MenuRecommendationRecord, MenuRecommendationData, DEFAULT_SECTION_TITLES } from '../../types';
 import { store } from '../../services/store';
 
 const emptyRecData = (): MenuRecommendationData => ({
@@ -206,12 +206,15 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
               </div>
 
               <div className="grid grid-cols-1 gap-8">
-                {[
-                  { key: 'preparacion', label: 'Preparación de Alimentos', icon: '🍳' },
-                  { key: 'restricciones', label: 'Restricciones Específicas', icon: '🚫' },
-                  { key: 'habitos', label: 'Hábitos Saludables', icon: '❤️' },
-                  { key: 'organizacion', label: 'Organización y Horarios', icon: '⏰' },
-                ].map(field => (
+                {(() => {
+                  const t = store.getMenuTemplate()?.sectionTitles || DEFAULT_SECTION_TITLES;
+                  return [
+                    { key: 'preparacion', label: t.preparacionTitle, icon: t.preparacionEmoji },
+                    { key: 'restricciones', label: t.restriccionesTitle, icon: t.restriccionesEmoji },
+                    { key: 'habitos', label: t.habitosTitle, icon: t.habitosEmoji },
+                    { key: 'organizacion', label: t.organizacionTitle, icon: t.organizacionEmoji },
+                  ];
+                })().map(field => (
                   <div key={field.key} className="space-y-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">

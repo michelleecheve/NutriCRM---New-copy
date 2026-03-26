@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Layout, Eye, EyeOff, Trash2, Save, CheckCircle, ChevronDown } from 'lucide-react';
-import type { MenuFooterConfig } from '../types';
+import type { MenuFooterConfig, MenuSectionTitles } from '../types';
+import { DEFAULT_SECTION_TITLES } from '../types';
 import { MenuTemplateV1, MenuTemplateV2, MenuPlanData } from '../components/menus_components/MenuDesignTemplates';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
@@ -157,6 +158,8 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
   const [footerConfig, setFooterConfig] = useState<MenuFooterConfig>(DEFAULT_FOOTER_CONFIG);
   const [membreteOpen, setMembreteOpen] = useState(false);
   const [footerOpen, setFooterOpen] = useState(false);
+  const [titlesOpen, setTitlesOpen] = useState(false);
+  const [sectionTitles, setSectionTitles] = useState<MenuSectionTitles>(DEFAULT_SECTION_TITLES);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [userProfile, setUserProfile] = useState(() => store.getUserProfile());
@@ -181,6 +184,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
         setLogoUrl(cached.logoUrl || undefined);
         setSelectedTemplate(cached.templateDesign);
         if (cached.footerConfig) setFooterConfig(cached.footerConfig);
+        if (cached.sectionTitles) setSectionTitles(cached.sectionTitles);
         return;
       }
 
@@ -194,6 +198,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
           setLogoUrl(template.logoUrl || undefined);
           setSelectedTemplate(template.templateDesign);
           if (template.footerConfig) setFooterConfig(template.footerConfig);
+          if (template.sectionTitles) setSectionTitles(template.sectionTitles);
           // Actualizar store para futuras navegaciones
           (store as any).menuTemplate = template;
         }
@@ -209,6 +214,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
     logoUrl?: string | undefined;
     templateDesign?: string;
     footerConfig?: MenuFooterConfig;
+    sectionTitles?: MenuSectionTitles;
   }) => {
     const userId = authStore.getCurrentUser()?.id;
     if (!userId) return;
@@ -222,6 +228,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
         templateDesign: updates.templateDesign ?? selectedTemplate,
         isDefault:      true,
         footerConfig:   updates.footerConfig ?? footerConfig,
+        sectionTitles:  updates.sectionTitles ?? sectionTitles,
       });
       setTemplateId(saved.id);
     } catch (err) {
@@ -330,6 +337,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
   const mockData = buildMockData(userProfile, selectedTemplate);
   const dataWithLogo = {
     ...mockData,
+    sectionTitles,
     nutritionist: {
       ...mockData.nutritionist,
       logoUrl: headerMode === 'logo' ? logoUrl : undefined,
@@ -566,6 +574,91 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
           ))}
         </div>
         </div>
+        )}
+      </div>
+
+      {/* Personalizar Títulos de Página 2 */}
+      <div className="border-b border-slate-100">
+        <button
+          onClick={() => setTitlesOpen(o => !o)}
+          className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
+        >
+          <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <span className="bg-emerald-100 text-emerald-600 p-1 rounded">✏️</span>
+            Personalizar Títulos del Menú
+          </h4>
+          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${titlesOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {titlesOpen && (
+          <div className="px-6 pb-6 space-y-5">
+            <p className="text-xs text-slate-500">Personaliza los textos que aparecen en el menú. Los cambios se aplican al preview y al PDF exportado.</p>
+
+            {/* Plan title */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Título principal (esquina superior derecha)</label>
+              <p className="text-[11px] text-slate-400">Usa Enter para separar en dos líneas (ej: "Plan de Alimentación" + "Personalizado")</p>
+              <textarea
+                rows={2}
+                value={sectionTitles.planTitle}
+                onChange={e => setSectionTitles(t => ({ ...t, planTitle: e.target.value }))}
+                onBlur={e => saveTemplate({ sectionTitles: { ...sectionTitles, planTitle: e.target.value } })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none"
+              />
+            </div>
+
+            {/* Page 2 title */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Título Página 2 (encabezado de recomendaciones)</label>
+              <input
+                type="text"
+                value={sectionTitles.page2Title}
+                onChange={e => setSectionTitles(t => ({ ...t, page2Title: e.target.value }))}
+                onBlur={e => saveTemplate({ sectionTitles: { ...sectionTitles, page2Title: e.target.value } })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+              />
+            </div>
+
+            {/* Section titles */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Títulos de las 4 secciones</label>
+              {([
+                { emojiKey: 'preparacionEmoji', titleKey: 'preparacionTitle' },
+                { emojiKey: 'restriccionesEmoji', titleKey: 'restriccionesTitle' },
+                { emojiKey: 'habitosEmoji', titleKey: 'habitosTitle' },
+                { emojiKey: 'organizacionEmoji', titleKey: 'organizacionTitle' },
+              ] as { emojiKey: keyof MenuSectionTitles; titleKey: keyof MenuSectionTitles }[]).map(({ emojiKey, titleKey }) => (
+                <div key={titleKey} className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    value={sectionTitles[emojiKey] as string}
+                    onChange={e => setSectionTitles(t => ({ ...t, [emojiKey]: e.target.value }))}
+                    onBlur={e => saveTemplate({ sectionTitles: { ...sectionTitles, [emojiKey]: e.target.value } })}
+                    className="w-14 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-sm text-center focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                    maxLength={4}
+                  />
+                  <input
+                    type="text"
+                    value={sectionTitles[titleKey] as string}
+                    onChange={e => setSectionTitles(t => ({ ...t, [titleKey]: e.target.value }))}
+                    onBlur={e => saveTemplate({ sectionTitles: { ...sectionTitles, [titleKey]: e.target.value } })}
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Reset button */}
+            <button
+              onClick={() => {
+                setSectionTitles(DEFAULT_SECTION_TITLES);
+                saveTemplate({ sectionTitles: DEFAULT_SECTION_TITLES });
+              }}
+              className="text-xs text-slate-400 hover:text-slate-600 underline transition-colors"
+            >
+              Restaurar valores por defecto
+            </button>
+          </div>
         )}
       </div>
 

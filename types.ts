@@ -421,6 +421,32 @@ export interface MenuFooterConfig {
   showAddress: boolean;
 }
 
+export interface MenuSectionTitles {
+  planTitle: string;
+  page2Title: string;
+  preparacionEmoji: string;
+  preparacionTitle: string;
+  restriccionesEmoji: string;
+  restriccionesTitle: string;
+  habitosEmoji: string;
+  habitosTitle: string;
+  organizacionEmoji: string;
+  organizacionTitle: string;
+}
+
+export const DEFAULT_SECTION_TITLES: MenuSectionTitles = {
+  planTitle: 'Plan de Alimentación\nPersonalizado',
+  page2Title: 'RECOMENDACIONES Y HÁBITOS',
+  preparacionEmoji: '🍳',
+  preparacionTitle: 'PREPARACIÓN DE ALIMENTOS',
+  restriccionesEmoji: '🚫',
+  restriccionesTitle: 'RESTRICCIONES ESPECÍFICAS',
+  habitosEmoji: '❤️',
+  habitosTitle: 'HÁBITOS SALUDABLES',
+  organizacionEmoji: '⏰',
+  organizacionTitle: 'ORGANIZACIÓN Y HORARIOS',
+};
+
 export interface MenuTemplate {
   id: string;
   ownerId: string;
@@ -430,6 +456,7 @@ export interface MenuTemplate {
   templateDesign: MenuTemplateDesign;
   isDefault: boolean;
   footerConfig?: MenuFooterConfig;
+  sectionTitles?: MenuSectionTitles;
   createdAt?: string;
   updatedAt?: string;
 }

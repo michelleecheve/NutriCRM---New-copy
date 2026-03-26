@@ -1,5 +1,6 @@
 import React from 'react';
-import type { MenuFooterConfig } from '../../types';
+import type { MenuFooterConfig, MenuSectionTitles } from '../../types';
+import { DEFAULT_SECTION_TITLES } from '../../types';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 export interface MealPortions {
@@ -81,6 +82,7 @@ export interface MenuPlanData {
     domingoV2?: DomingoV2; // ✅ Siempre V2 (tiempos de comida)
   };
   recommendations?: MenuRecommendations;
+  sectionTitles?: MenuSectionTitles;
   nutritionist: {
     name: string;
     professionalTitle: string;
@@ -195,7 +197,9 @@ const DayCard: React.FC<{ label: string; day: MenuDay; isFullWidth?: boolean }> 
 };
 
 // ── Header: sin flex para centrado vertical, usa padding explícito ─────────────
-const Header: React.FC<{ nutritionist: MenuPlanData['nutritionist'] }> = ({ nutritionist }) => (
+const Header: React.FC<{ nutritionist: MenuPlanData['nutritionist']; planTitle?: string }> = ({ nutritionist, planTitle }) => {
+  const titleParts = (planTitle || DEFAULT_SECTION_TITLES.planTitle).split('\n');
+  return (
   <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px' }}>
     <tbody>
       <tr>
@@ -241,17 +245,22 @@ const Header: React.FC<{ nutritionist: MenuPlanData['nutritionist'] }> = ({ nutr
         </td>
         {/* Right: plan title */}
         <td style={{ verticalAlign: 'middle', textAlign: 'right', padding: 0 }}>
-          <div style={{ color: '#0f766e', fontSize: '15px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', lineHeight: 1.15 }}>
-            Plan de Alimentación
-          </div>
-          <div style={{ color: '#0f766e', fontSize: '13px', fontWeight: 700, letterSpacing: '0.5px', lineHeight: 1.15 }}>
-            Personalizado
-          </div>
+          {titleParts[0] && (
+            <div style={{ color: '#0f766e', fontSize: '15px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', lineHeight: 1.15 }}>
+              {titleParts[0]}
+            </div>
+          )}
+          {titleParts[1] && (
+            <div style={{ color: '#0f766e', fontSize: '13px', fontWeight: 700, letterSpacing: '0.5px', lineHeight: 1.15 }}>
+              {titleParts[1]}
+            </div>
+          )}
         </td>
       </tr>
     </tbody>
   </table>
-);
+  );
+};
 
 // ── PatientBar: tabla en lugar de flex — verticalAlign resuelve el centrado ────
 const PatientBar: React.FC<{ patient: MenuPlanData['patient']; kcal: number }> = ({ patient, kcal }) => (
@@ -611,20 +620,21 @@ const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
   };
 
   const recs = data.recommendations || defaultRecs;
+  const titles = data.sectionTitles || DEFAULT_SECTION_TITLES;
 
   return (
     <A4Wrapper id="recommendations-page" footer={<Footer nutritionist={data.nutritionist} />}>
-      <Header nutritionist={data.nutritionist} />
+      <Header nutritionist={data.nutritionist} planTitle={titles.planTitle} />
       <PatientBar patient={data.patient} kcal={data.kcal} />
-      
+
       <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '15px', textAlign: 'center' }}>
-        RECOMENDACIONES Y HÁBITOS
+        {titles.page2Title}
       </div>
 
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
-        gridTemplateRows: '1fr 1fr', 
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gridTemplateRows: '1fr 1fr',
         gap: '15px',
         height: 'calc(100% - 160px)',
         maxHeight: 'calc(296mm - 280px)',
@@ -633,7 +643,7 @@ const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
         {/* Sección 1: Preparación */}
         <div style={cardStyle}>
           <div style={sectionTitleStyle}>
-            <span style={{ fontSize: '18px' }}>🍳</span> PREPARACIÓN DE ALIMENTOS
+            <span style={{ fontSize: '18px' }}>{titles.preparacionEmoji}</span> {titles.preparacionTitle}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {recs.preparacion.map((text, i) => (
@@ -650,7 +660,7 @@ const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
         {/* Sección 2: Restricciones */}
         <div style={cardStyle}>
           <div style={sectionTitleStyle}>
-            <span style={{ fontSize: '18px' }}>🚫</span> RESTRICCIONES ESPECÍFICAS
+            <span style={{ fontSize: '18px' }}>{titles.restriccionesEmoji}</span> {titles.restriccionesTitle}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {recs.restricciones.map((text, i) => (
@@ -665,7 +675,7 @@ const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
         {/* Sección 3: Hábitos */}
         <div style={cardStyle}>
           <div style={sectionTitleStyle}>
-            <span style={{ fontSize: '18px' }}>❤️</span> HÁBITOS SALUDABLES
+            <span style={{ fontSize: '18px' }}>{titles.habitosEmoji}</span> {titles.habitosTitle}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {recs.habitos.map((text, i) => (
@@ -680,7 +690,7 @@ const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
         {/* Sección 4: Organización */}
         <div style={cardStyle}>
           <div style={sectionTitleStyle}>
-            <span style={{ fontSize: '18px' }}>⏰</span> ORGANIZACIÓN Y HORARIOS
+            <span style={{ fontSize: '18px' }}>{titles.organizacionEmoji}</span> {titles.organizacionTitle}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {recs.organizacion.map((text, i) => (
@@ -702,7 +712,7 @@ export const MenuTemplateV1: React.FC<{ data: MenuPlanData }> = ({ data }) => (
     <style>{PRINT_STYLES}</style>
     <style>{TEMPLATE_STYLES}</style>
     <A4Wrapper id="menu-page-1" footer={<Footer nutritionist={data.nutritionist} />}>
-      <Header nutritionist={data.nutritionist} />
+      <Header nutritionist={data.nutritionist} planTitle={(data.sectionTitles || DEFAULT_SECTION_TITLES).planTitle} />
       <PatientBar patient={data.patient} kcal={data.kcal} />
       <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
       <div style={{ fontSize: '10px', fontWeight: 800, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>
@@ -736,7 +746,7 @@ export const MenuTemplateV2: React.FC<{ data: MenuPlanData }> = ({ data }) => {
       <style>{PRINT_STYLES}</style>
       <style>{TEMPLATE_STYLES}</style>
       <A4Wrapper id="menu-page-1" footer={<Footer nutritionist={data.nutritionist} />}>
-        <Header nutritionist={data.nutritionist} />
+        <Header nutritionist={data.nutritionist} planTitle={(data.sectionTitles || DEFAULT_SECTION_TITLES).planTitle} />
         <PatientBar patient={data.patient} kcal={data.kcal} />
         <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
         <div style={{ fontSize: '10px', fontWeight: 800, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>

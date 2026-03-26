@@ -305,7 +305,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         recommendationIds: selectedRecommendationIds
       }),
       templateId: selectedPreviewTemplate,
-      menuData: menuPreviewData,
+      menuData: menuPreviewData ? {
+        ...menuPreviewData,
+        sectionTitles: menuPreviewData.sectionTitles ?? store.getMenuTemplate()?.sectionTitles,
+      } : menuPreviewData,
       name: menuName || `Menú ${vetData.kcalToWork} kcal`,
       content: aiDraftText,
       aiRationale: aiRationale
@@ -378,7 +381,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         recommendationIds: selectedRecommendationIds
       }),
       templateId: selectedPreviewTemplate,
-      menuData: menuPreviewData,
+      menuData: menuPreviewData ? {
+        ...menuPreviewData,
+        sectionTitles: menuPreviewData.sectionTitles ?? store.getMenuTemplate()?.sectionTitles,
+      } : menuPreviewData,
       name: menuName || `Menú ${vetData.kcalToWork} kcal`,
       content: aiDraftText,
       aiRationale: aiRationale

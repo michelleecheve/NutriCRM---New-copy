@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronUp, Sun, UtensilsCrossed, Moon, Star, Flame, Smile, ClipboardList, LayoutGrid } from 'lucide-react';
 import { supabase } from '../../services/supabase';
-import { GeneratedMenu, TrackingRow } from '../../types';
+import { GeneratedMenu, TrackingRow, DEFAULT_SECTION_TITLES } from '../../types';
 import { MealCard, MealCardInfo, MealData, MealUpdate } from './MealCard';
 import { PortalPatient, PortalNutritionist } from './PortalShell';
 
@@ -694,28 +694,29 @@ export const DayMenuView: React.FC<Props> = ({
           );
           if (!hasRecs) return null;
 
+          const st = menu.menuData?.sectionTitles || DEFAULT_SECTION_TITLES;
           const sections = [
             {
               key: 'preparacion' as const,
-              title: 'Preparación de Alimentos',
+              title: `${st.preparacionEmoji} ${st.preparacionTitle}`,
               accent: '#F59E0B',
               border: '#FDE68A',
             },
             {
               key: 'restricciones' as const,
-              title: 'Restricciones Específicas',
+              title: `${st.restriccionesEmoji} ${st.restriccionesTitle}`,
               accent: '#F43F5E',
               border: '#FECDD3',
             },
             {
               key: 'habitos' as const,
-              title: 'Hábitos Saludables',
+              title: `${st.habitosEmoji} ${st.habitosTitle}`,
               accent: '#10B981',
               border: '#A7F3D0',
             },
             {
               key: 'organizacion' as const,
-              title: 'Organización y Horarios',
+              title: `${st.organizacionEmoji} ${st.organizacionTitle}`,
               accent: '#6366F1',
               border: '#C7D2FE',
             },
@@ -765,7 +766,7 @@ export const DayMenuView: React.FC<Props> = ({
                       color: showRecs ? 'white' : '#111827',
                       margin: 0,
                       lineHeight: 1.2,
-                    }}>Recomendaciones y Hábitos</p>
+                    }}>{(menu.menuData?.sectionTitles || DEFAULT_SECTION_TITLES).page2Title}</p>
                     <p style={{
                       fontSize: '11px',
                       fontWeight: 500,
