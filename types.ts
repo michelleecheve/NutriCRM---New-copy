@@ -554,6 +554,7 @@ export interface PatientEvaluation {
 }
 
 export enum AppRoute {
+  LANDING           = 'landing',
   LOGIN             = 'login',
   REGISTER          = 'register',
   RESET_PASSWORD    = 'reset-password',

@@ -14,6 +14,15 @@ import { Menus } from './pages/Menus';
 import { AdminPanel } from './pages/Admin';
 import { AppRoute, UserRole } from './types';
 import { authStore } from './services/authStore';
+import { Landing } from './pages/Landing';
+
+function getInitialRoute(): string {
+  const path = window.location.pathname;
+  if (path === '/login')          return AppRoute.LOGIN;
+  if (path === '/register')       return AppRoute.REGISTER;
+  if (path === '/reset-password') return AppRoute.RESET_PASSWORD;
+  return AppRoute.LANDING;
+}
 
 function getHomeRoute(role?: UserRole): string {
   switch (role) {
@@ -25,7 +34,7 @@ function getHomeRoute(role?: UserRole): string {
 
 function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
-  const [currentRoute, setCurrentRoute] = useState<string>(AppRoute.LOGIN);
+  const [currentRoute, setCurrentRoute] = useState<string>(getInitialRoute());
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
 
@@ -45,8 +54,13 @@ function App() {
         });
       } else {
         setCurrentRoute(prev => {
-          if (prev !== AppRoute.REGISTER && prev !== AppRoute.RESET_PASSWORD) return AppRoute.LOGIN;
-          return prev;
+          if (
+            prev === AppRoute.REGISTER ||
+            prev === AppRoute.RESET_PASSWORD ||
+            prev === AppRoute.LOGIN ||
+            prev === AppRoute.LANDING
+          ) return prev;
+          return AppRoute.LANDING;
         });
         setSelectedPatientId(null);
       }
@@ -104,8 +118,11 @@ function App() {
 
   const renderContent = () => {
     switch (currentRoute) {
+      case AppRoute.LANDING:
+        return <Landing />;
+
       case AppRoute.LOGIN:
-        return <Login onLogin={handleLogin} onNavigateToRegister={() => setCurrentRoute(AppRoute.REGISTER)} />;
+        return <Login onLogin={handleLogin} onNavigateToRegister={() => setCurrentRoute(AppRoute.REGISTER)} onNavigateToLanding={() => setCurrentRoute(AppRoute.LANDING)} />;
 
       case AppRoute.REGISTER:
         return <Register onBack={() => setCurrentRoute(AppRoute.LOGIN)} onSuccess={() => setCurrentRoute(getHomeRoute(authStore.getCurrentUser()?.role))} />;
@@ -148,11 +165,11 @@ function App() {
         return <AdminPanel />;
 
       default:
-        return <Login onLogin={handleLogin} />;
+        return <Login onLogin={handleLogin} onNavigateToLanding={() => setCurrentRoute(AppRoute.LANDING)} />;
     }
   };
 
-  if (currentRoute === AppRoute.LOGIN || currentRoute === AppRoute.REGISTER || currentRoute === AppRoute.RESET_PASSWORD) {
+  if (currentRoute === AppRoute.LANDING || currentRoute === AppRoute.LOGIN || currentRoute === AppRoute.REGISTER || currentRoute === AppRoute.RESET_PASSWORD) {
     return renderContent();
   }
 

@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npx tsc:*)",
       "Bash(xargs grep:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(grep -r \"BarChart\\\\|LineChart\" 'C:\\\\Users\\\\miche\\\\Downloads\\\\Github clone\\\\NutriCRM---New-copy' --include=*.tsx --include=*.ts)",
+      "Bash(grep -r \"chart\\\\|Chart\" \"C:\\\\Users\\\\miche\\\\Downloads\\\\Github clone\\\\NutriCRM---New-copy\" --include=\"*.tsx\" --include=\"*.ts\" --include=\"*.js\" ! -path \"*/node_modules/*\")",
+      "Bash(grep -rn \"getElementById\\\\|querySelector\" 'C:\\\\Users\\\\miche\\\\Downloads\\\\Github clone\\\\NutriCRM---New-copy' --include=*.tsx --include=*.ts --include=*.js)"
     ]
   }
 }

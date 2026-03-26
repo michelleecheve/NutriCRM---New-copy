@@ -7,11 +7,12 @@ import { UserRole } from '../types';
 interface LoginProps {
   onLogin: (role: UserRole) => void;
   onNavigateToRegister: () => void;
+  onNavigateToLanding?: () => void;
 }
 
 type LoginView = 'login' | 'forgot' | 'forgot-sent';
 
-export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onNavigateToLanding }) => {
   const [view, setView] = useState<LoginView>('login');
 
   // Login state
@@ -168,9 +169,22 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister }) =
   // ── Vista: login principal ────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundImage: 'url(/backgroundimage.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      {onNavigateToLanding && (
+        <button
+          onClick={onNavigateToLanding}
+          className="absolute top-5 left-5 flex items-center gap-1.5 text-slate-900 hover:text-slate-700 text-base font-medium transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Ir a Inicio
+        </button>
+      )}
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
         <div className="p-10 text-center">
-          <div className="w-16 h-16 mx-auto mb-6">
+          <div
+            className="w-16 h-16 mx-auto mb-6 cursor-pointer"
+            onClick={onNavigateToLanding}
+            title="Ir a Inicio"
+          >
             <img src="/logo_nutrifollow.png" alt="NutriFollow" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Bienvenido a NutriFollow</h1>
