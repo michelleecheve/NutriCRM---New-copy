@@ -3,7 +3,8 @@ import {
   Eye, EyeOff, User, Table as TableIcon, Calendar, FileText,
   Droplets, Edit3, MoveUp, MoveDown, Plus, Trash2, Save, X
 } from 'lucide-react';
-import { Patient, VetCalculation, PortionsRecord } from '../../types';
+import { Patient, VetCalculation, PortionsRecord, DEFAULT_SECTION_TITLES } from '../../types';
+import type { MenuSectionTitles } from '../../types';
 import { MenuPlanData, MenuDay, DayMeal, MealPortions } from './MenuDesignTemplates';
 
 type RecSection = 'preparacion' | 'restricciones' | 'habitos' | 'organizacion';
@@ -18,7 +19,22 @@ export interface MenuEditorToolbarHandle {
   openRecSection: (section: RecSection) => void;
   openDomingoLibre: () => void;
   openDomingoCompleto: () => void;
+  openPlanTitle: () => void;
+  openPage2Title: () => void;
 }
+
+const SECTION_EMOJI_KEY: Record<RecSection, keyof MenuSectionTitles> = {
+  preparacion:   'preparacionEmoji',
+  restricciones: 'restriccionesEmoji',
+  habitos:       'habitosEmoji',
+  organizacion:  'organizacionEmoji',
+};
+const SECTION_TITLE_KEY: Record<RecSection, keyof MenuSectionTitles> = {
+  preparacion:   'preparacionTitle',
+  restricciones: 'restriccionesTitle',
+  habitos:       'habitosTitle',
+  organizacion:  'organizacionTitle',
+};
 
 interface MenuEditorToolbarProps {
   menuPreviewData: MenuPlanData | null;
@@ -45,6 +61,8 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
     const [editingRecSection, setEditingRecSection] = useState<RecSection | null>(null);
     const [editingDomingoLibre, setEditingDomingoLibre] = useState(false);
     const [editingDomingoCompleto, setEditingDomingoCompleto] = useState(false);
+    const [editingPlanTitle, setEditingPlanTitle] = useState(false);
+    const [editingPage2Title, setEditingPage2Title] = useState(false);
 
     // ─── Expose open methods via ref ──────────────────────────────────────────
     useImperativeHandle(ref, () => ({
@@ -56,6 +74,8 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
       openRecSection:     (section) => setEditingRecSection(section),
       openDomingoLibre:   () => setEditingDomingoLibre(true),
       openDomingoCompleto:() => setEditingDomingoCompleto(true),
+      openPlanTitle:      () => setEditingPlanTitle(true),
+      openPage2Title:     () => setEditingPage2Title(true),
     }));
 
     // ─── Patient Info Editor ──────────────────────────────────────────────────
@@ -653,21 +673,57 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
     // ─── Recommendations Editor ───────────────────────────────────────────────
     const RecommendationsEditor = ({ section }: { section: RecSection }) => {
       if (!menuPreviewData) return null;
-      const titles: Record<RecSection, string> = { preparacion: 'Preparación de Alimentos', restricciones: 'Restricciones Específicas', habitos: 'Hábitos Saludables', organizacion: 'Organización y Horarios' };
+      const st = menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES;
       const currentRecs = menuPreviewData.recommendations || { preparacion: [], restricciones: [], habitos: [], organizacion: [] };
+      const emojiKey = SECTION_EMOJI_KEY[section];
+      const titleKey = SECTION_TITLE_KEY[section];
       const [localItems, setLocalItems] = useState<string[]>(currentRecs[section] || []);
+      const [localEmoji, setLocalEmoji] = useState<string>(st[emojiKey] as string);
+      const [localTitle, setLocalTitle] = useState<string>(st[titleKey] as string);
       const handleSave = () => {
-        setMenuPreviewData({ ...menuPreviewData, recommendations: { ...currentRecs, [section]: localItems.filter(i => i.trim() !== '') } });
+        const updatedSectionTitles: MenuSectionTitles = {
+          ...(menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES),
+          [emojiKey]: localEmoji,
+          [titleKey]: localTitle,
+        };
+        setMenuPreviewData({
+          ...menuPreviewData,
+          recommendations: { ...currentRecs, [section]: localItems.filter(i => i.trim() !== '') },
+          sectionTitles: updatedSectionTitles,
+        });
         setEditingRecSection(null);
       };
       return (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Edit3 className="w-5 h-5 text-indigo-600" />{titles[section]}</h3>
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-indigo-600" />
+                <span>{localEmoji}</span> {localTitle}
+              </h3>
               <button onClick={() => setEditingRecSection(null)} className="p-2 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
             </div>
-            <div className="p-8 overflow-y-auto flex-1 space-y-4">
+            <div className="p-6 overflow-y-auto flex-1 space-y-5">
+              {/* Section title editor */}
+              <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 space-y-2">
+                <p className="text-xs font-bold text-indigo-600 uppercase tracking-wide">Título de esta sección (solo este menú)</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={localEmoji}
+                    onChange={e => setLocalEmoji(e.target.value)}
+                    maxLength={4}
+                    className="w-14 bg-white border border-indigo-200 rounded-xl px-2 py-2 text-sm text-center focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
+                  />
+                  <input
+                    type="text"
+                    value={localTitle}
+                    onChange={e => setLocalTitle(e.target.value)}
+                    className="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
+                  />
+                </div>
+              </div>
+              {/* Content items */}
               <div className="flex items-center justify-between">
                 <p className="text-xs text-slate-400 font-medium italic">Agrega o edita las notas para esta sección.</p>
                 <button onClick={() => setLocalItems([...localItems, ''])} className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">
@@ -689,6 +745,87 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
             </div>
             <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50 rounded-b-3xl">
               <button onClick={() => setEditingRecSection(null)} className="px-6 py-2 font-bold text-slate-500 hover:bg-white rounded-xl transition-all">Cancelar</button>
+              <button onClick={handleSave} className="bg-indigo-600 text-white font-bold px-8 py-2 rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center gap-2">
+                <Save className="w-4 h-4" />Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ─── Plan Title Editor ────────────────────────────────────────────────────
+    const PlanTitleEditor = () => {
+      if (!menuPreviewData) return null;
+      const st = menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES;
+      const [localTitle, setLocalTitle] = useState(st.planTitle);
+      const handleSave = () => {
+        setMenuPreviewData({
+          ...menuPreviewData,
+          sectionTitles: { ...(menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES), planTitle: localTitle },
+        });
+        setEditingPlanTitle(false);
+      };
+      return (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-indigo-600" /> Título del Plan
+              </h3>
+              <button onClick={() => setEditingPlanTitle(false)} className="p-2 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+            <div className="p-6 space-y-3">
+              <p className="text-xs text-slate-400">Usa Enter para separar en dos líneas en el PDF (ej: "Plan de Alimentación" + "Personalizado")</p>
+              <textarea
+                rows={2}
+                value={localTitle}
+                onChange={e => setLocalTitle(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all resize-none"
+              />
+            </div>
+            <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50 rounded-b-3xl">
+              <button onClick={() => setEditingPlanTitle(false)} className="px-6 py-2 font-bold text-slate-500 hover:bg-white rounded-xl transition-all">Cancelar</button>
+              <button onClick={handleSave} className="bg-indigo-600 text-white font-bold px-8 py-2 rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center gap-2">
+                <Save className="w-4 h-4" />Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ─── Page 2 Title Editor ──────────────────────────────────────────────────
+    const Page2TitleEditor = () => {
+      if (!menuPreviewData) return null;
+      const st = menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES;
+      const [localTitle, setLocalTitle] = useState(st.page2Title);
+      const handleSave = () => {
+        setMenuPreviewData({
+          ...menuPreviewData,
+          sectionTitles: { ...(menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES), page2Title: localTitle },
+        });
+        setEditingPage2Title(false);
+      };
+      return (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-indigo-600" /> Título de Página 2
+              </h3>
+              <button onClick={() => setEditingPage2Title(false)} className="p-2 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
+            </div>
+            <div className="p-6 space-y-3">
+              <input
+                type="text"
+                value={localTitle}
+                onChange={e => setLocalTitle(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+              />
+            </div>
+            <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-slate-50 rounded-b-3xl">
+              <button onClick={() => setEditingPage2Title(false)} className="px-6 py-2 font-bold text-slate-500 hover:bg-white rounded-xl transition-all">Cancelar</button>
               <button onClick={handleSave} className="bg-indigo-600 text-white font-bold px-8 py-2 rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center gap-2">
                 <Save className="w-4 h-4" />Guardar
               </button>
@@ -728,12 +865,15 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
           <div className="space-y-3">
             <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider ml-1">Editar Página 2 de Menú</h3>
             <div className="flex flex-wrap gap-2">
-              {(['preparacion', 'restricciones', 'habitos', 'organizacion'] as RecSection[]).map(section => (
-                <button key={section} onClick={() => setEditingRecSection(section)} className={btnClass}>
-                  <Edit3 className="w-3.5 h-3.5" />
-                  {{ preparacion: 'Preparación de Alimentos', restricciones: 'Restricciones Específicas', habitos: 'Hábitos Saludables', organizacion: 'Organización y Horarios' }[section]}
-                </button>
-              ))}
+              {(['preparacion', 'restricciones', 'habitos', 'organizacion'] as RecSection[]).map(section => {
+                const st = menuPreviewData?.sectionTitles || DEFAULT_SECTION_TITLES;
+                const label = st[SECTION_TITLE_KEY[section]] as string;
+                return (
+                  <button key={section} onClick={() => setEditingRecSection(section)} className={btnClass}>
+                    <Edit3 className="w-3.5 h-3.5" />{label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -747,6 +887,8 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
         {editingDomingoLibre && <DomingoLibreEditor />}
         {editingDomingoCompleto && <DomingoCompletoEditor />}
         {editingRecSection && <RecommendationsEditor section={editingRecSection} />}
+        {editingPlanTitle && <PlanTitleEditor />}
+        {editingPage2Title && <Page2TitleEditor />}
       </>
     );
   }

@@ -808,6 +808,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                 onEditRecSection={(section) => toolbarRef.current?.openRecSection(section)}
                 onEditDomingoLibre={() => toolbarRef.current?.openDomingoLibre()}
                 onEditDomingoCompleto={() => toolbarRef.current?.openDomingoCompleto()}
+                onEditPlanTitle={() => toolbarRef.current?.openPlanTitle()}
+                onEditPage2Title={() => toolbarRef.current?.openPage2Title()}
               />
 
               {/* Editor Toolbar */}

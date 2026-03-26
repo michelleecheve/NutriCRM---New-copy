@@ -21,6 +21,8 @@ interface MenuPreviewProps {
   onEditRecSection?: (section: RecSection) => void;
   onEditDomingoLibre?: () => void;
   onEditDomingoCompleto?: () => void;
+  onEditPlanTitle?: () => void;
+  onEditPage2Title?: () => void;
 }
 
 interface EditZone {
@@ -69,15 +71,23 @@ function buildEditZones(
     onEditRecSection?: (s: RecSection) => void;
     onEditDomingoLibre?: () => void;
     onEditDomingoCompleto?: () => void;
+    onEditPlanTitle?: () => void;
+    onEditPage2Title?: () => void;
   }
 ): EditZone[] {
   const z: EditZone[] = [];
+
+  if (cbs.onEditPlanTitle)
+    z.push({ id: 'planTitle', top: 20, right: 180, onClick: cbs.onEditPlanTitle, title: 'Editar título del plan' });
+
+  if (cbs.onEditPage2Title)
+    z.push({ id: 'page2Title', top: 1257, right: 234, onClick: cbs.onEditPage2Title, title: 'Editar título página 2' });
 
   if (cbs.onEditPatientInfo)
     z.push({ id: 'patient', top: 58, left: 386, onClick: cbs.onEditPatientInfo, title: 'Editar info paciente' });
 
   if (cbs.onEditPortions)
-    z.push({ id: 'portions', top: 130, right: 24, onClick: cbs.onEditPortions, title: 'Editar tabla de porciones' });
+    z.push({ id: 'portions', top: 115, right: 386, onClick: cbs.onEditPortions, title: 'Editar tabla de porciones' });
 
   // Page 2: 4 recommendation cards (2×2 grid)
   (['preparacion', 'restricciones', 'habitos', 'organizacion'] as const).forEach((section, i) => {
@@ -111,6 +121,8 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
   onEditRecSection,
   onEditDomingoLibre,
   onEditDomingoCompleto,
+  onEditPlanTitle,
+  onEditPage2Title,
 }) => {
   const [internalZoom, setInternalZoom] = useState(0.8);
   const [internalTemplate, setInternalTemplate] = useState("plantilla_v1");
@@ -124,7 +136,7 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
   const hasEditCallbacks = !!(
     onEditPatientInfo || onEditPortions || onEditDay ||
     onEditTemplateNote || onEditHydration || onEditRecSection ||
-    onEditDomingoLibre || onEditDomingoCompleto
+    onEditDomingoLibre || onEditDomingoCompleto || onEditPlanTitle || onEditPage2Title
   );
 
   const updateZoom = (newZoom: number) => {
@@ -160,7 +172,7 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
     ? buildEditZones(currentTemplate, {
         onEditPatientInfo, onEditPortions, onEditDay,
         onEditTemplateNote, onEditHydration, onEditRecSection,
-        onEditDomingoLibre, onEditDomingoCompleto,
+        onEditDomingoLibre, onEditDomingoCompleto, onEditPlanTitle, onEditPage2Title,
       })
     : [];
 
