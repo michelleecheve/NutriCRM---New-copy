@@ -394,6 +394,7 @@ export interface MenuRecommendationData {
   restricciones: string[];
   habitos: string[];
   organizacion: string[];
+  sectionTitles?: Partial<MenuSectionTitles>;
 }
 
 export interface MenuRecommendationRecord {

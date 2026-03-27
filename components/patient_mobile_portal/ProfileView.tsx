@@ -838,35 +838,53 @@ export const ProfileView: React.FC<Props> = ({
           )}
         </div>
 
-        {/* ── Powered by ── */}
-        <div className="flex flex-col items-center gap-1.5 pt-2 pb-2">
-          <span
+        {/* ── Powered by + Beta notice ── */}
+        <div className="flex items-center justify-center gap-3 pt-2 pb-2 flex-wrap">
+          <div className="flex flex-col items-center gap-1.5">
+            <span
+              style={{
+                color: "#B0BDB8",
+                fontSize: "10px",
+                fontWeight: 500,
+                letterSpacing: "0.06em",
+              }}
+            >
+              Powered by
+            </span>
+            <div className="flex items-center gap-1.5">
+              <img
+                src="/logo_nutrifollow.png"
+                alt="NutriFollow"
+                style={{ height: "20px", width: "auto", opacity: 0.45 }}
+              />
+              <span
+                style={{
+                  color: "#B0BDB8",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  opacity: 0.8,
+                }}
+              >
+                NutriFollow.app
+              </span>
+            </div>
+          </div>
+
+          {/* Separador */}
+          <div style={{ width: "1px", height: "36px", backgroundColor: "#D1D5D3", flexShrink: 0 }} />
+
+          {/* Beta notice */}
+          <p
             style={{
               color: "#B0BDB8",
               fontSize: "10px",
               fontWeight: 500,
-              letterSpacing: "0.06em",
+              lineHeight: 1.5,
+              maxWidth: "160px",
             }}
           >
-            Powered by
-          </span>
-          <div className="flex items-center gap-1.5">
-            <img
-              src="/logo_nutrifollow.png"
-              alt="NutriFollow"
-              style={{ height: "20px", width: "auto", opacity: 0.45 }}
-            />
-            <span
-              style={{
-                color: "#B0BDB8",
-                fontSize: "13px",
-                fontWeight: 600,
-                opacity: 0.8,
-              }}
-            >
-              NutriFollow.app
-            </span>
-          </div>
+            <span style={{ fontWeight: 700, color: "#9CA3AF" }}>Versión Beta:</span> Esta app sigue en desarrollo para mejoras constantes.
+          </p>
         </div>
       </div>
     </div>

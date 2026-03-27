@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FileText, Plus, Trash2, Eye, Save, X, 
-  ChevronLeft, ChevronRight, ClipboardList
+import {
+  FileText, Plus, Trash2, Save, X,
+  ClipboardList
 } from 'lucide-react';
-import { MenuRecommendationRecord, MenuRecommendationData, DEFAULT_SECTION_TITLES } from '../../types';
+import { MenuRecommendationRecord, MenuRecommendationData, DEFAULT_SECTION_TITLES, MenuSectionTitles } from '../../types';
 import { store } from '../../services/store';
 
 const emptyRecData = (): MenuRecommendationData => ({
@@ -13,10 +13,18 @@ const emptyRecData = (): MenuRecommendationData => ({
   organizacion: [],
 });
 
+// Returns the active titles: from the rec's own data, or from the template, or the defaults
+function resolveRecTitles(recData?: MenuRecommendationData): MenuSectionTitles {
+  const stored = recData?.sectionTitles;
+  const template = store.getMenuTemplate()?.sectionTitles;
+  return { ...DEFAULT_SECTION_TITLES, ...template, ...stored };
+}
+
 export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer?: boolean }> = ({ hideHeader, hideContainer }) => {
   const [recs, setRecs] = useState<MenuRecommendationRecord[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRec, setEditingRec] = useState<Partial<MenuRecommendationRecord> | null>(null);
+  const [editingSectionTitles, setEditingSectionTitles] = useState<MenuSectionTitles>(DEFAULT_SECTION_TITLES);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -24,6 +32,8 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
   }, []);
 
   const handleOpenAdd = () => {
+    const baseTitles = resolveRecTitles();
+    setEditingSectionTitles(baseTitles);
     setEditingRec({
       name: '',
       data: emptyRecData(),
@@ -32,6 +42,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
   };
 
   const handleOpenEdit = (rec: MenuRecommendationRecord) => {
+    setEditingSectionTitles(resolveRecTitles(rec.data));
     setEditingRec({ ...rec });
     setIsModalOpen(true);
   };
@@ -40,7 +51,14 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
     if (!editingRec?.name?.trim()) return;
     setIsLoading(true);
     try {
-      await store.saveMenuRecommendation(editingRec);
+      const recToSave: Partial<MenuRecommendationRecord> = {
+        ...editingRec,
+        data: {
+          ...(editingRec.data || emptyRecData()),
+          sectionTitles: editingSectionTitles,
+        },
+      };
+      await store.saveMenuRecommendation(recToSave);
       setIsModalOpen(false);
       setEditingRec(null);
       setRecs([...store.getMenuRecommendations()]);
@@ -155,13 +173,23 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                 </p>
                 
                 <div className="mt-3 flex flex-wrap gap-1">
-                  {Object.entries(rec.data).map(([key, val]) => (
-                    Array.isArray(val) && val.length > 0 && (
-                      <span key={key} className="text-[9px] px-1.5 py-0.5 rounded-full bg-white border border-slate-100 text-slate-500 font-bold capitalize">
-                        {key} ({val.length})
-                      </span>
-                    )
-                  ))}
+                  {(() => {
+                    const t = resolveRecTitles(rec.data);
+                    return [
+                      { key: 'preparacion',   label: t.preparacionTitle,   emoji: t.preparacionEmoji },
+                      { key: 'restricciones', label: t.restriccionesTitle, emoji: t.restriccionesEmoji },
+                      { key: 'habitos',       label: t.habitosTitle,       emoji: t.habitosEmoji },
+                      { key: 'organizacion',  label: t.organizacionTitle,  emoji: t.organizacionEmoji },
+                    ].map(({ key, label, emoji }) => {
+                      const val = rec.data[key as keyof MenuRecommendationData];
+                      if (!Array.isArray(val) || val.length === 0) return null;
+                      return (
+                        <span key={key} className="text-[9px] px-1.5 py-0.5 rounded-full bg-white border border-slate-100 text-slate-500 font-bold">
+                          {emoji} {label} ({val.length})
+                        </span>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
             ))}
@@ -206,27 +234,33 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
               </div>
 
               <div className="grid grid-cols-1 gap-8">
-                {(() => {
-                  const t = store.getMenuTemplate()?.sectionTitles || DEFAULT_SECTION_TITLES;
-                  return [
-                    { key: 'preparacion', label: t.preparacionTitle, icon: t.preparacionEmoji },
-                    { key: 'restricciones', label: t.restriccionesTitle, icon: t.restriccionesEmoji },
-                    { key: 'habitos', label: t.habitosTitle, icon: t.habitosEmoji },
-                    { key: 'organizacion', label: t.organizacionTitle, icon: t.organizacionEmoji },
-                  ];
-                })().map(field => (
+                {[
+                  { key: 'preparacion',   emojiKey: 'preparacionEmoji'   as keyof MenuSectionTitles, titleKey: 'preparacionTitle'   as keyof MenuSectionTitles },
+                  { key: 'restricciones', emojiKey: 'restriccionesEmoji' as keyof MenuSectionTitles, titleKey: 'restriccionesTitle' as keyof MenuSectionTitles },
+                  { key: 'habitos',       emojiKey: 'habitosEmoji'       as keyof MenuSectionTitles, titleKey: 'habitosTitle'       as keyof MenuSectionTitles },
+                  { key: 'organizacion',  emojiKey: 'organizacionEmoji'  as keyof MenuSectionTitles, titleKey: 'organizacionTitle'  as keyof MenuSectionTitles },
+                ].map(field => (
                   <div key={field.key} className="space-y-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{field.icon}</span>
-                        <div>
-                          <label className="text-sm font-bold text-slate-800 uppercase tracking-wide">{field.label}</label>
-                          <p className="text-xs text-slate-400 italic">Agrega o edita las notas para esta sección.</p>
-                        </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <input
+                          type="text"
+                          value={editingSectionTitles[field.emojiKey] as string || ''}
+                          onChange={e => setEditingSectionTitles(prev => ({ ...prev, [field.emojiKey]: e.target.value }))}
+                          className="w-12 text-center text-xl bg-white border border-slate-200 rounded-xl px-1 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                          title="Editar emoji"
+                        />
+                        <input
+                          type="text"
+                          value={editingSectionTitles[field.titleKey] as string || ''}
+                          onChange={e => setEditingSectionTitles(prev => ({ ...prev, [field.titleKey]: e.target.value }))}
+                          className="flex-1 min-w-0 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-800 uppercase tracking-wide focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                          title="Editar título de sección"
+                        />
                       </div>
-                      <button 
+                      <button
                         onClick={() => addNote(field.key as keyof MenuRecommendationData)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-all"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-all flex-shrink-0"
                       >
                         <Plus className="w-3.5 h-3.5" /> Agregar Nota
                       </button>
@@ -236,7 +270,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                       {(editingRec.data?.[field.key as keyof MenuRecommendationData] || []).map((note, idx) => (
                         <div key={idx} className="flex items-center gap-3 animate-in slide-in-from-left-2 duration-200">
                           <div className="flex-1 relative group">
-                            <textarea 
+                            <textarea
                               value={note}
                               onChange={e => updateNote(field.key as keyof MenuRecommendationData, idx, e.target.value)}
                               placeholder="Escribe una recomendación..."
@@ -244,7 +278,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                               className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm text-slate-700 leading-relaxed focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all resize-none shadow-sm"
                             />
                           </div>
-                          <button 
+                          <button
                             onClick={() => removeNote(field.key as keyof MenuRecommendationData, idx)}
                             className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                           >
@@ -252,7 +286,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                           </button>
                         </div>
                       ))}
-                      
+
                       {(editingRec.data?.[field.key as keyof MenuRecommendationData] || []).length === 0 && (
                         <div className="text-center py-4 text-slate-400 text-xs italic">
                           No hay notas en esta sección.

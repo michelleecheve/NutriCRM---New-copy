@@ -13,17 +13,24 @@ interface Props {
   activeMenu: GeneratedMenu | null;
   measurements?: MeasurementEntry[];
   bioMeasurements?: BioEntry[];
+  timezone: string;
 }
 
 type Tab = 'medidas' | 'historial';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function todayStr(): string { return new Date().toISOString().slice(0, 10); }
+function todayInTz(tz: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
 
-function calcDayNumber(startDate: string): number {
+function calcDayNumber(startDate: string, tz: string): number {
   const start = new Date(startDate + 'T12:00:00');
-  const today = new Date(todayStr() + 'T12:00:00');
+  const today = new Date(todayInTz(tz) + 'T12:00:00');
   return Math.max(1, Math.round((today.getTime() - start.getTime()) / 86400000) + 1);
 }
 
@@ -39,9 +46,9 @@ function calcCompliance(trackingData: Record<string, any>): { completed: number 
   return { completed };
 }
 
-function calcStreak(trackingData: Record<string, any>, startDate: string): number {
+function calcStreak(trackingData: Record<string, any>, startDate: string, tz: string): number {
   let streak = 0;
-  const d = new Date(todayStr() + 'T12:00:00');
+  const d = new Date(todayInTz(tz) + 'T12:00:00');
   for (let i = 0; i < 365; i++) {
     const key = d.toISOString().slice(0, 10);
     if (key < startDate) break;
@@ -132,7 +139,7 @@ const TabBtn: React.FC<{ label: string; active: boolean; onClick: () => void }> 
 
 export const ProgressView: React.FC<Props> = ({
   patient, menus, activeTracking, allTracking,
-  activeMenu, measurements, bioMeasurements,
+  activeMenu, measurements, bioMeasurements, timezone,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('medidas');
 
@@ -141,10 +148,11 @@ export const ProgressView: React.FC<Props> = ({
   const trackingData = tracking?.trackingData ?? {};
   const durationDays = tracking?.durationDays ?? 28;
 
-  const dayNumber = isActive ? calcDayNumber(tracking!.menuStartDate!) : 0;
+  const todayLocal = todayInTz(timezone);
+  const dayNumber = isActive ? calcDayNumber(tracking!.menuStartDate!, timezone) : 0;
   const diasTranscurridos = isActive
     ? Math.floor(
-        (new Date(todayStr() + 'T12:00:00').getTime() -
+        (new Date(todayLocal + 'T12:00:00').getTime() -
           new Date(tracking!.menuStartDate! + 'T12:00:00').getTime()) /
           (1000 * 60 * 60 * 24),
       )
@@ -153,7 +161,7 @@ export const ProgressView: React.FC<Props> = ({
   const endDateStr = isActive ? addDays(tracking!.menuStartDate!, durationDays) : null;
 
   const { completed } = calcCompliance(trackingData);
-  const streak = isActive ? calcStreak(trackingData, tracking!.menuStartDate!) : 0;
+  const streak = isActive ? calcStreak(trackingData, tracking!.menuStartDate!, timezone) : 0;
 
   const badgeConfig = isActive && compPct >= 50
     ? compPct >= 80

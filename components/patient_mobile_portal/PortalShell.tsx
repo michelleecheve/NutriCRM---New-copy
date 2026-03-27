@@ -116,8 +116,16 @@ type Tab = "menu" | "progreso" | "perfil";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+function todayInTz(tz: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
+function tzKey(token: string): string {
+  return `nutriflow_portal_tz_${token}`;
 }
 
 function formatDate(d: string): string {
@@ -262,6 +270,9 @@ export const PortalShell: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<Tab>("menu");
   const [lockedToast, setLockedToast] = useState(false);
 
+  const timezone = localStorage.getItem(tzKey(token))
+    ?? (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return 'America/Guatemala'; } })();
+
   useEffect(() => {
     if (!lockedToast) return;
     const t = setTimeout(() => setLockedToast(false), 2500);
@@ -271,7 +282,7 @@ export const PortalShell: React.FC<Props> = ({
   const menuView = (() => {
     if (!activeTracking) return "no_plan";
     if (!activeTracking.menuStartDate) return "onboarding";
-    const today = todayStr();
+    const today = todayInTz(timezone);
     if (activeTracking.menuEndDate && today > activeTracking.menuEndDate)
       return "finished";
     return "active";
@@ -375,6 +386,7 @@ export const PortalShell: React.FC<Props> = ({
               activeMenu={activeMenu}
               measurements={measurements}
               bioMeasurements={bioMeasurements}
+              timezone={timezone}
             />
           )}
 
