@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { History, Search, ExternalLink, Download, User, Calendar, Flame, FileText, Eye } from 'lucide-react';
+import { History, Search, ExternalLink, Download, User, Calendar, Flame, FileText, Eye, ClipboardList } from 'lucide-react';
 import { store } from '../../services/store';
 import { GeneratedMenu, Patient } from '../../types';
 import { MenuPreview } from './MenuPreview';
@@ -14,11 +14,18 @@ interface MenuHistoryProps {
   onSelectPatient?: (id: string, tab?: string) => void;
   hideHeader?: boolean;
   hideContainer?: boolean;
+  onAddAsReference?: (menu: GeneratedMenu, patient: Patient) => Promise<void>;
+  onAddAsRecommendation?: (menu: GeneratedMenu, patient: Patient, name: string) => Promise<void>;
 }
 
-export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideHeader, hideContainer }) => {
+export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideHeader, hideContainer, onAddAsReference, onAddAsRecommendation }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
+  const [refStatus, setRefStatus] = useState<Record<string, 'loading' | 'success' | 'error' | 'nodata'>>({});
+  const [recStatus, setRecStatus] = useState<Record<string, 'loading' | 'success' | 'error'>>({});
+  const [recModal, setRecModal] = useState<{ menu: GeneratedMenu; patient: Patient } | null>(null);
+  const [recModalName, setRecModalName] = useState('');
+  const [recModalLoading, setRecModalLoading] = useState(false);
 
   const [patients, setPatients] = useState<Patient[]>([]);
 
@@ -61,6 +68,53 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
 
   const handleOpenMenu = (entry: HistoryEntry) => {
     setSelectedEntry(entry);
+  };
+
+  const clearRefStatus = (menuId: string) =>
+    setTimeout(() => setRefStatus(prev => { const n = { ...prev }; delete n[menuId]; return n; }), 2200);
+
+  const clearRecStatus = (menuId: string) =>
+    setTimeout(() => setRecStatus(prev => { const n = { ...prev }; delete n[menuId]; return n; }), 2200);
+
+  const handleAddRef = async (entry: HistoryEntry) => {
+    if (!onAddAsReference) return;
+    if (!entry.menu.menuData) {
+      setRefStatus(prev => ({ ...prev, [entry.menu.id]: 'nodata' }));
+      clearRefStatus(entry.menu.id);
+      return;
+    }
+    setRefStatus(prev => ({ ...prev, [entry.menu.id]: 'loading' }));
+    try {
+      await onAddAsReference(entry.menu, entry.patient);
+      setRefStatus(prev => ({ ...prev, [entry.menu.id]: 'success' }));
+      clearRefStatus(entry.menu.id);
+    } catch {
+      setRefStatus(prev => ({ ...prev, [entry.menu.id]: 'error' }));
+      clearRefStatus(entry.menu.id);
+    }
+  };
+
+  const handleOpenRecModal = (entry: HistoryEntry) => {
+    setRecModal({ menu: entry.menu, patient: entry.patient });
+    setRecModalName('');
+  };
+
+  const handleConfirmRec = async () => {
+    if (!recModal || !recModalName.trim() || !onAddAsRecommendation) return;
+    setRecModalLoading(true);
+    const menuId = recModal.menu.id;
+    try {
+      await onAddAsRecommendation(recModal.menu, recModal.patient, recModalName.trim());
+      setRecStatus(prev => ({ ...prev, [menuId]: 'success' }));
+      setRecModal(null);
+      clearRecStatus(menuId);
+    } catch {
+      setRecStatus(prev => ({ ...prev, [menuId]: 'error' }));
+      setRecModal(null);
+      clearRecStatus(menuId);
+    } finally {
+      setRecModalLoading(false);
+    }
   };
 
   return (
@@ -149,21 +203,62 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handleOpenMenu(entry)}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Previsualizar"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => onSelectPatient?.(entry.patient.id, 'menus')}
-                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                        title="Ver Detalles"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </button>
+                    <div className="flex items-center justify-end gap-2 flex-wrap">
+                      {/* Always visible: import as reference */}
+                      {onAddAsReference && (
+                        refStatus[entry.menu.id] === 'loading' ? (
+                          <span className="text-xs text-slate-400 px-2">Guardando...</span>
+                        ) : refStatus[entry.menu.id] === 'success' ? (
+                          <span className="text-xs text-emerald-600 font-bold px-2">✓ Guardada</span>
+                        ) : refStatus[entry.menu.id] === 'error' ? (
+                          <span className="text-xs text-red-500 px-2">✗ Error</span>
+                        ) : refStatus[entry.menu.id] === 'nodata' ? (
+                          <span className="text-xs text-amber-600 px-2">Sin datos estructurados</span>
+                        ) : (
+                          <button
+                            onClick={() => handleAddRef(entry)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                            title={!entry.menu.menuData ? 'Este menú no tiene datos estructurados' : 'Usar como referencia (Hoja 1)'}
+                          >
+                            <FileText className="w-3.5 h-3.5" /> Usar como referencia
+                          </button>
+                        )
+                      )}
+                      {/* Always visible: import as recommendation */}
+                      {onAddAsRecommendation && (
+                        recStatus[entry.menu.id] === 'loading' ? (
+                          <span className="text-xs text-slate-400 px-2">Guardando...</span>
+                        ) : recStatus[entry.menu.id] === 'success' ? (
+                          <span className="text-xs text-emerald-600 font-bold px-2">✓ Guardada</span>
+                        ) : recStatus[entry.menu.id] === 'error' ? (
+                          <span className="text-xs text-red-500 px-2">✗ Error</span>
+                        ) : (
+                          <button
+                            onClick={() => handleOpenRecModal(entry)}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
+                            title={!entry.menu.menuData ? 'Este menú no tiene datos estructurados' : 'Usar como recomendación (Hoja 2)'}
+                          >
+                            <ClipboardList className="w-3.5 h-3.5" /> Usar como recomendación
+                          </button>
+                        )
+                      )}
+                      {/* Hover-only: preview + navigate */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleOpenMenu(entry)}
+                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Previsualizar"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => onSelectPatient?.(entry.patient.id, 'menus')}
+                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Ver Detalles"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -181,6 +276,61 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
           </tbody>
         </table>
       </div>
+
+      {/* Mini-modal: nombre para guardar como recomendación */}
+      {recModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="bg-emerald-50 p-2 rounded-xl">
+                  <ClipboardList className="w-4 h-4 text-emerald-600" />
+                </div>
+                <h3 className="font-bold text-slate-900">Guardar como Recomendación</h3>
+              </div>
+              <button
+                onClick={() => setRecModal(null)}
+                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-400"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <p className="text-sm text-slate-500 mb-4">
+              Menú de <span className="font-semibold text-slate-700">{recModal.patient.firstName} {recModal.patient.lastName}</span>
+              {recModal.menu.name ? ` · ${recModal.menu.name}` : ''}
+            </p>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Nombre de la plantilla</label>
+              <input
+                type="text"
+                value={recModalName}
+                onChange={e => setRecModalName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleConfirmRec()}
+                placeholder="Ej: Recomendaciones Generales - Mantenimiento"
+                autoFocus
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                onClick={() => setRecModal(null)}
+                className="px-5 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmRec}
+                disabled={!recModalName.trim() || recModalLoading}
+                className="flex items-center gap-2 px-6 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {recModalLoading ? 'Guardando...' : 'Guardar Plantilla'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal para ver el menú */}
       {selectedEntry && (

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {
   FileText, Plus, Trash2, Eye, Save, X,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, History,
 } from "lucide-react";
 import { MenuPlanData } from "./MenuDesignTemplates";
 import { MenuPreview } from "./MenuPreview";
+import { MenuHistory } from "./MenuHistory";
 import {
   MenuReferenceRecord,
   MenuReferenceData,
@@ -18,9 +19,11 @@ import {
   calcPortionsTotal,
   emptyReferenceData,
   newMealSlot,
+  emptyMealPortions,
 } from "./Menu_References_Components/MenuReferencesStorage";
 import { MenuReferenceDataToMenuPlanData } from "./Menu_References_Components/MenuReferenceParsertoMenuData";
 import { store } from "../../services/store";
+import { GeneratedMenu, Patient } from "../../types";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -389,6 +392,59 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
   const [importOk, setImportOk]       = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState("");
+  const [isImportFromMenuOpen, setIsImportFromMenuOpen] = useState(false);
+
+  const mapToMealLabel = (raw: string): MealLabel => {
+    const lower = (raw || '').toLowerCase();
+    if (lower.includes('desayuno')) return 'Desayuno';
+    if (lower.includes('almuerzo')) return 'Almuerzo';
+    if (lower.includes('cena')) return 'Cena';
+    return 'Refacción';
+  };
+
+  const handleAddAsReference = async (menu: GeneratedMenu, _patient: Patient): Promise<void> => {
+    const plan = menu.menuData as MenuPlanData;
+    if (!plan) throw new Error('No menuData');
+
+    const lunesData = (plan.weeklyMenu as any)?.lunes;
+    const mealsOrder: string[] = lunesData?.mealsOrder || Object.keys((plan.portions as any)?.byMeal || {});
+
+    const meals: MealSlot[] = mealsOrder.map((slotId: string) => {
+      const mealInfo = lunesData?.[slotId];
+      const rawLabel = mealInfo?.label || slotId;
+      const portions = (plan.portions as any)?.byMeal?.[slotId] || emptyMealPortions();
+      return { id: slotId, label: mapToMealLabel(rawLabel), portions };
+    });
+
+    const refWeeklyMenu: any = {};
+    WEEKDAY_KEYS.forEach(day => {
+      const dayData = (plan.weeklyMenu as any)?.[day];
+      const dayMenu: Record<string, string> = {};
+      mealsOrder.forEach((slotId: string) => {
+        dayMenu[slotId] = dayData?.[slotId]?.title || '';
+      });
+      refWeeklyMenu[day] = dayMenu;
+    });
+    refWeeklyMenu.domingo = { note: (plan.weeklyMenu as any)?.domingo?.note || '' };
+    const domingoV2Data = (plan.weeklyMenu as any)?.domingoV2;
+    if (domingoV2Data) {
+      const dayMenu: Record<string, string> = {};
+      mealsOrder.forEach((slotId: string) => {
+        dayMenu[slotId] = domingoV2Data?.[slotId]?.title || '';
+      });
+      refWeeklyMenu.domingoV2 = dayMenu;
+    }
+
+    const refData: MenuReferenceData = {
+      kcal: (plan as any).kcal || menu.kcalToWork || 0,
+      type: 'SEMANAL',
+      meals,
+      weeklyMenu: refWeeklyMenu,
+      hydration: (plan.weeklyMenu as any)?.domingo?.hydration || '2.5L Agua/Día',
+    };
+
+    await store.saveMenuReference({ data: refData, kcal: refData.kcal, type: refData.type });
+  };
 
   const handleImport = async () => {
     setImportError("");
@@ -562,6 +618,36 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
   return (
     <div className={hideContainer ? "" : "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"}>
 
+      {/* Modal: importar desde menú existente */}
+      {isImportFromMenuOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-50 p-2 rounded-xl">
+                  <History className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Agregar Referencia desde Menú Existente</h3>
+                  <p className="text-sm text-slate-500">Selecciona un menú del historial para guardarlo como plantilla de referencia (Hoja 1)</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsImportFromMenuOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <MenuHistory
+                onAddAsReference={handleAddAsReference}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {confirmDeleteId && (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -656,8 +742,12 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
                 className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
                 ↑ Importar YAML
               </button>
+              <button onClick={() => setIsImportFromMenuOpen(true)}
+                className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                <History className="w-4 h-4" /> Agregar desde menú existente
+              </button>
               <button onClick={openNew} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                <Plus className="w-4 h-4" /> Nueva referencia
+                <Plus className="w-4 h-4" /> Nueva
               </button>
             </div>
           ) : (
@@ -674,8 +764,12 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
                 className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
                 ↑ Importar YAML
               </button>
+              <button onClick={() => setIsImportFromMenuOpen(true)}
+                className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                <History className="w-4 h-4" /> Agregar desde menú existente
+              </button>
               <button onClick={openNew} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                <Plus className="w-4 h-4" /> Nueva referencia
+                <Plus className="w-4 h-4" /> Nueva
               </button>
             </div>
           ) : (

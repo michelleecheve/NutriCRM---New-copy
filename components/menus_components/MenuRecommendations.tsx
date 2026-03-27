@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
   FileText, Plus, Trash2, Save, X,
-  ClipboardList
+  ClipboardList, History
 } from 'lucide-react';
-import { MenuRecommendationRecord, MenuRecommendationData, DEFAULT_SECTION_TITLES, MenuSectionTitles } from '../../types';
+import { MenuRecommendationRecord, MenuRecommendationData, DEFAULT_SECTION_TITLES, MenuSectionTitles, GeneratedMenu, Patient } from '../../types';
 import { store } from '../../services/store';
+import { MenuHistory } from './MenuHistory';
 
 const emptyRecData = (): MenuRecommendationData => ({
   preparacion: [],
@@ -26,6 +27,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
   const [editingRec, setEditingRec] = useState<Partial<MenuRecommendationRecord> | null>(null);
   const [editingSectionTitles, setEditingSectionTitles] = useState<MenuSectionTitles>(DEFAULT_SECTION_TITLES);
   const [isLoading, setIsLoading] = useState(false);
+  const [isImportFromMenuOpen, setIsImportFromMenuOpen] = useState(false);
 
   useEffect(() => {
     setRecs(store.getMenuRecommendations());
@@ -105,6 +107,20 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
     setEditingRec({ ...editingRec, data: newData });
   };
 
+  const handleAddAsRecommendation = async (_menu: GeneratedMenu, _patient: Patient, name: string): Promise<void> => {
+    const plan = _menu.menuData;
+    if (!plan) throw new Error('No menuData');
+    const recData: MenuRecommendationData = {
+      preparacion:   plan.recommendations?.preparacion   || [],
+      restricciones: plan.recommendations?.restricciones || [],
+      habitos:       plan.recommendations?.habitos       || [],
+      organizacion:  plan.recommendations?.organizacion  || [],
+      sectionTitles: plan.sectionTitles || undefined,
+    };
+    await store.saveMenuRecommendation({ name, data: recData });
+    setRecs([...store.getMenuRecommendations()]);
+  };
+
   return (
     <div className={hideContainer ? "" : "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"}>
       {!hideHeader ? (
@@ -118,20 +134,34 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
               <p className="text-sm text-slate-500 mt-0.5">Gestiona tus notas predefinidas para la página 2 del menú</p>
             </div>
           </div>
-          <button 
-            onClick={handleOpenAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
-          >
-            <Plus className="w-4 h-4" /> Nueva Plantilla
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsImportFromMenuOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all"
+            >
+              <History className="w-4 h-4" /> Agregar desde menú existente
+            </button>
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+            >
+              <Plus className="w-4 h-4" /> Nueva
+            </button>
+          </div>
         </div>
       ) : (
         <div className="px-6 py-3 border-b border-slate-100 flex justify-end items-center gap-2 bg-slate-50/30">
-          <button 
+          <button
+            onClick={() => setIsImportFromMenuOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all"
+          >
+            <History className="w-4 h-4" /> Agregar desde menú existente
+          </button>
+          <button
             onClick={handleOpenAdd}
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
           >
-            <Plus className="w-4 h-4" /> Nueva Plantilla
+            <Plus className="w-4 h-4" /> Nueva
           </button>
         </div>
       )}
@@ -196,6 +226,36 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
           </div>
         )}
       </div>
+
+      {/* Modal: importar desde menú existente */}
+      {isImportFromMenuOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="bg-emerald-50 p-2 rounded-xl">
+                  <History className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Agregar Recomendaciones desde Menú Existente</h3>
+                  <p className="text-sm text-slate-500">Selecciona un menú del historial para guardar sus recomendaciones como plantilla (Hoja 2)</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsImportFromMenuOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <MenuHistory
+                onAddAsRecommendation={handleAddAsRecommendation}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Edición/Creación */}
       {isModalOpen && editingRec && (
