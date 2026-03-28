@@ -31,9 +31,9 @@ export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => vo
   if (!isStarted) {
     return (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <h2 className="text-2xl font-bold text-slate-800">Menús del Paciente</h2>
-          <div className="flex flex-col items-end gap-1.5">
+          <div className="flex flex-col items-start sm:items-end gap-1.5">
             <button
               onClick={handleStartNew}
               disabled={patientEvaluations.length === 0}

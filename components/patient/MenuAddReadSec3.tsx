@@ -953,7 +953,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
           }`}
         >
           {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-          {isLocked ? 'Bloqueado' : 'Bloquear'}
+          <span className="hidden sm:inline">{isLocked ? 'Bloqueado' : 'Bloquear'}</span>
         </button>
       </div>
 

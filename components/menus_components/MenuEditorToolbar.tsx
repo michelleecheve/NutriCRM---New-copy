@@ -63,6 +63,7 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
     const [editingDomingoCompleto, setEditingDomingoCompleto] = useState(false);
     const [editingPlanTitle, setEditingPlanTitle] = useState(false);
     const [editingPage2Title, setEditingPage2Title] = useState(false);
+    const [confirmClearPage, setConfirmClearPage] = useState<'page1' | 'page2' | null>(null);
 
     // ─── Expose open methods via ref ──────────────────────────────────────────
     useImperativeHandle(ref, () => ({
@@ -77,6 +78,46 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
       openPlanTitle:      () => setEditingPlanTitle(true),
       openPage2Title:     () => setEditingPage2Title(true),
     }));
+
+    // ─── Clear page handlers ──────────────────────────────────────────────────
+    const handleClearPage1 = () => {
+      if (!menuPreviewData) return;
+      const emptyDay: MenuDay = {
+        desayuno:   { title: '' },
+        refaccion1: { title: '' },
+        almuerzo:   { title: '' },
+        refaccion2: { title: '' },
+        cena:       { title: '' },
+      };
+      setMenuPreviewData({
+        ...menuPreviewData,
+        weeklyMenu: {
+          lunes:     { ...emptyDay },
+          martes:    { ...emptyDay },
+          miercoles: { ...emptyDay },
+          jueves:    { ...emptyDay },
+          viernes:   { ...emptyDay },
+          sabado:    { ...emptyDay },
+          domingo:   { note: '', hydration: '' },
+          domingoV2: undefined,
+        },
+      });
+      setConfirmClearPage(null);
+    };
+
+    const handleClearPage2 = () => {
+      if (!menuPreviewData) return;
+      setMenuPreviewData({
+        ...menuPreviewData,
+        recommendations: {
+          preparacion:   [],
+          restricciones: [],
+          habitos:       [],
+          organizacion:  [],
+        },
+      });
+      setConfirmClearPage(null);
+    };
 
     // ─── Patient Info Editor ──────────────────────────────────────────────────
     const PatientInfoEditor = () => {
@@ -838,11 +879,54 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
     // ─── Render ───────────────────────────────────────────────────────────────
     return (
       <>
+        {/* Confirm clear modal */}
+        {confirmClearPage && (
+          <div className="fixed inset-0 z-[80] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
+                    <Trash2 className="w-5 h-5 text-red-600" />
+                  </div>
+                  <h3 className="font-bold text-slate-900">
+                    Borrar {confirmClearPage === 'page1' ? 'Página 1' : 'Página 2'}
+                  </h3>
+                </div>
+                <button onClick={() => setConfirmClearPage(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-5">
+                <p className="text-sm text-slate-600">
+                  ¿Seguro que quieres borrar los datos de la {confirmClearPage === 'page1' ? 'Página 1' : 'Página 2'}? Esta acción no se puede deshacer.
+                </p>
+                <div className="mt-5 flex justify-end gap-2">
+                  <button
+                    onClick={() => setConfirmClearPage(null)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmClearPage === 'page1' ? handleClearPage1 : handleClearPage2}
+                    className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700"
+                  >
+                    Sí, borrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Toolbar buttons */}
         <div className="space-y-6">
           <div className="space-y-3">
             <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider ml-1">Editar Página 1 de Menú</h3>
             <div className="flex flex-wrap gap-2">
+              <button onClick={() => setEditingPlanTitle(true)} className={btnClass}>
+                <Edit3 className="w-3.5 h-3.5" />Título de Menú
+              </button>
               <button onClick={() => setIsEditingPatientInfo(true)} className={btnClass}>
                 <User className="w-3.5 h-3.5" />Info. Paciente
               </button>
@@ -860,11 +944,20 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
               <button onClick={() => setEditingHydration(true)} className={btnClass}>
                 <Droplets className="w-3.5 h-3.5" />Hidratación
               </button>
+              <button
+                onClick={() => setConfirmClearPage('page1')}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-red-200 rounded-xl text-xs font-bold text-red-500 hover:border-red-400 hover:bg-red-50 transition-all shadow-sm"
+              >
+                <Trash2 className="w-3.5 h-3.5" />Borrar Página 1
+              </button>
             </div>
           </div>
           <div className="space-y-3">
             <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider ml-1">Editar Página 2 de Menú</h3>
             <div className="flex flex-wrap gap-2">
+              <button onClick={() => setEditingPage2Title(true)} className={btnClass}>
+                <Edit3 className="w-3.5 h-3.5" />Título Pág. 2
+              </button>
               {(['preparacion', 'restricciones', 'habitos', 'organizacion'] as RecSection[]).map(section => {
                 const st = menuPreviewData?.sectionTitles || DEFAULT_SECTION_TITLES;
                 const label = st[SECTION_TITLE_KEY[section]] as string;
@@ -874,6 +967,12 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
                   </button>
                 );
               })}
+              <button
+                onClick={() => setConfirmClearPage('page2')}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-red-200 rounded-xl text-xs font-bold text-red-500 hover:border-red-400 hover:bg-red-50 transition-all shadow-sm"
+              >
+                <Trash2 className="w-3.5 h-3.5" />Borrar Página 2
+              </button>
             </div>
           </div>
         </div>

@@ -417,7 +417,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
           <div className="h-px flex-1 bg-slate-100"></div>
         </div>
 
-        <div className="overflow-hidden border border-slate-200 rounded-2xl">
+        <div className="overflow-x-auto border border-slate-200 rounded-2xl">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
@@ -425,7 +425,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">%</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Kcal</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Gramos</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Notas</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider min-w-[200px]">Notas</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -583,20 +583,20 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
 
       {/* Sub-sección 3: Distribución de Nutrientes */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center gap-4 flex-1">
             <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Sub-sección 3 — Distribución de Nutrientes</h3>
-            <div className="h-px flex-1 bg-slate-100"></div>
+            <div className="h-px flex-1 bg-slate-100 hidden sm:block"></div>
           </div>
-          <button 
+          <button
             onClick={() => setShowExchangeModal(true)}
-            className="ml-4 flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors"
+            className="self-start sm:self-auto flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors"
           >
             <ClipboardList className="w-3.5 h-3.5" /> 📋 Ver Lista de Intercambio
           </button>
         </div>
 
-        <div className="overflow-hidden border border-slate-200 rounded-2xl">
+        <div className="overflow-x-auto border border-slate-200 rounded-2xl">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">

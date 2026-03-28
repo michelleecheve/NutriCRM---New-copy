@@ -179,7 +179,8 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
   return (
     <div className="space-y-6">
       {/* ── Header bar ── */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+        {/* Row 1: title + templates + edit (desktop) */}
         <div className="flex items-center gap-4">
           <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Vista Previa</h3>
 
@@ -210,11 +211,11 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
             </div>
           )}
 
-          {/* Edit mode toggle — only visible when edit callbacks are provided */}
+          {/* Edit mode toggle — desktop only */}
           {hasEditCallbacks && (
             <button
               onClick={() => setEditMode(prev => !prev)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${
                 editMode
                   ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                   : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
@@ -226,23 +227,41 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
           )}
         </div>
 
-        {/* Zoom controls */}
-        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
-          <button
-            onClick={() => updateZoom(Math.max(0.4, currentZoom - 0.1))}
-            className="p-1.5 hover:bg-white rounded-lg transition-all text-slate-500 font-bold w-8"
-          >
-            -
-          </button>
-          <span className="text-[10px] font-bold text-slate-600 w-12 text-center">
-            {Math.round(currentZoom * 100)}%
-          </span>
-          <button
-            onClick={() => updateZoom(Math.min(1.5, currentZoom + 0.1))}
-            className="p-1.5 hover:bg-white rounded-lg transition-all text-slate-500 font-bold w-8"
-          >
-            +
-          </button>
+        {/* Row 2 on mobile: edit (left) + zoom (right) */}
+        <div className="flex items-center justify-between sm:justify-end gap-3">
+          {/* Edit mode toggle — mobile only */}
+          {hasEditCallbacks && (
+            <button
+              onClick={() => setEditMode(prev => !prev)}
+              className={`flex sm:hidden items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all border ${
+                editMode
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                  : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+              }`}
+            >
+              <Pencil className="w-3 h-3" />
+              Editar
+            </button>
+          )}
+
+          {/* Zoom controls */}
+          <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+            <button
+              onClick={() => updateZoom(Math.max(0.4, currentZoom - 0.1))}
+              className="p-1.5 hover:bg-white rounded-lg transition-all text-slate-500 font-bold w-8"
+            >
+              -
+            </button>
+            <span className="text-[10px] font-bold text-slate-600 w-12 text-center">
+              {Math.round(currentZoom * 100)}%
+            </span>
+            <button
+              onClick={() => updateZoom(Math.min(1.5, currentZoom + 0.1))}
+              className="p-1.5 hover:bg-white rounded-lg transition-all text-slate-500 font-bold w-8"
+            >
+              +
+            </button>
+          </div>
         </div>
       </div>
 
