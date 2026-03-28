@@ -99,7 +99,7 @@ export const CalendarAppointmentModal: React.FC<CalendarAppointmentModalProps> =
   return (
     // Overlay — cubre toda la pantalla sin cortes
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100 my-auto">
+      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-300 border border-slate-100 my-auto">
 
         {/* ── Header ── */}
         <div className="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
@@ -122,8 +122,9 @@ export const CalendarAppointmentModal: React.FC<CalendarAppointmentModalProps> =
         </div>
 
         {/* ── Body: 2 columns ── */}
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 divide-x divide-slate-100">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="overflow-y-auto flex-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
 
             {/* ── LEFT: Paciente ── */}
             <div className="p-6 space-y-4">
@@ -255,6 +256,7 @@ export const CalendarAppointmentModal: React.FC<CalendarAppointmentModalProps> =
                 </select>
               </div>
             </div>
+          </div>
           </div>
 
           {/* ── Footer ── */}

@@ -218,6 +218,12 @@ export const CalendarPage: React.FC = () => {
 
         {/* Calendar + Sidebar Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <CalendarSidebar
+            todayStr={todayStr}
+            fiveDaysFromNowStr={fiveDaysFromNowStr}
+            appointments={appointments}
+            onAppointmentClick={handleEditAppointment}
+          />
           <CalendarGrid
             currentDate={currentDate}
             appointments={appointments}
@@ -228,12 +234,6 @@ export const CalendarPage: React.FC = () => {
               e.stopPropagation();
               handleEditAppointment(appt);
             }}
-          />
-          <CalendarSidebar
-            todayStr={todayStr}
-            fiveDaysFromNowStr={fiveDaysFromNowStr}
-            appointments={appointments}
-            onAppointmentClick={handleEditAppointment}
           />
         </div>
 

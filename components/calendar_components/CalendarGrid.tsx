@@ -35,7 +35,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   };
 
   return (
-    <div className="lg:col-span-2 flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden min-h-[500px]">
+    <div className="lg:col-span-2 lg:order-first flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden min-h-[500px]">
 
       {/* Controls */}
       <div className="p-6 border-b border-slate-100 flex items-center justify-between">
