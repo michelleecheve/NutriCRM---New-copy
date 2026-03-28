@@ -761,7 +761,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
           <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl">
             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <Bookmark className="w-5 h-5 text-emerald-600" />
-              Guardar como Plantilla
+              Opciones para guardar como plantilla
             </h3>
             <button onClick={() => setShowSaveAsTemplateModal(false)} className="p-2 hover:bg-white rounded-xl transition-colors">
               <X className="w-5 h-5 text-slate-400" />
@@ -1074,7 +1074,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               />
 
               {/* Save as Template */}
-              <div className="flex justify-end pt-2">
+              <div className="space-y-3 pt-2">
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider ml-1">Guardar menú como plantilla para futura referencia</h3>
                 <button
                   onClick={() => {
                     setSaveTemplateType(null);
@@ -1085,7 +1086,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                   className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-all shadow-sm"
                 >
                   <Bookmark className="w-4 h-4" />
-                  Guardar como plantilla
+                  Opciones para guardar como plantilla
                 </button>
               </div>
             </div>

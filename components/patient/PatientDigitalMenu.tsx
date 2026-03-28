@@ -505,7 +505,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
             <p className="text-sm font-semibold text-slate-700">
               Paso 1. Selecciona Menú Activo Para Seguimiento
             </p>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Columna 1: selector de menú */}
               <div ref={menuSelectorRef}>
                 <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
@@ -600,7 +600,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
 
             {/* Indicador de estado + botón guardar */}
             {menus.length > 0 && (
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1">
                   {trackingLoading ? (
                     <div className="h-8 bg-slate-200 animate-pulse rounded-xl" />
@@ -697,7 +697,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                   disabled={
                     savingConfig || !selectedMenuId || menus.length === 0
                   }
-                  className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-semibold rounded-xl transition-all flex-shrink-0"
+                  className="self-start flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-semibold rounded-xl transition-all flex-shrink-0"
                 >
                   {savingConfig ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -722,14 +722,14 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
               placeholder="Ej: Bajar 5 kg en 3 meses, mejorar hábitos alimenticios..."
               className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-300"
             />
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <p className="text-xs text-slate-400">
                 El paciente lo verá en su portal y podrá editarlo.
               </p>
               <button
                 onClick={handleSaveGoal}
                 disabled={savingGoal}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-all"
+                className="self-start flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-all"
               >
                 {savingGoal ? (
                   <RefreshCw className="w-3 h-3 animate-spin" />
@@ -748,7 +748,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
             <p className="text-sm font-semibold text-slate-700">
               Paso 3. Compartir Link del Portal y Pin de acceso a paciente
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Columna izquierda: Link del portal */}
               <div>
                 <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
@@ -842,28 +842,10 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                 <textarea
                   readOnly
                   value={composedMessage}
-                  rows={4}
+                  rows={9}
                   className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 resize-none focus:outline-none"
                 />
                 <div className="flex flex-col gap-1.5">
-                  <button
-                    onClick={() => {
-                      navigator.clipboard
-                        .writeText(composedMessage)
-                        .then(() => {
-                          setCopiedMessage(true);
-                          setTimeout(() => setCopiedMessage(false), 2000);
-                        });
-                    }}
-                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors"
-                    title="Copiar mensaje"
-                  >
-                    {copiedMessage ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5 text-emerald-600" />
-                    )}
-                  </button>
                   <button
                     onClick={() => setEditingTemplate((v) => !v)}
                     className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors ${
@@ -877,6 +859,25 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                   </button>
                 </div>
               </div>
+
+              <button
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(composedMessage)
+                    .then(() => {
+                      setCopiedMessage(true);
+                      setTimeout(() => setCopiedMessage(false), 2000);
+                    });
+                }}
+                className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl transition-colors"
+              >
+                {copiedMessage ? (
+                  <Check className="w-3.5 h-3.5" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+                {copiedMessage ? "¡Copiado!" : "Copiar Mensaje"}
+              </button>
 
               {editingTemplate && (
                 <div className="mt-2 space-y-1.5">

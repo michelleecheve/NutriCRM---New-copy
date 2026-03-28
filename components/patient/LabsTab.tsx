@@ -282,11 +282,11 @@ export const LabInterpretationPanel: React.FC<{
 
       {isOpen && (
         <div className="p-5 space-y-4 border-t border-slate-100 animate-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
               Interpretación / Notas clínicas
             </p>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 sm:justify-end">
               <button
                 onClick={handleAnalyzeWithAI}
                 disabled={isAnalyzing || file.type === 'other'}
@@ -328,7 +328,7 @@ export const LabInterpretationPanel: React.FC<{
             className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-700 font-medium leading-relaxed focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-300 outline-none transition-all resize-y placeholder:text-slate-300"
           />
 
-          <div className="flex justify-end">
+          <div className="flex justify-start sm:justify-end">
             <button
               onClick={handleSave}
               disabled={!isDirty}

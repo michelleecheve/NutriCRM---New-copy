@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Download, Upload, Settings, AlertCircle, CheckCircle2, Trash2, X, FileDown, Loader2 } from 'lucide-react';
+import { Download, Upload, Settings, AlertCircle, CheckCircle2, Trash2, X, FileDown, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Patient } from '../../types';
 import { store } from '../../services/store';
 import { getTodayStr } from '../../src/utils/dateUtils';
@@ -23,6 +23,8 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [showExportProfileModal, setShowExportProfileModal] = useState(false);
+  const [showRawDataSection, setShowRawDataSection] = useState(false);
+  const [showDeleteSection, setShowDeleteSection] = useState(false);
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
   const [exportingEvaluationId, setExportingEvaluationId] = useState<string | null>(null);
   const [isExportingAll, setIsExportingAll] = useState(false);
@@ -286,9 +288,9 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-8 space-y-4">
           {/* ── Exportar Perfil Completo ── */}
-          <div className="mb-8 p-6 rounded-2xl border border-teal-100 bg-teal-50/40 space-y-4">
+          <div className="p-6 rounded-2xl border border-teal-100 bg-teal-50/40 space-y-4">
             <div className="flex items-center gap-3 mb-2">
               <div className="bg-teal-100 p-2 rounded-lg">
                 <FileDown className="w-5 h-5 text-teal-600" />
@@ -302,78 +304,13 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
               onClick={() => setShowExportProfileModal(true)}
               className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-sm shadow-teal-600/20"
             >
-              <FileDown className="w-4 h-4" />
+              <FileDown className="w-4 h-4 hidden sm:block" />
               Exportar Perfil Completo en .doc
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Export Section */}
-            <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50/30 space-y-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                  <Download className="w-5 h-5 text-blue-600" />
-                </div>
-                <h4 className="font-bold text-slate-800">Exportar Datos</h4>
-              </div>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                Descarga una copia completa y ordenada de toda la información de este paciente (clínica, evaluaciones, menús, laboratorios, etc.) en formato JSON.
-              </p>
-              <button
-                onClick={handleExport}
-                className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-700 font-bold py-3 rounded-xl transition-all shadow-sm"
-              >
-                <Download className="w-4 h-4" />
-                Descargar JSON
-              </button>
-            </div>
-
-            {/* Import Section */}
-            <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50/30 space-y-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-emerald-100 p-2 rounded-lg">
-                  <Upload className="w-5 h-5 text-emerald-600" />
-                </div>
-                <h4 className="font-bold text-slate-800">Importar Datos</h4>
-              </div>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                Carga un archivo JSON previamente exportado para actualizar toda la información de este paciente. 
-                <span className="block mt-1 font-bold text-amber-600">Atención: Esto sobrescribirá los datos actuales.</span>
-              </p>
-              
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept=".json"
-                className="hidden"
-              />
-              
-              <button
-                onClick={handleImportClick}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20"
-              >
-                <Upload className="w-4 h-4" />
-                Seleccionar Archivo
-              </button>
-
-              {importStatus === 'success' && (
-                <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 p-3 rounded-lg border border-emerald-100 animate-in slide-in-from-top-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span className="text-xs font-bold">¡Importación exitosa! Guardando y recargando...</span>
-                </div>
-              )}
-
-              {importStatus === 'error' && (
-                <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 animate-in slide-in-from-top-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <span className="text-xs font-bold">{errorMessage}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-12 p-6 bg-amber-50 rounded-2xl border border-amber-100 flex gap-4">
+          {/* ── Nota de seguridad ── */}
+          <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 flex gap-4">
             <div className="bg-amber-100 p-2 h-fit rounded-lg">
               <AlertCircle className="w-5 h-5 text-amber-600" />
             </div>
@@ -385,26 +322,137 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
             </div>
           </div>
 
-          {/* Zona de peligro */}
-          <div className="mt-8 p-6 bg-red-50 rounded-2xl border border-red-200 flex items-center justify-between gap-4">
-            <div className="flex gap-4 items-start">
-              <div className="bg-red-100 p-2 h-fit rounded-lg">
-                <Trash2 className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <h5 className="font-bold text-red-900 mb-1">Eliminar Paciente</h5>
-                <p className="text-sm text-red-700/80 leading-relaxed">
-                  Elimina permanentemente este paciente y todos sus registros: evaluaciones, medidas, menús, laboratorios, fotos, citas e invoices. Esta acción no se puede deshacer.
-                </p>
-              </div>
-            </div>
+          {/* ── Exportar/Importar datos crudos (desplegable) ── */}
+          <div className="rounded-2xl border border-slate-200 overflow-hidden">
             <button
-              onClick={() => { setShowDeleteModal(true); setDeleteConfirmName(''); setDeleteError(''); }}
-              className="shrink-0 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-sm shadow-red-600/20"
+              onClick={() => setShowRawDataSection(v => !v)}
+              className="w-full flex items-center justify-between gap-3 px-6 py-4 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
             >
-              <Trash2 className="w-4 h-4" />
-              Eliminar Paciente
+              <div className="flex items-center gap-3">
+                <div className="bg-slate-200 p-2 rounded-lg">
+                  <Download className="w-4 h-4 text-slate-600" />
+                </div>
+                <span className="font-bold text-slate-800">Exportar/Importar datos crudos</span>
+              </div>
+              {showRawDataSection
+                ? <ChevronDown className="w-5 h-5 text-slate-400 shrink-0" />
+                : <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+              }
             </button>
+
+            {showRawDataSection && (
+              <div className="p-6 border-t border-slate-100">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Export Section */}
+                  <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50/30 space-y-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="bg-blue-100 p-2 rounded-lg">
+                        <Download className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <h4 className="font-bold text-slate-800">Exportar Datos</h4>
+                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      Descarga una copia completa y ordenada de toda la información de este paciente (clínica, evaluaciones, menús, laboratorios, etc.) en formato JSON.
+                    </p>
+                    <button
+                      onClick={handleExport}
+                      className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 hover:border-blue-500 hover:text-blue-600 text-slate-700 font-bold py-3 rounded-xl transition-all shadow-sm"
+                    >
+                      <Download className="w-4 h-4" />
+                      Descargar JSON
+                    </button>
+                  </div>
+
+                  {/* Import Section */}
+                  <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50/30 space-y-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="bg-emerald-100 p-2 rounded-lg">
+                        <Upload className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <h4 className="font-bold text-slate-800">Importar Datos</h4>
+                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                      Carga un archivo JSON previamente exportado para actualizar toda la información de este paciente.
+                      <span className="block mt-1 font-bold text-amber-600">Atención: Esto sobrescribirá los datos actuales.</span>
+                    </p>
+
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept=".json"
+                      className="hidden"
+                    />
+
+                    <button
+                      onClick={handleImportClick}
+                      className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Seleccionar Archivo
+                    </button>
+
+                    {importStatus === 'success' && (
+                      <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 p-3 rounded-lg border border-emerald-100 animate-in slide-in-from-top-2">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span className="text-xs font-bold">¡Importación exitosa! Guardando y recargando...</span>
+                      </div>
+                    )}
+
+                    {importStatus === 'error' && (
+                      <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg border border-red-100 animate-in slide-in-from-top-2">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="text-xs font-bold">{errorMessage}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Eliminar Paciente (desplegable) ── */}
+          <div className="rounded-2xl border border-red-200 overflow-hidden">
+            <button
+              onClick={() => setShowDeleteSection(v => !v)}
+              className="w-full flex items-center justify-between gap-3 px-6 py-4 bg-red-50 hover:bg-red-100 transition-colors text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-red-100 p-2 rounded-lg">
+                  <Trash2 className="w-4 h-4 text-red-600" />
+                </div>
+                <span className="font-bold text-red-800">Eliminar Paciente</span>
+              </div>
+              {showDeleteSection
+                ? <ChevronDown className="w-5 h-5 text-red-400 shrink-0" />
+                : <ChevronRight className="w-5 h-5 text-red-400 shrink-0" />
+              }
+            </button>
+
+            {showDeleteSection && (
+              <div className="p-6 border-t border-red-100 bg-red-50/40">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex gap-4 items-start">
+                    <div className="bg-red-100 p-2 h-fit rounded-lg">
+                      <Trash2 className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-red-900 mb-1">Eliminar Paciente</h5>
+                      <p className="text-sm text-red-700/80 leading-relaxed">
+                        Elimina permanentemente este paciente y todos sus registros: evaluaciones, medidas, menús, laboratorios, fotos, citas e invoices. Esta acción no se puede deshacer.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setShowDeleteModal(true); setDeleteConfirmName(''); setDeleteError(''); }}
+                    className="shrink-0 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-sm shadow-red-600/20 self-start sm:self-auto"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Eliminar Paciente
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

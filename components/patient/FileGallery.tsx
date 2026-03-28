@@ -326,32 +326,39 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                         />
                       </div>
                     )}
-                    <div className="flex items-start gap-3">
+                    <div className="flex flex-col items-center gap-2">
                       {file.type !== 'image' && (
                         <div className="bg-white p-3 rounded-lg shadow-sm">
                           {getFileIcon(file.type)}
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <input
-                          type="text"
-                          value={file.name}
+                      <div className="w-full min-w-0">
+                        <div
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={e => {
+                            const newName = e.currentTarget.textContent?.trim();
+                            if (newName && newName !== file.name) handleRename(file.id, newName);
+                          }}
                           onClick={e => e.stopPropagation()}
-                          onChange={e => handleRename(file.id, e.target.value)}
-                          className="w-full bg-transparent border-none p-0 text-sm font-bold text-slate-900 focus:ring-0 truncate"
-                        />
-                        <p className="text-xs text-slate-400 mt-0.5">{file.date}</p>
+                          className="w-full bg-transparent text-sm font-bold text-slate-900 focus:outline-none break-words cursor-text text-center"
+                        >
+                          {file.name}
+                        </div>
+                        <p className="text-xs text-slate-400 mt-0.5 text-center">{file.date}</p>
                         {file.labInterpretation && (
-                          <span className="inline-block mt-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">
-                            ✓ Con interpretación
-                          </span>
+                          <div className="flex justify-center mt-1">
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">
+                              ✓ Con interpretación
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-center gap-2 mt-4 pt-3 border-t border-slate-100">
                     <button
                       onClick={() => openFileLinkModal(file)}
                       title="Vincular a evaluación"

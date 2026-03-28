@@ -47,7 +47,7 @@ interface MenuEditorToolbarProps {
 
 const DAYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as const;
 const btnClass =
-  'flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-indigo-600 hover:text-indigo-600 transition-all shadow-sm';
+  'flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:border-indigo-600 hover:text-indigo-600 transition-all shadow-sm w-full sm:w-auto';
 
 export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorToolbarProps>(
   ({ menuPreviewData, setMenuPreviewData, patient, vetData, portions, evaluationId }, ref) => {
@@ -923,7 +923,7 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
         <div className="space-y-6">
           <div className="space-y-3">
             <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider ml-1">Editar Página 1 de Menú</h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
               <button onClick={() => setEditingPlanTitle(true)} className={btnClass}>
                 <Edit3 className="w-3.5 h-3.5" />Título de Menú
               </button>
@@ -946,7 +946,7 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
               </button>
               <button
                 onClick={() => setConfirmClearPage('page1')}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-red-200 rounded-xl text-xs font-bold text-red-500 hover:border-red-400 hover:bg-red-50 transition-all shadow-sm"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-red-200 rounded-xl text-xs font-bold text-red-500 hover:border-red-400 hover:bg-red-50 transition-all shadow-sm w-full sm:w-auto"
               >
                 <Trash2 className="w-3.5 h-3.5" />Borrar Página 1
               </button>
@@ -954,7 +954,7 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
           </div>
           <div className="space-y-3">
             <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider ml-1">Editar Página 2 de Menú</h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
               <button onClick={() => setEditingPage2Title(true)} className={btnClass}>
                 <Edit3 className="w-3.5 h-3.5" />Título Pág. 2
               </button>
@@ -969,7 +969,7 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
               })}
               <button
                 onClick={() => setConfirmClearPage('page2')}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-red-200 rounded-xl text-xs font-bold text-red-500 hover:border-red-400 hover:bg-red-50 transition-all shadow-sm"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-red-200 rounded-xl text-xs font-bold text-red-500 hover:border-red-400 hover:bg-red-50 transition-all shadow-sm w-full sm:w-auto"
               >
                 <Trash2 className="w-3.5 h-3.5" />Borrar Página 2
               </button>
