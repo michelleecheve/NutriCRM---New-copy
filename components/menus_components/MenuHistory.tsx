@@ -59,11 +59,17 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
   const filteredEntries = useMemo(() => {
     if (!searchTerm.trim()) return historyEntries;
     const term = searchTerm.toLowerCase();
-    return historyEntries.filter(entry => 
-      entry.patient.firstName.toLowerCase().includes(term) ||
-      entry.patient.lastName.toLowerCase().includes(term) ||
-      (entry.menu.name && entry.menu.name.toLowerCase().includes(term))
-    );
+    return historyEntries.filter(entry => {
+      const kcal = String(entry.menu.menuPreviewData?.kcal ?? entry.menu.kcalToWork ?? '');
+      const date = new Date(entry.menu.date).toLocaleDateString();
+      return (
+        entry.patient.firstName.toLowerCase().includes(term) ||
+        entry.patient.lastName.toLowerCase().includes(term) ||
+        (entry.menu.name && entry.menu.name.toLowerCase().includes(term)) ||
+        kcal.includes(term) ||
+        date.includes(term)
+      );
+    });
   }, [historyEntries, searchTerm]);
 
   const handleOpenMenu = (entry: HistoryEntry) => {
@@ -120,7 +126,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
   return (
     <div className={hideContainer ? "" : "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"}>
       {!hideHeader ? (
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="bg-blue-50 p-2 rounded-xl">
               <History className="w-5 h-5 text-blue-600" />
@@ -130,28 +136,28 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
               <p className="text-sm text-slate-500 mt-0.5">Visualiza y exporta menús creados anteriormente para tus pacientes</p>
             </div>
           </div>
-          
-          <div className="relative">
+
+          <div className="relative w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Buscar por paciente..."
+              placeholder="Buscar por paciente, fecha o Kcal..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-64"
+              className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-full"
             />
           </div>
         </div>
       ) : (
-        <div className="px-6 py-3 border-b border-slate-100 flex justify-end items-center gap-2 bg-slate-50/30">
-          <div className="relative">
+        <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/30">
+          <div className="relative w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Buscar por paciente..."
+              placeholder="Buscar por paciente, fecha o Kcal..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-64"
+              className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-full"
             />
           </div>
         </div>
@@ -162,7 +168,6 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
           <thead>
             <tr className="bg-slate-50/50">
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Paciente</th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Menu ID</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Fecha</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Kcal</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 text-right">Acciones</th>
@@ -173,19 +178,9 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
               filteredEntries.map((entry) => (
                 <tr key={entry.menu.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                        <User className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-slate-900">{entry.patient.firstName} {entry.patient.lastName}</div>
-                        <div className="text-xs text-slate-500">{entry.menu.name || 'Menú Personalizado'}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <span className="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">#{entry.menu.id.slice(0, 8)}</span>
+                    <div>
+                      <div className="font-semibold text-slate-900">{entry.patient.firstName} {entry.patient.lastName}</div>
+                      <div className="text-xs text-slate-500">{entry.menu.name || 'Menú Personalizado'}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -242,8 +237,8 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                           </button>
                         )
                       )}
-                      {/* Hover-only: preview + navigate */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Always visible: preview + navigate */}
+                      <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleOpenMenu(entry)}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -265,7 +260,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center">
+                <td colSpan={4} className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center gap-2 text-slate-400">
                     <FileText className="w-8 h-8 opacity-20" />
                     <p className="text-sm">No se encontraron registros en el historial</p>

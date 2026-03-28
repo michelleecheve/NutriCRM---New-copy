@@ -356,11 +356,11 @@ export const MenuAIConfigurator: React.FC<{ hideHeader?: boolean; hideContainer?
           </div>
           <div className="flex items-center gap-2">
             {totalIdeas > 0 && (
-              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">
+              <span className="hidden sm:inline-flex text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">
                 {totalIdeas} idea{totalIdeas !== 1 ? 's' : ''}
               </span>
             )}
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
+            <span className={`hidden sm:inline-flex text-xs font-bold px-2.5 py-1 rounded-full border ${
               activeFields === totalFields
                 ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
                 : 'bg-amber-50 text-amber-600 border-amber-200'
@@ -368,7 +368,7 @@ export const MenuAIConfigurator: React.FC<{ hideHeader?: boolean; hideContainer?
               {activeFields}/{totalFields} datos activos
             </span>
             {isPromptCustom && (
-              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
+              <span className="hidden sm:inline-flex text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
                 Prompt personalizado
               </span>
             )}
@@ -384,13 +384,13 @@ export const MenuAIConfigurator: React.FC<{ hideHeader?: boolean; hideContainer?
           </div>
         </div>
       ) : (
-        <div className="px-6 py-3 border-b border-slate-100 flex justify-end items-center gap-2 bg-slate-50/30">
+        <div className="px-6 py-3 border-b border-slate-100 flex justify-start sm:justify-end items-center gap-2 bg-slate-50/30">
           {totalIdeas > 0 && (
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">
+            <span className="hidden sm:inline-flex text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">
               {totalIdeas} idea{totalIdeas !== 1 ? 's' : ''}
             </span>
           )}
-          <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
+          <span className={`hidden sm:inline-flex text-xs font-bold px-2.5 py-1 rounded-full border ${
             activeFields === totalFields
               ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
               : 'bg-amber-50 text-amber-600 border-amber-200'
@@ -398,7 +398,7 @@ export const MenuAIConfigurator: React.FC<{ hideHeader?: boolean; hideContainer?
             {activeFields}/{totalFields} datos activos
           </span>
           {isPromptCustom && (
-            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
+            <span className="hidden sm:inline-flex text-xs font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
               Prompt personalizado
             </span>
           )}
@@ -415,34 +415,36 @@ export const MenuAIConfigurator: React.FC<{ hideHeader?: boolean; hideContainer?
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-100 px-6">
-        {[
-          { id: 'ideas',  label: 'Ideas de Comidas',   icon: <UtensilsCrossed className="w-4 h-4" />,
-            badge: totalIdeas > 0 ? String(totalIdeas) : null, badgeColor: 'bg-indigo-100 text-indigo-600' },
-          { id: 'recs',   label: 'Ideas de Recomendaciones', icon: <FlaskConical className="w-4 h-4" />,
-            badge: totalRecs > 0 ? String(totalRecs) : null, badgeColor: 'bg-emerald-100 text-emerald-600' },
-          { id: 'datos',  label: 'Datos del Paciente', icon: <User className="w-4 h-4" />,
-            badge: activeFields < totalFields ? `${activeFields}/${totalFields}` : null, badgeColor: 'bg-amber-100 text-amber-600' },
-          { id: 'prompt', label: 'Prompt Avanzado',    icon: <Settings className="w-4 h-4" />,
-            badge: isPromptCustom ? '✎' : null, badgeColor: 'bg-amber-100 text-amber-600' },
-        ].map(tab => (
-          <button key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-1 py-3.5 text-sm font-bold border-b-2 transition-colors mr-6 last:mr-0 ${
-              activeTab === tab.id
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-            {tab.badge && (
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${tab.badgeColor}`}>
-                {tab.badge}
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="border-b border-slate-100 px-6">
+        <div className="grid grid-cols-2 sm:flex sm:flex-row">
+          {[
+            { id: 'ideas',  label: 'Ideas de Comidas',        icon: <UtensilsCrossed className="w-4 h-4" />,
+              badge: totalIdeas > 0 ? String(totalIdeas) : null, badgeColor: 'bg-indigo-100 text-indigo-600' },
+            { id: 'recs',   label: 'Ideas de Recomendaciones', icon: <FlaskConical className="w-4 h-4" />,
+              badge: totalRecs > 0 ? String(totalRecs) : null, badgeColor: 'bg-emerald-100 text-emerald-600' },
+            { id: 'datos',  label: 'Datos del Paciente',       icon: <User className="w-4 h-4" />,
+              badge: activeFields < totalFields ? `${activeFields}/${totalFields}` : null, badgeColor: 'bg-amber-100 text-amber-600' },
+            { id: 'prompt', label: 'Prompt Avanzado',          icon: <Settings className="w-4 h-4" />,
+              badge: null, badgeColor: 'bg-amber-100 text-amber-600' },
+          ].map(tab => (
+            <button key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center justify-center gap-1.5 px-1 py-3 sm:py-3.5 text-xs sm:text-sm font-bold border-b-2 transition-colors sm:mr-6 sm:last:mr-0 ${
+                activeTab === tab.id
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <span className="hidden sm:inline-flex">{tab.icon}</span>
+              {tab.label}
+              {tab.badge && (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${tab.badgeColor}`}>
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Tab: Ideas ── */}

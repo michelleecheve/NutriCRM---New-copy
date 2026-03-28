@@ -740,14 +740,14 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
             <div className="flex items-center gap-2">
               <button onClick={() => setShowImport(true)}
                 className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                ↑ Importar YAML
+                Importar YAML
               </button>
               <button onClick={() => setIsImportFromMenuOpen(true)}
                 className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                <History className="w-4 h-4" /> Agregar desde menú existente
+                <span className="hidden sm:inline-flex"><History className="w-4 h-4" /></span> Agregar desde menú existente
               </button>
               <button onClick={openNew} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                <Plus className="w-4 h-4" /> Nueva
+                <span className="hidden sm:inline-flex"><Plus className="w-4 h-4" /></span> Nueva
               </button>
             </div>
           ) : (
@@ -762,14 +762,14 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
             <div className="flex items-center gap-2">
               <button onClick={() => setShowImport(true)}
                 className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                ↑ Importar YAML
+                Importar YAML
               </button>
               <button onClick={() => setIsImportFromMenuOpen(true)}
                 className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                <History className="w-4 h-4" /> Agregar desde menú existente
+                <span className="hidden sm:inline-flex"><History className="w-4 h-4" /></span> Agregar desde menú existente
               </button>
               <button onClick={openNew} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                <Plus className="w-4 h-4" /> Nueva
+                <span className="hidden sm:inline-flex"><Plus className="w-4 h-4" /></span> Nueva
               </button>
             </div>
           ) : (
@@ -793,7 +793,7 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
                 Agrega menús reales como referencia. La IA los usará para generar planes personalizados.
               </p>
               <button onClick={openNew} className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
-                <Plus className="w-4 h-4" /> Agregar primera referencia
+                <span className="hidden sm:inline-flex"><Plus className="w-4 h-4" /></span> Agregar primera referencia
               </button>
             </div>
           ) : (
@@ -813,7 +813,7 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
                   </div>
                   <div className="grid grid-cols-3 gap-1.5">
                     <button onClick={() => openView(r)} className="inline-flex items-center justify-center gap-1 text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-100 px-2 py-2 rounded-lg text-xs font-semibold">
-                      <Eye className="w-3.5 h-3.5" /> Ver
+                      <span className="hidden sm:inline-flex"><Eye className="w-3.5 h-3.5" /></span> Ver
                     </button>
                     <button onClick={() => openEdit(r)} className="inline-flex items-center justify-center gap-1 text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2 py-2 rounded-lg text-xs font-semibold">
                       ✏️ Editar
@@ -833,11 +833,11 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
           <div className="flex flex-wrap items-center gap-3">
             {!isReadOnly && (
               <button onClick={handleSave} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-xl text-sm transition-colors">
-                <Save className="w-4 h-4" /> Guardar referencia
+                <span className="hidden sm:inline-flex"><Save className="w-4 h-4" /></span> Guardar referencia
               </button>
             )}
             <button onClick={handlePreview} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-              <Eye className="w-4 h-4" /> Previsualizar
+              <span className="hidden sm:inline-flex"><Eye className="w-4 h-4" /></span> Previsualizar
             </button>
             {saveError && (
               <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">⚠️ {saveError}</p>

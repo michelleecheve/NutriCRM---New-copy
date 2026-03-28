@@ -10,6 +10,7 @@ interface MenuExportPDFProps {
   disabled?: boolean;
   label?: string;
   children?: React.ReactNode;
+  hideIconOnMobile?: boolean;
 }
 
 export const MenuExportPDF: React.FC<MenuExportPDFProps> = ({
@@ -18,7 +19,8 @@ export const MenuExportPDF: React.FC<MenuExportPDFProps> = ({
   className = "",
   disabled = false,
   label = "Exportar PDF",
-  children
+  children,
+  hideIconOnMobile = false,
 }) => {
   const [exporting, setExporting] = useState(false);
 
@@ -118,12 +120,12 @@ export const MenuExportPDF: React.FC<MenuExportPDFProps> = ({
     >
       {exporting ? (
         <>
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <Loader2 className={`w-5 h-5 animate-spin${hideIconOnMobile ? ' hidden md:inline' : ''}`} />
           Exportando...
         </>
       ) : children ? children : (
         <>
-          <Printer className="w-5 h-5" />
+          <Printer className={`w-5 h-5${hideIconOnMobile ? ' hidden md:inline' : ''}`} />
           {label}
         </>
       )}

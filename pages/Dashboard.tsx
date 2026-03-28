@@ -28,7 +28,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
   }, []);
 
   // Filter State
-  const [filterStatus, setFilterStatus] = useState<string>('Todos');
+  const [filterStatus, setFilterStatus] = useState<string[]>([]);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
 
   // New Patient Form State
@@ -57,7 +57,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
       dobFormatted.includes(term);
 
     const currentStatus = p.clinical.status || 'Sin Status';
-    const matchesFilter = filterStatus === 'Todos' || currentStatus === filterStatus;
+    const matchesFilter = filterStatus.length === 0 || filterStatus.includes(currentStatus);
 
     return matchesSearch && matchesFilter;
   });
@@ -102,23 +102,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
     }
   };
 
-  const filterOptions = ['Todos', ...statusList];
+  const filterOptions = [...statusList];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500" onClick={() => setIsFilterMenuOpen(false)}>
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Directorio de Pacientes</h2>
           <p className="text-slate-500 mt-1">Gestión clínica y seguimiento personalizado.</p>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={() => setIsConfigModalOpen(true)}
-            className="bg-white hover:bg-slate-50 text-slate-600 p-3 rounded-xl border border-slate-200 shadow-sm transition-all"
-            title="Configurar Status"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
           <button
             onClick={() => setIsModalOpen(true)}
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all font-semibold"
@@ -132,7 +125,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-visible">
         {/* Table Toolbar */}
         <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative w-full md:flex-1">
+          <div className="relative w-full md:flex-1 order-last md:order-first">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
@@ -143,36 +136,82 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
             />
           </div>
 
+          <div className="flex items-center gap-2 order-first md:order-last self-start">
           <div className="relative z-10">
             <button
               onClick={(e) => { e.stopPropagation(); setIsFilterMenuOpen(!isFilterMenuOpen); }}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border transition-all ${
-                filterStatus !== 'Todos'
+                filterStatus.length > 0
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
               <Filter className="w-4 h-4" />
-              <span>{filterStatus === 'Todos' ? 'Filtrar Status' : filterStatus}</span>
+              <span>{filterStatus.length === 0 ? 'Filtrar Status' : filterStatus.length === 1 ? filterStatus[0] : `${filterStatus.length} estados`}</span>
             </button>
 
             {isFilterMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                <div className="p-2 border-b border-slate-50 bg-slate-50/50 text-[10px] uppercase font-bold text-slate-400 tracking-wide">
-                  Seleccionar Estado
+              <>
+                {/* Mobile: modal centrado */}
+                <div className="fixed inset-0 z-50 flex items-center justify-center md:hidden" onClick={() => setIsFilterMenuOpen(false)}>
+                  <div className="w-64 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2" onClick={e => e.stopPropagation()}>
+                    <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wide">Seleccionar Estado</span>
+                      {filterStatus.length > 0 && (
+                        <button onClick={() => setFilterStatus([])} className="text-[10px] font-bold text-emerald-600 hover:text-emerald-800">Limpiar</button>
+                      )}
+                    </div>
+                    {filterOptions.map(option => {
+                      const selected = filterStatus.includes(option);
+                      return (
+                        <button
+                          key={option}
+                          onClick={() => setFilterStatus(prev => selected ? prev.filter(s => s !== option) : [...prev, option])}
+                          className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex items-center gap-3"
+                        >
+                          <span className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${selected ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>
+                            {selected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                          </span>
+                          <span>{option}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                {filterOptions.map(option => (
-                  <button
-                    key={option}
-                    onClick={() => setFilterStatus(option)}
-                    className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex justify-between items-center"
-                  >
-                    <span>{option}</span>
-                    {filterStatus === option && <Check className="w-4 h-4 text-emerald-600" />}
-                  </button>
-                ))}
-              </div>
+                {/* Desktop: dropdown absoluto */}
+                <div className="hidden md:block absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wide">Seleccionar Estado</span>
+                    {filterStatus.length > 0 && (
+                      <button onClick={() => setFilterStatus([])} className="text-[10px] font-bold text-emerald-600 hover:text-emerald-800">Limpiar</button>
+                    )}
+                  </div>
+                  {filterOptions.map(option => {
+                    const selected = filterStatus.includes(option);
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => setFilterStatus(prev => selected ? prev.filter(s => s !== option) : [...prev, option])}
+                        className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex items-center gap-3"
+                      >
+                        <span className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${selected ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>
+                          {selected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                        </span>
+                        <span>{option}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
+          </div>
+          <button
+            onClick={() => setIsConfigModalOpen(true)}
+            className="bg-white hover:bg-slate-50 text-slate-600 p-3 rounded-xl border border-slate-200 shadow-sm transition-all"
+            title="Configurar Status"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
           </div>
         </div>
 

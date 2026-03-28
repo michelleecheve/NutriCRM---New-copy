@@ -148,7 +148,7 @@ export const Payments: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Historial de Pagos</h2>
           <p className="text-slate-500 mt-1">Gestiona las facturas e ingresos de la clínica.</p>

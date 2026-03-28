@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, Users, LogOut, HeartPulse, Settings,
   ChevronDown, CreditCard, User, Eye, EyeOff, Home,
-  ClipboardList, ShieldCheck
+  ClipboardList, ShieldCheck, Menu
 } from 'lucide-react';
 import { AppRoute, UserProfile } from '../types';
 import { authStore } from '../services/authStore';
@@ -17,7 +17,7 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate, onLogout }) => {
   const [user, setUser]                     = useState<UserProfile>(authStore.getUserProfile());
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen]   = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen]   = useState(window.innerWidth >= 768);
 
   const currentUser = authStore.getCurrentUser();
   const role        = currentUser?.role ?? 'nutricionista';
@@ -49,7 +49,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate
     const isActive = activePage === route || extraActiveRoutes.includes(activePage);
     return (
       <button
-        onClick={() => onNavigate(route)}
+        onClick={() => {
+          onNavigate(route);
+          if (window.innerWidth < 768) setIsSidebarOpen(false);
+        }}
         className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-all duration-200 font-medium ${
           isActive
             ? 'bg-emerald-50 text-emerald-700'
@@ -65,11 +68,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate
   return (
     <div className="flex h-screen bg-[#F9FAFB] font-sans text-slate-600">
 
+      {/* ── SIDEBAR BACKDROP (mobile only) ───────────────────────────────── */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* ── SIDEBAR ──────────────────────────────────────────────────────── */}
       <aside
-        className={`bg-white border-r border-slate-200 flex flex-col z-20 transition-all duration-300 ease-in-out overflow-hidden ${
-          isSidebarOpen ? 'w-72 opacity-100 translate-x-0' : 'w-0 opacity-0 -translate-x-10'
-        }`}
+        className={`bg-white border-r border-slate-200 flex flex-col transition-all duration-300 ease-in-out overflow-hidden
+          fixed inset-0 z-50 md:relative md:inset-auto md:z-20
+          ${isSidebarOpen ? 'w-full md:w-72 opacity-100 translate-x-0' : 'w-0 opacity-0 -translate-x-10'}`}
       >
         {/* Logo */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-slate-100 min-w-[18rem]">
@@ -142,10 +153,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate
         {/* Top Header */}
         <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10">
           <div className="flex items-center gap-4">
+            {/* Mobile: always show toggle button */}
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 -ml-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors md:hidden"
+              title="Menú"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            {/* Desktop: show only when sidebar is closed */}
             {!isSidebarOpen && (
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="p-2 -ml-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors animate-in fade-in slide-in-from-left-2"
+                className="p-2 -ml-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors animate-in fade-in slide-in-from-left-2 hidden md:block"
                 title="Mostrar Menú"
               >
                 <Eye className="w-6 h-6" />

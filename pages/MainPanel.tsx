@@ -108,13 +108,13 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Hola, {user.name}</h1>
           <p className="text-slate-500 mt-1">Aquí tienes el resumen de tu clínica.</p>
         </div>
         <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2">
-          <div className="flex items-center gap-2 px-2 border-r border-slate-100">
+          <div className="hidden md:flex items-center gap-2 px-2 border-r border-slate-100">
             <CalendarDays className="w-4 h-4 text-emerald-600" />
             <span className="text-xs font-bold text-slate-400 uppercase">Filtrar:</span>
           </div>
@@ -123,6 +123,75 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
             <span className="text-slate-300 font-bold">-</span>
             <input type="date" value={dateRange.end} onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })} className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-lg px-2 py-1 outline-none focus:border-emerald-500 transition-colors" />
           </div>
+        </div>
+      </div>
+
+      {/* Mobile: Agenda de Hoy */}
+      <div className="md:hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col max-h-[400px]">
+        <div className="p-6 bg-slate-900 text-white">
+          <div className="flex justify-between items-center mb-1">
+            <h3 className="font-bold text-lg">Agenda de Hoy</h3>
+            <Calendar className="w-5 h-5 text-slate-400" />
+          </div>
+          <p className="text-slate-400 text-sm">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+          {todaysAppointments.length === 0 ? (
+            <div className="h-40 flex flex-col items-center justify-center text-slate-400">
+              <Clock className="w-8 h-8 mb-2 opacity-30" />
+              <p className="text-sm">Sin citas para hoy</p>
+            </div>
+          ) : (
+            todaysAppointments.map(appt => (
+              <div key={appt.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 relative overflow-hidden group">
+                <div className={`absolute left-0 top-0 bottom-0 w-1 ${appt.status === 'Completada' ? 'bg-slate-300' : 'bg-emerald-500'}`}></div>
+                <div className="flex justify-between items-start mb-2">
+                  <span className="font-bold text-slate-800 text-lg">{appt.time}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${appt.modality === 'Video' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>{appt.modality}</span>
+                </div>
+                <h4 className="font-bold text-slate-700 text-sm">{appt.patientName}</h4>
+                <p className="text-xs text-slate-400 mt-1">{appt.type}</p>
+                <div className="mt-4">
+                  <button onClick={() => handleOpenApptModal(appt)} className="w-full py-2.5 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors flex items-center justify-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" /> Ver Cita
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Mobile: Atención Prioritaria */}
+      <div className="md:hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-amber-500" />
+            <h3 className="font-bold text-slate-800">Atención Prioritaria: Menús Pendientes</h3>
+          </div>
+        </div>
+        <div className="divide-y divide-slate-50 overflow-y-auto max-h-[480px]">
+          {pendingMenuPatients.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 text-sm">¡Todo al día! No hay menús pendientes.</div>
+          ) : (
+            pendingMenuPatients.map(patient => (
+              <div key={patient.id} onClick={() => onSelectPatient(patient.id)} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between group cursor-pointer">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold border border-slate-200">
+                    {patient.firstName[0]}{patient.lastName[0]}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-sm">{patient.firstName} {patient.lastName}</h4>
+                    <p className="text-xs text-slate-400">{patient.clinical.consultmotive || 'Sin objetivo definido'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full">Pendiente</span>
+                  <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -208,7 +277,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div className="hidden md:flex bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-col">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-amber-500" />
@@ -242,7 +311,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
         </div>
 
         {/* Right column */}
-        <div className="lg:col-span-1 space-y-8">
+        <div className="hidden md:block lg:col-span-1 space-y-8">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-full max-h-[600px] flex flex-col">
             <div className="p-6 bg-slate-900 text-white">
               <div className="flex justify-between items-center mb-1">

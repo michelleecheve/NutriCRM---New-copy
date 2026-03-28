@@ -379,20 +379,20 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
               onClick={() => setShowPreview(!showPreview)}
               className="flex items-center gap-2 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors"
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="w-4 h-4 hidden md:inline" />
               {showPreview ? 'Ocultar preview' : 'Ver preview'}
             </button>
-            
+
             <button
               onClick={() => saveTemplate({})}
               disabled={isSaving}
               className={`flex items-center gap-2 font-bold px-4 py-2 rounded-xl text-sm transition-all ${
-                saveSuccess 
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                saveSuccess
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                   : 'bg-white border border-slate-200 text-slate-700 hover:border-emerald-500 hover:text-emerald-600'
               }`}
             >
-              <Save className={`w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
+              <Save className={`hidden md:inline w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
               {isSaving ? 'Guardando...' : 'Guardar'}
             </button>
 
@@ -400,6 +400,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
               elementId="menu-print-area"
               filename={`Menu_${mockData.patient.name.replace(/\s+/g, '_')}`}
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm shadow-emerald-600/20"
+              hideIconOnMobile
             />
           </div>
         </div>
@@ -416,20 +417,20 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
             onClick={() => setShowPreview(!showPreview)}
             className="flex items-center gap-2 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors"
           >
-            <Eye className="w-4 h-4" />
+            <Eye className="w-4 h-4 hidden md:inline" />
             {showPreview ? 'Ocultar preview' : 'Ver preview'}
           </button>
-          
+
           <button
             onClick={() => saveTemplate({})}
             disabled={isSaving}
             className={`flex items-center gap-2 font-bold px-4 py-2 rounded-xl text-sm transition-all ${
-              saveSuccess 
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+              saveSuccess
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                 : 'bg-white border border-slate-200 text-slate-700 hover:border-emerald-500 hover:text-emerald-600'
             }`}
           >
-            <Save className={`w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
+            <Save className={`hidden md:inline w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
             {isSaving ? 'Guardando...' : 'Guardar'}
           </button>
 
@@ -437,6 +438,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
             elementId="menu-print-area"
             filename={`Menu_${mockData.patient.name.replace(/\s+/g, '_')}`}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm shadow-emerald-600/20"
+            hideIconOnMobile
           />
         </div>
       )}
