@@ -51,6 +51,34 @@ const TextAreaField = ({ label, icon: Icon, value, onChange, placeholder = "", r
   </div>
 );
 
+const COUNTRIES = [
+  'Afganistán','Albania','Alemania','Andorra','Angola','Antigua y Barbuda','Arabia Saudita',
+  'Argelia','Argentina','Armenia','Australia','Austria','Azerbaiyán','Bahamas','Bahrein',
+  'Bangladesh','Barbados','Bélgica','Belice','Benín','Bielorrusia','Bolivia','Bosnia y Herzegovina',
+  'Botsuana','Brasil','Brunéi','Bulgaria','Burkina Faso','Burundi','Bután','Cabo Verde',
+  'Camboya','Camerún','Canadá','Catar','Chad','Chile','China','Chipre','Colombia','Comoras',
+  'Congo','Corea del Norte','Corea del Sur','Costa de Marfil','Costa Rica','Croacia','Cuba',
+  'Dinamarca','Djibouti','Dominica','Ecuador','Egipto','El Salvador','Emiratos Árabes Unidos',
+  'Eritrea','Eslovaquia','Eslovenia','España','Estados Unidos','Estonia','Esuatini','Etiopía',
+  'Filipinas','Finlandia','Fiyi','Francia','Gabón','Gambia','Georgia','Ghana','Granada',
+  'Grecia','Guatemala','Guinea','Guinea-Bisáu','Guinea Ecuatorial','Guyana','Haití','Honduras',
+  'Hungría','India','Indonesia','Irak','Irán','Irlanda','Islandia','Islas Marshall',
+  'Islas Salomón','Israel','Italia','Jamaica','Japón','Jordania','Kazajistán','Kenia',
+  'Kirguistán','Kiribati','Kosovo','Kuwait','Laos','Lesoto','Letonia','Líbano','Liberia',
+  'Libia','Liechtenstein','Lituania','Luxemburgo','Madagascar','Malasia','Malaui','Maldivas',
+  'Malí','Malta','Marruecos','Mauricio','Mauritania','México','Micronesia','Moldavia','Mónaco',
+  'Mongolia','Montenegro','Mozambique','Namibia','Nauru','Nepal','Nicaragua','Níger','Nigeria',
+  'Noruega','Nueva Zelanda','Omán','Países Bajos','Pakistán','Palaos','Palestina','Panamá',
+  'Papúa Nueva Guinea','Paraguay','Perú','Polonia','Portugal','Reino Unido','República Centroafricana',
+  'República Checa','República Democrática del Congo','República Dominicana','Ruanda','Rumanía',
+  'Rusia','Samoa','San Cristóbal y Nieves','San Marino','San Vicente y las Granadinas',
+  'Santa Lucía','Santo Tomé y Príncipe','Senegal','Serbia','Seychelles','Sierra Leona',
+  'Singapur','Siria','Somalia','Sri Lanka','Sudáfrica','Sudán','Sudán del Sur','Suecia',
+  'Suiza','Surinam','Tailandia','Tanzania','Tayikistán','Timor Oriental','Togo','Tonga',
+  'Trinidad y Tobago','Túnez','Turkmenistán','Turquía','Tuvalu','Ucrania','Uganda','Uruguay',
+  'Uzbekistán','Vanuatu','Venezuela','Vietnam','Yemen','Yibuti','Zambia','Zimbabue',
+];
+
 const UTC_TIMEZONES = [
   "UTC-12:00","UTC-11:00","UTC-10:00","UTC-09:30","UTC-09:00","UTC-08:00",
   "UTC-07:00","UTC-06:00","UTC-05:00","UTC-04:00","UTC-03:30","UTC-03:00",
@@ -605,13 +633,21 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                       <p className="text-[10px] text-slate-400 px-1">Esto asegura que la "Agenda de Hoy" muestre las citas correctas según tu hora local.</p>
                     </div>
 
-                    <InputField
-                      label="País"
-                      icon={MapPin}
-                      value={formData.country || ''}
-                      onChange={(e: any) => setFormData({ ...formData, country: e.target.value })}
-                      placeholder="Ej. Guatemala"
-                    />
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700 block">País</label>
+                      <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10"><MapPin className="w-5 h-5" /></div>
+                        <select
+                          value={formData.country || ''}
+                          onChange={e => setFormData({ ...formData, country: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 appearance-none"
+                        >
+                          <option value="">Selecciona tu país</option>
+                          {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><ChevronDown className="w-4 h-4" /></div>
+                      </div>
+                    </div>
 
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-slate-700 block">Fecha de Nacimiento</label>

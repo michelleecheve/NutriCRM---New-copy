@@ -94,14 +94,14 @@ export const ClinicalTab: React.FC<{
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-full font-bold shadow-xl hover:shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
+          className={`flex items-center gap-2 text-white px-6 py-3 rounded-full font-bold shadow-xl transition-all active:scale-95 disabled:opacity-50 ${hasChanges ? 'bg-amber-500 hover:bg-amber-600 hover:shadow-amber-500/20' : 'bg-emerald-600 hover:bg-emerald-700 hover:shadow-emerald-600/20'}`}
         >
           {isSaving ? (
             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
             <Save className="w-5 h-5" />
           )}
-          {isSaving ? 'Guardando...' : 'Guardar'}
+          {isSaving ? 'Guardando...' : hasChanges ? 'Cambios sin guardar' : 'Guardar'}
         </button>
       </div>
 
@@ -209,26 +209,23 @@ export const ClinicalTab: React.FC<{
 
       {/* 2. Perfil Deportivo */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between mb-6 pb-2 border-b border-slate-100">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 pb-2 border-b border-slate-100 gap-2">
           <div className="flex items-center gap-2 text-emerald-800">
             <Activity className="w-5 h-5" />
             <h3 className="font-bold text-base">Perfil Deportivo</h3>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="text-emerald-600 text-xs font-bold flex items-center gap-1 hover:text-emerald-700 transition-colors bg-emerald-50 px-3 py-1.5 rounded-lg"
-            >
-              <Save className="w-3 h-3" /> {isSaving ? 'Guardando...' : 'Guardar'}
-            </button>
-            <button
-              onClick={addSport}
-              className="text-emerald-600 text-xs font-bold flex items-center gap-1 hover:text-emerald-700 transition-colors bg-emerald-50 px-3 py-1.5 rounded-lg"
-            >
-              <Plus className="w-3 h-3" /> Agregar Deporte/Actividad Física
-            </button>
-          </div>
+          <button
+            onClick={addSport}
+            className="text-emerald-600 text-xs font-bold flex items-center gap-1 hover:text-emerald-700 transition-colors bg-emerald-50 px-3 py-1.5 rounded-lg md:hidden self-start"
+          >
+            <Plus className="w-3 h-3" /> Agregar Deporte/Actividad Física
+          </button>
+          <button
+            onClick={addSport}
+            className="text-emerald-600 text-xs font-bold items-center gap-1 hover:text-emerald-700 transition-colors bg-emerald-50 px-3 py-1.5 rounded-lg hidden md:flex"
+          >
+            <Plus className="w-3 h-3" /> Agregar Deporte/Actividad Física
+          </button>
         </div>
 
         <div className="overflow-x-auto">

@@ -297,6 +297,41 @@ export const supabaseService = {
     if (error) throw error;
   },
 
+  async upsertEvaluation(ev: { id: string; patientId: string; date: string; title: string; notes?: string }) {
+    const { data, error } = await supabase
+      .from('evaluations')
+      .upsert(
+        { id: ev.id, patient_id: ev.patientId, date: ev.date, title: ev.title, notes: ev.notes || null },
+        { onConflict: 'id' }
+      )
+      .select()
+      .single();
+    if (error) throw error;
+    return this.mapEvaluationFromDb(data);
+  },
+
+  async upsertPatientFileMeta(file: { id: string; linkedEvaluationId?: string | null; name: string; type: string; folder: string; url: string; path?: string; date?: string; description?: string; labInterpretation?: string }, patientId: string) {
+    const { error } = await supabase
+      .from('patient_files')
+      .upsert(
+        {
+          id:                 file.id,
+          patient_id:         patientId,
+          evaluation_id:      file.linkedEvaluationId || null,
+          name:               file.name,
+          type:               file.type,
+          folder:             file.folder,
+          url:                file.url,
+          path:               file.path || null,
+          date:               file.date || null,
+          description:        file.description || null,
+          lab_interpretation: file.labInterpretation || null,
+        },
+        { onConflict: 'id' }
+      );
+    if (error) throw error;
+  },
+
   // ─── Measurements ──────────────────────────────────────────────────────────
 
   async saveMeasurement(evaluationId: string, measurement: any) {

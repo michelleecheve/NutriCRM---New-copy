@@ -28,6 +28,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
   const [exportingEvaluationId, setExportingEvaluationId] = useState<string | null>(null);
   const [isExportingAll, setIsExportingAll] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const fullName = `${patient.firstName} ${patient.lastName}`;
   const nameMatches = deleteConfirmName.trim().toLowerCase() === fullName.toLowerCase();
@@ -68,159 +69,17 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
   };
 
   const handleExport = () => {
-    // 1. Obtener las evaluaciones vinculadas (los "links")
-    const evaluations = store.getEvaluations(patient.id);
-
-    // 2. Preparar el objeto con el orden deseado
-    // El usuario solicitó un orden específico y quitar campos que no se usen
     const exportData = {
-      id: patient.id,
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      registeredAt: patient.registeredAt,
-      clinical: {
-        status: patient.clinical.status,
-        cui: patient.clinical.cui,
-        birthdate: patient.clinical.birthdate,
-        age: patient.clinical.age,
-        sex: patient.clinical.sex,
-        email: patient.clinical.email,
-        phone: patient.clinical.phone,
-        occupation: patient.clinical.occupation,
-        study: patient.clinical.study,
-        consultmotive: patient.clinical.consultmotive,
-        clinicalbackground: patient.clinical.clinicalbackground,
-        diagnosis: patient.clinical.diagnosis,
-        familyHistory: patient.clinical.familyHistory,
-        medications: patient.clinical.medications,
-        supplements: patient.clinical.supplements,
-        allergies: patient.clinical.allergies,
-        regularPeriod: patient.clinical.regularPeriod,
-        periodDuration: patient.clinical.periodDuration,
-        firstperiodage: patient.clinical.firstperiodage,
-        menstrualOthers: patient.clinical.menstrualOthers,
-        sportsProfile: patient.sportsProfile
-      },
-      evaluations: evaluations.map(({ id, patientId, date, title }) => ({
-        id,
-        patientId,
-        date,
-        title
-      })),
-      dietary: {
-        preferences: patient.dietary.preferences
-      },
-      dietaryEvaluations: patient.dietaryEvaluations.map(({ id, linkedEvaluationId, date, mealsPerDay, excludedFoods, notes, recall, foodFrequency, foodFrequencyOthers }) => ({
-        id,
-        linkedEvaluationId,
-        date,
-        mealsPerDay,
-        excludedFoods,
-        notes,
-        recall,
-        foodFrequency,
-        foodFrequencyOthers
-      })),
-      measurements: patient.measurements.map(({ id, linkedEvaluationId, ...rest }) => ({
-        id,
-        linkedEvaluationId,
-        ...rest
-      })),
-      somatotypes: patient.somatotypes.map(({ id, linkedEvaluationId, date, x, y }) => ({
-        id,
-        linkedEvaluationId,
-        date,
-        x,
-        y
-      })),
-      menus: patient.menus.map((m) => {
-        const EXCHANGE_LIST = {
-          lec: { name: 'Lácteos Enteros', kcal: 150, cho: 12, chon: 7, fat: 8 },
-          lecDesc: { name: 'Lácteos Descremados', kcal: 90, cho: 12, chon: 7, fat: 1 },
-          fru: { name: 'Frutas', kcal: 60, cho: 15, chon: 0, fat: 0 },
-          veg: { name: 'Vegetales', kcal: 25, cho: 5, chon: 2, fat: 0 },
-          cer: { name: 'Cereales', kcal: 80, cho: 15, chon: 6, fat: 0 },
-          carMagra: { name: 'Carnes Magras', kcal: 55, cho: 0, chon: 7, fat: 3 },
-          carSemi: { name: 'Carnes Semi Grasas', kcal: 75, cho: 0, chon: 7, fat: 5 },
-          carAlta: { name: 'Carnes Altas en Grasa', kcal: 100, cho: 0, chon: 7, fat: 8 },
-          gra: { name: 'Grasas', kcal: 45, cho: 0, chon: 0, fat: 5 },
-          azu: { name: 'Azúcares', kcal: 45, cho: 12, chon: 0, fat: 0 },
-        };
-
-        const macros = m.macros ? {
-          id: m.macros.id || `macros-${m.id}`,
-          ...m.macros
-        } : undefined;
-
-        const portions = m.portions ? (() => {
-          const rows = Object.entries(EXCHANGE_LIST).map(([key, ref]) => {
-            const p = (m.portions as any)[key] || 0;
-            return {
-              id: `${key}-${m.id}`,
-              group: ref.name,
-              portions: p,
-              kcal: Math.round(p * ref.kcal),
-              cho: Math.round(p * ref.cho),
-              chon: Math.round(p * ref.chon),
-              fat: Math.round(p * ref.fat)
-            };
-          });
-
-          const totals = rows.reduce((acc, row) => ({
-            kcal: acc.kcal + row.kcal,
-            cho: acc.cho + row.cho,
-            chon: acc.chon + row.chon,
-            fat: acc.fat + row.fat
-          }), { kcal: 0, cho: 0, chon: 0, fat: 0 });
-
-          return {
-            id: m.portions.id || `portions-${m.id}`,
-            ...m.portions,
-            rows,
-            totals
-          };
-        })() : undefined;
-
-        return {
-          id: m.id,
-          linkedEvaluationId: m.linkedEvaluationId,
-          date: m.date,
-          content: m.content,
-          vet: m.vet,
-          macros,
-          portions,
-          name: m.name,
-          selectedTemplateId: m.selectedTemplateId,
-          selectedReferenceIds: m.selectedReferenceIds,
-          aiRationale: m.aiRationale,
-          menuPreviewData: m.menuPreviewData
-        };
-      }),
-      labs: patient.labs.map(({ id, linkedEvaluationId, name, date, url, type, labInterpretation }) => ({
-        id,
-        linkedEvaluationId,
-        name,
-        date,
-        url,
-        type,
-        labInterpretation
-      })),
-      photos: patient.photos.map(({ id, linkedEvaluationId, name, date, url, type }) => ({
-        id,
-        linkedEvaluationId,
-        name,
-        date,
-        url,
-        type
-      }))
+      ...patient,
+      evaluations: store.getEvaluations(patient.id),
     };
 
     const dataStr = JSON.stringify(exportData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-    
+
     const user = store.getUserProfile();
     const exportFileDefaultName = `paciente_${patient.firstName}_${patient.lastName}_${getTodayStr(user.timezone)}.json`;
-    
+
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
@@ -236,42 +95,33 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const content = e.target?.result as string;
         const importedData = JSON.parse(content);
 
-        // Basic validation
         if (!importedData.id || !importedData.firstName || !importedData.lastName) {
           throw new Error('El archivo no tiene un formato de paciente válido.');
         }
 
-        // Mantener el ID del paciente actual para evitar duplicados o errores de consistencia
-        const dataToImport = {
-          ...importedData,
-          id: patient.id
-        };
+        // Force the current patient's ID so we never create duplicates
+        const dataToImport = { ...importedData, id: patient.id };
 
-        // Usar el nuevo método del store que maneja también las evaluaciones vinculadas
-        store.importPatientData(dataToImport);
-        
+        setIsImporting(true);
+        setImportStatus('idle');
+
+        await store.importPatientDataFull(dataToImport);
+
         setImportStatus('success');
-        
-        // Notificar al padre para actualizar el estado local
-        onUpdate(store.getPatient(patient.id)!);
-        
-        // Auto-reload after a short delay to show success
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
+        setTimeout(() => window.location.reload(), 1500);
 
       } catch (err) {
         setImportStatus('error');
         setErrorMessage(err instanceof Error ? err.message : 'Error al importar el archivo.');
+        setIsImporting(false);
       }
     };
     reader.readAsText(file);
-    // Reset input
     event.target.value = '';
   };
 
@@ -386,10 +236,14 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
 
                     <button
                       onClick={handleImportClick}
-                      className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20"
+                      disabled={isImporting}
+                      className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      <Upload className="w-4 h-4" />
-                      Seleccionar Archivo
+                      {isImporting ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Importando datos...</>
+                      ) : (
+                        <><Upload className="w-4 h-4" /> Importar JSON</>
+                      )}
                     </button>
 
                     {importStatus === 'success' && (

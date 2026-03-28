@@ -231,6 +231,78 @@ class Store {
     return this.patients.find(p => p.id === id);
   }
 
+  async importPatientDataFull(data: Patient & { evaluations?: PatientEvaluation[] }): Promise<void> {
+    const { evaluations, ...patient } = data;
+
+    // Legacy compat: sportsProfile nested inside clinical
+    if ((patient.clinical as any).sportsProfile && (!patient.sportsProfile || patient.sportsProfile.length === 0)) {
+      patient.sportsProfile = (patient.clinical as any).sportsProfile;
+    }
+    if (!patient.sportsProfile) patient.sportsProfile = [];
+
+    // 1. Update patient base fields in Supabase
+    await supabaseService.updatePatient(patient.id, patient);
+
+    // 2. Upsert evaluations
+    if (evaluations && Array.isArray(evaluations)) {
+      for (const ev of evaluations) {
+        await supabaseService.upsertEvaluation({ ...ev, patientId: patient.id });
+      }
+      const otherEvals = this.evaluations.filter(e => e.patientId !== patient.id);
+      this.evaluations = [...otherEvals, ...evaluations.map(e => ({ ...e, patientId: patient.id }))];
+      save(this.K.evaluations, this.evaluations);
+    }
+
+    // 3. Upsert measurements
+    for (const m of (patient.measurements || [])) {
+      if (m.linkedEvaluationId) {
+        await supabaseService.saveMeasurement(m.linkedEvaluationId, { ...m, patientId: patient.id });
+      }
+    }
+
+    // 4. Upsert bioimpedancias
+    for (const b of (patient.bioimpedancias || [])) {
+      if (b.evaluation_id) {
+        await supabaseService.saveBioimpedancia(b.evaluation_id, { ...b, patientId: patient.id });
+      }
+    }
+
+    // 5. Upsert dietary evaluations
+    for (const d of (patient.dietaryEvaluations || [])) {
+      if (d.linkedEvaluationId) {
+        await supabaseService.saveDietaryEvaluation(d.linkedEvaluationId, d);
+      }
+    }
+
+    // 6. Upsert somatotypes
+    for (const s of (patient.somatotypes || [])) {
+      if (s.linkedEvaluationId) {
+        await supabaseService.saveSomatotype(s.linkedEvaluationId, { ...s, patientId: patient.id } as any);
+      }
+    }
+
+    // 7. Upsert menus
+    for (const m of (patient.menus || [])) {
+      if (m.linkedEvaluationId) {
+        await supabaseService.saveMenu(m.linkedEvaluationId, { ...m, patientId: patient.id });
+      }
+    }
+
+    // 8. Upsert labs metadata
+    for (const f of (patient.labs || [])) {
+      await supabaseService.upsertPatientFileMeta({ ...f, folder: 'labs' }, patient.id);
+    }
+
+    // 9. Upsert photos metadata
+    for (const f of (patient.photos || [])) {
+      await supabaseService.upsertPatientFileMeta({ ...f, folder: 'photos' }, patient.id);
+    }
+
+    // 10. Update local in-memory state
+    this.patients = this.patients.map(p => p.id === patient.id ? { ...patient } : p);
+    save(this.K.patients, this.patients);
+  }
+
   importPatientData(data: Patient & { evaluations?: PatientEvaluation[] }): void {
     const { evaluations, ...patient } = data;
 

@@ -287,17 +287,22 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
       return (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div>
-                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><TableIcon className="w-5 h-5 text-indigo-600" />Editar Tabla de Porciones</h3>
-                <p className="text-xs text-slate-500 font-medium">Distribución de equivalentes por tiempo de comida</p>
+            <div className="p-6 border-b border-slate-100 bg-slate-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><TableIcon className="w-5 h-5 text-indigo-600" />Editar Tabla de Porciones</h3>
+                  <p className="text-xs text-slate-500 font-medium">Distribución de equivalentes por tiempo de comida</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={addMeal} className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-indigo-600 hover:bg-slate-50 transition-all">
+                    <Plus className="w-3.5 h-3.5" />Agregar Tiempo
+                  </button>
+                  <button onClick={() => setEditingPortions(false)} className="p-2 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <button onClick={addMeal} className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-indigo-600 hover:bg-slate-50 transition-all">
-                  <Plus className="w-3.5 h-3.5" />Agregar Tiempo
-                </button>
-                <button onClick={() => setEditingPortions(false)} className="p-2 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
-              </div>
+              <button onClick={addMeal} className="sm:hidden mt-3 flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-indigo-600 hover:bg-slate-50 transition-all w-full justify-center">
+                <Plus className="w-3.5 h-3.5" />Agregar Tiempo
+              </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1">
               <table className="w-full border-collapse text-sm">
@@ -332,7 +337,7 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
                         </td>
                       ))}
                       <td className="p-3 text-center">
-                        <button onClick={() => removeMeal(meal.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={() => removeMeal(meal.id)} className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
                       </td>
                     </tr>
                   ))}
@@ -416,20 +421,37 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
       return (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl animate-in zoom-in-95 duration-200 my-8">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-indigo-600" />
-                Editar {isDomingo ? 'Domingo' : dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}
-              </h3>
-              <button onClick={() => setEditingDay(null)} className="p-2 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
+            <div className="p-6 border-b border-slate-100 bg-slate-50 rounded-t-3xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-indigo-600" />
+                    Editar {isDomingo ? 'Domingo' : dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}
+                  </h3>
+                  {!isDomingo && <p className="text-xs text-slate-400 font-medium italic mt-0.5 ml-7">Personaliza los tiempos de comida y sus títulos.</p>}
+                </div>
+                <div className="flex items-center gap-3">
+                  {!isDomingo && (
+                    <button onClick={addMeal} className="hidden sm:flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">
+                      <Plus className="w-3.5 h-3.5" />Agregar Tiempo
+                    </button>
+                  )}
+                  <button onClick={() => setEditingDay(null)} className="p-2 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
+                </div>
+              </div>
+              {!isDomingo && (
+                <button onClick={addMeal} className="sm:hidden mt-3 flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-indigo-600 hover:bg-slate-50 transition-all w-full justify-center">
+                  <Plus className="w-3.5 h-3.5" />Agregar Tiempo
+                </button>
+              )}
             </div>
             <div className="p-8 space-y-8">
               {isDomingo ? (
                 <>
                   <div className="space-y-4 border border-slate-100 rounded-2xl p-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between cursor-pointer select-none" onClick={() => setShowDomingoLibre(!showDomingoLibre)}>
                       <h4 className="text-sm font-bold text-slate-700">Domingo - Día Libre</h4>
-                      <button onClick={() => setShowDomingoLibre(!showDomingoLibre)} className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-400 hover:text-indigo-600">
+                      <button onClick={e => { e.stopPropagation(); setShowDomingoLibre(!showDomingoLibre); }} className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-400 hover:text-indigo-600">
                         {showDomingoLibre ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
@@ -443,20 +465,31 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
                     )}
                   </div>
                   <div className="space-y-4 border border-slate-100 rounded-2xl p-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-bold text-slate-700">Domingo - Menú completo</h4>
-                      <button onClick={() => setShowDomingoCompleto(!showDomingoCompleto)} className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-400 hover:text-indigo-600">
-                        {showDomingoCompleto ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
+                    <div className="flex items-start justify-between gap-3 cursor-pointer select-none" onClick={() => setShowDomingoCompleto(!showDomingoCompleto)}>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-bold text-slate-700">Domingo - Menú completo</h4>
+                        {showDomingoCompleto && (
+                          <p className="text-xs text-slate-400 font-medium italic mt-0.5">Configura los tiempos de comida para el domingo completo.</p>
+                        )}
+                        {showDomingoCompleto && (
+                          <button onClick={e => { e.stopPropagation(); addMeal(); }} className="sm:hidden mt-2 flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-indigo-600 hover:bg-slate-50 transition-all w-full justify-center">
+                            <Plus className="w-3.5 h-3.5" />Agregar Tiempo
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {showDomingoCompleto && (
+                          <button onClick={e => { e.stopPropagation(); addMeal(); }} className="hidden sm:flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">
+                            <Plus className="w-3.5 h-3.5" />Agregar Tiempo
+                          </button>
+                        )}
+                        <button onClick={e => { e.stopPropagation(); setShowDomingoCompleto(!showDomingoCompleto); }} className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-400 hover:text-indigo-600">
+                          {showDomingoCompleto ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
                     </div>
                     {showDomingoCompleto && (
                       <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-slate-400 font-medium italic">Configura los tiempos de comida para el domingo completo.</p>
-                          <button onClick={addMeal} className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">
-                            <Plus className="w-3.5 h-3.5" />Agregar Tiempo
-                          </button>
-                        </div>
                         <div className="space-y-4">
                           {meals.map((meal, idx) => (
                             <div key={meal.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
@@ -469,7 +502,7 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
                                   <input value={meal.label} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], label: e.target.value }; setMeals(n); }}
                                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="Etiqueta (Ej: Desayuno)" />
                                   <textarea value={meal.title} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], title: e.target.value }; setMeals(n); }}
-                                    rows={3} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" placeholder="Contenido del menú..." />
+                                    rows={6} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" placeholder="Contenido del menú..." />
                                 </div>
                                 <button onClick={() => removeMeal(meal.id)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
                               </div>
@@ -482,12 +515,6 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
                 </>
               ) : (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-slate-400 font-medium italic">Personaliza los tiempos de comida y sus títulos.</p>
-                    <button onClick={addMeal} className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">
-                      <Plus className="w-3.5 h-3.5" />Agregar Tiempo
-                    </button>
-                  </div>
                   <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                     {meals.map((meal, idx) => (
                       <div key={meal.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
@@ -500,7 +527,7 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
                             <input value={meal.label} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], label: e.target.value }; setMeals(n); }}
                               className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="Etiqueta (Ej: Desayuno)" />
                             <textarea value={meal.title} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], title: e.target.value }; setMeals(n); }}
-                              rows={3} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" placeholder="Contenido del menú..." />
+                              rows={6} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" placeholder="Contenido del menú..." />
                           </div>
                           <button onClick={() => removeMeal(meal.id)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
                         </div>
@@ -669,17 +696,24 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
       return (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl animate-in zoom-in-95 duration-200 my-8">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Calendar className="w-5 h-5 text-indigo-600" />Domingo — Menú Completo</h3>
-              <button onClick={() => setEditingDomingoCompleto(false)} className="p-2 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
+            <div className="p-6 border-b border-slate-100 bg-slate-50 rounded-t-3xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Calendar className="w-5 h-5 text-indigo-600" />Domingo — Menú Completo</h3>
+                  <p className="text-xs text-slate-400 font-medium italic mt-0.5 ml-7">Configura los tiempos de comida para el domingo completo.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={addMeal} className="hidden sm:flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">
+                    <Plus className="w-3.5 h-3.5" />Agregar Tiempo
+                  </button>
+                  <button onClick={() => setEditingDomingoCompleto(false)} className="p-2 hover:bg-white rounded-xl transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
+                </div>
+              </div>
+              <button onClick={addMeal} className="sm:hidden mt-3 flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-indigo-600 hover:bg-slate-50 transition-all w-full justify-center">
+                <Plus className="w-3.5 h-3.5" />Agregar Tiempo
+              </button>
             </div>
             <div className="p-8 space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-slate-400 font-medium italic">Configura los tiempos de comida para el domingo completo.</p>
-                <button onClick={addMeal} className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">
-                  <Plus className="w-3.5 h-3.5" />Agregar Tiempo
-                </button>
-              </div>
               <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
                 {meals.map((meal, idx) => (
                   <div key={meal.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-3">
@@ -692,7 +726,7 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
                         <input value={meal.label} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], label: e.target.value }; setMeals(n); }}
                           className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="Etiqueta (Ej: Desayuno)" />
                         <textarea value={meal.title} onChange={e => { const n = [...meals]; n[idx] = { ...meals[idx], title: e.target.value }; setMeals(n); }}
-                          rows={3} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" placeholder="Contenido del menú..." />
+                          rows={6} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" placeholder="Contenido del menú..." />
                       </div>
                       <button onClick={() => removeMeal(meal.id)} className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="w-4 h-4" /></button>
                     </div>
@@ -766,9 +800,9 @@ export const MenuEditorToolbar = forwardRef<MenuEditorToolbarHandle, MenuEditorT
               </div>
               {/* Content items */}
               <div className="flex items-center justify-between">
-                <p className="text-xs text-slate-400 font-medium italic">Agrega o edita las notas para esta sección.</p>
+                <p className="text-xs text-slate-400 font-medium italic">Agrega múltiples notas.</p>
                 <button onClick={() => setLocalItems([...localItems, ''])} className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">
-                  <Plus className="w-3.5 h-3.5" />Agregar Nota
+                  <Plus className="w-3.5 h-3.5" />Agregar Recomendación
                 </button>
               </div>
               <div className="space-y-3">
