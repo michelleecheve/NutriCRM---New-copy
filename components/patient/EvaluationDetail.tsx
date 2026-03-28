@@ -528,7 +528,7 @@ export const EvaluationDetail: React.FC<{
               </div>
               <div>
                 <p className="text-lg font-bold text-slate-900">Evaluación Dietética</p>
-                <p className="text-xs text-slate-500">
+                <p className="hidden md:block text-xs text-slate-500">
                   Vinculada por fecha: <span className="font-mono font-bold">{selected.date}</span>
                 </p>
               </div>
@@ -573,26 +573,26 @@ export const EvaluationDetail: React.FC<{
 
         {/* Card 3: Measurements */}
         <div id="evaluation-measurements" className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4 mb-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="bg-emerald-50 p-2 rounded-lg">
+              <div className="bg-emerald-50 p-2 rounded-lg shrink-0">
                 <Calculator className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
                 <p className="text-lg font-bold text-slate-900">Medidas</p>
-                <p className="text-xs text-slate-500">
+                <p className="hidden md:block text-xs text-slate-500">
                   Vinculadas por fecha: <span className="font-mono font-bold">{selected.date}</span>
                 </p>
               </div>
             </div>
             <div className="flex gap-2">
               <button type="button" onClick={() => { setMeasEditingId(null); setMeasView('edit'); }}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
-                <Plus className="w-4 h-4" /> Crear Antropométrica
+                className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition-colors">
+                <Plus className="w-3.5 h-3.5 shrink-0" /> Crear Antropométrica
               </button>
               <button type="button" onClick={() => { setBioEditingId(null); setBioView('edit'); }}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-colors">
-                <Plus className="w-4 h-4" /> Crear Bioimpedancia
+                className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition-colors">
+                <Plus className="w-3.5 h-3.5 shrink-0" /> Crear Bioimpedancia
               </button>
             </div>
           </div>
@@ -654,7 +654,7 @@ export const EvaluationDetail: React.FC<{
               </div>
               <div>
                 <p className="text-lg font-bold text-slate-900">Somatocarta</p>
-                <p className="text-xs text-slate-500">
+                <p className="hidden md:block text-xs text-slate-500">
                   Vinculada por fecha: <span className="font-mono font-bold">{selected.date}</span>
                 </p>
               </div>
@@ -709,7 +709,7 @@ export const EvaluationDetail: React.FC<{
               </div>
               <div>
                 <p className="text-lg font-bold text-slate-900">Menú</p>
-                <p className="text-xs text-slate-500">
+                <p className="hidden md:block text-xs text-slate-500">
                   Vinculados por fecha: <span className="font-mono font-bold">{selected.date}</span>
                 </p>
               </div>
@@ -750,7 +750,7 @@ export const EvaluationDetail: React.FC<{
               </div>
               <div>
                 <p className="text-lg font-bold text-slate-900">Laboratorios</p>
-                <p className="text-xs text-slate-500">
+                <p className="hidden md:block text-xs text-slate-500">
                   Vinculados por fecha: <span className="font-mono font-bold">{selected.date}</span>
                 </p>
               </div>
@@ -792,7 +792,7 @@ export const EvaluationDetail: React.FC<{
               </div>
               <div>
                 <p className="text-lg font-bold text-slate-900">Fotos De Progreso</p>
-                <p className="text-xs text-slate-500">
+                <p className="hidden md:block text-xs text-slate-500">
                   Vinculadas por fecha: <span className="font-mono font-bold">{selected.date}</span>
                 </p>
               </div>

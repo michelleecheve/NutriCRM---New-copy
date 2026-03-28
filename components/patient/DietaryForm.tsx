@@ -206,7 +206,7 @@ export const DietaryForm: React.FC<{
 
       {/* Barra superior */}
       <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-4">
             <div className="bg-emerald-50 p-2 rounded-lg">
               <Utensils className="w-6 h-6 text-emerald-600" />
@@ -383,18 +383,18 @@ export const DietaryForm: React.FC<{
           <button
             type="button"
             onClick={() => setConfirmOpen(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold shadow-lg transition-colors bg-red-50 text-red-700 border border-red-100 hover:bg-red-100"
+            className="inline-flex items-center gap-2 px-3 py-2 sm:px-6 sm:py-3 rounded-full font-bold text-sm shadow-lg transition-colors bg-red-50 text-red-700 border border-red-100 hover:bg-red-100"
           >
-            <Trash2 className="w-4 h-4" /> Eliminar
+            <Trash2 className="w-4 h-4" /> <span className="hidden sm:inline">Eliminar</span><span className="sm:hidden">Eliminar</span>
           </button>
         ) : <div />}
 
-        <div className="flex gap-3">
-          <button type="button" onClick={onCancel} className="px-6 py-3 bg-white text-slate-500 font-bold rounded-full shadow-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+        <div className="flex gap-2 sm:gap-3">
+          <button type="button" onClick={onCancel} className="px-3 py-2 sm:px-6 sm:py-3 text-sm bg-white text-slate-500 font-bold rounded-full shadow-lg border border-slate-100 hover:bg-slate-50 transition-colors">
             Cancelar
           </button>
-          <button type="button" onClick={handleSave} className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-full shadow-xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all flex items-center gap-2">
-            <Save className="w-4 h-4" /> Guardar Evaluación
+          <button type="button" onClick={handleSave} className="px-3 py-2 sm:px-6 sm:py-3 text-sm bg-emerald-600 text-white font-bold rounded-full shadow-xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all flex items-center gap-2">
+            <Save className="w-4 h-4" /> <span className="hidden sm:inline">Guardar Evaluación</span><span className="sm:hidden">Guardar</span>
           </button>
         </div>
       </div>

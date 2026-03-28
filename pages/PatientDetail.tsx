@@ -143,21 +143,23 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack 
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100/50 p-1 rounded-xl w-fit">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as TabType)}
-            className={`px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${
-              activeTab === tab.id
-                ? 'bg-white text-emerald-700 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
+      <div className="overflow-x-auto -mx-1 px-1">
+        <div className="flex gap-1 bg-slate-100/50 p-1 rounded-xl w-max">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as TabType)}
+              className={`px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'bg-white text-emerald-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content */}

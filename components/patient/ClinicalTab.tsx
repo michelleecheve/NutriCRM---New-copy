@@ -101,7 +101,7 @@ export const ClinicalTab: React.FC<{
           ) : (
             <Save className="w-5 h-5" />
           )}
-          {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+          {isSaving ? 'Guardando...' : 'Guardar'}
         </button>
       </div>
 
@@ -142,9 +142,6 @@ export const ClinicalTab: React.FC<{
         <SectionHeader icon={User} title="Información Personal" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-x-6 gap-y-6">
           {/* ROW 1 */}
-          <div className="lg:col-span-1">
-            <GridInput label="ID" value={localPatient.id} onChange={() => {}} readOnly={true} />
-          </div>
           <div className="lg:col-span-3">
             <GridInput label="Nombre" value={localPatient.firstName} onChange={(e: any) => setLocalPatient({ ...localPatient, firstName: e.target.value })} />
           </div>
@@ -223,7 +220,7 @@ export const ClinicalTab: React.FC<{
               disabled={isSaving}
               className="text-emerald-600 text-xs font-bold flex items-center gap-1 hover:text-emerald-700 transition-colors bg-emerald-50 px-3 py-1.5 rounded-lg"
             >
-              <Save className="w-3 h-3" /> {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+              <Save className="w-3 h-3" /> {isSaving ? 'Guardando...' : 'Guardar'}
             </button>
             <button
               onClick={addSport}
@@ -235,56 +232,56 @@ export const ClinicalTab: React.FC<{
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="text-left border-collapse" style={{ minWidth: '700px' }}>
             <thead>
               <tr className="border-b border-slate-100">
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wide">Deporte/Activ Física</th>
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wide w-32">Dias/Sem</th>
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wide">Horario</th>
-                <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wide w-32">Horas al día</th>
-                <th className="py-3 px-4 w-10"></th>
+                <th className="py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wide" style={{ minWidth: '200px' }}>Deporte/Activ Física</th>
+                <th className="py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wide" style={{ minWidth: '130px' }}>Dias/Sem</th>
+                <th className="py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wide" style={{ minWidth: '260px' }}>Horario</th>
+                <th className="py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wide" style={{ minWidth: '130px' }}>Horas al día</th>
+                <th className="py-3 px-5 w-12"></th>
               </tr>
             </thead>
             <tbody>
               {(localPatient.sportsProfile || []).map((entry) => (
                 <tr key={entry.id} className="border-b border-slate-50 group">
-                  <td className="py-3 px-2 align-top">
+                  <td className="py-4 px-3 align-top">
                     <input
                       type="text"
                       value={entry.sport}
                       onChange={(e) => updateSport(entry.id, 'sport', e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                       placeholder="Ej. Natación"
                     />
                   </td>
-                  <td className="py-3 px-2 align-top">
+                  <td className="py-4 px-3 align-top">
                     <input
                       type="text"
                       value={entry.daysPerWeek}
                       onChange={(e) => updateSport(entry.id, 'daysPerWeek', e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                       placeholder="Ej. 3"
                     />
                   </td>
-                  <td className="py-3 px-2 align-top">
+                  <td className="py-4 px-3 align-top">
                     <textarea
                       value={entry.schedule}
                       onChange={(e) => updateSport(entry.id, 'schedule', e.target.value)}
                       rows={3}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none"
                       placeholder="Ej. Lunes, Miércoles y Viernes de 18:00 a 20:00..."
                     />
                   </td>
-                  <td className="py-3 px-2 align-top">
+                  <td className="py-4 px-3 align-top">
                     <input
                       type="text"
                       value={entry.hoursPerDay}
                       onChange={(e) => updateSport(entry.id, 'hoursPerDay', e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                       placeholder="Ej. 2"
                     />
                   </td>
-                  <td className="py-3 px-2 align-top">
+                  <td className="py-4 px-3 align-top">
                     <button
                       onClick={() => removeSport(entry.id)}
                       className="text-slate-300 hover:text-rose-500 transition-colors p-2 mt-1"

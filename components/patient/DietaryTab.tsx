@@ -111,7 +111,7 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
 
       {/* Header historial */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="bg-emerald-50 p-2 rounded-lg">
               <Utensils className="w-5 h-5 text-emerald-600" />
@@ -122,7 +122,7 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-1.5">
+          <div className="flex flex-col items-start sm:items-end gap-1.5">
             <button
               type="button"
               onClick={() => { setEditingId(null); setView('edit'); }}

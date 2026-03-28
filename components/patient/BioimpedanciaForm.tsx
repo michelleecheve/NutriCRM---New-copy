@@ -233,7 +233,7 @@ export const BioimpedanciaForm: React.FC<{
   return (
     <div className="bg-white rounded-3xl border border-slate-200 shadow-xl animate-in fade-in zoom-in duration-300 max-w-5xl mx-auto overflow-hidden">
       {/* Header matching the image */}
-      <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+      <div className="p-6 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center bg-white">
         <div className="flex items-center gap-4">
           <button
             onClick={onClose}
@@ -252,11 +252,11 @@ export const BioimpedanciaForm: React.FC<{
           </div>
         </div>
         <div className="flex gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors">
+          <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors text-center">
             Cancelar
           </button>
-          <button onClick={handleSave} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center gap-2">
-            <Save className="w-4 h-4" /> {editingId ? 'Actualizar Registro' : 'Guardar Registro'}
+          <button onClick={handleSave} className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+            <Save className="w-4 h-4" /> {editingId ? 'Actualizar' : 'Guardar'}
           </button>
         </div>
       </div>
