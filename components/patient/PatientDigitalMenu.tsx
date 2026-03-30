@@ -13,6 +13,8 @@ import {
   CalendarClock,
   TrendingUp,
   Settings,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { Patient, GeneratedMenu, TrackingRow } from "../../types";
 import { supabaseService } from "../../services/supabaseService";
@@ -173,6 +175,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   );
   const [pinInput, setPinInput] = useState(patient.accessCode ?? "");
   const [savingPin, setSavingPin] = useState(false);
+  const [pinLocked, setPinLocked] = useState(true);
 
   // ── Tracking state ──
   const [tracking, setTracking] = useState<TrackingRow | null | undefined>(
@@ -787,19 +790,41 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
 
               {/* Columna derecha: Pin de acceso */}
               <div>
-                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
-                  Pin de acceso
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                    Pin de acceso
+                  </label>
+                  <button
+                    onClick={() => setPinLocked((v) => !v)}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold transition-all ${
+                      pinLocked
+                        ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                        : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                    }`}
+                    title={pinLocked ? "Desbloquear para editar" : "Bloquear PIN"}
+                  >
+                    {pinLocked ? (
+                      <><Lock className="w-3 h-3" /> Desbloquear</>
+                    ) : (
+                      <><Unlock className="w-3 h-3" /> Bloquear</>
+                    )}
+                  </button>
+                </div>
                 <div className="flex items-center gap-1.5">
                   <input
                     type="text"
                     value={pinInput}
-                    onChange={(e) => setPinInput(e.target.value)}
-                    onBlur={handleSavePin}
-                    onKeyDown={(e) => e.key === "Enter" && handleSavePin()}
+                    onChange={(e) => !pinLocked && setPinInput(e.target.value)}
+                    onBlur={() => !pinLocked && handleSavePin()}
+                    onKeyDown={(e) => !pinLocked && e.key === "Enter" && handleSavePin()}
                     maxLength={4}
                     placeholder="—"
-                    className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-300 min-w-0"
+                    readOnly={pinLocked}
+                    className={`flex-1 border rounded-xl px-3 py-2 text-xs font-mono focus:outline-none min-w-0 transition-all ${
+                      pinLocked
+                        ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed select-none"
+                        : "bg-white border-slate-200 text-slate-600 focus:ring-2 focus:ring-emerald-300"
+                    }`}
                   />
                   {savingPin && (
                     <RefreshCw className="w-3.5 h-3.5 text-slate-400 animate-spin flex-shrink-0" />
@@ -817,9 +842,9 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                   </button>
                   <button
                     onClick={handleRegeneratePin}
-                    disabled={loading}
-                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors flex-shrink-0 disabled:opacity-50"
-                    title="Generar PIN aleatorio"
+                    disabled={loading || pinLocked}
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                    title={pinLocked ? "Desbloquea para generar PIN aleatorio" : "Generar PIN aleatorio"}
                   >
                     <RefreshCw
                       className={`w-3.5 h-3.5 text-slate-500 ${loading ? "animate-spin" : ""}`}
@@ -827,8 +852,9 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                   </button>
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
-                  El paciente ingresa este PIN la primera vez. Puedes
-                  personalizarlo.
+                  {pinLocked
+                    ? "PIN bloqueado. Toca «Desbloquear» para modificarlo."
+                    : "El paciente ingresa este PIN la primera vez. Puedes personalizarlo."}
                 </p>
               </div>
             </div>

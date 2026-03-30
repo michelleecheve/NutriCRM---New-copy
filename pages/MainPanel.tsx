@@ -15,6 +15,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   const currentUser = authStore.getCurrentUser();
   const user = currentUser?.profile || store.getUserProfile();
 
+  const currency = (user as any)?.currency || '$';
   const todayStr = user?.timezone ? getTodayStr(user.timezone) : new Date().toISOString().split('T')[0];
   const [currentYear, currentMonth] = todayStr.split('-').map(Number);
 
@@ -106,7 +107,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
         <div className="bg-white p-4 border border-slate-100 shadow-xl rounded-xl">
           <p className="font-bold text-slate-800 mb-2 capitalize">{label}</p>
           <div className="space-y-1">
-            <p className="text-emerald-600 text-sm font-bold flex items-center gap-2"><CreditCard className="w-3 h-3" />Q{payload[0].value.toLocaleString()}</p>
+            <p className="text-emerald-600 text-sm font-bold flex items-center gap-2"><CreditCard className="w-3 h-3" />{currency}{payload[0].value.toLocaleString()}</p>
             <p className="text-blue-600 text-xs font-bold flex items-center gap-2"><Calendar className="w-3 h-3" />{payload[0].payload.appointments} Citas</p>
           </div>
         </div>
@@ -239,7 +240,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
           </div>
           <div className="min-w-0 flex-1">
             <span className="text-slate-400 text-xs font-medium block">Ingresos</span>
-            <span className="text-2xl font-bold text-slate-900">Q{totalIncome.toLocaleString()}</span>
+            <span className="text-2xl font-bold text-slate-900">{currency}{totalIncome.toLocaleString()}</span>
           </div>
         </div>
 
@@ -293,7 +294,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
                 <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }} dy={8} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(v) => `Q${v}`} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(v) => `${currency}${v}`} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
                   <Bar dataKey="total" radius={[5, 5, 0, 0]} barSize={32}>
                     {chartData.map((entry, index) => (

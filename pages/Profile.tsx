@@ -79,6 +79,42 @@ const COUNTRIES = [
   'Uzbekistán','Vanuatu','Venezuela','Vietnam','Yemen','Yibuti','Zambia','Zimbabue',
 ];
 
+const CURRENCIES: { symbol: string; label: string }[] = [
+  { symbol: '$',    label: '$ — Dólar (USD)'             },
+  { symbol: 'Q',    label: 'Q — Quetzal (GTQ)'           },
+  { symbol: 'MX$',  label: 'MX$ — Peso Mexicano (MXN)'  },
+  { symbol: 'COP$', label: 'COP$ — Peso Colombiano'      },
+  { symbol: 'S/',   label: 'S/ — Sol Peruano (PEN)'      },
+  { symbol: 'CLP$', label: 'CLP$ — Peso Chileno'         },
+  { symbol: 'ARS$', label: 'ARS$ — Peso Argentino'       },
+  { symbol: 'R$',   label: 'R$ — Real Brasileño (BRL)'   },
+  { symbol: 'L',    label: 'L — Lempira (HNL)'           },
+  { symbol: 'C$',   label: 'C$ — Córdoba (NIO)'          },
+  { symbol: '₡',    label: '₡ — Colón (CRC)'             },
+  { symbol: 'B/.',  label: 'B/. — Balboa (PAB)'          },
+  { symbol: 'RD$',  label: 'RD$ — Peso Dominicano'       },
+  { symbol: 'Bs.',  label: 'Bs. — Boliviano (BOB)'       },
+  { symbol: 'Gs.',  label: 'Gs. — Guaraní (PYG)'         },
+  { symbol: '$U',   label: '$U — Peso Uruguayo (UYU)'    },
+  { symbol: 'Bs.F', label: 'Bs.F — Bolívar (VES)'        },
+  { symbol: '€',    label: '€ — Euro (EUR)'              },
+  { symbol: '£',    label: '£ — Libra Esterlina (GBP)'   },
+  { symbol: 'CA$',  label: 'CA$ — Dólar Canadiense'      },
+  { symbol: 'A$',   label: 'A$ — Dólar Australiano'      },
+  { symbol: '¥',    label: '¥ — Yen (JPY)'               },
+  { symbol: 'CHF',  label: 'CHF — Franco Suizo'          },
+];
+
+const COUNTRY_CURRENCY: Record<string, string> = {
+  'Guatemala': 'Q', 'México': 'MX$', 'Colombia': 'COP$', 'Perú': 'S/',
+  'Chile': 'CLP$', 'Argentina': 'ARS$', 'Brasil': 'R$', 'Honduras': 'L',
+  'Nicaragua': 'C$', 'Costa Rica': '₡', 'Panamá': 'B/.', 'República Dominicana': 'RD$',
+  'Bolivia': 'Bs.', 'Paraguay': 'Gs.', 'Uruguay': '$U', 'Venezuela': 'Bs.F',
+  'España': '€', 'Estados Unidos': '$', 'Canadá': 'CA$', 'Australia': 'A$',
+  'Reino Unido': '£', 'Japón': '¥', 'Suiza': 'CHF', 'Ecuador': '$',
+  'El Salvador': '$', 'Cuba': '$', 'Puerto Rico': '$',
+};
+
 const UTC_TIMEZONES = [
   "UTC-12:00","UTC-11:00","UTC-10:00","UTC-09:30","UTC-09:00","UTC-08:00",
   "UTC-07:00","UTC-06:00","UTC-05:00","UTC-04:00","UTC-03:30","UTC-03:00",
@@ -639,7 +675,15 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10"><MapPin className="w-5 h-5" /></div>
                         <select
                           value={formData.country || ''}
-                          onChange={e => setFormData({ ...formData, country: e.target.value })}
+                          onChange={e => {
+                            const newCountry = e.target.value;
+                            const suggested = COUNTRY_CURRENCY[newCountry];
+                            setFormData(prev => ({
+                              ...prev,
+                              country: newCountry,
+                              ...(suggested ? { currency: suggested } : {}),
+                            }));
+                          }}
                           className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 appearance-none"
                         >
                           <option value="">Selecciona tu país</option>
@@ -647,6 +691,24 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                         </select>
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><ChevronDown className="w-4 h-4" /></div>
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700 block">Moneda</label>
+                      <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10 text-sm font-bold select-none">
+                          {formData.currency || '$'}
+                        </div>
+                        <select
+                          value={formData.currency || '$'}
+                          onChange={e => setFormData({ ...formData, currency: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 appearance-none"
+                        >
+                          {CURRENCIES.map(c => <option key={c.symbol} value={c.symbol}>{c.label}</option>)}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><ChevronDown className="w-4 h-4" /></div>
+                      </div>
+                      <p className="text-[10px] text-slate-400 px-1">Se muestra en Pagos e Ingresos. Se sugiere automáticamente al elegir el país.</p>
                     </div>
 
                     <div className="space-y-2">

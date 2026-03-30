@@ -327,6 +327,7 @@ export interface UserProfile {
   timezone?: string;
   country?: string;
   dateOfBirth?: string;
+  currency?: string;
   menuAIConfig?: MenuAIConfig;
   labAIPrompt?: string;
   shareDigitalMenuMessage?: string;

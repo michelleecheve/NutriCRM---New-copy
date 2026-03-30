@@ -32,6 +32,7 @@ const PRESET_LABELS: Record<DatePreset, string> = {
 
 export const Payments: React.FC = () => {
   const [user] = useState(store.getUserProfile());
+  const currency = user?.currency || '$';
   const [invoices, setInvoices] = useState<Invoice[]>(store.getInvoices());
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -222,7 +223,7 @@ export const Payments: React.FC = () => {
               <TrendingUp className="w-3 h-3" /> {dateFilteredInvoices.filter(i => i.status === 'Pagado').length} Facturas
             </span>
           </div>
-          <div className="text-3xl font-bold text-slate-900">Q{totalRevenue.toFixed(2)}</div>
+          <div className="text-3xl font-bold text-slate-900">{currency}{totalRevenue.toFixed(2)}</div>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -232,7 +233,7 @@ export const Payments: React.FC = () => {
               {dateFilteredInvoices.filter(i => i.status === 'Pendiente').length} Facturas
             </span>
           </div>
-          <div className="text-3xl font-bold text-blue-600">Q{pendingAmount.toFixed(2)}</div>
+          <div className="text-3xl font-bold text-blue-600">{currency}{pendingAmount.toFixed(2)}</div>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -242,7 +243,7 @@ export const Payments: React.FC = () => {
               {dateFilteredInvoices.filter(i => i.status === 'Vencido').length} Facturas
             </span>
           </div>
-          <div className="text-3xl font-bold text-red-600">Q{overdueAmount.toFixed(2)}</div>
+          <div className="text-3xl font-bold text-red-600">{currency}{overdueAmount.toFixed(2)}</div>
         </div>
       </div>
 
@@ -422,7 +423,7 @@ export const Payments: React.FC = () => {
                       {inv.status}
                     </span>
                   </td>
-                  <td className="px-6 py-5 font-bold text-slate-900">Q{inv.amount.toFixed(2)}</td>
+                  <td className="px-6 py-5 font-bold text-slate-900">{currency}{inv.amount.toFixed(2)}</td>
                   <td className="px-6 py-5 text-slate-700">{getPatientName(inv)}</td>
                   <td className="px-6 py-5 text-sm text-slate-500 whitespace-nowrap">{formatDate(inv.date)}</td>
                   <td className="px-6 py-5 text-sm text-slate-500">{inv.method}</td>
@@ -506,7 +507,7 @@ export const Payments: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Monto (Q)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Monto ({currency})</label>
                   <input
                     required
                     type="number"

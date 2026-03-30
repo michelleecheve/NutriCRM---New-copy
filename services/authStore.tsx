@@ -146,6 +146,7 @@ const mapProfileToAppUser = (p: any): AppUser => ({
     address:           p.address            || '',
     country:           p.country            || '',
     dateOfBirth:       p.date_of_birth      || '',
+    currency:          p.currency           || '$',
   } as any,
 });
 
@@ -262,6 +263,7 @@ class AuthStore {
         address:           profile?.address             || '',
         country:           profile?.country             || '',
         dateOfBirth:       profile?.date_of_birth       || '',
+        currency:          profile?.currency            || '$',
         shareDigitalMenuMessage: profile?.share_digital_menu_message || undefined,
       } as any,
     };
@@ -509,6 +511,7 @@ class AuthStore {
         address:            profile.address,
         country:            profile.country,
         date_of_birth:      profile.dateOfBirth || null,
+        currency:           profile.currency || '$',
       })
       .eq('id', this.currentUser.id);
     if (error) {
