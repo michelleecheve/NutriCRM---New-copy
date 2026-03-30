@@ -179,6 +179,7 @@ export const EvaluationDetail: React.FC<{
 
   const [somatoView, setSomatoView] = useState<'card' | 'view' | 'edit'>('card');
   const [somatoEditingId, setSomatoEditingId] = useState<string | null>(null);
+  const [somatoDeleteId, setSomatoDeleteId] = useState<string | null>(null);
   const [viewingChart, setViewingChart] = useState<SomatotypeRecord | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
@@ -332,8 +333,8 @@ export const EvaluationDetail: React.FC<{
     }, 50);
   };
 
-  const handleEditLinkedBioimpedancia = (b: BioimpedanciaRecord) => {
-    setBioEditingId(b.id);
+  const handleEditLinkedBioimpedancia = (id: string) => {
+    setBioEditingId(id);
     setBioView('edit');
     setTimeout(() => {
       document.getElementById('evaluation-measurements')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -389,6 +390,20 @@ export const EvaluationDetail: React.FC<{
           message={`¿Seguro que deseas eliminar "${selected.title ?? selected.date}"? Esta acción no se puede deshacer.`}
           onConfirm={handleDeleteConfirmed}
           onCancel={() => setConfirmOpen(false)}
+        />
+      )}
+
+      {somatoDeleteId && (
+        <ConfirmModal
+          title="Eliminar somatocarta"
+          message="¿Seguro que deseas eliminar este registro? Esta acción no se puede deshacer."
+          onConfirm={async () => {
+            await store.deleteSomatotype(somatoDeleteId);
+            const updated = store.getPatient(patient.id);
+            if (updated) onUpdate(updated);
+            setSomatoDeleteId(null);
+          }}
+          onCancel={() => setSomatoDeleteId(null)}
         />
       )}
 
@@ -555,7 +570,15 @@ export const EvaluationDetail: React.FC<{
                 }
               }}
               onCancel={() => { setDietaryView('card'); setDietaryEditingId(null); }}
-              showDelete={false}
+              showDelete={true}
+              onDelete={async () => {
+                if (!dietaryEditingId) return;
+                await store.deleteDietaryEvaluation(dietaryEditingId);
+                const updated = store.getPatient(patient.id);
+                if (updated) onUpdate(updated);
+                setDietaryView('card');
+                setDietaryEditingId(null);
+              }}
             />
           ) : linkedDietaryEvaluations.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -603,7 +626,7 @@ export const EvaluationDetail: React.FC<{
               onUpdate={onUpdate}
               editingId={measEditingId}
               onClose={() => { setMeasView('card'); setMeasEditingId(null); }}
-              showDelete={false}
+              showDelete={true}
             />
           ) : bioView === 'edit' ? (
             <BioimpedanciaForm
@@ -689,7 +712,8 @@ export const EvaluationDetail: React.FC<{
                   onView={() => setViewingChart(rec)}
                   onEdit={() => { setSomatoEditingId(rec.id); setSomatoView('edit'); }}
                   onLink={() => { setSomatoEditingId(rec.id); setSomatoView('edit'); }}
-                  showDelete={false}
+                  onDelete={() => setSomatoDeleteId(rec.id)}
+                  showDelete={true}
                 />
               ))}
             </div>
@@ -769,7 +793,7 @@ export const EvaluationDetail: React.FC<{
             title="Resultados De Laboratorio"
             icon={Microscope}
             accept="application/pdf,image/*"
-            showDelete={false}
+            showDelete={true}
             hideHeader
           />
 
@@ -811,7 +835,7 @@ export const EvaluationDetail: React.FC<{
             title="Galería De Progreso"
             icon={ImageIcon}
             accept="image/*"
-            showDelete={false}
+            showDelete={true}
             hideHeader
           />
         </div>
