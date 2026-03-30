@@ -1,6 +1,6 @@
 import React from 'react';
 import { Measurement } from '../../types';
-import { Calendar, Activity, TrendingUp, Star, Ruler } from 'lucide-react';
+import { Calendar, Activity, TrendingUp, Star } from 'lucide-react';
 
 const MetricCard = ({ icon: Icon, label, value, unit, colorClass }: any) => (
   <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3">
@@ -42,26 +42,26 @@ export const MeasurementsCard: React.FC<MeasurementsCardProps> = ({ record, onEd
 
       {/* Content of the card */}
       <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MetricCard 
-          icon={Activity} 
-          label="Peso" 
-          value={record.weight} 
-          unit="kg" 
-          colorClass="bg-emerald-50 text-emerald-600" 
+        <MetricCard
+          icon={Activity}
+          label="Peso"
+          value={record.weight}
+          unit="kg"
+          colorClass="bg-emerald-50 text-emerald-600"
         />
-        <MetricCard 
-          icon={Ruler} 
-          label="Talla" 
-          value={record.height} 
-          unit="cm" 
-          colorClass="bg-teal-50 text-teal-600" 
+        <MetricCard
+          icon={TrendingUp}
+          label="IMC"
+          value={record.imc?.toFixed(2) || '-'}
+          unit=""
+          colorClass="bg-green-50 text-green-600"
         />
-        <MetricCard 
-          icon={TrendingUp} 
-          label="IMC" 
-          value={record.imc?.toFixed(2) || '-'} 
-          unit="" 
-          colorClass="bg-green-50 text-green-600" 
+        <MetricCard
+          icon={Activity}
+          label="% Grasa"
+          value={record.bodyFat ?? '-'}
+          unit="%"
+          colorClass="bg-orange-50 text-orange-600"
         />
         
         {/* Meta / Estrella */}

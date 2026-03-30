@@ -1,6 +1,6 @@
 import React from 'react';
 import { BioimpedanciaRecord } from '../../types';
-import { Calendar, Activity, TrendingUp, Star, Ruler } from 'lucide-react';
+import { Calendar, Activity, TrendingUp, Star } from 'lucide-react';
 
 const MetricCard = ({ icon: Icon, label, value, unit, colorClass }: any) => (
   <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3">
@@ -41,27 +41,20 @@ export const BioimpedanciaCard: React.FC<BioimpedanciaCardProps> = ({ record, on
       </div>
 
       {/* Content of the card */}
-      <div className="p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <MetricCard 
-          icon={Activity} 
-          label="Peso" 
-          value={record.weight} 
-          unit="kg" 
-          colorClass="bg-blue-50 text-blue-600" 
+      <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <MetricCard
+          icon={Activity}
+          label="Peso"
+          value={record.weight}
+          unit="kg"
+          colorClass="bg-blue-50 text-blue-600"
         />
-        <MetricCard 
-          icon={Ruler} 
-          label="Talla" 
-          value={record.height} 
-          unit="cm" 
-          colorClass="bg-cyan-50 text-cyan-600" 
-        />
-        <MetricCard 
-          icon={TrendingUp} 
-          label="IMC" 
-          value={record.imc} 
-          unit="" 
-          colorClass="bg-indigo-50 text-indigo-600" 
+        <MetricCard
+          icon={TrendingUp}
+          label="IMC"
+          value={record.imc}
+          unit=""
+          colorClass="bg-indigo-50 text-indigo-600"
         />
         <MetricCard 
           icon={Activity} 

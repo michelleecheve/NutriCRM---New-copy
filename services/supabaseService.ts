@@ -735,12 +735,15 @@ export const supabaseService = {
     const { data, error } = await supabase
       .from('invoices')
       .insert({
-        patient_id:   invoice.patientId,
-        patient_name: invoice.patientName,
+        patient_id:   invoice.patientId || null,
+        patient_name: invoice.patientName || null,
         date:         invoice.date,
         amount:       invoice.amount,
         status:       invoice.status,
         method:       invoice.method,
+        type:         invoice.type ?? 'ingreso',
+        category:     invoice.category,
+        description:  invoice.description,
       })
       .select()
       .single();
@@ -751,12 +754,16 @@ export const supabaseService = {
   async updateInvoice(id: string, invoice: Partial<Invoice>) {
     const { data, error } = await supabase
       .from('invoices')
-      .update({ 
-        amount:       invoice.amount, 
-        status:       invoice.status, 
-        method:       invoice.method, 
+      .update({
+        amount:       invoice.amount,
+        status:       invoice.status,
+        method:       invoice.method,
         date:         invoice.date,
-        patient_name: invoice.patientName 
+        patient_id:   invoice.patientId,
+        patient_name: invoice.patientName,
+        type:         invoice.type,
+        category:     invoice.category,
+        description:  invoice.description,
       })
       .eq('id', id)
       .select()
@@ -1276,6 +1283,9 @@ export const supabaseService = {
       amount:      db.amount,
       status:      db.status,
       method:      db.method,
+      type:        db.type ?? 'ingreso',
+      category:    db.category,
+      description: db.description,
     };
   },
 

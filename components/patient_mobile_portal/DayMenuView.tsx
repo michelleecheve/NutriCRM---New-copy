@@ -100,9 +100,15 @@ function getWeekStats(
     const date = getDateForPos(i, menuStartDate, weekIdx);
     const dd = getDayData(menu, orderedDays[i].key);
     const mm = buildMeals(dd);
-    total += mm.length;
-    for (const m of mm) {
-      if (trackingData[date]?.[m.key]?.completed === true) done++;
+    const isDomingoV1 = orderedDays[i].key === 'domingo' && menu.templateId === 'plantilla_v1' && mm.length === 0;
+    if (isDomingoV1) {
+      total += 1;
+      if (trackingData[date]?.dia_libre?.completed === true) done++;
+    } else {
+      total += mm.length;
+      for (const m of mm) {
+        if (trackingData[date]?.[m.key]?.completed === true) done++;
+      }
     }
   }
   return { done, total };
@@ -638,28 +644,61 @@ export const DayMenuView: React.FC<Props> = ({
         <div style={{ padding: '0 16px 28px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {/* Domingo día libre — plantilla v1 */}
           {selectedDay.key === 'domingo' && menu.templateId === 'plantilla_v1' ? (
-            <div style={{
-              padding: '20px',
-              borderRadius: '16px',
-              backgroundColor: 'white',
-              border: '1px solid #E0E8E3',
-              borderLeft: '4px solid #6EE7B7',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <Smile size={18} color="#2D5A4B" />
-                <p style={{ fontSize: '13px', fontWeight: 800, color: '#1F2937', margin: 0 }}>Día Libre</p>
-              </div>
-              {menu.menuData?.weeklyMenu?.domingo?.note ? (
-                <p style={{ fontSize: '14px', color: '#374151', lineHeight: 1.5 }}>
-                  {menu.menuData.weeklyMenu.domingo.note}
-                </p>
-              ) : (
-                <p style={{ fontSize: '14px', color: '#9CA3AF' }}>
-                  Disfruta tu día de descanso.
-                </p>
-              )}
-            </div>
+            (() => {
+              const dlData = getMealData(localTracking, dateKey, 'dia_libre');
+              const dlSaveKey = `${dateKey}_dia_libre`;
+              const borderColor = dlData.completed === true ? '#BBF7D0' : '#E0E8E3';
+              const glowShadow = dlData.completed === true ? '0 2px 8px rgba(22,163,74,0.20)' : '0 2px 8px rgba(0,0,0,0.04)';
+              return (
+                <div style={{
+                  padding: '20px',
+                  borderRadius: '16px',
+                  backgroundColor: 'white',
+                  border: `1px solid ${borderColor}`,
+                  borderLeft: '4px solid #6EE7B7',
+                  boxShadow: glowShadow,
+                  transition: 'all 0.2s ease',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <Smile size={18} color="#2D5A4B" />
+                        <p style={{ fontSize: '13px', fontWeight: 800, color: '#1F2937', margin: 0 }}>Día Libre</p>
+                      </div>
+                      {menu.menuData?.weeklyMenu?.domingo?.note ? (
+                        <p style={{ fontSize: '14px', color: '#374151', lineHeight: 1.5 }}>
+                          {menu.menuData.weeklyMenu.domingo.note}
+                        </p>
+                      ) : (
+                        <p style={{ fontSize: '14px', color: '#9CA3AF' }}>
+                          Disfruta tu día de descanso.
+                        </p>
+                      )}
+                    </div>
+                    <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                      <p style={{ color: '#9CA3AF', fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', margin: 0 }}>
+                        ¿Cumplido?
+                      </p>
+                      <button
+                        onClick={() => handleUpdate('dia_libre', { completed: dlData.completed === true ? null : true })}
+                        disabled={savingKeys.has(dlSaveKey)}
+                        className="flex items-center justify-center font-bold text-base transition-all active:scale-90"
+                        style={{
+                          width: 42, height: 42, borderRadius: '12px',
+                          backgroundColor: dlData.completed === true ? '#16A34A' : 'white',
+                          border: dlData.completed === true ? '2px solid #16A34A' : '2px solid #D1D5DB',
+                          color: dlData.completed === true ? 'white' : '#D1D5DB',
+                          boxShadow: dlData.completed === true ? '0 2px 8px rgba(22,163,74,0.28)' : 'none',
+                          cursor: 'pointer',
+                          fontSize: '18px',
+                        }}
+                        aria-label="Marcar día libre como cumplido"
+                      >✓</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()
           ) : meals.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '64px 0' }}>
               <p style={{ fontSize: '48px', marginBottom: '12px' }}>🍽️</p>

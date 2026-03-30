@@ -309,6 +309,9 @@ export interface Invoice {
   amount: number;
   status: 'Pagado' | 'Pendiente' | 'Vencido';
   method: 'Transferencia' | 'Efectivo' | 'Tarjeta' | 'Otro';
+  type?: 'ingreso' | 'egreso';
+  category?: string;
+  description?: string;
 }
 
 export interface UserProfile {
