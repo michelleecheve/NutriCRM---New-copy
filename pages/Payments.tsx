@@ -455,9 +455,9 @@ export const Payments: React.FC = () => {
           {/* KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start mb-4">
                 <span className="text-slate-500 font-medium text-sm">Ingresos Cobrados</span>
-                <span className="bg-emerald-50 text-emerald-600 text-xs px-2 py-1 rounded font-bold flex items-center gap-1">
+                <span className="bg-emerald-50 text-emerald-600 text-xs px-2 py-1 rounded font-bold flex items-center gap-1 self-start">
                   <TrendingUp className="w-3 h-3" />
                   {dateFilteredIngresos.filter(i => i.status === 'Pagado').length} Facturas
                 </span>
@@ -465,18 +465,18 @@ export const Payments: React.FC = () => {
               <div className="text-3xl font-bold text-slate-900">{currency}{totalIngresosCobrados.toFixed(2)}</div>
             </div>
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start mb-4">
                 <span className="text-slate-500 font-medium text-sm">Facturas Pendientes</span>
-                <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded font-bold">
+                <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded font-bold self-start">
                   {dateFilteredIngresos.filter(i => i.status === 'Pendiente').length} Facturas
                 </span>
               </div>
               <div className="text-3xl font-bold text-blue-600">{currency}{totalIngresosPendientes.toFixed(2)}</div>
             </div>
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start mb-4">
                 <span className="text-slate-500 font-medium text-sm">Monto Vencido</span>
-                <span className="bg-red-50 text-red-600 text-xs px-2 py-1 rounded font-bold">
+                <span className="bg-red-50 text-red-600 text-xs px-2 py-1 rounded font-bold self-start">
                   {dateFilteredIngresos.filter(i => i.status === 'Vencido').length} Facturas
                 </span>
               </div>
@@ -526,9 +526,9 @@ export const Payments: React.FC = () => {
           {/* KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start mb-4">
                 <span className="text-slate-500 font-medium text-sm">Total Egresos Pagados</span>
-                <span className="bg-red-50 text-red-500 text-xs px-2 py-1 rounded font-bold flex items-center gap-1">
+                <span className="bg-red-50 text-red-500 text-xs px-2 py-1 rounded font-bold flex items-center gap-1 self-start">
                   <TrendingDown className="w-3 h-3" />
                   {dateFilteredEgresos.filter(i => i.status === 'Pagado').length} registros
                 </span>
@@ -536,18 +536,18 @@ export const Payments: React.FC = () => {
               <div className="text-3xl font-bold text-slate-900">{currency}{totalEgresosPagados.toFixed(2)}</div>
             </div>
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start mb-4">
                 <span className="text-slate-500 font-medium text-sm">Egresos Pendientes</span>
-                <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded font-bold">
+                <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded font-bold self-start">
                   {dateFilteredEgresos.filter(i => i.status === 'Pendiente').length} registros
                 </span>
               </div>
               <div className="text-3xl font-bold text-amber-500">{currency}{totalEgresosPendientes.toFixed(2)}</div>
             </div>
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start mb-4">
                 <span className="text-slate-500 font-medium text-sm">Total de Egresos</span>
-                <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded font-bold">
+                <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded font-bold self-start">
                   {dateFilteredEgresos.length} registros
                 </span>
               </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { MenuTemplateV1, MenuTemplateV2, MenuPlanData } from './MenuDesignTemplates';
 import { Layout, Pencil } from 'lucide-react';
 
@@ -129,6 +129,7 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [editMode, setEditMode] = useState(defaultEditMode);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pinchRef = useRef<{ initialDist: number; initialZoom: number } | null>(null);
 
   const currentZoom = externalZoom !== undefined ? externalZoom : internalZoom;
   const currentTemplate = onTemplateChange ? selectedTemplate : internalTemplate;
@@ -148,6 +149,34 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
     if (onTemplateChange) onTemplateChange(id);
     else setInternalTemplate(id);
   };
+
+  const getPinchDist = (touches: React.TouchList) =>
+    Math.hypot(
+      touches[0].clientX - touches[1].clientX,
+      touches[0].clientY - touches[1].clientY
+    );
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      pinchRef.current = { initialDist: getPinchDist(e.touches), initialZoom: currentZoom };
+    }
+  }, [currentZoom]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchRef.current) {
+      e.preventDefault();
+      const newDist = getPinchDist(e.touches);
+      const ratio = newDist / pinchRef.current.initialDist;
+      const newZoom = Math.min(2, Math.max(0.3, pinchRef.current.initialZoom * ratio));
+      updateZoom(newZoom);
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      pinchRef.current = null;
+    }
+  }, []);
 
   const handleScroll = () => {
     const el = scrollRef.current;
@@ -179,8 +208,8 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
   return (
     <div className="space-y-6">
       {/* ── Header bar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
-        {/* Row 1: title + templates + edit (desktop) */}
+      <div className="flex flex-row items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        {/* Left: title + templates + edit (desktop) */}
         <div className="flex items-center gap-4">
           <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Vista Previa</h3>
 
@@ -227,8 +256,8 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
           )}
         </div>
 
-        {/* Row 2 on mobile: edit (left) + zoom (right) */}
-        <div className="flex items-center justify-between sm:justify-end gap-3">
+        {/* Right: edit (mobile) + zoom */}
+        <div className="flex items-center justify-end gap-3">
           {/* Edit mode toggle — mobile only */}
           {hasEditCallbacks && (
             <button
@@ -333,7 +362,11 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           className="bg-slate-200 p-4 md:p-8 rounded-3xl overflow-y-auto flex justify-center border border-slate-300 shadow-inner h-[850px]"
+          style={{ touchAction: 'pan-y' }}
         >
           <div
             style={{

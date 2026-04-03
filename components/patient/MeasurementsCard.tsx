@@ -3,11 +3,11 @@ import { Measurement } from '../../types';
 import { Calendar, Activity, TrendingUp, Star } from 'lucide-react';
 
 const MetricCard = ({ icon: Icon, label, value, unit, colorClass }: any) => (
-  <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3">
+  <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center gap-1 md:flex-row md:items-center md:gap-3">
     <div className={`p-2 rounded-lg ${colorClass}`}>
       <Icon className="w-4 h-4" />
     </div>
-    <div>
+    <div className="text-center md:text-left">
       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{label}</p>
       <p className="text-sm font-bold text-slate-700">
         {value} <span className="text-[10px] text-slate-400 font-medium">{unit}</span>
@@ -65,11 +65,11 @@ export const MeasurementsCard: React.FC<MeasurementsCardProps> = ({ record, onEd
         />
         
         {/* Meta / Estrella */}
-        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center gap-3">
+        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center gap-1 md:flex-row md:items-center md:gap-3">
           <div className={`p-2 rounded-lg ${record.metaComplied ? 'bg-yellow-50 text-yellow-500' : 'bg-slate-50 text-slate-300'}`}>
             <Star className={`w-4 h-4 ${record.metaComplied ? 'fill-yellow-500' : ''}`} />
           </div>
-          <div>
+          <div className="text-center md:text-left">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Meta</p>
             <p className="text-sm font-bold text-slate-700">
               {record.metaComplied ? 'Cumplida' : 'Pendiente'}

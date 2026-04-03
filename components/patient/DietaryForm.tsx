@@ -278,13 +278,13 @@ export const DietaryForm: React.FC<{
           </button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left border-collapse min-w-[600px]">
+          <table className="w-full text-sm text-left border-collapse min-w-[860px]">
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs uppercase font-bold">
-                <th className="p-4 rounded-l-lg w-1/5">Tiempo Comida</th>
-                <th className="p-4 w-24">Hora</th>
-                <th className="p-4 w-1/5">Lugar</th>
-                <th className="p-4 w-1/3">Alimentos y Cantidad</th>
+                <th className="p-4 rounded-l-lg w-[22%]">Tiempo Comida</th>
+                <th className="p-4 w-20">Hora</th>
+                <th className="p-4 w-[22%]">Lugar</th>
+                <th className="p-4 w-[42%]">Alimentos y Cantidad</th>
                 <th className="p-4 rounded-r-lg"></th>
               </tr>
             </thead>

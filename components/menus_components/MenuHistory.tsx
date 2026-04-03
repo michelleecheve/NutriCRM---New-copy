@@ -176,7 +176,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
           <tbody className="divide-y divide-slate-100">
             {filteredEntries.length > 0 ? (
               filteredEntries.map((entry) => (
-                <tr key={entry.menu.id} className="hover:bg-slate-50/50 transition-colors group">
+                <tr key={entry.menu.id} onClick={() => handleOpenMenu(entry)} className="hover:bg-slate-50/50 transition-colors group cursor-pointer">
                   <td className="px-6 py-4">
                     <div>
                       <div className="font-semibold text-slate-900">{entry.patient.firstName} {entry.patient.lastName}</div>
@@ -211,7 +211,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                           <span className="text-xs text-amber-600 px-2">Sin datos estructurados</span>
                         ) : (
                           <button
-                            onClick={() => handleAddRef(entry)}
+                            onClick={(e) => { e.stopPropagation(); handleAddRef(entry); }}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                             title={!entry.menu.menuData ? 'Este menú no tiene datos estructurados' : 'Usar como referencia (Hoja 1)'}
                           >
@@ -229,7 +229,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                           <span className="text-xs text-red-500 px-2">✗ Error</span>
                         ) : (
                           <button
-                            onClick={() => handleOpenRecModal(entry)}
+                            onClick={(e) => { e.stopPropagation(); handleOpenRecModal(entry); }}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
                             title={!entry.menu.menuData ? 'Este menú no tiene datos estructurados' : 'Usar como recomendación (Hoja 2)'}
                           >
@@ -240,14 +240,14 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                       {/* Always visible: preview + navigate */}
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={() => handleOpenMenu(entry)}
+                          onClick={(e) => { e.stopPropagation(); handleOpenMenu(entry); }}
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Previsualizar"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => onSelectPatient?.(entry.patient.id, 'menus')}
+                          onClick={(e) => { e.stopPropagation(); onSelectPatient?.(entry.patient.id, 'menus'); }}
                           className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                           title="Ver Detalles"
                         >
@@ -331,25 +331,38 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
       {selectedEntry && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900">Vista Previa del Menú</h3>
-                <p className="text-sm text-slate-500">Paciente: {selectedEntry.patient.firstName} {selectedEntry.patient.lastName} · {new Date(selectedEntry.menu.date).toLocaleDateString()}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <MenuExportPDF
-                  elementId={`menu-history-${selectedEntry.menu.id}`}
-                  filename={`Menu_${selectedEntry.patient.firstName}_${selectedEntry.patient.lastName}_${selectedEntry.menu.date}`}
-                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm shadow-emerald-600/20"
-                />
-                <button
-                  onClick={() => setSelectedEntry(null)}
-                  className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+            <div className="p-4 sm:p-6 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900">Vista Previa del Menú</h3>
+                  <p className="text-sm text-slate-500">Paciente: {selectedEntry.patient.firstName} {selectedEntry.patient.lastName} · {new Date(selectedEntry.menu.date).toLocaleDateString()}</p>
+                  {/* PDF button — visible only on mobile, below patient name */}
+                  <div className="mt-2 sm:hidden">
+                    <MenuExportPDF
+                      elementId={`menu-history-${selectedEntry.menu.id}`}
+                      filename={`Menu_${selectedEntry.patient.firstName}_${selectedEntry.patient.lastName}_${selectedEntry.menu.date}`}
+                      className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-xl text-xs transition-colors shadow-sm shadow-emerald-600/20"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {/* PDF button — visible only on desktop */}
+                  <div className="hidden sm:block">
+                    <MenuExportPDF
+                      elementId={`menu-history-${selectedEntry.menu.id}`}
+                      filename={`Menu_${selectedEntry.patient.firstName}_${selectedEntry.patient.lastName}_${selectedEntry.menu.date}`}
+                      className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm shadow-emerald-600/20"
+                    />
+                  </div>
+                  <button
+                    onClick={() => setSelectedEntry(null)}
+                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
             

@@ -181,7 +181,7 @@ export const CalendarAppointmentModal: React.FC<CalendarAppointmentModalProps> =
               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Detalles de la Cita</p>
 
               {/* Date & Time */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3">
                 <div className="min-w-0">
                   <Label>Fecha</Label>
                   <input
