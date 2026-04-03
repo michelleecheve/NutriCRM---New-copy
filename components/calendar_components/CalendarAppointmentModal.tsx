@@ -182,22 +182,22 @@ export const CalendarAppointmentModal: React.FC<CalendarAppointmentModalProps> =
 
               {/* Date & Time */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className="min-w-0">
                   <Label>Fecha</Label>
                   <input
                     type="date" required
                     value={formData.date || ''}
                     onChange={e => setFormData({ ...formData, date: e.target.value })}
-                    className={inputCls}
+                    className={inputCls + ' max-w-full'}
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <Label>Hora Inicio</Label>
                   <input
                     type="time" required
                     value={formData.time || ''}
                     onChange={e => setFormData({ ...formData, time: e.target.value })}
-                    className={inputCls}
+                    className={inputCls + ' max-w-full'}
                   />
                 </div>
               </div>

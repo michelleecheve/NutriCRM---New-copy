@@ -313,15 +313,15 @@ export const Payments: React.FC = () => {
             </div>
             {activePreset === 'custom' && (
               <div className="px-4 pb-4 pt-1 border-t border-slate-100 space-y-3">
-                <div>
+                <div className="min-w-0">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Desde</label>
                   <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500/20" />
+                    className="w-full max-w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500/20" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Hasta</label>
                   <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500/20" />
+                    className="w-full max-w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500/20" />
                 </div>
                 <button onClick={() => setFilterOpen(false)}
                   className="w-full py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 transition-colors">
@@ -832,14 +832,14 @@ export const Payments: React.FC = () => {
 
               {/* Shared fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
+                <div className="min-w-0">
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Fecha</label>
                   <input
                     required
                     type="date"
                     value={currentInvoice.date}
                     onChange={e => setCurrentInvoice({ ...currentInvoice, date: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                    className="w-full max-w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                   />
                 </div>
                 <div>

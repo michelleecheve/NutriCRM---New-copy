@@ -95,13 +95,9 @@ export const EvaluationLink: React.FC<{
 
       <div className="mt-3">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Fecha De Evaluación</p>
-        <input
-          type="date"
-          value={linkedDate}
-          disabled
-          readOnly
-          className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-600 outline-none cursor-not-allowed"
-        />
+        <div className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-600 cursor-not-allowed min-w-0">
+          {linkedDate || '—'}
+        </div>
       </div>
 
       {patientEvaluations.length === 0 && (

@@ -290,16 +290,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
       {/* Add Patient Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100">
-            <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100 flex flex-col max-h-[90dvh]">
+            <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center flex-shrink-0">
               <div>
                 <h3 className="text-xl font-bold text-slate-900">Nuevo Paciente</h3>
                 <p className="text-slate-500 text-sm mt-1">Ingresa la información básica para comenzar.</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="bg-slate-50 p-2 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">✕</button>
             </div>
-            <form onSubmit={handleAddPatient} className="p-8 space-y-5">
-              <div className="grid grid-cols-2 gap-5">
+            <form onSubmit={handleAddPatient} className="p-8 space-y-5 overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Nombre</label>
                   <input
@@ -322,7 +322,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Teléfono</label>
                   <input
@@ -334,13 +334,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
                     placeholder="+502 1234 5678"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Fecha Nacimiento (Opcional)</label>
                   <input
                     type="date"
                     value={newPatient.birthdate}
                     onChange={e => setNewPatient({ ...newPatient, birthdate: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-slate-900"
+                    className="w-full max-w-full px-4 py-3 rounded-xl bg-white border border-slate-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-slate-900"
                   />
                 </div>
               </div>
