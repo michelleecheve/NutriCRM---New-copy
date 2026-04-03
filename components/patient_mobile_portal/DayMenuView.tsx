@@ -229,6 +229,9 @@ export const DayMenuView: React.FC<Props> = ({
   const isToday = (weekIdx: number, pos: number) =>
     weekIdx === todayWeekIdx && pos === todayPos;
 
+  const todayDateStr = toLocalDateStr(new Date());
+  const isPastDay = dateKey < todayDateStr;
+
   // ── Optimistic update + upsert ──
   const handleUpdate = useCallback(
     async (mealKey: string, update: MealUpdate) => {
@@ -681,7 +684,7 @@ export const DayMenuView: React.FC<Props> = ({
                       </p>
                       <button
                         onClick={() => handleUpdate('dia_libre', { completed: dlData.completed === true ? null : true })}
-                        disabled={savingKeys.has(dlSaveKey)}
+                        disabled={savingKeys.has(dlSaveKey) || isPastDay}
                         className="flex items-center justify-center font-bold text-base transition-all active:scale-90"
                         style={{
                           width: 42, height: 42, borderRadius: '12px',
@@ -689,7 +692,8 @@ export const DayMenuView: React.FC<Props> = ({
                           border: dlData.completed === true ? '2px solid #16A34A' : '2px solid #D1D5DB',
                           color: dlData.completed === true ? 'white' : '#D1D5DB',
                           boxShadow: dlData.completed === true ? '0 2px 8px rgba(22,163,74,0.28)' : 'none',
-                          cursor: 'pointer',
+                          cursor: isPastDay ? 'not-allowed' : 'pointer',
+                          opacity: isPastDay ? 0.6 : 1,
                           fontSize: '18px',
                         }}
                         aria-label="Marcar día libre como cumplido"
@@ -716,6 +720,7 @@ export const DayMenuView: React.FC<Props> = ({
                   data={getMealData(localTracking, dateKey, meal.key)}
                   onUpdate={(u) => handleUpdate(meal.key, u)}
                   saving={savingKeys.has(saveKey)}
+                  readOnly={isPastDay}
                 />
               );
             })

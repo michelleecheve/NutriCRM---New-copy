@@ -24,6 +24,7 @@ interface Props {
   data: MealData;
   onUpdate: (update: MealUpdate) => void;
   saving?: boolean;
+  readOnly?: boolean;
 }
 
 // ─── Meal color themes ────────────────────────────────────────────────────────
@@ -57,7 +58,7 @@ const RATINGS: ('😊' | '😐' | '😔')[] = ['😊', '😐', '😔'];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving }) => {
+export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving, readOnly }) => {
   const mealStyle = getMealStyle(meal.key);
 
   // Subtle border color
@@ -124,7 +125,7 @@ export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving }) => {
             <div className="flex gap-1.5 justify-center">
               <button
                 onClick={() => onUpdate({ completed: data.completed === true ? null : true })}
-                disabled={saving}
+                disabled={saving || readOnly}
                 className="flex items-center justify-center font-bold text-base transition-all active:scale-90"
                 style={{
                   width: 38, height: 38, borderRadius: '10px',
@@ -132,12 +133,14 @@ export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving }) => {
                   border:          data.completed === true  ? '2px solid #16A34A' : '2px solid #D1D5DB',
                   color:           data.completed === true  ? 'white' : '#D1D5DB',
                   boxShadow:       data.completed === true  ? '0 2px 8px rgba(22,163,74,0.28)' : 'none',
+                  cursor:          readOnly ? 'not-allowed' : 'pointer',
+                  opacity:         readOnly ? 0.6 : 1,
                 }}
                 aria-label="Sí cumplido"
               >✓</button>
               <button
                 onClick={() => onUpdate({ completed: data.completed === false ? null : false })}
-                disabled={saving}
+                disabled={saving || readOnly}
                 className="flex items-center justify-center font-bold text-base transition-all active:scale-90"
                 style={{
                   width: 38, height: 38, borderRadius: '10px',
@@ -145,6 +148,8 @@ export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving }) => {
                   border:          data.completed === false ? '2px solid #EF4444' : '2px solid #D1D5DB',
                   color:           data.completed === false ? 'white' : '#D1D5DB',
                   boxShadow:       data.completed === false ? '0 2px 8px rgba(239,68,68,0.28)' : 'none',
+                  cursor:          readOnly ? 'not-allowed' : 'pointer',
+                  opacity:         readOnly ? 0.6 : 1,
                 }}
                 aria-label="No cumplido"
               >✗</button>
@@ -166,13 +171,15 @@ export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving }) => {
                   <button
                     key={emoji}
                     onClick={() => onUpdate({ rating: active ? null : emoji })}
-                    disabled={saving}
+                    disabled={saving || readOnly}
                     className="flex items-center justify-center text-lg transition-all active:scale-90"
                     style={{
                       width: 38, height: 38, borderRadius: '10px',
                       backgroundColor: active ? '#ECFDF5' : 'white',
                       border:          active ? '2px solid #86EFAC' : '2px solid #E5E7EB',
                       transform:       active ? 'scale(1.1)' : 'scale(1)',
+                      cursor:          readOnly ? 'not-allowed' : 'pointer',
+                      opacity:         readOnly ? 0.6 : 1,
                     }}
                     aria-label={emoji}
                   >{emoji}</button>
