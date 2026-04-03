@@ -122,25 +122,16 @@ export const ProfileAIConfig: React.FC = () => {
               <p className="text-[10px] text-slate-400 text-right">
                 Límite de tokens asignado para tu cuenta.
               </p>
+              <p className="text-[10px] text-slate-400 text-right">
+                Velocidad: {rateLimit.max_requests_per_minute} req/min
+              </p>
             </div>
           </div>
 
           {/* Ciclo y fechas */}
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 flex flex-col justify-center gap-4">
-            <div className="flex items-center gap-4">
-              <div className="bg-white p-3 rounded-xl border border-slate-100">
-                <Zap className="w-6 h-6 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Velocidad</p>
-                <p className="text-lg font-bold text-slate-800">
-                  {rateLimit.max_requests_per_minute} req/min
-                </p>
-              </div>
-            </div>
-
             {cycle && (
-              <div className="pt-4 border-t border-slate-200 space-y-3">
+              <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="bg-white p-2.5 rounded-xl border border-slate-100 flex-shrink-0">
                     <Calendar className="w-5 h-5 text-slate-400" />

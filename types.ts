@@ -334,6 +334,7 @@ export interface UserProfile {
   menuAIConfig?: MenuAIConfig;
   labAIPrompt?: string;
   shareDigitalMenuMessage?: string;
+  navbarConfig?: 'sidebar' | 'topnav';
 }
 
 export type MealTimeKey = 'desayuno' | 'refaccion' | 'almuerzo' | 'merienda' | 'cena';

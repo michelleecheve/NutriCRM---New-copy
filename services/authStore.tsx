@@ -147,6 +147,7 @@ const mapProfileToAppUser = (p: any): AppUser => ({
     country:           p.country            || '',
     dateOfBirth:       p.date_of_birth      || '',
     currency:          p.currency           || '$',
+    navbarConfig:      (p.navbarconfig as 'sidebar' | 'topnav') || 'sidebar',
   } as any,
 });
 
@@ -265,6 +266,7 @@ class AuthStore {
         dateOfBirth:       profile?.date_of_birth       || '',
         currency:          profile?.currency            || '$',
         shareDigitalMenuMessage: profile?.share_digital_menu_message || undefined,
+        navbarConfig:      (profile?.navbarconfig as 'sidebar' | 'topnav') || 'sidebar',
       } as any,
     };
 
@@ -512,6 +514,7 @@ class AuthStore {
         country:            profile.country,
         date_of_birth:      profile.dateOfBirth || null,
         currency:           profile.currency || '$',
+        navbarconfig:       profile.navbarConfig || 'sidebar',
       })
       .eq('id', this.currentUser.id);
     if (error) {
@@ -520,6 +523,7 @@ class AuthStore {
     }
     this.currentUser = { ...this.currentUser, profile };
     localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
+    window.dispatchEvent(new CustomEvent('nutriflow-profile-updated'));
   }
 
   getUserProfile(): UserProfile {

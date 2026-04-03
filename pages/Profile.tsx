@@ -5,7 +5,8 @@ import { compressImage } from '../services/imageUtils';
 import { UserProfile, AppUser } from '../types';
 import {
   Save, User, Mail, Phone, Award, Camera, Check, Loader2,
-  MapPin, Globe, ChevronDown, Clock, Link2, UserPlus, Trash2, Copy, Users, AlertTriangle, LogOut, Calendar
+  MapPin, Globe, ChevronDown, Clock, Link2, UserPlus, Trash2, Copy, Users, AlertTriangle, LogOut, Calendar,
+  PanelLeft, LayoutTemplate
 } from 'lucide-react';
 
 import { ProfileAIConfig } from '../components/profile_config/ProfileAIConfig';
@@ -550,7 +551,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         </div>
 
         <div className="px-8 pb-8">
-          <div className="relative flex justify-between items-end -mt-12 mb-8">
+          <div className="flex flex-col items-center -mt-12 mb-8 gap-3">
             <div className="relative group">
               <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-lg relative overflow-hidden">
                 {isProcessingImg ? (
@@ -558,7 +559,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                     <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
                   </div>
                 ) : formData.avatar ? (
-                  <img src={formData.avatar} alt="Profile" className="w-full h-full rounded-xl object-cover bg-slate-100" />
+                  <img src={formData.avatar} alt="Logo del consultorio" className="w-full h-full rounded-xl object-contain bg-slate-100 p-1" />
                 ) : (
                   <div className="w-full h-full rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-2xl">
                     {formData.name.charAt(0)}
@@ -570,6 +571,10 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                 className="absolute -bottom-2 -right-2 bg-slate-900 text-white p-2 rounded-full shadow-lg hover:bg-slate-800 transition-colors z-10">
                 <Camera className="w-4 h-4" />
               </button>
+            </div>
+            <div className="text-center">
+              <p className="text-xs font-bold text-slate-700">Logo del consultorio</p>
+              <p className="text-xs text-slate-400">Se muestra en los menús PDF</p>
             </div>
             {isSaved && (
               <div className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 animate-in fade-in">
@@ -627,9 +632,8 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                     <InputField label="Página Web" icon={Globe} value={formData.website || ''} onChange={(e: any) => setFormData({ ...formData, website: e.target.value })} />
                   </>
                 )}
+                <InputField label="Dirección" icon={MapPin} value={formData.address || ''} onChange={(e: any) => setFormData({ ...formData, address: e.target.value })} placeholder="Ingresa la dirección de tu clínica..." />
               </div>
-
-              <TextAreaField label="Dirección" icon={MapPin} value={formData.address || ''} onChange={(e: any) => setFormData({ ...formData, address: e.target.value })} placeholder="Ingresa la dirección de tu clínica..." rows={3} />
             </div>
 
             {showAIConfig && <ProfileAIConfig />}
@@ -722,6 +726,68 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                           className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-800 rounded-xl font-medium outline-none transition-all focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                         />
                       </div>
+                    </div>
+
+                    <div className="space-y-3 md:col-span-2">
+                      <label className="text-sm font-bold text-slate-700 block">Estilo de navegación</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Sidebar option */}
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, navbarConfig: 'sidebar' })}
+                          className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                            (formData.navbarConfig ?? 'sidebar') === 'sidebar'
+                              ? 'border-emerald-500 bg-emerald-50'
+                              : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                          }`}
+                        >
+                          {/* Mini sidebar preview */}
+                          <div className="w-full h-16 rounded-lg overflow-hidden border border-slate-200 bg-white flex">
+                            <div className={`w-8 h-full flex flex-col gap-1 p-1 ${(formData.navbarConfig ?? 'sidebar') === 'sidebar' ? 'bg-emerald-50' : 'bg-slate-100'}`}>
+                              <div className={`w-full h-1.5 rounded-sm ${(formData.navbarConfig ?? 'sidebar') === 'sidebar' ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                              <div className="w-full h-1 rounded-sm bg-slate-200" />
+                              <div className="w-full h-1 rounded-sm bg-slate-200" />
+                              <div className="w-full h-1 rounded-sm bg-slate-200" />
+                            </div>
+                            <div className="flex-1 bg-slate-50" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <PanelLeft className={`w-4 h-4 ${(formData.navbarConfig ?? 'sidebar') === 'sidebar' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                            <span className={`text-sm font-bold ${(formData.navbarConfig ?? 'sidebar') === 'sidebar' ? 'text-emerald-700' : 'text-slate-500'}`}>
+                              Menú lateral
+                            </span>
+                          </div>
+                        </button>
+
+                        {/* Topnav option */}
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, navbarConfig: 'topnav' })}
+                          className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                            formData.navbarConfig === 'topnav'
+                              ? 'border-emerald-500 bg-emerald-50'
+                              : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                          }`}
+                        >
+                          {/* Mini topnav preview */}
+                          <div className="w-full h-16 rounded-lg overflow-hidden border border-slate-200 bg-white flex flex-col">
+                            <div className={`w-full h-5 flex items-center gap-1 px-1.5 ${formData.navbarConfig === 'topnav' ? 'bg-emerald-50' : 'bg-slate-100'}`}>
+                              <div className={`h-1.5 w-4 rounded-sm ${formData.navbarConfig === 'topnav' ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                              <div className="h-1 w-3 rounded-sm bg-slate-200" />
+                              <div className="h-1 w-3 rounded-sm bg-slate-200" />
+                              <div className="h-1 w-3 rounded-sm bg-slate-200" />
+                            </div>
+                            <div className="flex-1 bg-slate-50" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <LayoutTemplate className={`w-4 h-4 ${formData.navbarConfig === 'topnav' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                            <span className={`text-sm font-bold ${formData.navbarConfig === 'topnav' ? 'text-emerald-700' : 'text-slate-500'}`}>
+                              Barra superior
+                            </span>
+                          </div>
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-slate-400 px-1">El cambio aplica inmediatamente al guardar.</p>
                     </div>
                   </div>
                 )}
