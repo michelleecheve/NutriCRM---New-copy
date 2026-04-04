@@ -18,9 +18,11 @@ import { Landing } from './pages/Landing';
 
 function getInitialRoute(): string {
   const path = window.location.pathname;
-  if (path === '/login')          return AppRoute.LOGIN;
-  if (path === '/register')       return AppRoute.REGISTER;
-  if (path === '/reset-password') return AppRoute.RESET_PASSWORD;
+  if (path === '/login')           return AppRoute.LOGIN;
+  if (path === '/register')        return AppRoute.REGISTER;
+  if (path === '/reset-password')  return AppRoute.RESET_PASSWORD;
+  if (path.startsWith('/privacy-policy'))  { window.location.replace('/privacy-policy.html');  return AppRoute.LANDING; }
+  if (path.startsWith('/terms-of-service')) { window.location.replace('/terms-of-service.html'); return AppRoute.LANDING; }
   return AppRoute.LANDING;
 }
 

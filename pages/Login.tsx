@@ -267,9 +267,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
             </div>
             <div className="pt-2">
               <p className="text-xs text-slate-400">
-                <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Política de Privacidad</a>
+                <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Política de Privacidad</a>
                 {' · '}
-                <a href="/terms-of-service.html" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Términos de Servicio</a>
+                <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Términos de Servicio</a>
               </p>
             </div>
           </div>
