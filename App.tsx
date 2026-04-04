@@ -16,14 +16,43 @@ import { AppRoute, UserRole } from './types';
 import { authStore } from './services/authStore';
 import { Landing } from './pages/Landing';
 
+const OAUTH_CALLBACK_ROUTE = '__oauth_callback__';
+
+// Maps URL paths to app routes so deep links and OAuth callbacks work correctly.
+// Unknown paths are left as AppRoute.LANDING — onAuthReady redirects
+// authenticated users away from it to their home page.
+const PATH_TO_ROUTE: Record<string, string> = {
+  '/login':         AppRoute.LOGIN,
+  '/register':      AppRoute.REGISTER,
+  '/reset-password':AppRoute.RESET_PASSWORD,
+  '/calendar':      AppRoute.CALENDAR,
+  '/payments':      AppRoute.PAYMENTS,
+  '/profile':       AppRoute.PROFILE,
+  '/menus':         AppRoute.MENUS,
+  '/dashboard':     AppRoute.DASHBOARD,
+  '/admin':         AppRoute.ADMIN,
+};
+
 function getInitialRoute(): string {
   const path = window.location.pathname;
-  if (path === '/login')           return AppRoute.LOGIN;
-  if (path === '/register')        return AppRoute.REGISTER;
-  if (path === '/reset-password')  return AppRoute.RESET_PASSWORD;
-  if (path.startsWith('/privacy-policy'))  { window.location.replace('/privacy-policy.html');  return AppRoute.LANDING; }
+
+  if (path.startsWith('/privacy-policy'))   { window.location.replace('/privacy-policy.html');   return AppRoute.LANDING; }
   if (path.startsWith('/terms-of-service')) { window.location.replace('/terms-of-service.html'); return AppRoute.LANDING; }
-  return AppRoute.LANDING;
+
+  // OAuth popup callback — post code to opener and close this window
+  if (path === '/oauth/google/callback') {
+    const params = new URLSearchParams(window.location.search);
+    if (window.opener) {
+      window.opener.postMessage(
+        { type: 'GOOGLE_OAUTH_CALLBACK', code: params.get('code'), error: params.get('error') },
+        window.location.origin,
+      );
+      window.close();
+    }
+    return OAUTH_CALLBACK_ROUTE;
+  }
+
+  return PATH_TO_ROUTE[path] ?? AppRoute.LANDING;
 }
 
 function getHomeRoute(role?: UserRole): string {
@@ -48,8 +77,12 @@ function App() {
 
       if (user) {
         setCurrentRoute(prev => {
-          // Solo redirigir si estamos en login/register
-          if (prev === AppRoute.LOGIN || prev === AppRoute.REGISTER) {
+          // Redirect to home from any unauthenticated-only page or unknown URL (LANDING)
+          if (
+            prev === AppRoute.LOGIN ||
+            prev === AppRoute.REGISTER ||
+            prev === AppRoute.LANDING
+          ) {
             return getHomeRoute(user.role);
           }
           return prev;
@@ -120,6 +153,14 @@ function App() {
 
   const renderContent = () => {
     switch (currentRoute) {
+      case OAUTH_CALLBACK_ROUTE:
+        return (
+          <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
+            <div className="w-10 h-10 border-3 border-slate-200 border-t-emerald-500 rounded-full animate-spin" />
+            <p className="text-slate-500 text-sm">Autorizando con Google... Esta ventana se cerrará.</p>
+          </div>
+        );
+
       case AppRoute.LANDING:
         return <Landing />;
 

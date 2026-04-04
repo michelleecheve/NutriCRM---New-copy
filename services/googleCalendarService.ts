@@ -65,6 +65,11 @@ class GoogleCalendarService {
     return !!this.cache?.accessToken;
   }
 
+  isWatchExpired(): boolean {
+    if (!this.cache?.watchExpiry) return true;
+    return this.cache.watchExpiry < Date.now();
+  }
+
   clearCache(): void {
     this.cache = null;
   }
@@ -384,6 +389,38 @@ class GoogleCalendarService {
       },
       body: JSON.stringify({ id: channelId, resourceId }),
     }).catch(() => {});
+  }
+
+  // ── Bulk export ──────────────────────────────────────────────────────────────
+
+  /**
+   * Exports all appointments that don't yet have a googleEventId to Google Calendar.
+   * Updates google_event_id in Supabase for each successfully created event.
+   * Returns { synced, skipped } counts.
+   */
+  async bulkExportToGoogle(
+    appointments: Appointment[],
+    userId: string,
+    onProgress?: (done: number, total: number) => void,
+  ): Promise<{ synced: number; skipped: number }> {
+    const { supabaseService } = await import('./supabaseService');
+    const pending = appointments.filter(a => !a.googleEventId);
+    let synced = 0;
+    let skipped = 0;
+
+    for (let i = 0; i < pending.length; i++) {
+      const appt = pending[i];
+      const googleEventId = await this.createEvent(appt, userId);
+      if (googleEventId) {
+        await supabaseService.updateAppointmentGoogleEventId(appt.id, googleEventId).catch(() => {});
+        synced++;
+      } else {
+        skipped++;
+      }
+      onProgress?.(i + 1, pending.length);
+    }
+
+    return { synced, skipped };
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────

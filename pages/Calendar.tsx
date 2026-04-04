@@ -25,7 +25,9 @@ Modalidad: Presencial o Video
 Tel: 5512345678
 Notas: texto libre opcional`;
 
-const GoogleCalendarTip: React.FC<{ iconOnly?: boolean }> = ({ iconOnly = false }) => {
+const GoogleCalendarTip: React.FC<{ iconOnly?: boolean }> = ({
+  iconOnly = false,
+}) => {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -44,7 +46,11 @@ const GoogleCalendarTip: React.FC<{ iconOnly?: boolean }> = ({ iconOnly = false 
       >
         <Info className="w-4 h-4" />
         {iconOnly ? (
-          <span className="text-[11px] font-medium leading-tight text-left">Tips<br />Google Calendar</span>
+          <span className="text-[11px] font-medium leading-tight text-left">
+            Tips
+            <br />
+            Google Calendar
+          </span>
         ) : (
           <span className="text-[11px] font-medium">Tips Google Calendar</span>
         )}
@@ -294,19 +300,46 @@ const GoogleCalendarTip: React.FC<{ iconOnly?: boolean }> = ({ iconOnly = false 
                 <ul className="space-y-1.5 text-xs text-slate-500">
                   <li className="flex gap-2 items-start">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0 mt-1" />
-                    <span>NutriFollow crea automáticamente un calendario llamado "NutriFollow Citas" en tu Google Calendar al conectarte.</span>
+                    <span>
+                      NutriFollow crea automáticamente un calendario llamado
+                      "NutriFollow Citas" en tu Google Calendar al conectarte.
+                    </span>
                   </li>
                   <li className="flex gap-2 items-start">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0 mt-1" />
-                    <span>Puedes cambiarle el nombre sin problema, la conexión no se pierde.</span>
+                    <span>
+                      Puedes cambiarle el nombre sin problema, la conexión no se
+                      pierde.
+                    </span>
                   </li>
                   <li className="flex gap-2 items-start">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0 mt-1" />
-                    <span>No lo elimines: si lo borras se perderá la sincronización y tendrás que desconectar y volver a conectar desde NutriFollow.</span>
+                    <span>
+                      No lo elimines: si lo borras se perderá la sincronización
+                      y tendrás que desconectar y volver a conectar desde
+                      NutriFollow.
+                    </span>
                   </li>
                   <li className="flex gap-2 items-start">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0 mt-1" />
-                    <span>Si no agregas descripción o los valores no coinciden exactamente, NutriFollow usará los valores por defecto: Primera Consulta y Presencial.</span>
+                    <span>
+                      Si no agregas descripción o los valores no coinciden
+                      exactamente, NutriFollow usará los valores por defecto:
+                      Primera Consulta y Presencial.
+                    </span>
+                  </li>
+                  <li className="flex gap-2 items-start">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0 mt-1" />
+                    <span>
+                      Google Calendar pide renovar la sincronización cada 7
+                      días. Mientras ingreses a esta página se renueva
+                      automáticamente. Si pasaran más de 7 días sin acceder
+                      verás el botón{" "}
+                      <strong className="text-slate-600">
+                        Sincronización vencida · Renovar
+                      </strong>{" "}
+                      en la parte superior, solo dale click y listo.
+                    </span>
                   </li>
                 </ul>
               </div>
@@ -479,13 +512,12 @@ export const CalendarPage: React.FC = () => {
 
   const handleRefresh = async () => {
     try {
+      const appts =
+        await store.getAppointmentsForNutritionist(targetNutritionistId);
+      setAppointments(appts);
       if (targetNutritionistId === currentAppUser?.id) {
-        setAppointments(store.getAppointments());
         setPatients(store.getPatients());
       } else {
-        const appts =
-          await store.getAppointmentsForNutritionist(targetNutritionistId);
-        setAppointments(appts);
         setPatients(store.getPatientsForNutritionist(targetNutritionistId));
       }
     } catch (error) {
@@ -546,7 +578,10 @@ export const CalendarPage: React.FC = () => {
               <>
                 {/* Desktop: full buttons */}
                 <span className="hidden sm:contents">
-                  <CalendarGoogleSync userId={currentAppUser.id} />
+                  <CalendarGoogleSync
+                    userId={currentAppUser.id}
+                    appointments={appointments}
+                  />
                   <GoogleCalendarTip />
                 </span>
               </>
@@ -563,7 +598,11 @@ export const CalendarPage: React.FC = () => {
             {/* Mobile: icon-only Google Calendar buttons, shown to the right of Nueva Cita */}
             {currentAppUser?.role !== "recepcionista" && currentAppUser?.id && (
               <span className="flex sm:hidden items-center gap-2">
-                <CalendarGoogleSync userId={currentAppUser.id} iconOnly />
+                <CalendarGoogleSync
+                  userId={currentAppUser.id}
+                  iconOnly
+                  appointments={appointments}
+                />
                 <GoogleCalendarTip iconOnly />
               </span>
             )}

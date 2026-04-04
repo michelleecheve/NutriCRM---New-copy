@@ -56,6 +56,20 @@ function parseDescription(desc: string | undefined): {
   };
 }
 
+// ── Extract local date and time from Google Calendar event start ─────────────
+// Google sends dateTime as "2026-04-04T17:00:00-06:00" (local time + offset).
+// Using new Date().getHours() would return UTC hours (server timezone).
+// Instead we parse the string directly to preserve the user's local time.
+function extractLocalDateTime(dateTime?: string, dateOnly?: string): { date: string; time: string } {
+  if (dateTime) {
+    // "2026-04-04T17:00:00-06:00" → date="2026-04-04", time="17:00"
+    const [datePart, timePart] = dateTime.split('T');
+    return { date: datePart, time: timePart.substring(0, 5) };
+  }
+  // All-day event — no time component
+  return { date: dateOnly ?? new Date().toISOString().split('T')[0], time: '09:00' };
+}
+
 serve(async (req) => {
   const channelId     = req.headers.get('X-Goog-Channel-Id');
   const resourceState = req.headers.get('X-Goog-Resource-State');
@@ -154,8 +168,7 @@ serve(async (req) => {
       const startDt     = new Date(event.start?.dateTime ?? event.start?.date);
       const endDt       = new Date(event.end?.dateTime   ?? event.end?.date);
       const durationMin = Math.round((endDt.getTime() - startDt.getTime()) / 60_000);
-      const date        = startDt.toISOString().split('T')[0];
-      const time        = `${String(startDt.getHours()).padStart(2, '0')}:${String(startDt.getMinutes()).padStart(2, '0')}`;
+      const { date, time } = extractLocalDateTime(event.start?.dateTime, event.start?.date);
 
       // Also re-parse description in case it was edited in GC
       const parsed = parseDescription(event.description);
@@ -182,8 +195,7 @@ serve(async (req) => {
     const startDt     = new Date(event.start?.dateTime ?? event.start?.date);
     const endDt       = new Date(event.end?.dateTime   ?? event.end?.date);
     const durationMin = Math.max(30, Math.round((endDt.getTime() - startDt.getTime()) / 60_000));
-    const date        = startDt.toISOString().split('T')[0];
-    const time        = `${String(startDt.getHours()).padStart(2, '0')}:${String(startDt.getMinutes()).padStart(2, '0')}`;
+    const { date, time } = extractLocalDateTime(event.start?.dateTime, event.start?.date);
     const patientName = (event.summary as string | undefined)?.trim() || 'Paciente';
 
     const parsed = parseDescription(event.description);
