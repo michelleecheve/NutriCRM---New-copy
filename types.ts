@@ -240,6 +240,7 @@ export interface Appointment {
   type: 'Primera Consulta' | 'Seguimiento';
   modality: 'Presencial' | 'Video';
   status: 'Programada' | 'Completada' | 'Cancelada' | 'Reagendada';
+  phone?: string;
   notes?: string;
   ownerId?: string;        // ✅ agregado
   nutritionistId?: string;

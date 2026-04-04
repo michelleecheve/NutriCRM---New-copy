@@ -801,6 +801,7 @@ export const supabaseService = {
       status:           appointment.status,
       patient_name:     appointment.patientName,
       owner_id:         appointment.ownerId,
+      phone:            appointment.phone ?? null,
     };
     if (appointment.patientId && appointment.patientId !== 'guest') {
       insertData.patient_id = appointment.patientId;
@@ -823,8 +824,9 @@ export const supabaseService = {
       modality: appointment.modality,
       status:   appointment.status,
     };
-    if (appointment.patientName)    updateData.patient_name     = appointment.patientName;
-    if (appointment.ownerId) updateData.owner_id  = appointment.ownerId;
+    if (appointment.patientName)    updateData.patient_name = appointment.patientName;
+    if (appointment.ownerId)        updateData.owner_id     = appointment.ownerId;
+    if (appointment.phone !== undefined) updateData.phone   = appointment.phone;
     if (appointment.patientId && appointment.patientId !== 'guest') {
       updateData.patient_id = appointment.patientId;
     }
@@ -1302,6 +1304,7 @@ export const supabaseService = {
       type:            db.type,
       modality:        db.modality,
       status:          db.status,
+      phone:           db.phone ?? undefined,
       notes:           db.notes,
       ownerId:        db.owner_id,
       receptionistId: db.receptionist_id,

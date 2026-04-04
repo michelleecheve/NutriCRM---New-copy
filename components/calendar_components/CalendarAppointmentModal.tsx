@@ -46,7 +46,7 @@ export const CalendarAppointmentModal: React.FC<CalendarAppointmentModalProps> =
   }) => {
   const [formData, setFormData] = useState<Partial<Appointment>>({ ...appointment });
   const [manualPatientName, setManualPatientName] = useState(appointment.patientName || '');
-  const [tempPhone, setTempPhone] = useState('');
+  const [tempPhone, setTempPhone] = useState(appointment.phone || '');
 
   const isEdit = mode === 'edit';
 
@@ -60,11 +60,12 @@ export const CalendarAppointmentModal: React.FC<CalendarAppointmentModalProps> =
     const patientName = manualPatientName.trim();
 
     try {
-      const appointmentData = { 
-        ...formData, 
-        patientName, 
-        createdAt: now, 
-        updatedAt: now 
+      const appointmentData = {
+        ...formData,
+        patientName,
+        phone: tempPhone.trim() || undefined,
+        createdAt: now,
+        updatedAt: now
       };
 
       // Determinar si estamos manejando citas de otra nutricionista
