@@ -633,7 +633,7 @@ class Store {
   async addAppointment(appointment: Omit<Appointment, 'id'>): Promise<Appointment> {
     const newAppt = await supabaseService.createAppointment({
       ...appointment,
-      ownerId: appointment.ownerId || this.uid,
+      ownerId: appointment.ownerId || this.uid || '',
     });
     this.appointments = [...this.appointments, newAppt];
     save(this.K.appointments, this.appointments);

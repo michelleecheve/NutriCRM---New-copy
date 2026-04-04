@@ -780,9 +780,7 @@ export const supabaseService = {
   // ─── Appointments ──────────────────────────────────────────────────────────
 
   async getAppointments(ownerId?: string): Promise<Appointment[]> {
-    let query = supabase
-      .from('appointments')
-      .select('*, patients (first_name, last_name)');
+    let query = supabase.from('appointments').select('*');
     if (ownerId) query = query.eq('owner_id', ownerId);
     const { data, error } = await query
       .order('date', { ascending: true })
@@ -802,14 +800,12 @@ export const supabaseService = {
       patient_name:     appointment.patientName,
       owner_id:         appointment.ownerId,
       phone:            appointment.phone ?? null,
+      notes:            appointment.notes ?? null,
     };
-    if (appointment.patientId && appointment.patientId !== 'guest') {
-      insertData.patient_id = appointment.patientId;
-    }
     const { data, error } = await supabase
       .from('appointments')
       .insert(insertData)
-      .select('*, patients (first_name, last_name)')
+      .select('*')
       .single();
     if (error) throw error;
     return this.mapAppointmentFromDb(data);
@@ -824,17 +820,15 @@ export const supabaseService = {
       modality: appointment.modality,
       status:   appointment.status,
     };
-    if (appointment.patientName)    updateData.patient_name = appointment.patientName;
-    if (appointment.ownerId)        updateData.owner_id     = appointment.ownerId;
-    if (appointment.phone !== undefined) updateData.phone   = appointment.phone;
-    if (appointment.patientId && appointment.patientId !== 'guest') {
-      updateData.patient_id = appointment.patientId;
-    }
+    if (appointment.patientName)         updateData.patient_name = appointment.patientName;
+    if (appointment.ownerId)             updateData.owner_id     = appointment.ownerId;
+    if (appointment.phone !== undefined) updateData.phone        = appointment.phone;
+    if (appointment.notes !== undefined) updateData.notes        = appointment.notes;
     const { data, error } = await supabase
       .from('appointments')
       .update(updateData)
       .eq('id', id)
-      .select('*, patients (first_name, last_name)')
+      .select('*')
       .single();
     if (error) throw error;
     return this.mapAppointmentFromDb(data);
@@ -1292,20 +1286,17 @@ export const supabaseService = {
   },
 
   mapAppointmentFromDb(db: any): Appointment {
-    const firstName = db.patients?.first_name || '';
-    const lastName  = db.patients?.last_name  || '';
     return {
-      id:              db.id,
-      patientId:       db.patient_id   || 'guest',
-      patientName:     db.patient_name || (firstName ? `${firstName} ${lastName}`.trim() : 'Paciente'),
-      date:            db.date,
-      time:            db.time,
-      duration:        db.duration,
-      type:            db.type,
-      modality:        db.modality,
-      status:          db.status,
-      phone:           db.phone ?? undefined,
-      notes:           db.notes,
+      id:             db.id,
+      patientName:    db.patient_name || 'Paciente',
+      date:           db.date,
+      time:           db.time,
+      duration:       db.duration,
+      type:           db.type,
+      modality:       db.modality,
+      status:         db.status,
+      phone:          db.phone        ?? undefined,
+      notes:          db.notes        ?? undefined,
       ownerId:        db.owner_id,
       receptionistId: db.receptionist_id,
       googleEventId:  db.google_event_id ?? undefined,

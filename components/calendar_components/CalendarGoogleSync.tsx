@@ -4,11 +4,12 @@ import { googleCalendarService } from '../../services/googleCalendarService';
 
 interface CalendarGoogleSyncProps {
   userId: string;
+  iconOnly?: boolean;
 }
 
 type Status = 'loading' | 'connected' | 'disconnected';
 
-export const CalendarGoogleSync: React.FC<CalendarGoogleSyncProps> = ({ userId }) => {
+export const CalendarGoogleSync: React.FC<CalendarGoogleSyncProps> = ({ userId, iconOnly = false }) => {
   const [status, setStatus] = useState<Status>('loading');
   const [busy, setBusy]     = useState(false);
   const [error, setError]   = useState<string | null>(null);
@@ -18,7 +19,6 @@ export const CalendarGoogleSync: React.FC<CalendarGoogleSyncProps> = ({ userId }
     googleCalendarService.loadTokens(userId).then(connected => {
       setStatus(connected ? 'connected' : 'disconnected');
       if (connected) {
-        // Silently renew watch if needed
         googleCalendarService.renewWatchIfNeeded(userId).catch(() => {});
       }
     });
@@ -64,9 +64,9 @@ export const CalendarGoogleSync: React.FC<CalendarGoogleSyncProps> = ({ userId }
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-400 text-sm">
+      <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-100 text-slate-400 text-sm">
         <Loader2 className="w-4 h-4 animate-spin" />
-        <span>Google Calendar</span>
+        {!iconOnly && <span>Google Calendar</span>}
       </div>
     );
   }
@@ -77,14 +77,14 @@ export const CalendarGoogleSync: React.FC<CalendarGoogleSyncProps> = ({ userId }
         <button
           onClick={handleConnect}
           disabled={busy}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-sm font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 text-sm font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-50"
         >
           {busy ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
           )}
-          Conectar Google Calendar
+          {!iconOnly && 'Conectar Google Calendar'}
         </button>
         {error && (
           <p className="flex items-center gap-1 text-xs text-red-500">
@@ -101,19 +101,20 @@ export const CalendarGoogleSync: React.FC<CalendarGoogleSyncProps> = ({ userId }
       <button
         onClick={() => setShowMenu(v => !v)}
         disabled={busy}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-all disabled:opacity-50"
+        className="flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-all disabled:opacity-50"
       >
         {busy ? (
           <Loader2 className="w-4 h-4 animate-spin" />
+        ) : iconOnly ? (
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
         ) : (
           <CheckCircle2 className="w-4 h-4" />
         )}
-        Google Calendar sincronizado
+        {!iconOnly && 'Google Calendar sincronizado'}
       </button>
 
       {showMenu && (
         <>
-          {/* backdrop */}
           <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
           <div className="absolute right-0 top-full mt-2 z-40 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-56">
             <button

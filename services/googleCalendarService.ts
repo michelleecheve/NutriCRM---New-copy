@@ -3,8 +3,8 @@ import { Appointment } from "../types";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
 const SCOPES = "https://www.googleapis.com/auth/calendar";
-const CALENDAR_API =
-  "https://www.googleapis.com/calendar/v3/calendars/primary/events";
+const GC_BASE = "https://www.googleapis.com/calendar/v3/calendars";
+const NUTRIFOLLOW_CALENDAR_NAME = "NutriFollow Citas";
 
 function getRedirectUri(): string {
   return `${window.location.origin}/oauth/google/callback`;
@@ -15,11 +15,16 @@ function getWebhookUrl(): string {
   return `${supabaseUrl}/functions/v1/google-calendar-webhook`;
 }
 
+function eventsUrl(calendarId: string): string {
+  return `${GC_BASE}/${encodeURIComponent(calendarId)}/events`;
+}
+
 // ─── Internal token cache (avoids repeated DB reads) ──────────────────────────
 interface CachedTokens {
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
+  calendarId: string;
   watchChannelId?: string;
   watchResourceId?: string;
   watchExpiry?: number;
@@ -34,7 +39,7 @@ class GoogleCalendarService {
     const { data, error } = await supabase
       .from("google_calendar_tokens")
       .select(
-        "access_token, refresh_token, token_expiry, watch_channel_id, watch_resource_id, watch_expiry",
+        "access_token, refresh_token, token_expiry, calendar_id, watch_channel_id, watch_resource_id, watch_expiry",
       )
       .eq("owner_id", userId)
       .maybeSingle();
@@ -45,12 +50,13 @@ class GoogleCalendarService {
     }
 
     this.cache = {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiresAt: data.token_expiry,
-      watchChannelId: data.watch_channel_id ?? undefined,
+      accessToken:     data.access_token,
+      refreshToken:    data.refresh_token,
+      expiresAt:       data.token_expiry,
+      calendarId:      data.calendar_id ?? "primary",
+      watchChannelId:  data.watch_channel_id ?? undefined,
       watchResourceId: data.watch_resource_id ?? undefined,
-      watchExpiry: data.watch_expiry ?? undefined,
+      watchExpiry:     data.watch_expiry ?? undefined,
     };
     return true;
   }
@@ -68,12 +74,12 @@ class GoogleCalendarService {
   private openOAuthPopup(): Promise<string> {
     return new Promise((resolve, reject) => {
       const params = new URLSearchParams({
-        client_id: GOOGLE_CLIENT_ID,
-        redirect_uri: getRedirectUri(),
+        client_id:     GOOGLE_CLIENT_ID,
+        redirect_uri:  getRedirectUri(),
         response_type: "code",
-        scope: SCOPES,
-        access_type: "offline",
-        prompt: "consent",
+        scope:         SCOPES,
+        access_type:   "offline",
+        prompt:        "consent",
       });
 
       const popup = window.open(
@@ -83,11 +89,7 @@ class GoogleCalendarService {
       );
 
       if (!popup) {
-        reject(
-          new Error(
-            "No se pudo abrir la ventana de Google. Permite las ventanas emergentes para este sitio.",
-          ),
-        );
+        reject(new Error("No se pudo abrir la ventana de Google. Permite las ventanas emergentes para este sitio."));
         return;
       }
 
@@ -97,9 +99,7 @@ class GoogleCalendarService {
         window.removeEventListener("message", messageHandler);
         clearInterval(closedChecker);
         if (event.data.error) {
-          reject(
-            new Error(`Google rechazó la autorización: ${event.data.error}`),
-          );
+          reject(new Error(`Google rechazó la autorización: ${event.data.error}`));
         } else if (event.data.code) {
           resolve(event.data.code as string);
         } else {
@@ -113,9 +113,7 @@ class GoogleCalendarService {
         if (popup.closed) {
           clearInterval(closedChecker);
           window.removeEventListener("message", messageHandler);
-          reject(
-            new Error("Ventana cerrada antes de completar la autorización"),
-          );
+          reject(new Error("Ventana cerrada antes de completar la autorización"));
         }
       }, 1000);
     });
@@ -130,58 +128,50 @@ class GoogleCalendarService {
     });
 
     if (error || !data?.access_token) {
-      throw new Error(
-        error?.message ?? "No se pudo obtener el token de Google Calendar",
-      );
+      throw new Error(error?.message ?? "No se pudo obtener el token de Google Calendar");
     }
 
     const expiresAt = Date.now() + (data.expires_in as number) * 1000;
+    const accessToken: string = data.access_token;
 
-    // Upsert into dedicated table — one row per user
+    // Get or create the dedicated NutriFollow calendar
+    const calendarId = await this.getOrCreateNutriFollowCalendar(accessToken);
+
+    // Upsert tokens + calendarId — one row per user
     await supabase.from("google_calendar_tokens").upsert(
       {
-        owner_id: userId,
-        access_token: data.access_token,
+        owner_id:      userId,
+        access_token:  accessToken,
         refresh_token: data.refresh_token,
-        token_expiry: expiresAt,
+        token_expiry:  expiresAt,
+        calendar_id:   calendarId,
       },
       { onConflict: "owner_id" },
     );
 
     this.cache = {
-      accessToken: data.access_token,
+      accessToken,
       refreshToken: data.refresh_token,
       expiresAt,
+      calendarId,
     };
 
-    // Register webhook watch so Google notifies us of external changes
+    // Register webhook watch on the dedicated calendar
     await this.setupWatch(userId);
   }
 
   async disconnect(userId: string): Promise<void> {
-    // Stop the Google push channel
     if (this.cache?.watchChannelId && this.cache?.watchResourceId) {
-      await this.stopWatch(
-        this.cache.watchChannelId,
-        this.cache.watchResourceId,
-        userId,
-      );
+      await this.stopWatch(this.cache.watchChannelId, this.cache.watchResourceId, userId);
     }
 
-    // Revoke the token at Google (best-effort)
     if (this.cache?.accessToken) {
-      fetch(
-        `https://oauth2.googleapis.com/revoke?token=${this.cache.accessToken}`,
-        { method: "POST" },
-      ).catch(() => {});
+      fetch(`https://oauth2.googleapis.com/revoke?token=${this.cache.accessToken}`, {
+        method: "POST",
+      }).catch(() => {});
     }
 
-    // Delete the row — clean and simple
-    await supabase
-      .from("google_calendar_tokens")
-      .delete()
-      .eq("owner_id", userId);
-
+    await supabase.from("google_calendar_tokens").delete().eq("owner_id", userId);
     this.cache = null;
   }
 
@@ -193,7 +183,6 @@ class GoogleCalendarService {
       if (!loaded) return null;
     }
 
-    // Refresh if expiring within 5 minutes
     if (this.cache!.expiresAt - Date.now() < 5 * 60 * 1000) {
       await this.refreshToken(userId);
     }
@@ -214,27 +203,72 @@ class GoogleCalendarService {
 
     await supabase
       .from("google_calendar_tokens")
-      .update({
-        access_token: data.access_token,
-        token_expiry: expiresAt,
-      })
+      .update({ access_token: data.access_token, token_expiry: expiresAt })
       .eq("owner_id", userId);
 
     this.cache = { ...this.cache!, accessToken: data.access_token, expiresAt };
   }
 
+  // ── Dedicated calendar management ────────────────────────────────────────────
+
+  /**
+   * Finds the existing "NutriFollow Citas" calendar or creates it.
+   * Returns the calendarId to use for all operations.
+   */
+  private async getOrCreateNutriFollowCalendar(accessToken: string): Promise<string> {
+    try {
+      // List all calendars to find ours
+      const listRes = await fetch(
+        "https://www.googleapis.com/calendar/v3/users/me/calendarList",
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        const existing = (listData.items as any[])?.find(
+          (c: any) => c.summary === NUTRIFOLLOW_CALENDAR_NAME,
+        );
+        if (existing) return existing.id as string;
+      }
+
+      // Not found — create it
+      const createRes = await fetch(
+        "https://www.googleapis.com/calendar/v3/calendars",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            summary:  NUTRIFOLLOW_CALENDAR_NAME,
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
+        },
+      );
+
+      if (createRes.ok) {
+        const created = await createRes.json();
+        return created.id as string;
+      }
+    } catch {
+      // Fall back to primary if something goes wrong
+    }
+
+    return "primary";
+  }
+
   // ── Calendar CRUD ────────────────────────────────────────────────────────────
 
   /** Creates a Google Calendar event and returns its ID, or null on failure. */
-  async createEvent(
-    appointment: Appointment,
-    userId: string,
-  ): Promise<string | null> {
+  async createEvent(appointment: Appointment, userId: string): Promise<string | null> {
     const token = await this.getValidAccessToken(userId);
     if (!token) return null;
 
+    const calId = this.cache?.calendarId ?? "primary";
+
     try {
-      const res = await fetch(CALENDAR_API, {
+      const res = await fetch(eventsUrl(calId), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -251,15 +285,13 @@ class GoogleCalendarService {
   }
 
   /** Updates an existing Google Calendar event. Silent on failure. */
-  async updateEvent(
-    googleEventId: string,
-    appointment: Appointment,
-    userId: string,
-  ): Promise<void> {
+  async updateEvent(googleEventId: string, appointment: Appointment, userId: string): Promise<void> {
     const token = await this.getValidAccessToken(userId);
     if (!token) return;
 
-    fetch(`${CALENDAR_API}/${encodeURIComponent(googleEventId)}`, {
+    const calId = this.cache?.calendarId ?? "primary";
+
+    fetch(`${eventsUrl(calId)}/${encodeURIComponent(googleEventId)}`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -274,7 +306,9 @@ class GoogleCalendarService {
     const token = await this.getValidAccessToken(userId);
     if (!token) return;
 
-    fetch(`${CALENDAR_API}/${encodeURIComponent(googleEventId)}`, {
+    const calId = this.cache?.calendarId ?? "primary";
+
+    fetch(`${eventsUrl(calId)}/${encodeURIComponent(googleEventId)}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => {});
@@ -286,20 +320,21 @@ class GoogleCalendarService {
     const token = await this.getValidAccessToken(userId);
     if (!token) return;
 
+    const calId = this.cache?.calendarId ?? "primary";
     const channelId = crypto.randomUUID();
 
     try {
-      const res = await fetch(`${CALENDAR_API}/watch`, {
+      const res = await fetch(`${eventsUrl(calId)}/watch`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: channelId,
-          type: "web_hook",
+          id:      channelId,
+          type:    "web_hook",
           address: getWebhookUrl(),
-          params: { ttl: "604800" }, // 7 days max
+          params:  { ttl: "604800" }, // 7 days max
         }),
       });
 
@@ -310,16 +345,16 @@ class GoogleCalendarService {
       await supabase
         .from("google_calendar_tokens")
         .update({
-          watch_channel_id: channelId,
+          watch_channel_id:  channelId,
           watch_resource_id: data.resourceId,
-          watch_expiry: watchExpiry,
+          watch_expiry:      watchExpiry,
         })
         .eq("owner_id", userId);
 
       if (this.cache) {
-        this.cache.watchChannelId = channelId;
+        this.cache.watchChannelId  = channelId;
         this.cache.watchResourceId = data.resourceId;
-        this.cache.watchExpiry = watchExpiry;
+        this.cache.watchExpiry     = watchExpiry;
       }
     } catch {
       // Watch setup is best-effort; the app works without it
@@ -332,19 +367,12 @@ class GoogleCalendarService {
     if (!this.isConnected()) return;
 
     const oneDayMs = 24 * 60 * 60 * 1000;
-    if (
-      !this.cache!.watchExpiry ||
-      this.cache!.watchExpiry - Date.now() < oneDayMs
-    ) {
+    if (!this.cache!.watchExpiry || this.cache!.watchExpiry - Date.now() < oneDayMs) {
       await this.setupWatch(userId);
     }
   }
 
-  private async stopWatch(
-    channelId: string,
-    resourceId: string,
-    userId: string,
-  ): Promise<void> {
+  private async stopWatch(channelId: string, resourceId: string, userId: string): Promise<void> {
     const token = await this.getValidAccessToken(userId);
     if (!token) return;
 
@@ -364,14 +392,21 @@ class GoogleCalendarService {
     const [year, month, day] = appt.date.split("-").map(Number);
     const [hour, minute] = appt.time.split(":").map(Number);
     const start = new Date(year, month - 1, day, hour, minute);
-    const end = new Date(start.getTime() + appt.duration * 60_000);
+    const end   = new Date(start.getTime() + appt.duration * 60_000);
+
+    const descLines = [
+      `Tipo: ${appt.type}`,
+      `Modalidad: ${appt.modality}`,
+    ];
+    if (appt.phone) descLines.push(`Tel: ${appt.phone}`);
+    if (appt.notes) descLines.push(`Notas: ${appt.notes}`);
 
     return {
-      summary: `${appt.type} — ${appt.patientName}`,
-      description: `Modalidad: ${appt.modality}\nEstado: ${appt.status}`,
-      start: { dateTime: start.toISOString() },
-      end: { dateTime: end.toISOString() },
-      status: appt.status === "Cancelada" ? "cancelled" : "confirmed",
+      summary:     appt.patientName,
+      description: descLines.join("\n"),
+      start:       { dateTime: start.toISOString() },
+      end:         { dateTime: end.toISOString() },
+      status:      appt.status === "Cancelada" ? "cancelled" : "confirmed",
     };
   }
 }
