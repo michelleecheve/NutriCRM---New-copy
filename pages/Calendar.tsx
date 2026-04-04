@@ -206,8 +206,9 @@ const GoogleCalendarTip: React.FC<{ iconOnly?: boolean }> = ({
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
                       Asegúrate de guardar en el calendario vinculado con
-                      NutriFollow. NutriFollow detectará el nuevo evento en
-                      segundos y lo registrará automáticamente.
+                      NutriFollow. NutriFollow detectará el nuevo evento y lo
+                      registrará automáticamente. Podrás visualizar los cambios
+                      al recargar esta página.
                     </p>
 
                     {/* Simulated Google Calendar event */}

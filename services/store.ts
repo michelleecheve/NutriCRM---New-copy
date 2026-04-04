@@ -691,12 +691,11 @@ class Store {
     save(keys.appointments, [...existing, newAppt]);
 
     // Fire-and-forget: sync using the nutritionist's Google Calendar tokens
-    if (googleCalendarService.isConnected()) {
-      googleCalendarService.createEvent(newAppt, nutritionistId).then(googleEventId => {
-        if (!googleEventId) return;
-        supabaseService.updateAppointmentGoogleEventId(newAppt.id, googleEventId).catch(() => {});
-      }).catch(() => {});
-    }
+    // (tokens are loaded from DB by createEvent if not cached — works for receptionists too)
+    googleCalendarService.createEvent(newAppt, nutritionistId).then(googleEventId => {
+      if (!googleEventId) return;
+      supabaseService.updateAppointmentGoogleEventId(newAppt.id, googleEventId).catch(() => {});
+    }).catch(() => {});
 
     return newAppt;
   }
@@ -855,7 +854,7 @@ class Store {
     save(keys.appointments, existing.map(a => a.id === updatedAppointment.id ? updatedAppointment : a));
 
     // Fire-and-forget: sync using the nutritionist's Google Calendar tokens
-    if (updatedAppointment.googleEventId && googleCalendarService.isConnected()) {
+    if (updatedAppointment.googleEventId) {
       googleCalendarService.updateEvent(updatedAppointment.googleEventId, updatedAppointment, nutritionistId).catch(() => {});
     }
   }
@@ -869,7 +868,7 @@ class Store {
     save(keys.appointments, existing.filter(a => a.id !== appointmentId));
 
     // Fire-and-forget: delete from Google Calendar using the nutritionist's tokens
-    if (apptToDelete?.googleEventId && googleCalendarService.isConnected()) {
+    if (apptToDelete?.googleEventId) {
       googleCalendarService.deleteEvent(apptToDelete.googleEventId, nutritionistId).catch(() => {});
     }
   }
