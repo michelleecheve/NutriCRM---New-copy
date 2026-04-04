@@ -1,9 +1,10 @@
-import { 
-  Patient, Invoice, UserProfile, Appointment, PatientEvaluation, 
+import {
+  Patient, Invoice, UserProfile, Appointment, PatientEvaluation,
   ClinicalRecord, DietaryEvaluation, SomatotypeRecord, GeneratedMenu,
   MenuAIConfig, MenuReferenceRecord, MenuRecommendationRecord
 } from '../types';
 import { supabaseService } from './supabaseService';
+import { googleCalendarService } from './googleCalendarService';
 
 // ─── Read current userId directly from localStorage (no circular import) ──────
 const SESSION_KEY = 'nutricrm_session_v1';
@@ -636,6 +637,19 @@ class Store {
     });
     this.appointments = [...this.appointments, newAppt];
     save(this.K.appointments, this.appointments);
+
+    // Fire-and-forget: sync to Google Calendar if connected
+    const ownerId = this.uid;
+    if (ownerId && ownerId !== 'guest' && googleCalendarService.isConnected()) {
+      googleCalendarService.createEvent(newAppt, ownerId).then(googleEventId => {
+        if (!googleEventId) return;
+        supabaseService.updateAppointmentGoogleEventId(newAppt.id, googleEventId).catch(() => {});
+        newAppt.googleEventId = googleEventId;
+        this.appointments = this.appointments.map(a => a.id === newAppt.id ? { ...a, googleEventId } : a);
+        save(this.K.appointments, this.appointments);
+      }).catch(() => {});
+    }
+
     return newAppt;
   }
 
@@ -646,22 +660,44 @@ class Store {
     });
     this.appointments = this.appointments.map(a => a.id === updatedAppointment.id ? updatedAppointment : a);
     save(this.K.appointments, this.appointments);
+
+    // Fire-and-forget: sync to Google Calendar if connected
+    const ownerId = this.uid;
+    if (ownerId && ownerId !== 'guest' && updatedAppointment.googleEventId && googleCalendarService.isConnected()) {
+      googleCalendarService.updateEvent(updatedAppointment.googleEventId, updatedAppointment, ownerId).catch(() => {});
+    }
   }
 
   async deleteAppointment(id: string): Promise<void> {
+    const apptToDelete = this.appointments.find(a => a.id === id);
     await supabaseService.deleteAppointment(id);
     this.appointments = this.appointments.filter(a => a.id !== id);
     save(this.K.appointments, this.appointments);
+
+    // Fire-and-forget: delete from Google Calendar if connected
+    const ownerId = this.uid;
+    if (ownerId && ownerId !== 'guest' && apptToDelete?.googleEventId && googleCalendarService.isConnected()) {
+      googleCalendarService.deleteEvent(apptToDelete.googleEventId, ownerId).catch(() => {});
+    }
   }
 
   async addAppointmentForNutritionist(nutritionistId: string, appointment: Omit<Appointment, 'id'>): Promise<Appointment> {
-    const newAppt = await supabaseService.createAppointment({ 
-      ...appointment, 
+    const newAppt = await supabaseService.createAppointment({
+      ...appointment,
       ownerId: nutritionistId,
     });
     const keys = makeKeys(nutritionistId);
     const existing = load<Appointment[]>(keys.appointments, []);
     save(keys.appointments, [...existing, newAppt]);
+
+    // Fire-and-forget: sync using the nutritionist's Google Calendar tokens
+    if (googleCalendarService.isConnected()) {
+      googleCalendarService.createEvent(newAppt, nutritionistId).then(googleEventId => {
+        if (!googleEventId) return;
+        supabaseService.updateAppointmentGoogleEventId(newAppt.id, googleEventId).catch(() => {});
+      }).catch(() => {});
+    }
+
     return newAppt;
   }
 
@@ -817,13 +853,25 @@ class Store {
     const keys = makeKeys(nutritionistId);
     const existing = load<Appointment[]>(keys.appointments, []);
     save(keys.appointments, existing.map(a => a.id === updatedAppointment.id ? updatedAppointment : a));
+
+    // Fire-and-forget: sync using the nutritionist's Google Calendar tokens
+    if (updatedAppointment.googleEventId && googleCalendarService.isConnected()) {
+      googleCalendarService.updateEvent(updatedAppointment.googleEventId, updatedAppointment, nutritionistId).catch(() => {});
+    }
   }
 
   async deleteAppointmentForNutritionist(nutritionistId: string, appointmentId: string): Promise<void> {
-    await supabaseService.deleteAppointment(appointmentId);
     const keys = makeKeys(nutritionistId);
     const existing = load<Appointment[]>(keys.appointments, []);
+    const apptToDelete = existing.find(a => a.id === appointmentId);
+
+    await supabaseService.deleteAppointment(appointmentId);
     save(keys.appointments, existing.filter(a => a.id !== appointmentId));
+
+    // Fire-and-forget: delete from Google Calendar using the nutritionist's tokens
+    if (apptToDelete?.googleEventId && googleCalendarService.isConnected()) {
+      googleCalendarService.deleteEvent(apptToDelete.googleEventId, nutritionistId).catch(() => {});
+    }
   }
 }
 

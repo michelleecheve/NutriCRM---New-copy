@@ -10,6 +10,7 @@ import { CalendarSidebar } from '../components/calendar_components/CalendarSideb
 import { CalendarAppointmentModal } from '../components/calendar_components/CalendarAppointmentModal';
 import { CalendarHistorialTable } from '../components/calendar_components/CalendarHistorialTable';
 import { CalendarSelector } from '../components/calendar_components/CalendarSelector';
+import { CalendarGoogleSync } from '../components/calendar_components/CalendarGoogleSync';
 
 export const CalendarPage: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -94,6 +95,22 @@ export const CalendarPage: React.FC = () => {
     };
     fetchData();
   }, [targetNutritionistId, currentAppUser?.id]);
+
+  // ── Supabase Realtime: refresh when webhook updates appointments ──────────────
+  useEffect(() => {
+    if (!targetNutritionistId || targetNutritionistId === 'guest') return;
+
+    const channel = supabase
+      .channel(`appointments:${targetNutritionistId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments', filter: `owner_id=eq.${targetNutritionistId}` },
+        () => { handleRefresh(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [targetNutritionistId]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -182,15 +199,21 @@ export const CalendarPage: React.FC = () => {
             </h1>
             <p className="text-slate-500 mt-1">Gestiona tus citas y agenda</p>
           </div>
-          {canCreateAppointments && (
-            <button
-              onClick={() => handleCreateAppointment()}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
-            >
-              <Plus className="w-5 h-5" />
-              Nueva Cita
-            </button>
-          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Google Calendar sync — only for the nutritionist/admin who owns the calendar */}
+            {currentAppUser?.role !== 'recepcionista' && currentAppUser?.id && (
+              <CalendarGoogleSync userId={currentAppUser.id} />
+            )}
+            {canCreateAppointments && (
+              <button
+                onClick={() => handleCreateAppointment()}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
+              >
+                <Plus className="w-5 h-5" />
+                Nueva Cita
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Calendar Selector */}

@@ -1303,9 +1303,18 @@ export const supabaseService = {
       modality:        db.modality,
       status:          db.status,
       notes:           db.notes,
-      ownerId:  db.owner_id, 
-      receptionistId:  db.receptionist_id,
+      ownerId:        db.owner_id,
+      receptionistId: db.receptionist_id,
+      googleEventId:  db.google_event_id ?? undefined,
     };
+  },
+
+  async updateAppointmentGoogleEventId(id: string, googleEventId: string): Promise<void> {
+    const { error } = await supabase
+      .from('appointments')
+      .update({ google_event_id: googleEventId })
+      .eq('id', id);
+    if (error) throw error;
   },
 
   mapMenuReferenceFromDb(db: any): MenuReferenceRecord {
