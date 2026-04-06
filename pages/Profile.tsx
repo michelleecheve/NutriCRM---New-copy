@@ -827,6 +827,11 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           <LogOut className="w-5 h-5" />
           Cerrar Sesión
         </button>
+        <p className="text-xs text-slate-400 pt-1">
+          <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Política de Privacidad</a>
+          {' · '}
+          <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Términos de Servicio</a>
+        </p>
       </div>
 
       {/* Unlink Confirmation Modal */}
