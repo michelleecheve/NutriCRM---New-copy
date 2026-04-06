@@ -17,6 +17,7 @@ import { CalendarGrid } from "../components/calendar_components/CalendarGrid";
 import { CalendarSidebar } from "../components/calendar_components/CalendarSidebar";
 import { CalendarAppointmentModal } from "../components/calendar_components/CalendarAppointmentModal";
 import { CalendarHistorialTable } from "../components/calendar_components/CalendarHistorialTable";
+import { CalendarFollowUpTable } from "../components/calendar_components/CalendarFollowUpTable";
 import { CalendarSelector } from "../components/calendar_components/CalendarSelector";
 import { CalendarGoogleSync } from "../components/calendar_components/CalendarGoogleSync";
 
@@ -647,6 +648,15 @@ export const CalendarPage: React.FC = () => {
             onAppointmentClick={handleEditAppointment}
           />
         </div>
+
+        {/* Follow-Up Table */}
+        {currentAppUser?.role !== 'recepcionista' && (
+          <CalendarFollowUpTable
+            appointments={appointments}
+            todayStr={todayStr}
+            onRefresh={handleRefresh}
+          />
+        )}
 
         {/* Historial Table */}
         <CalendarHistorialTable

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { AppRoute, UserProfile } from '../types';
 import { authStore } from '../services/authStore';
+import { NotificationBell } from './NotificationBell';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -216,8 +217,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate
             <NavLinks compact />
           </nav>
 
-          {/* Right: user menu */}
-          <UserMenu />
+          {/* Right: notifications + user menu */}
+          <div className="flex items-center gap-1">
+            {role === 'nutricionista' && <NotificationBell onNavigate={onNavigate} />}
+            <UserMenu />
+          </div>
         </header>
 
         {/* Mobile/tablet drawer */}
@@ -303,7 +307,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate
             )}
           </div>
 
-          <UserMenu />
+          <div className="flex items-center gap-1">
+            {role === 'nutricionista' && <NotificationBell onNavigate={onNavigate} />}
+            <UserMenu />
+          </div>
         </header>
 
         {/* Page content */}

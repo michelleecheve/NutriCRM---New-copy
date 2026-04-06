@@ -247,6 +247,8 @@ export interface Appointment {
   createdBy?: string;
   createdByRole?: 'admin' | 'nutricionista' | 'recepcionista';
   googleEventId?: string;  // Google Calendar event ID for two-way sync
+  reminderSent?: boolean;
+  reminderSentAt?: string;
 }
 
 export interface LabResult {

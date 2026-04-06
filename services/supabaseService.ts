@@ -1300,7 +1300,20 @@ export const supabaseService = {
       ownerId:        db.owner_id,
       receptionistId: db.receptionist_id,
       googleEventId:  db.google_event_id ?? undefined,
+      reminderSent:   db.reminder_sent ?? false,
+      reminderSentAt: db.reminder_sent_at ?? undefined,
     };
+  },
+
+  async updateAppointmentReminder(id: string, sent: boolean): Promise<void> {
+    const { error } = await supabase
+      .from('appointments')
+      .update({
+        reminder_sent: sent,
+        reminder_sent_at: sent ? new Date().toISOString() : null,
+      })
+      .eq('id', id);
+    if (error) throw error;
   },
 
   async updateAppointmentGoogleEventId(id: string, googleEventId: string): Promise<void> {
