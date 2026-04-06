@@ -258,10 +258,14 @@ export const CalendarAppointmentModal: React.FC<
                     }
                     className={inputCls}
                   >
+                    <option value="15">15 minutos</option>
                     <option value="30">30 minutos</option>
                     <option value="45">45 minutos</option>
-                    <option value="60">60 minutos</option>
-                    <option value="90">90 minutos</option>
+                    <option value="60">1 hora</option>
+                    <option value="90">1 hora y media</option>
+                    <option value="120">2 horas</option>
+                    <option value="150">2 horas y media</option>
+                    <option value="180">3 horas</option>
                   </select>
                 </div>
 

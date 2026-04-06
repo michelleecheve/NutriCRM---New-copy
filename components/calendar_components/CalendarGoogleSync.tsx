@@ -106,7 +106,7 @@ export const CalendarGoogleSync: React.FC<CalendarGoogleSyncProps> = ({ userId, 
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-100 text-slate-400 text-sm">
+      <div className={`flex items-center gap-2 rounded-xl bg-slate-100 text-slate-400 ${iconOnly ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-sm'}`}>
         <Loader2 className="w-4 h-4 animate-spin" />
         {!iconOnly && <span>Google Calendar</span>}
       </div>
@@ -119,14 +119,18 @@ export const CalendarGoogleSync: React.FC<CalendarGoogleSyncProps> = ({ userId, 
         <button
           onClick={handleConnect}
           disabled={busy}
-          className="flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-600 text-sm font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all disabled:opacity-50"
+          className={`flex items-center gap-2 rounded-xl border font-semibold transition-all disabled:opacity-50 ${
+            iconOnly
+              ? 'px-3 py-2 text-xs border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+              : 'px-4 py-3 text-sm border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+          }`}
         >
           {busy ? (
             <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
+          ) : !iconOnly ? (
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
-          )}
-          {!iconOnly && 'Conectar Google Calendar'}
+          ) : null}
+          {iconOnly ? 'click para Sync' : 'Conectar Google Calendar'}
         </button>
         {error && (
           <p className="flex items-center gap-1 text-xs text-red-500">
@@ -152,26 +156,33 @@ export const CalendarGoogleSync: React.FC<CalendarGoogleSyncProps> = ({ userId, 
           }
         }}
         disabled={busy}
-        className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 ${
+        className={`flex items-center gap-1.5 rounded-xl font-semibold transition-all disabled:opacity-50 ${
+          iconOnly ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-sm gap-2'
+        } ${
           watchExpired
-            ? 'bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100'
+            ? 'bg-red-50 border border-red-300 text-red-700 hover:bg-red-100'
             : 'bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100'
         }`}
       >
         {busy ? (
           <Loader2 className="w-4 h-4 animate-spin" />
-        ) : watchExpired ? (
-          <AlertTriangle className="w-4 h-4" />
         ) : iconOnly ? (
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
+          watchExpired ? (
+            'click para Sync'
+          ) : (
+            <>
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4" />
+              Sync ✓
+            </>
+          )
         ) : (
-          <CheckCircle2 className="w-4 h-4" />
-        )}
-        {!iconOnly && (
-          busy && watchExpired ? 'Renovando...' :
-          bulkProgress ? `Exportando ${bulkProgress.done}/${bulkProgress.total}...` :
-          watchExpired ? 'Sincronización vencida · Renovar' :
-          'Google Calendar sincronizado'
+          <>
+            {watchExpired ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+            {busy && watchExpired ? 'Renovando...' :
+             bulkProgress ? `Exportando ${bulkProgress.done}/${bulkProgress.total}...` :
+             watchExpired ? 'Sincronización vencida · Renovar' :
+             'Google Calendar sincronizado'}
+          </>
         )}
       </button>
 
@@ -193,7 +204,7 @@ export const CalendarGoogleSync: React.FC<CalendarGoogleSyncProps> = ({ userId, 
       {showMenu && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setShowMenu(false)} />
-          <div className="absolute right-0 top-full mt-2 z-40 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-72">
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-40 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:translate-x-0 sm:translate-y-0 sm:mt-2 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-72">
 
             {/* Bulk export */}
             <div className="px-4 pt-3 pb-1">

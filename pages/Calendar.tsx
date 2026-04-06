@@ -42,18 +42,14 @@ const GoogleCalendarTip: React.FC<{ iconOnly?: boolean }> = ({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:border-slate-300 transition-all"
+        className={`flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:border-slate-300 transition-all ${
+          iconOnly ? 'px-3 py-2' : 'px-4 py-3'
+        }`}
       >
-        <Info className="w-4 h-4" />
-        {iconOnly ? (
-          <span className="text-[11px] font-medium leading-tight text-left">
-            Tips
-            <br />
-            Google Calendar
-          </span>
-        ) : (
-          <span className="text-[11px] font-medium">Tips Google Calendar</span>
-        )}
+        {!iconOnly && <Info className="w-4 h-4" />}
+        <span className={`font-medium ${iconOnly ? 'text-[11px]' : 'text-[11px]'}`}>
+          {iconOnly ? 'Tips G.Calendar' : 'Tips Google Calendar'}
+        </span>
       </button>
 
       {open && (
@@ -486,15 +482,12 @@ export const CalendarPage: React.FC = () => {
   const d = fiveDaysFromNowDate;
   const fiveDaysFromNowStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-  const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1));
-  const handleNextMonth = () => setCurrentDate(new Date(year, month + 1));
+  const handleNavigateTo = (date: Date) => setCurrentDate(date);
 
-  const handleCreateAppointment = (day?: number) => {
-    const dateStr = day
-      ? `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-      : todayStr;
+  const handleCreateAppointment = (dateStr?: string) => {
+    const resolvedDateStr = dateStr ?? todayStr;
     setSelectedAppointment({
-      date: dateStr,
+      date: resolvedDateStr,
       time: "09:00",
       duration: 60,
       type: "Primera Cita",
@@ -563,22 +556,36 @@ export const CalendarPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 p-4 sm:p-6 lg:p-8">
       <div className="max-w-[1600px] mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                <CalendarIcon className="w-6 h-6 text-white" />
-              </div>
+            <h1 className="text-3xl font-bold text-slate-900">
               Calendario
             </h1>
             <p className="text-slate-500 mt-1">Gestiona tus citas y agenda</p>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            {/* Google Calendar sync — only for the nutritionist/admin who owns the calendar */}
+          <div className="flex items-center gap-2 lg:gap-3">
+            {canCreateAppointments && (
+              <button
+                onClick={() => handleCreateAppointment()}
+                className="flex items-center gap-1.5 lg:gap-2 px-3 py-2 lg:px-6 lg:py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold text-xs lg:text-sm hover:shadow-lg hover:shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
+              >
+                <Plus className="hidden lg:inline w-5 h-5" />
+                Nueva Cita
+              </button>
+            )}
             {currentAppUser?.role !== "recepcionista" && currentAppUser?.id && (
               <>
-                {/* Desktop: full buttons */}
-                <span className="hidden sm:contents">
+                {/* Mobile + Tablet: iconOnly, en la misma fila */}
+                <span className="flex lg:hidden items-center gap-2">
+                  <CalendarGoogleSync
+                    userId={currentAppUser.id}
+                    iconOnly
+                    appointments={appointments}
+                  />
+                  <GoogleCalendarTip iconOnly />
+                </span>
+                {/* Desktop: botones completos */}
+                <span className="hidden lg:contents">
                   <CalendarGoogleSync
                     userId={currentAppUser.id}
                     appointments={appointments}
@@ -586,26 +593,6 @@ export const CalendarPage: React.FC = () => {
                   <GoogleCalendarTip />
                 </span>
               </>
-            )}
-            {canCreateAppointments && (
-              <button
-                onClick={() => handleCreateAppointment()}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
-              >
-                <Plus className="w-5 h-5" />
-                Nueva Cita
-              </button>
-            )}
-            {/* Mobile: icon-only Google Calendar buttons, shown to the right of Nueva Cita */}
-            {currentAppUser?.role !== "recepcionista" && currentAppUser?.id && (
-              <span className="flex sm:hidden items-center gap-2">
-                <CalendarGoogleSync
-                  userId={currentAppUser.id}
-                  iconOnly
-                  appointments={appointments}
-                />
-                <GoogleCalendarTip iconOnly />
-              </span>
             )}
           </div>
         </div>
@@ -640,17 +627,10 @@ export const CalendarPage: React.FC = () => {
 
         {/* Calendar + Sidebar Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <CalendarSidebar
-            todayStr={todayStr}
-            fiveDaysFromNowStr={fiveDaysFromNowStr}
-            appointments={appointments}
-            onAppointmentClick={handleEditAppointment}
-          />
           <CalendarGrid
             currentDate={currentDate}
             appointments={appointments}
-            onPrevMonth={handlePrevMonth}
-            onNextMonth={handleNextMonth}
+            onNavigateTo={handleNavigateTo}
             onDayClick={
               canCreateAppointments ? handleCreateAppointment : undefined
             }
@@ -658,6 +638,13 @@ export const CalendarPage: React.FC = () => {
               e.stopPropagation();
               handleEditAppointment(appt);
             }}
+            userId={currentAppUser?.id}
+          />
+          <CalendarSidebar
+            todayStr={todayStr}
+            fiveDaysFromNowStr={fiveDaysFromNowStr}
+            appointments={appointments}
+            onAppointmentClick={handleEditAppointment}
           />
         </div>
 

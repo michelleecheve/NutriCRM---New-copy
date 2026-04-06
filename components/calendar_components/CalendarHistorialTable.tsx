@@ -3,6 +3,7 @@ import { Appointment } from '../../types';
 import { FileText, Download, CalendarDays, History, Video, MapPin, Edit2, Trash2, AlertTriangle } from 'lucide-react';
 import { getStatusStyles } from './CalendarAppointmentModal';
 import { store } from '../../services/store';
+import { DateFilter, DatePreset, getPresetRange, PRESET_LABELS } from './DateFilter';
 
 interface CalendarHistorialTableProps {
   appointments: Appointment[];
@@ -33,6 +34,10 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
   }) => {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [deletingAppt, setDeletingAppt] = useState<Appointment | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activePreset, setActivePreset] = useState<DatePreset>('all');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
 
   const handleDelete = async () => {
     if (deletingAppt) {
@@ -51,24 +56,32 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
     }
   };
 
-  const historyAppointments = [...appointments].sort((a: any, b: any) => {
-    const dateA = new Date(a.updatedAt || a.createdAt || a.date + 'T00:00:00');
-    const dateB = new Date(b.updatedAt || b.createdAt || b.date + 'T00:00:00');
-    return dateB.getTime() - dateA.getTime();
-  });
+  const isFiltered = activePreset !== 'all';
 
-  const handleExportCSV = (type: 'month' | 'all') => {
+  const historyAppointments = [...appointments]
+    .filter(appt => {
+      const range = activePreset === 'custom'
+        ? (customFrom && customTo ? { from: customFrom, to: customTo } : null)
+        : getPresetRange(activePreset);
+      if (!range) return true;
+      return appt.date >= range.from && appt.date <= range.to;
+    })
+    .sort((a: any, b: any) => {
+      const dateA = new Date(a.updatedAt || a.createdAt || a.date + 'T00:00:00');
+      const dateB = new Date(b.updatedAt || b.createdAt || b.date + 'T00:00:00');
+      return dateB.getTime() - dateA.getTime();
+    });
+
+  const handleExportCSV = (scope: 'filtered' | 'all') => {
     const headers = ['Ultima Modificacion', 'Estado', 'Paciente', 'Fecha Cita', 'Hora', 'Tipo', 'Modalidad'];
 
-    let dataToExport = [...historyAppointments];
-
-    if (type === 'month') {
-      const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
-      dataToExport = dataToExport.filter(a => {
-        const relevantDate = (a as any).updatedAt || a.date;
-        return relevantDate.startsWith(currentMonthStr);
-      });
-    }
+    // 'filtered' uses the already-filtered list; 'all' uses every appointment unsorted
+    const dataToExport = scope === 'filtered'
+      ? historyAppointments
+      : [...appointments].sort((a: any, b: any) =>
+          new Date(b.updatedAt || b.createdAt || b.date + 'T00:00:00').getTime() -
+          new Date(a.updatedAt || a.createdAt || a.date + 'T00:00:00').getTime()
+        );
 
     const rows = dataToExport.map(appt => {
       const [y, m, d] = appt.date.split('-');
@@ -88,7 +101,7 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `historial_citas_${type}_${todayStr}.csv`);
+    link.setAttribute('download', `historial_citas_${scope}_${todayStr}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -101,7 +114,7 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
       className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-visible relative"
       onClick={() => setIsExportMenuOpen(false)}
     >
-      <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+      <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-emerald-600" />
           <div>
@@ -113,6 +126,18 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
           <div className="bg-slate-100 px-3 py-1 rounded-full text-xs font-bold text-slate-500">
             {historyAppointments.length} Registros
           </div>
+          <DateFilter
+            activePreset={activePreset}
+            onPresetChange={(p) => { setActivePreset(p); if (p !== 'custom') setIsFilterOpen(false); }}
+            customFrom={customFrom}
+            customTo={customTo}
+            onCustomFromChange={setCustomFrom}
+            onCustomToChange={setCustomTo}
+            isOpen={isFilterOpen}
+            onToggle={() => { setIsFilterOpen(v => !v); setIsExportMenuOpen(false); }}
+            onClose={() => setIsFilterOpen(false)}
+            isFiltered={isFiltered}
+          />
           <div className="relative">
             <button
               onClick={(e) => { e.stopPropagation(); setIsExportMenuOpen(!isExportMenuOpen); }}
@@ -128,10 +153,19 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
                   Exportar CSV
                 </div>
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleExportCSV('month'); }}
+                  onClick={(e) => { e.stopPropagation(); handleExportCSV('filtered'); }}
                   className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors flex items-center gap-2"
                 >
-                  <CalendarDays className="w-4 h-4" /> Exportar Mes Actual
+                  <CalendarDays className="w-4 h-4" />
+                  <span>
+                    Exportar filtro
+                    {isFiltered && (
+                      <span className="block text-[10px] text-emerald-600 font-bold leading-tight">{PRESET_LABELS[activePreset]}</span>
+                    )}
+                    {!isFiltered && (
+                      <span className="block text-[10px] text-slate-400 leading-tight">Sin filtro activo</span>
+                    )}
+                  </span>
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleExportCSV('all'); }}
@@ -149,10 +183,9 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
         <table className="w-full text-left text-sm relative">
           <thead className="bg-slate-50 text-slate-500 font-bold text-xs uppercase sticky top-0 z-10 shadow-sm">
             <tr>
-              <th className="px-6 py-4 bg-slate-50">Última Modificación</th>
               <th className="px-6 py-4 bg-slate-50">Estado Actual</th>
               <th className="px-6 py-4 bg-slate-50">Paciente</th>
-              <th className="px-6 py-4 bg-slate-50">Fecha Cita</th>
+              <th className="px-6 py-4 bg-slate-50 min-w-[140px]">Fecha Cita</th>
               <th className="px-6 py-4 bg-slate-50">Hora</th>
               <th className="px-6 py-4 bg-slate-50">Tipo</th>
               <th className="px-6 py-4 bg-slate-50">Modalidad</th>
@@ -166,16 +199,6 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
                 className={`hover:bg-slate-50 transition-colors group ${idx === 0 ? 'bg-emerald-50/20' : ''} ${appt.status === 'Cancelada' ? 'opacity-60 bg-slate-50' : ''}`}
               >
                 <td className="px-6 py-4">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-slate-800">
-                      {(appt as any).updatedAt ? formatDateTime((appt as any).updatedAt) : 'Registro Inicial'}
-                    </span>
-                    {idx === 0 && (
-                      <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mt-0.5">Reciente</span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusStyles(appt.status)}`}>
                     {appt.status}
                   </span>
@@ -183,10 +206,10 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
                 <td className="px-6 py-4">
                   <span className="font-bold text-slate-800">{appt.patientName}</span>
                 </td>
-                <td className="px-6 py-4 text-slate-600">
-                  {new Date(appt.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                <td className="px-6 py-4 text-slate-600 min-w-[140px]">
+                  {new Date(appt.date + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </td>
-                <td className="px-6 py-4 text-slate-600 font-mono text-xs">{appt.time}</td>
+                <td className="px-6 py-4 text-slate-600 font-mono text-xs">{appt.time.slice(0, 5)}</td>
                 <td className="px-6 py-4 text-slate-600 text-xs">{appt.type}</td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2 text-slate-600 text-xs">
@@ -216,7 +239,7 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
             ))}
             {historyAppointments.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-slate-400">
+                <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
                   No hay historial disponible.
                 </td>
               </tr>
