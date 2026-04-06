@@ -311,7 +311,7 @@ export const CalendarFollowUpTable: React.FC<CalendarFollowUpTableProps> = ({
               </p>
             ) : (
               <p className="text-xs text-slate-500">
-                Pacientes con cita cancelada en los <strong>últimos 30 días o próximos 15</strong> · Incluye cancelaciones de citas futuras próximas
+                Pacientes con cita cancelada en los <strong>últimos 30 días</strong> · Incluye cancelaciones de citas agendadas en los próximos 15 dias
               </p>
             )}
           </div>
