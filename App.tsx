@@ -10,6 +10,7 @@ import { PatientDetail } from './pages/PatientDetail';
 import { Payments } from './pages/Payments';
 import { CalendarPage } from './pages/Calendar';
 import { Profile } from './pages/Profile';
+import { CheckoutSuccess } from './pages/CheckoutSuccess';
 import { Menus } from './pages/Menus';
 import { AdminPanel } from './pages/Admin';
 import { AppRoute, UserRole } from './types';
@@ -28,8 +29,9 @@ const PATH_TO_ROUTE: Record<string, string> = {
   '/reset-password':AppRoute.RESET_PASSWORD,
   '/calendar':      AppRoute.CALENDAR,
   '/payments':      AppRoute.PAYMENTS,
-  '/profile':       AppRoute.PROFILE,
-  '/menus':         AppRoute.MENUS,
+  '/profile':          AppRoute.PROFILE,
+  '/menus':            AppRoute.MENUS,
+  '/checkout-success': AppRoute.CHECKOUT_SUCCESS,
   '/dashboard':     AppRoute.DASHBOARD,
   '/admin':         AppRoute.ADMIN,
 };
@@ -207,6 +209,9 @@ function App() {
 
       case AppRoute.ADMIN:
         return <AdminPanel />;
+
+      case AppRoute.CHECKOUT_SUCCESS:
+        return <CheckoutSuccess onGoToProfile={() => setCurrentRoute(AppRoute.PROFILE)} />;
 
       default:
         return <Login onLogin={handleLogin} onNavigateToLanding={() => setCurrentRoute(AppRoute.LANDING)} />;

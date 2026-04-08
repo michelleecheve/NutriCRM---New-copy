@@ -487,6 +487,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     }
   }, []);
 
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {

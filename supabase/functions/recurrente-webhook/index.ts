@@ -3,7 +3,7 @@
 // Updates subscriptions table and profiles.plan on payment events.
 //
 // Deploy: supabase functions deploy recurrente-webhook
-// Secrets: supabase secrets set RECURRENTE_SECRET_KEY=sk_test_xxx
+// Secrets: supabase secrets set RECURRENTE_SECRET_KEY=sk_live_xxx
 //          (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are auto-injected)
 
 import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -24,6 +24,7 @@ serve(async (req: Request) => {
   // Verify the request comes from Recurrente using the secret key header
   const authHeader = req.headers.get('X-SECRET-KEY');
   if (authHeader !== RECURRENTE_SECRET_KEY) {
+    console.error('Unauthorized: invalid X-SECRET-KEY');
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -34,24 +35,47 @@ serve(async (req: Request) => {
     return new Response('Invalid JSON', { status: 400 });
   }
 
-  const eventType   = payload.type as string;
-  const eventId     = payload.id   as string;
-  const subscription = payload.data as Record<string, unknown> | undefined;
+  // Recurrente sends event_type at the root (not "type")
+  const eventType = payload.event_type as string;
+  // Recurrente event ID is at payload.id (e.g. "se_8qhwyjaw")
+  const eventId   = payload.id as string;
 
-  if (!eventType || !subscription) {
-    return new Response('Missing event type or data', { status: 400 });
+  if (!eventType) {
+    console.error('Missing event_type in payload', JSON.stringify(payload));
+    return new Response('Missing event_type', { status: 400 });
   }
 
-  // Find the owner by recurrente_subscription_id or metadata
-  // Recurrente sends customer email or metadata we embed at checkout creation
-  const recurrenteSubId  = subscription.id            as string | undefined;
-  const customerEmail    = (subscription.customer as Record<string, unknown>)?.email as string | undefined;
-  const metadataOwnerId  = (subscription.metadata as Record<string, unknown>)?.owner_id as string | undefined;
+  // Extract owner info — structure differs per event type:
+  //   setup_intent.succeeded → customer email at payload.customer.email
+  //                          → owner_id at payload.checkout.metadata.owner_id
+  //                          → subscription id at payload.subscription.id
+  //   subscription.create   → customer email at payload.customer_email (root)
+  //                          → no metadata owner_id, resolve via email
+  //                          → subscription id = payload.id (root)
+
+  const checkout  = payload.checkout   as Record<string, unknown> | undefined;
+  const metadata  = checkout?.metadata as Record<string, unknown> | undefined;
+  const customer  = payload.customer   as Record<string, unknown> | undefined;
+  const subObj    = payload.subscription as Record<string, unknown> | undefined;
+
+  // Subscription ID: explicit object first, else root id (subscription.create)
+  const recurrenteSubId = (
+    subObj?.id as string | undefined
+    ?? (eventType === 'subscription.create' ? eventId : undefined)
+  );
+
+  const metadataOwnerId = metadata?.owner_id as string | undefined;
+
+  // Customer email: try both locations
+  const customerEmail = (
+    payload.customer_email as string | undefined
+    ?? customer?.email    as string | undefined
+  );
 
   // Resolve owner_id: prefer metadata, fallback to email lookup
   let ownerId: string | null = metadataOwnerId ?? null;
 
-  if (!ownerId && customerEmail) {
+  if (!ownerId && customerEmail && customerEmail.includes('@')) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('id')
@@ -81,27 +105,23 @@ serve(async (req: Request) => {
 
   // Log the event (append-only)
   await supabase.from('subscription_events').insert({
-    owner_id:       ownerId,
-    event_type:     eventType,
-    recurrente_id:  eventId ?? null,
+    owner_id:      ownerId,
+    event_type:    eventType,
+    recurrente_id: eventId ?? null,
     payload,
   });
 
   // Handle each event type
   switch (eventType) {
-    case 'subscription.create': {
-      // New paying subscription — activate Pro
-      const periodStart = subscription.current_period_start as string | undefined;
-      const periodEnd   = subscription.current_period_end   as string | undefined;
 
+    // setup_intent.succeeded = payment method confirmed, subscription just created
+    case 'setup_intent.succeeded':
+    case 'subscription.create': {
       await supabase.from('subscriptions').upsert({
         owner_id:                   ownerId,
         plan:                       'pro',
         status:                     'active',
         recurrente_subscription_id: recurrenteSubId ?? null,
-        recurrente_product_id:      subscription.product_id as string ?? null,
-        current_period_start:       periodStart ?? null,
-        current_period_end:         periodEnd   ?? null,
         updated_at:                 new Date().toISOString(),
       }, { onConflict: 'owner_id' });
 
@@ -110,21 +130,20 @@ serve(async (req: Request) => {
         .update({ plan: 'pro' })
         .eq('id', ownerId);
 
-      // Aumentar límite de tokens de IA a plan Pro (200,000/mes)
       await supabase
         .from('ai_rate_limits')
         .update({ max_tokens: 200000 })
         .eq('owner_id', ownerId);
 
+      console.log(`Activated Pro for owner ${ownerId} via ${eventType}`);
       break;
     }
 
     case 'subscription.cancel': {
-      // Subscription cancelled — downgrade to free
       await supabase.from('subscriptions').upsert({
-        owner_id:  ownerId,
-        plan:      'free',
-        status:    'cancelled',
+        owner_id:   ownerId,
+        plan:       'free',
+        status:     'cancelled',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'owner_id' });
 
@@ -133,7 +152,6 @@ serve(async (req: Request) => {
         .update({ plan: 'free' })
         .eq('id', ownerId);
 
-      // Reducir límite de tokens de IA a plan gratuito (30,000/mes)
       await supabase
         .from('ai_rate_limits')
         .update({ max_tokens: 30000 })
@@ -144,9 +162,9 @@ serve(async (req: Request) => {
 
     case 'subscription.past_due': {
       await supabase.from('subscriptions').upsert({
-        owner_id:  ownerId,
-        plan:      'pro',
-        status:    'past_due',
+        owner_id:   ownerId,
+        plan:       'pro',
+        status:     'past_due',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'owner_id' });
       break;
@@ -154,9 +172,9 @@ serve(async (req: Request) => {
 
     case 'subscription.paused': {
       await supabase.from('subscriptions').upsert({
-        owner_id:  ownerId,
-        plan:      'free',
-        status:    'paused',
+        owner_id:   ownerId,
+        plan:       'free',
+        status:     'paused',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'owner_id' });
 
@@ -165,7 +183,6 @@ serve(async (req: Request) => {
         .update({ plan: 'free' })
         .eq('id', ownerId);
 
-      // Reducir límite de tokens de IA a plan gratuito (30,000/mes)
       await supabase
         .from('ai_rate_limits')
         .update({ max_tokens: 30000 })

@@ -576,4 +576,5 @@ export enum AppRoute {
   PROFILE           = 'profile',
   MENUS             = 'menus',
   ADMIN             = 'admin',
+  CHECKOUT_SUCCESS  = 'checkout-success',
 }

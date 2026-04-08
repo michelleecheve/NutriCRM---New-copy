@@ -588,13 +588,30 @@ class AuthStore {
   async startCheckout(): Promise<{ ok: boolean; message?: string }> {
     const user = this.currentUser;
     if (!user) return { ok: false, message: 'No hay sesión activa.' };
+
+    // Bloquear si ya hay una suscripción activa o en trial para evitar duplicados
+    const existingSub = this.subscription;
+    if (existingSub && (existingSub.status === 'active' || existingSub.status === 'trialing')) {
+      return { ok: false, message: 'Ya tienes una suscripción Pro activa.' };
+    }
+
+    // Verificar también en Supabase por si el estado local está desactualizado
+    const { data: dbSub } = await supabase
+      .from('subscriptions')
+      .select('status, recurrente_subscription_id')
+      .eq('owner_id', user.id)
+      .single();
+    if (dbSub && (dbSub.status === 'active' || dbSub.status === 'trialing')) {
+      return { ok: false, message: 'Ya tienes una suscripción Pro activa. Recarga la página para ver tu plan actualizado.' };
+    }
+
     try {
       const res = await fetch('https://app.recurrente.com/api/checkouts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-PUBLIC-KEY': RECURRENTE_PUBLIC_KEY },
         body: JSON.stringify({
           items: [{ product_id: RECURRENTE_PRODUCT_ID }],
-          success_url: `${window.location.origin}/profile`,
+          success_url: `${window.location.origin}/checkout-success`,
           cancel_url:  `${window.location.origin}/profile`,
           locale: 'es',
           metadata: { owner_id: user.id, email: user.email },
@@ -708,6 +725,19 @@ class AuthStore {
 
   getSubscription(): SubscriptionState | null {
     return this.subscription;
+  }
+
+  /** Recarga el estado de suscripción desde Supabase (útil al volver del checkout). */
+  async refreshSubscription(): Promise<void> {
+    const user = this.currentUser;
+    if (!user || user.role !== 'nutricionista') return;
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('plan, status, trial_started_at, trial_ends_at, current_period_end, recurrente_subscription_id')
+      .eq('owner_id', user.id)
+      .single();
+    this.subscription = sub ?? this.subscription;
+    this.notifyListeners();
   }
 }
 
