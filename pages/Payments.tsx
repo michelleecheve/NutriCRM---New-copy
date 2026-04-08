@@ -9,6 +9,7 @@ import {
   Wallet, BarChart2,
 } from 'lucide-react';
 import { getTodayStr } from '../src/utils/dateUtils';
+import { showPlanLimitModal } from '../components/PlanLimitModal';
 
 type Tab         = 'ingresos' | 'egresos' | 'resumen';
 type StatusFilter = 'all' | 'Pendiente' | 'Pagado' | 'Vencido';
@@ -228,8 +229,13 @@ export const Payments: React.FC = () => {
       }
       setInvoices(store.getInvoices());
       setIsModalOpen(false);
-    } catch (err) {
-      console.error('Error saving invoice:', err);
+    } catch (err: any) {
+      if (err?.message === 'PLAN_LIMIT_INVOICES') {
+        setIsModalOpen(false);
+        showPlanLimitModal();
+      } else {
+        console.error('Error saving invoice:', err);
+      }
     }
   };
 

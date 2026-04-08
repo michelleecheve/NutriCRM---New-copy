@@ -112,8 +112,7 @@ export const supabaseService = {
       const { count } = await supabase
         .from('patients')
         .select('*', { count: 'exact', head: true })
-        .eq('owner_id', ownerId)
-        .eq('status', 'Activo');
+        .eq('owner_id', ownerId);
       if (authStore.patientLimitReached(count ?? 0)) {
         throw new Error('PLAN_LIMIT_PATIENTS');
       }
@@ -746,6 +745,18 @@ export const supabaseService = {
   },
 
   async createInvoice(invoice: Omit<Invoice, 'id'>) {
+    // Plan limit: free users can have at most 20 invoices
+    if (!authStore.isPro()) {
+      const ownerId = authStore.getCurrentUser()?.id;
+      const { count } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', ownerId);
+      if (authStore.invoiceLimitReached(count ?? 0)) {
+        throw new Error('PLAN_LIMIT_INVOICES');
+      }
+    }
+
     const { data, error } = await supabase
       .from('invoices')
       .insert({

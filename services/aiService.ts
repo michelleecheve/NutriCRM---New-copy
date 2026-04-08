@@ -39,7 +39,10 @@ export const aiService = {
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      if (res.status === 429) throw new Error('Límite de tokens de IA excedido.');
+      if (res.status === 429) {
+        window.dispatchEvent(new CustomEvent('nutriflow-plan-limit-ai'));
+        throw new Error('Límite de tokens de IA excedido.');
+      }
       if (res.status === 403) throw new Error('Configuración de IA no habilitada.');
       throw new Error(`Error ${res.status}: ${errText}`);
     }

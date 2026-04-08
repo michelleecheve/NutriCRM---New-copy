@@ -17,7 +17,9 @@
       "Bash(node -e \"const j = require\\(''./node_modules/jspdf/dist/jspdf.node.min.js''\\); console.log\\(''default export:'', typeof j.default\\); console.log\\(''named jsPDF:'', typeof j.jsPDF\\);\")",
       "Bash(node -e \"const a = require\\(''./node_modules/jspdf-autotable''\\); console.log\\(''autoTable export:'', typeof a.default\\);\")",
       "WebFetch(domain:docs.recurrente.com)",
-      "WebFetch(domain:app.recurrente.com)"
+      "WebFetch(domain:app.recurrente.com)",
+      "Bash(python3:*)",
+      "Bash(node:*)"
     ]
   }
 }

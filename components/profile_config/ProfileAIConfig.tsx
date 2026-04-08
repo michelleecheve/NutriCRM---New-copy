@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Zap, BarChart3, Loader2, CheckCircle2, Calendar, Lock } from 'lucide-react';
+import { Sparkles, BarChart3, CheckCircle2, Calendar, Loader2 } from 'lucide-react';
 import { supabaseService } from '../../services/supabaseService';
 import { authStore } from '../../services/authStore';
-import { showPlanLimitModal } from '../PlanLimitModal';
 
 const MS_PER_CYCLE = 30 * 24 * 60 * 60 * 1000;
 
@@ -23,7 +22,6 @@ function formatDate(date: Date): string {
 
 export const ProfileAIConfig: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
   const [rateLimit, setRateLimit] = useState<any>(null);
   const user = authStore.getCurrentUser();
 
@@ -39,19 +37,6 @@ export const ProfileAIConfig: React.FC = () => {
       console.error('Error fetching AI rate limit:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleEnableAI = async () => {
-    setProcessing(true);
-    try {
-      const data = await supabaseService.createAIRateLimit(user!.id);
-      setRateLimit(data);
-    } catch (error) {
-      console.error('Error enabling AI:', error);
-      alert('Error al habilitar la IA. Por favor intenta de nuevo.');
-    } finally {
-      setProcessing(false);
     }
   };
 
@@ -76,24 +61,12 @@ export const ProfileAIConfig: React.FC = () => {
       </div>
 
       {!rateLimit ? (
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6">
-          <div className="bg-emerald-100 p-4 rounded-2xl">
-            <Zap className="w-8 h-8 text-emerald-600" />
-          </div>
-          <div className="flex-1 text-center md:text-left">
-            <h4 className="font-bold text-slate-800 text-lg">Habilitar Funciones de IA</h4>
-            <p className="text-slate-500 text-sm mt-1">
-              Activa las capacidades de Inteligencia Artificial para generar menús personalizados, interpretar laboratorios y más.
-            </p>
-          </div>
-          <button
-            onClick={handleEnableAI}
-            disabled={processing}
-            className="w-full md:w-auto px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-            Habilitar AI
-          </button>
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center space-y-2">
+          <Sparkles className="w-8 h-8 text-emerald-400 mx-auto" />
+          <p className="font-semibold text-slate-700">La IA se activa automáticamente en tu primer uso.</p>
+          <p className="text-slate-400 text-sm">
+            Tu uso aparecerá aquí una vez que generes tu primer menú o interpretes un laboratorio.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -160,26 +133,10 @@ export const ProfileAIConfig: React.FC = () => {
         </div>
       )}
 
-      {/* Locked overlay for free plan */}
-      {!isPro && (
-        <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center gap-4 z-10"
-          style={{ backgroundColor: 'rgba(248,250,252,0.88)', backdropFilter: 'blur(2px)' }}
-        >
-          <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">
-            <Lock className="w-7 h-7 text-slate-400" />
-          </div>
-          <div className="text-center px-6">
-            <p className="font-bold text-slate-700 text-base">Función exclusiva del Plan Pro</p>
-            <p className="text-slate-500 text-sm mt-1">
-              Configura la IA para menús y laboratorios con tu suscripción Pro.
-            </p>
-          </div>
-          <button
-            onClick={showPlanLimitModal}
-            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors"
-          >
-            {authStore.hasUsedTrial() ? 'Actualizar a Pro' : 'Activar 14 días gratis'}
-          </button>
+      {/* Info de plan */}
+      {!isPro && rateLimit && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
+          Plan gratuito: <span className="font-semibold">30,000 tokens/mes</span>. Actualiza a Pro para obtener 200,000 tokens/mes.
         </div>
       )}
     </div>

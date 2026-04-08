@@ -609,9 +609,9 @@ class AuthStore {
     }
   }
 
-  /** True si puede usar features de IA (Gemini). */
+  /** True si puede usar features de IA (Gemini). Todos los usuarios tienen acceso; los límites se aplican por tokens. */
   canUseAI(): boolean {
-    return this.isPro();
+    return !!this.currentUser;
   }
 
   /** True si alcanzó el límite de 10 pacientes activos en plan Free. */
@@ -624,6 +624,12 @@ class AuthStore {
   appointmentLimitReached(appointmentCount: number): boolean {
     if (this.isPro()) return false;
     return appointmentCount >= 20;
+  }
+
+  /** True si alcanzó el límite de 20 registros de pagos en plan Free. */
+  invoiceLimitReached(invoiceCount: number): boolean {
+    if (this.isPro()) return false;
+    return invoiceCount >= 20;
   }
 
   /** Activa el trial de 14 días para el usuario actual via Edge Function (server-side, no hackeable). */

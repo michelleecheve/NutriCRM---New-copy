@@ -110,6 +110,12 @@ serve(async (req: Request) => {
         .update({ plan: 'pro' })
         .eq('id', ownerId);
 
+      // Aumentar límite de tokens de IA a plan Pro (200,000/mes)
+      await supabase
+        .from('ai_rate_limits')
+        .update({ max_tokens: 200000 })
+        .eq('owner_id', ownerId);
+
       break;
     }
 
@@ -126,6 +132,12 @@ serve(async (req: Request) => {
         .from('profiles')
         .update({ plan: 'free' })
         .eq('id', ownerId);
+
+      // Reducir límite de tokens de IA a plan gratuito (30,000/mes)
+      await supabase
+        .from('ai_rate_limits')
+        .update({ max_tokens: 30000 })
+        .eq('owner_id', ownerId);
 
       break;
     }
@@ -152,6 +164,12 @@ serve(async (req: Request) => {
         .from('profiles')
         .update({ plan: 'free' })
         .eq('id', ownerId);
+
+      // Reducir límite de tokens de IA a plan gratuito (30,000/mes)
+      await supabase
+        .from('ai_rate_limits')
+        .update({ max_tokens: 30000 })
+        .eq('owner_id', ownerId);
 
       break;
     }
