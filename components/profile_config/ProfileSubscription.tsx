@@ -82,6 +82,7 @@ export const ProfileSubscription: React.FC = () => {
               <ul className="space-y-1.5 text-sm text-slate-600">
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-slate-400 shrink-0" /> Hasta 10 pacientes activos</li>
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-slate-400 shrink-0" /> Hasta 20 citas en calendario</li>
+                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-slate-400 shrink-0" /> Hasta 20 facturas registradas</li>
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-slate-400 shrink-0" /> IA: 30,000 tokens/mes</li>
               </ul>
             </div>
@@ -99,6 +100,7 @@ export const ProfileSubscription: React.FC = () => {
               <ul className="space-y-1.5 text-sm text-slate-700">
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> Pacientes ilimitados</li>
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> Citas ilimitadas</li>
+                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> Facturas ilimitadas</li>
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> IA: 200,000 tokens/mes</li>
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> 14 días de prueba gratis</li>
               </ul>

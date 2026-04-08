@@ -798,21 +798,19 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               </div>
             )}
 
-            <div className="pt-4 flex justify-end">
-              <div className="pt-4 flex justify-end">
-                <button
-                  type="submit"
-                  disabled={isProcessingImg || isSaved}
-                  className={`px-8 py-3 font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 ${
-                    isSaved
-                      ? 'bg-emerald-600 text-white shadow-emerald-600/20'
-                      : 'bg-slate-900 text-white shadow-slate-900/20 hover:bg-slate-800'
-                  }`}
-                >
-                  {isSaved ? <Check className="w-5 h-5" /> : <Save className="w-5 h-5" />}
-                  {isSaved ? '¡Guardado con éxito!' : 'Guardar Cambios'}
-                </button>
-              </div>
+            <div className="fixed bottom-6 right-8 z-50">
+              <button
+                type="submit"
+                disabled={isProcessingImg || isSaved}
+                className={`px-8 py-3 font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 disabled:opacity-50 ${
+                  isSaved
+                    ? 'bg-emerald-600 text-white shadow-emerald-600/20'
+                    : 'bg-slate-900 text-white shadow-slate-900/20 hover:bg-slate-800'
+                }`}
+              >
+                {isSaved ? <Check className="w-5 h-5" /> : <Save className="w-5 h-5" />}
+                {isSaved ? '¡Guardado con éxito!' : 'Guardar Cambios'}
+              </button>
             </div>
           </form>
         </div>
