@@ -31,6 +31,17 @@ export const PlanLimitModal: React.FC = () => {
 
   if (!open) return null;
 
+  const [trialError, setTrialError] = useState<string | null>(null);
+
+  const handleTrial = async () => {
+    setLoading(true);
+    setTrialError(null);
+    const result = await authStore.startTrial();
+    if (result.ok) { setOpen(false); }
+    else { setTrialError(result.message ?? 'Error al activar el trial.'); }
+    setLoading(false);
+  };
+
   const handleCheckout = async () => {
     setLoading(true);
     await authStore.startCheckout();
@@ -94,13 +105,14 @@ export const PlanLimitModal: React.FC = () => {
                 : <>Activa tu prueba gratuita de <span className="font-semibold text-emerald-600">14 días</span> y accede a todas las funciones sin restricciones.</>
               }
             </p>
+            {trialError && <p className="text-center text-xs text-red-500 mb-3">{trialError}</p>}
             <button
-              onClick={handleCheckout}
+              onClick={handleTrial}
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-semibold rounded-xl py-3 transition-colors"
             >
               <Rocket className="w-4 h-4" />
-              {loading ? 'Redirigiendo...' : 'Activar 14 días gratis'}
+              {loading ? 'Activando...' : 'Activar 14 días gratis'}
             </button>
             <button
               onClick={() => setOpen(false)}

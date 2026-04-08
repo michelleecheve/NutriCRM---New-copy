@@ -19,7 +19,8 @@
       "WebFetch(domain:docs.recurrente.com)",
       "WebFetch(domain:app.recurrente.com)",
       "Bash(python3:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(supabase functions:*)"
     ]
   }
 }

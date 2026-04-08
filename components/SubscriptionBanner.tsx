@@ -9,6 +9,7 @@ interface SubscriptionBannerProps {
 export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({ onNavigate }) => {
   const [dismissed, setDismissed] = useState(false);
   const [loading, setLoading]     = useState(false);
+  const [trialError, setTrialError] = useState<string | null>(null);
 
   const currentUser  = authStore.getCurrentUser();
   const isPro        = authStore.isPro();
@@ -20,7 +21,15 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({ onNaviga
     return null;
   }
 
-  const handleClick = async () => {
+  const handleTrial = async () => {
+    setLoading(true);
+    setTrialError(null);
+    const result = await authStore.startTrial();
+    if (!result.ok) setTrialError(result.message ?? 'Error al activar el trial.');
+    setLoading(false);
+  };
+
+  const handleCheckout = async () => {
     setLoading(true);
     await authStore.startCheckout();
     setLoading(false);
@@ -34,12 +43,13 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({ onNaviga
         <span>
           Plan Gratuito —{' '}
           <button
-            onClick={handleClick}
+            onClick={handleTrial}
             disabled={loading}
             className="underline underline-offset-2 font-bold hover:text-emerald-100 transition-colors disabled:opacity-60"
           >
-            {loading ? 'Redirigiendo...' : 'prueba 14 días gratis aquí'}
+            {loading ? 'Activando...' : 'prueba 14 días gratis aquí'}
           </button>
+          {trialError && <span className="ml-2 text-red-200 text-xs">{trialError}</span>}
         </span>
         <button
           onClick={() => setDismissed(true)}
@@ -59,7 +69,7 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({ onNaviga
       <span>
         Estás usando la versión gratuita.{' '}
         <button
-          onClick={handleClick}
+          onClick={handleCheckout}
           disabled={loading}
           className="underline underline-offset-2 font-bold hover:text-amber-100 transition-colors disabled:opacity-60"
         >

@@ -14,23 +14,45 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
 
-const RECURRENTE_SECRET_KEY = Deno.env.get('RECURRENTE_SECRET_KEY')!;
+// whsec_ prefix is Svix format — strip it and base64-decode to get raw key bytes
+const WEBHOOK_SECRET = Deno.env.get('RECURRENTE_SECRET_KEY')!;
+
+async function verifySvix(body: string, svixId: string, svixTimestamp: string, svixSignature: string): Promise<boolean> {
+  try {
+    const rawSecret = Uint8Array.from(atob(WEBHOOK_SECRET.replace('whsec_', '')), c => c.charCodeAt(0));
+    const toSign    = `${svixId}.${svixTimestamp}.${body}`;
+    const key       = await crypto.subtle.importKey('raw', rawSecret, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const sigBytes  = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(toSign));
+    const computed  = btoa(String.fromCharCode(...new Uint8Array(sigBytes)));
+    // svix-signature can contain multiple "v1,<sig>" entries separated by spaces
+    return svixSignature.split(' ').some(s => s.replace('v1,', '') === computed);
+  } catch (e) {
+    console.error('Signature verification error:', e);
+    return false;
+  }
+}
 
 serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  // Verify the request comes from Recurrente using the secret key header
-  const authHeader = req.headers.get('X-SECRET-KEY');
-  if (authHeader !== RECURRENTE_SECRET_KEY) {
-    console.error('Unauthorized: invalid X-SECRET-KEY');
+  const svixId        = req.headers.get('svix-id')        ?? '';
+  const svixTimestamp = req.headers.get('svix-timestamp')  ?? '';
+  const svixSignature = req.headers.get('svix-signature')  ?? '';
+
+  // Read raw body for signature verification
+  const body = await req.text();
+
+  const valid = await verifySvix(body, svixId, svixTimestamp, svixSignature);
+  if (!valid) {
+    console.error('Unauthorized: invalid Svix signature');
     return new Response('Unauthorized', { status: 401 });
   }
 
   let payload: Record<string, unknown>;
   try {
-    payload = await req.json();
+    payload = JSON.parse(body);
   } catch {
     return new Response('Invalid JSON', { status: 400 });
   }

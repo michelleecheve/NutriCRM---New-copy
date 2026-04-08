@@ -29,8 +29,15 @@ export const ProfileSubscription: React.FC = () => {
   const handleUpgrade = async () => {
     setIsLoading(true);
     setTrialMsg(null);
-    const result = await authStore.startCheckout();
-    if (!result.ok) setTrialMsg(result.message ?? 'Error al crear el checkout. Intenta de nuevo.');
+    if (!hasUsedTrial && sub?.status !== 'past_due') {
+      // First time: activate internal trial (no payment required)
+      const result = await authStore.startTrial();
+      if (!result.ok) setTrialMsg(result.message ?? 'Error al activar el trial. Intenta de nuevo.');
+    } else {
+      // Already used trial or past_due: go to Recurrente checkout
+      const result = await authStore.startCheckout();
+      if (!result.ok) setTrialMsg(result.message ?? 'Error al crear el checkout. Intenta de nuevo.');
+    }
     setIsLoading(false);
   };
 
@@ -177,7 +184,7 @@ export const ProfileSubscription: React.FC = () => {
               >
                 <CreditCard className="w-4 h-4" />
                 {isLoading
-                  ? 'Redirigiendo...'
+                  ? (sub?.status === 'past_due' || hasUsedTrial ? 'Redirigiendo...' : 'Activando...')
                   : sub?.status === 'past_due'
                     ? 'Nueva suscripción'
                     : !hasUsedTrial

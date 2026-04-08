@@ -294,6 +294,17 @@ class AuthStore {
         .eq('owner_id', user.id)
         .single();
       this.subscription = sub ?? { plan: 'free', status: 'free', trial_started_at: null, trial_ends_at: null, current_period_end: null, recurrente_subscription_id: null };
+
+      // Auto-expire trial if trial_ends_at has passed
+      if (this.subscription.status === 'trialing' && this.subscription.trial_ends_at) {
+        const expired = new Date(this.subscription.trial_ends_at) < new Date();
+        if (expired) {
+          this.subscription = { ...this.subscription, plan: 'free', status: 'free' };
+          supabase.from('subscriptions').update({ plan: 'free', status: 'free', updated_at: new Date().toISOString() }).eq('owner_id', user.id);
+          supabase.from('profiles').update({ plan: 'free' }).eq('id', user.id);
+          supabase.from('ai_rate_limits').update({ max_tokens: 30000 }).eq('owner_id', user.id);
+        }
+      }
     } else {
       this.subscription = null;
     }
@@ -654,37 +665,27 @@ class AuthStore {
     const user = this.currentUser;
     if (!user || user.role !== 'nutricionista') return { ok: false, message: 'No aplica.' };
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return { ok: false, message: 'Sesión expirada.' };
-
-    const supabaseUrl = (supabase as any).supabaseUrl as string;
-
-    let res: Response;
     try {
-      res = await fetch(`${supabaseUrl}/functions/v1/activate-trial`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type':  'application/json',
-        },
-      });
+      const { data, error } = await supabase.functions.invoke('activate-trial');
+      if (error) {
+        console.error('activate-trial error:', error);
+        return { ok: false, message: `Error: ${error.message ?? JSON.stringify(error)}` };
+      }
+      const body = data as { ok: boolean; message?: string; trial_ends_at?: string; trial_started_at?: string };
+      if (!body.ok) return { ok: false, message: body.message ?? 'Error al activar el trial.' };
+
+      this.subscription = {
+        plan:                       'pro',
+        status:                     'trialing',
+        trial_started_at:           body.trial_started_at ?? new Date().toISOString(),
+        trial_ends_at:              body.trial_ends_at ?? null,
+        current_period_end:         null,
+        recurrente_subscription_id: null,
+      };
+      return { ok: true };
     } catch {
       return { ok: false, message: 'Error de conexión al activar el trial.' };
     }
-
-    const body = await res.json().catch(() => ({}));
-
-    if (!body.ok) {
-      return { ok: false, message: body.message ?? 'Error al activar el trial.' };
-    }
-
-    this.subscription = {
-      plan:               'pro',
-      status:             'trialing',
-      trial_ends_at:      body.trial_ends_at ?? null,
-      current_period_end: null,
-    };
-    return { ok: true };
   }
 
   /** Cancela la suscripción activa via Edge Function (server-side). */
@@ -692,35 +693,23 @@ class AuthStore {
     const user = this.currentUser;
     if (!user || user.role !== 'nutricionista') return { ok: false, message: 'No aplica.' };
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return { ok: false, message: 'Sesión expirada.' };
-
-    const supabaseUrl = (supabase as any).supabaseUrl as string;
-
-    let res: Response;
     try {
-      res = await fetch(`${supabaseUrl}/functions/v1/cancel-subscription`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type':  'application/json',
-        },
-      });
+      const { data, error } = await supabase.functions.invoke('cancel-subscription');
+      if (error) return { ok: false, message: 'Error de conexión al cancelar.' };
+      const body = data as { ok: boolean; message?: string };
+      if (!body.ok) return { ok: false, message: body.message ?? 'Error al cancelar.' };
+
+      this.subscription = {
+        plan:                       'free',
+        status:                     'cancelled',
+        trial_ends_at:              null,
+        current_period_end:         null,
+        recurrente_subscription_id: null,
+      };
+      return { ok: true };
     } catch {
       return { ok: false, message: 'Error de conexión al cancelar.' };
     }
-
-    const body = await res.json().catch(() => ({}));
-    if (!body.ok) return { ok: false, message: body.message ?? 'Error al cancelar.' };
-
-    this.subscription = {
-      plan:                       'free',
-      status:                     'cancelled',
-      trial_ends_at:              null,
-      current_period_end:         null,
-      recurrente_subscription_id: null,
-    };
-    return { ok: true };
   }
 
   getSubscription(): SubscriptionState | null {
