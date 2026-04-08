@@ -8,6 +8,7 @@ import { FileGallery } from './FileGallery';
 import { store } from '../../services/store';
 import { supabaseService } from '../../services/supabaseService';
 import { authStore } from '../../services/authStore';
+import { showPlanLimitModal } from '../PlanLimitModal';
 import { aiService } from '../../services/aiService';
 
 // ─── Storage key for custom prompt ────────────────────────────────────────────
@@ -231,6 +232,10 @@ export const LabInterpretationPanel: React.FC<{
   }, [file.labInterpretation]);
 
   const handleAnalyzeWithAI = async () => {
+    if (!authStore.canUseAI()) {
+      showPlanLimitModal();
+      return;
+    }
     setError(null);
     setIsAnalyzing(true);
     try {

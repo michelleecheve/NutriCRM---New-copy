@@ -156,11 +156,24 @@ const mapProfileToAppUser = (p: any): AppUser => ({
 // Listeners para que App.tsx pueda reaccionar cuando la sesión termina de cargar
 type AuthListener = () => void;
 
+const RECURRENTE_PUBLIC_KEY  = 'pk_live_RNJkUyeRm9FOF1d5zOD9OwqieXUUB32E5FRwzTG85SCvkArmp4EnDPD9N';
+const RECURRENTE_PRODUCT_ID  = 'prod_fdnbsrhs';
+
+interface SubscriptionState {
+  plan:                       string;
+  status:                     string;
+  trial_started_at:           string | null;
+  trial_ends_at:              string | null;
+  current_period_end:         string | null;
+  recurrente_subscription_id: string | null;
+}
+
 class AuthStore {
   private currentUser: AppUser | null = null;
   private permissions: PagePermission[] = [];
   private _linkedNutritionistsCache: AppUser[] | null = null;
   private selectedNutritionistId: string | null = null;
+  private subscription: SubscriptionState | null = null;
   public isLoading: boolean = true;
   private listeners: AuthListener[] = [];
   private recoveryListeners: AuthListener[] = [];
@@ -272,6 +285,19 @@ class AuthStore {
 
     this.currentUser = user;
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+
+    // Load subscription (only relevant for nutricionista; admin is always pro)
+    if (user.role === 'nutricionista') {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('plan, status, trial_started_at, trial_ends_at, current_period_end, recurrente_subscription_id')
+        .eq('owner_id', user.id)
+        .single();
+      this.subscription = sub ?? { plan: 'free', status: 'free', trial_started_at: null, trial_ends_at: null, current_period_end: null, recurrente_subscription_id: null };
+    } else {
+      this.subscription = null;
+    }
+
     await store.initForUser(user.id);
     this.isLoading = false;
     this.notifyListeners();
@@ -528,6 +554,154 @@ class AuthStore {
 
   getUserProfile(): UserProfile {
     return this.currentUser?.profile ?? ({} as UserProfile);
+  }
+
+  // ── Subscription helpers ──────────────────────────────────────────────────
+
+  /** True si el usuario tiene acceso Pro activo (plan pagado o en trial). Admin siempre es pro. */
+  isPro(): boolean {
+    if (!this.currentUser) return false;
+    if (this.currentUser.role === 'admin') return true;
+    if (!this.subscription) return false;
+    const { plan, status } = this.subscription;
+    return plan === 'pro' && (status === 'active' || status === 'trialing');
+  }
+
+  /** True si está en período de prueba. */
+  isOnTrial(): boolean {
+    return this.subscription?.status === 'trialing';
+  }
+
+  /** Días restantes de trial (0 si no aplica o expiró). */
+  trialDaysLeft(): number {
+    if (!this.isOnTrial() || !this.subscription?.trial_ends_at) return 0;
+    const diff = new Date(this.subscription.trial_ends_at).getTime() - Date.now();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }
+
+  /** True si el usuario ya activó el trial alguna vez (aunque haya expirado/cancelado). */
+  hasUsedTrial(): boolean {
+    return this.subscription !== null && this.subscription.trial_started_at !== null;
+  }
+
+  /** Redirige al checkout de Recurrente para suscribirse a Pro. */
+  async startCheckout(): Promise<{ ok: boolean; message?: string }> {
+    const user = this.currentUser;
+    if (!user) return { ok: false, message: 'No hay sesión activa.' };
+    try {
+      const res = await fetch('https://app.recurrente.com/api/checkouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-PUBLIC-KEY': RECURRENTE_PUBLIC_KEY },
+        body: JSON.stringify({
+          items: [{ product_id: RECURRENTE_PRODUCT_ID }],
+          success_url: `${window.location.origin}/profile`,
+          cancel_url:  `${window.location.origin}/profile`,
+          locale: 'es',
+          metadata: { owner_id: user.id, email: user.email },
+        }),
+      });
+      if (!res.ok) return { ok: false, message: 'Error al crear el checkout.' };
+      const { checkout_url } = await res.json();
+      if (checkout_url) { window.location.href = checkout_url; return { ok: true }; }
+      return { ok: false, message: 'No se recibió URL de pago.' };
+    } catch {
+      return { ok: false, message: 'Error de conexión.' };
+    }
+  }
+
+  /** True si puede usar features de IA (Gemini). */
+  canUseAI(): boolean {
+    return this.isPro();
+  }
+
+  /** True si alcanzó el límite de 10 pacientes activos en plan Free. */
+  patientLimitReached(activePatientCount: number): boolean {
+    if (this.isPro()) return false;
+    return activePatientCount >= 10;
+  }
+
+  /** True si alcanzó el límite de 20 citas en plan Free. */
+  appointmentLimitReached(appointmentCount: number): boolean {
+    if (this.isPro()) return false;
+    return appointmentCount >= 20;
+  }
+
+  /** Activa el trial de 14 días para el usuario actual via Edge Function (server-side, no hackeable). */
+  async startTrial(): Promise<{ ok: boolean; message?: string }> {
+    const user = this.currentUser;
+    if (!user || user.role !== 'nutricionista') return { ok: false, message: 'No aplica.' };
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { ok: false, message: 'Sesión expirada.' };
+
+    const supabaseUrl = (supabase as any).supabaseUrl as string;
+
+    let res: Response;
+    try {
+      res = await fetch(`${supabaseUrl}/functions/v1/activate-trial`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type':  'application/json',
+        },
+      });
+    } catch {
+      return { ok: false, message: 'Error de conexión al activar el trial.' };
+    }
+
+    const body = await res.json().catch(() => ({}));
+
+    if (!body.ok) {
+      return { ok: false, message: body.message ?? 'Error al activar el trial.' };
+    }
+
+    this.subscription = {
+      plan:               'pro',
+      status:             'trialing',
+      trial_ends_at:      body.trial_ends_at ?? null,
+      current_period_end: null,
+    };
+    return { ok: true };
+  }
+
+  /** Cancela la suscripción activa via Edge Function (server-side). */
+  async cancelSubscription(): Promise<{ ok: boolean; message?: string }> {
+    const user = this.currentUser;
+    if (!user || user.role !== 'nutricionista') return { ok: false, message: 'No aplica.' };
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { ok: false, message: 'Sesión expirada.' };
+
+    const supabaseUrl = (supabase as any).supabaseUrl as string;
+
+    let res: Response;
+    try {
+      res = await fetch(`${supabaseUrl}/functions/v1/cancel-subscription`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type':  'application/json',
+        },
+      });
+    } catch {
+      return { ok: false, message: 'Error de conexión al cancelar.' };
+    }
+
+    const body = await res.json().catch(() => ({}));
+    if (!body.ok) return { ok: false, message: body.message ?? 'Error al cancelar.' };
+
+    this.subscription = {
+      plan:                       'free',
+      status:                     'cancelled',
+      trial_ends_at:              null,
+      current_period_end:         null,
+      recurrente_subscription_id: null,
+    };
+    return { ok: true };
+  }
+
+  getSubscription(): SubscriptionState | null {
+    return this.subscription;
   }
 }
 

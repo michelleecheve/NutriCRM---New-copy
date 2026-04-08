@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { authStore } from './authStore';
 import {
   Patient,
   PatientEvaluation,
@@ -105,6 +106,19 @@ export const supabaseService = {
   },
 
   async createPatient(patient: Omit<Patient, 'id'>) {
+    // Plan limit: free users can have at most 10 active patients
+    if (!authStore.isPro()) {
+      const ownerId = authStore.getCurrentUser()?.id;
+      const { count } = await supabase
+        .from('patients')
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', ownerId)
+        .eq('status', 'Activo');
+      if (authStore.patientLimitReached(count ?? 0)) {
+        throw new Error('PLAN_LIMIT_PATIENTS');
+      }
+    }
+
     const { data, error } = await supabase
       .from('patients')
       .insert({
@@ -790,6 +804,18 @@ export const supabaseService = {
   },
 
   async createAppointment(appointment: Omit<Appointment, 'id'>): Promise<Appointment> {
+    // Plan limit: free users can have at most 20 appointments
+    if (!authStore.isPro()) {
+      const ownerId = appointment.ownerId;
+      const { count } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', ownerId);
+      if (authStore.appointmentLimitReached(count ?? 0)) {
+        throw new Error('PLAN_LIMIT_APPOINTMENTS');
+      }
+    }
+
     const insertData: any = {
       date:             appointment.date,
       time:             appointment.time,

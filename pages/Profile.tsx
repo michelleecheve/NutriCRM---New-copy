@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import { ProfileAIConfig } from '../components/profile_config/ProfileAIConfig';
+import { ProfileSubscription } from '../components/profile_config/ProfileSubscription';
 
 const InputField = ({ label, icon: Icon, value, onChange, type = "text", readOnly = false, placeholder = "" }: any) => (
   <div className="space-y-2">
@@ -464,6 +465,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const showVinculacionRecepcionistas = authStore.canAccessModule('profile', 'profile-vinculacion-recepcionistas');
   const showVinculacionNutricionistas = authStore.canAccessModule('profile', 'profile-vinculacion-nutricionistas');
   const showAIConfig = authStore.canAccessModule('profile', 'profile-ai-config');
+  const showSubscription = authStore.getCurrentUser()?.role === 'nutricionista';
 
   const [formData, setFormData] = useState<UserProfile>(authStore.getUserProfile());
   const [isSaved, setIsSaved] = useState(false);
@@ -637,6 +639,8 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             </div>
 
             {showAIConfig && <ProfileAIConfig />}
+
+            {showSubscription && <ProfileSubscription />}
 
             {showVinculacionRecepcionistas && <VinculacionNutricionista onUnlinkRequest={handleUnlinkRequest} />}
             {showVinculacionNutricionistas && <VinculacionRecepcionista onUnlinkRequest={handleUnlinkRequest} />}

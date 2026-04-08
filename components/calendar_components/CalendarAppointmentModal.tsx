@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Appointment } from "../../types";
 import { store } from "../../services/store";
 import { Calendar as CalendarIcon, X, MapPin, Video } from "lucide-react";
+import { showPlanLimitModal } from "../PlanLimitModal";
 
 // ─── Shared helper ────────────────────────────────────────────────────────────
 export const getStatusStyles = (status: string): string => {
@@ -102,8 +103,12 @@ export const CalendarAppointmentModal: React.FC<
 
       onSaved();
       onClose();
-    } catch (error) {
-      console.error("Error saving appointment:", error);
+    } catch (error: any) {
+      if (error?.message === 'PLAN_LIMIT_APPOINTMENTS') {
+        showPlanLimitModal();
+      } else {
+        console.error("Error saving appointment:", error);
+      }
     }
   };
 

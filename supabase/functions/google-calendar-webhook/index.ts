@@ -151,6 +151,24 @@ serve(async (req) => {
   const byGoogleId: Record<string, { id: string; google_event_id: string; status: string }> = {};
   for (const a of (appointments ?? [])) byGoogleId[a.google_event_id] = a;
 
+  // ── Check plan limit once per request (not per event) ────────────────────────
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('plan, status')
+    .eq('owner_id', tokenRow.owner_id)
+    .single();
+
+  const isPro = sub?.plan === 'pro' && (sub?.status === 'active' || sub?.status === 'trialing');
+
+  let currentAppointmentCount = 0;
+  if (!isPro) {
+    const { count } = await supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .eq('owner_id', tokenRow.owner_id);
+    currentAppointmentCount = count ?? 0;
+  }
+
   // ── Apply changes ─────────────────────────────────────────────────────────────
   for (const event of eventsData.items) {
     const appt = byGoogleId[event.id];
@@ -205,6 +223,9 @@ serve(async (req) => {
     const hasOurFormat = rawDesc?.startsWith('Tipo:') ?? false;
     const notesValue = parsed.notes ?? (!hasOurFormat && rawDesc ? rawDesc : null);
 
+    // Plan limit check using pre-fetched values
+    if (!isPro && currentAppointmentCount >= 20) continue;
+
     const { data: newAppt } = await supabase
       .from('appointments')
       .insert({
@@ -225,6 +246,9 @@ serve(async (req) => {
 
     // If insert failed silently, skip
     if (!newAppt) continue;
+
+    // Track inserted count so the limit is accurate within the same batch
+    if (!isPro) currentAppointmentCount++;
   }
 
   return new Response('OK', { status: 200 });

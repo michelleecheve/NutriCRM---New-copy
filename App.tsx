@@ -15,6 +15,7 @@ import { AdminPanel } from './pages/Admin';
 import { AppRoute, UserRole } from './types';
 import { authStore } from './services/authStore';
 import { Landing } from './pages/Landing';
+import { PlanLimitModal } from './components/PlanLimitModal';
 
 const OAUTH_CALLBACK_ROUTE = '__oauth_callback__';
 
@@ -217,9 +218,12 @@ function App() {
   }
 
   return (
-    <Layout activePage={currentRoute} onNavigate={handleNavigate} onLogout={handleLogout}>
-      {renderContent()}
-    </Layout>
+    <>
+      <Layout activePage={currentRoute} onNavigate={handleNavigate} onLogout={handleLogout}>
+        {renderContent()}
+      </Layout>
+      <PlanLimitModal />
+    </>
   );
 }
 

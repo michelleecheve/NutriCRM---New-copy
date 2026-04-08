@@ -7,6 +7,7 @@ import {
 import { AppRoute, UserProfile } from '../types';
 import { authStore } from '../services/authStore';
 import { NotificationBell } from './NotificationBell';
+import { SubscriptionBanner } from './SubscriptionBanner';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -227,6 +228,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate
         {/* Mobile/tablet drawer */}
         <MobileDrawer isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
 
+        {/* Subscription banner */}
+        <SubscriptionBanner onNavigate={onNavigate} />
+
         {/* Page content */}
         <main className="flex-1 overflow-y-auto no-scrollbar p-8">
           <div className="max-w-6xl mx-auto">
@@ -312,6 +316,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate
             <UserMenu />
           </div>
         </header>
+
+        {/* Subscription banner */}
+        <SubscriptionBanner onNavigate={onNavigate} />
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto no-scrollbar p-8">

@@ -15,6 +15,7 @@ import { MenuPreview } from '../menus_components/MenuPreview';
 import { generateStructuredMenu } from '../../services/geminiService';
 import { store } from '../../services/store';
 import { authStore } from '../../services/authStore';
+import { showPlanLimitModal } from '../PlanLimitModal';
 import { supabaseService } from '../../services/supabaseService';
 
 interface MenuAddReadSec3Props {
@@ -310,6 +311,10 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   // ─── AI Generation ─────────────────────────────────────────────────────────
   const handleGenerateAi = async (scope: 'page1' | 'page2' | 'both' = 'both') => {
     setShowAiOptionsModal(false);
+    if (!authStore.canUseAI()) {
+      showPlanLimitModal();
+      return;
+    }
     setIsGenerating(true);
     try {
       const refs = store.menuReferences

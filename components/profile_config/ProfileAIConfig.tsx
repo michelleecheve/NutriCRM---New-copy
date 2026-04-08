@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Zap, BarChart3, Loader2, CheckCircle2, Calendar } from 'lucide-react';
+import { Sparkles, Zap, BarChart3, Loader2, CheckCircle2, Calendar, Lock } from 'lucide-react';
 import { supabaseService } from '../../services/supabaseService';
 import { authStore } from '../../services/authStore';
+import { showPlanLimitModal } from '../PlanLimitModal';
 
 const MS_PER_CYCLE = 30 * 24 * 60 * 60 * 1000;
 
@@ -54,6 +55,8 @@ export const ProfileAIConfig: React.FC = () => {
     }
   };
 
+  const isPro = authStore.isPro();
+
   if (loading) {
     return (
       <div className="bg-white rounded-2xl border border-slate-100 p-8 flex items-center justify-center">
@@ -66,7 +69,7 @@ export const ProfileAIConfig: React.FC = () => {
   const cycle = rateLimit?.created_at ? computeCycle(rateLimit.created_at) : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
         <Sparkles className="w-5 h-5 text-emerald-600" />
         <h3 className="font-bold text-slate-800">Ai Configurator</h3>
@@ -154,6 +157,29 @@ export const ProfileAIConfig: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Locked overlay for free plan */}
+      {!isPro && (
+        <div className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center gap-4 z-10"
+          style={{ backgroundColor: 'rgba(248,250,252,0.88)', backdropFilter: 'blur(2px)' }}
+        >
+          <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">
+            <Lock className="w-7 h-7 text-slate-400" />
+          </div>
+          <div className="text-center px-6">
+            <p className="font-bold text-slate-700 text-base">Función exclusiva del Plan Pro</p>
+            <p className="text-slate-500 text-sm mt-1">
+              Configura la IA para menús y laboratorios con tu suscripción Pro.
+            </p>
+          </div>
+          <button
+            onClick={showPlanLimitModal}
+            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            {authStore.hasUsedTrial() ? 'Actualizar a Pro' : 'Activar 14 días gratis'}
+          </button>
         </div>
       )}
     </div>

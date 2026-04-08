@@ -5,7 +5,8 @@
 // Deploy: supabase functions deploy google-oauth
 // Secrets: supabase secrets set GOOGLE_CLIENT_ID=xxx GOOGLE_CLIENT_SECRET=xxx
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
@@ -15,6 +16,22 @@ const CORS = {
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: CORS });
+  }
+
+  // Verify caller is an authenticated Supabase user
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response('Unauthorized', { status: 401, headers: CORS });
+  }
+
+  const userClient = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+  const { data: { user }, error: authError } = await userClient.auth.getUser();
+  if (authError || !user) {
+    return new Response('Invalid token', { status: 401, headers: CORS });
   }
 
   const CLIENT_ID     = Deno.env.get('GOOGLE_CLIENT_ID')!;

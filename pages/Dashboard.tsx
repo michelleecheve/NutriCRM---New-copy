@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Patient } from '../types';
 import { store } from '../services/store';
 import { Search, Plus, User, ChevronRight, Filter, Check, Settings, Trash2, X as CloseIcon } from 'lucide-react';
+import { showPlanLimitModal } from '../components/PlanLimitModal';
 
 interface DashboardProps {
   onSelectPatient: (patientId: string, tab?: string) => void;
@@ -69,8 +70,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
       setPatients(store.getPatients());
       setIsModalOpen(false);
       setNewPatient({ firstName: '', lastName: '', email: '', phone: '', status: 'Sin Status', birthdate: '' });
-    } catch (error) {
-      console.error('Error adding patient:', error);
+    } catch (error: any) {
+      if (error?.message === 'PLAN_LIMIT_PATIENTS') {
+        showPlanLimitModal();
+      } else {
+        console.error('Error adding patient:', error);
+      }
     }
   };
 
