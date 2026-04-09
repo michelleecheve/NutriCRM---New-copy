@@ -23,11 +23,6 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({ onNaviga
   const isTrialing   = authStore.isOnTrial();
   const hasUsedTrial = authStore.hasUsedTrial();
 
-  // Solo visible para nutricionistas no-Pro (incluyendo los que están en trial no, solo free)
-  if (!currentUser || currentUser.role !== 'nutricionista' || isPro || isTrialing || dismissed) {
-    return null;
-  }
-
   const handleTrial = async () => {
     setLoading(true);
     setTrialError(null);
@@ -41,6 +36,39 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({ onNaviga
     await authStore.startCheckout();
     setLoading(false);
   };
+
+  // Solo visible para nutricionistas no-Pro
+  if (!currentUser || currentUser.role !== 'nutricionista' || (isPro && !isTrialing) || dismissed) {
+    return null;
+  }
+
+  const daysLeft = authStore.trialDaysLeft();
+
+  if (isTrialing) {
+    return (
+      <div className="relative flex items-center justify-center gap-3 bg-indigo-600 text-white px-4 py-2.5 text-sm font-medium flex-shrink-0">
+        <Rocket className="w-4 h-4 shrink-0" />
+        <span>
+          Cuenta en Trial Activo · {daysLeft} días restantes, ¿Te está gustando NutriFlow?{' '}
+          <button
+            onClick={handleCheckout}
+            disabled={loading}
+            className="underline underline-offset-2 font-bold hover:text-indigo-100 transition-colors disabled:opacity-60"
+          >
+            {loading ? 'Redirigiendo...' : 'Suscríbete a Pro aquí'}
+          </button>
+          {' '}y mantén todos tus beneficios sin interrupciones.
+        </span>
+        <button
+          onClick={() => setDismissed(true)}
+          className="absolute right-3 p-1 hover:bg-indigo-700 rounded transition-colors"
+          aria-label="Cerrar"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
 
   if (!hasUsedTrial) {
     // Nunca hicieron trial

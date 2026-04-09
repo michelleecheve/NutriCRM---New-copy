@@ -365,6 +365,15 @@ class AuthStore {
       console.error('Error creating profile:', profileError);
       return { ok: false, message: 'Error al crear el perfil de usuario.' };
     }
+
+    // Crear registro de rate limit de IA (plan gratuito por defecto)
+    try {
+      await supabaseService.createAIRateLimit(data.user.id);
+    } catch (e) {
+      // No bloquear el registro si falla — el usuario puede activarlo manualmente desde su perfil
+      console.warn('Could not create AI rate limit on signup:', e);
+    }
+
     return { ok: true };
   }
 
@@ -625,9 +634,9 @@ class AuthStore {
     const user = this.currentUser;
     if (!user) return { ok: false, message: 'No hay sesión activa.' };
 
-    // Bloquear si ya hay una suscripción activa o en trial para evitar duplicados
+    // Bloquear si ya hay una suscripción activa pagada (no trialing, ya que desde trial sí se permite suscribirse)
     const existingSub = this.subscription;
-    if (existingSub && (existingSub.status === 'active' || existingSub.status === 'trialing')) {
+    if (existingSub && existingSub.status === 'active') {
       return { ok: false, message: 'Ya tienes una suscripción Pro activa.' };
     }
 
@@ -637,7 +646,7 @@ class AuthStore {
       .select('status, recurrente_subscription_id')
       .eq('owner_id', user.id)
       .single();
-    if (dbSub && (dbSub.status === 'active' || dbSub.status === 'trialing')) {
+    if (dbSub && dbSub.status === 'active') {
       return { ok: false, message: 'Ya tienes una suscripción Pro activa. Recarga la página para ver tu plan actualizado.' };
     }
 

@@ -3,16 +3,16 @@ import { authStore } from '../../services/authStore';
 import { Zap, CheckCircle, Clock, AlertCircle, CreditCard, Star, ChevronDown, XCircle, RefreshCw } from 'lucide-react';
 
 export const ProfileSubscription: React.FC = () => {
-  const [isOpen, setIsOpen]           = useState(false);
+  const sub          = authStore.getSubscription();
+  const isPro        = authStore.isPro();
+  const isTrialing   = authStore.isOnTrial();
+  const daysLeft     = authStore.trialDaysLeft();
+  const hasUsedTrial = authStore.hasUsedTrial();
+
+  const [isOpen, setIsOpen]           = useState(isTrialing || !isPro);
   const [isLoading, setIsLoading]     = useState(false);
   const [trialMsg, setTrialMsg]       = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-
-  const sub         = authStore.getSubscription();
-  const isPro       = authStore.isPro();
-  const isTrialing  = authStore.isOnTrial();
-  const daysLeft    = authStore.trialDaysLeft();
-  const hasUsedTrial = authStore.hasUsedTrial();
 
   const statusLabel = () => {
     if (!sub || sub.status === 'free') return { text: 'Plan Gratuito', color: 'text-slate-500', bg: 'bg-slate-100' };
@@ -130,8 +130,8 @@ export const ProfileSubscription: React.FC = () => {
             <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
               <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-bold text-amber-700">Trial activo — {daysLeft} días restantes</p>
-                <p className="text-xs text-amber-600">Al terminar el trial, tu cuenta regresará al plan gratuito si no tienes suscripción activa.</p>
+                <p className="text-sm font-bold text-amber-700">Cuenta en Trial Activo · {daysLeft} días restantes</p>
+                <p className="text-xs text-amber-600 mt-0.5">¿Te está gustando NutriFollow? Suscríbete a Pro y mantén todos tus beneficios sin interrupciones.</p>
               </div>
             </div>
           )}
@@ -175,7 +175,7 @@ export const ProfileSubscription: React.FC = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
-            {(!isPro || sub?.status === 'past_due') && (
+            {(!isPro || isTrialing || sub?.status === 'past_due') && (
               <button
                 type="button"
                 onClick={handleUpgrade}
@@ -194,7 +194,7 @@ export const ProfileSubscription: React.FC = () => {
               </button>
             )}
 
-            {isActiveProOrTrial && !showCancelConfirm && (
+            {hasPaidSubscription && !showCancelConfirm && (
               <button
                 type="button"
                 onClick={() => setShowCancelConfirm(true)}
