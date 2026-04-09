@@ -32,17 +32,14 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   const [isApptModalOpen, setIsApptModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
 
-  // ✅ Mismo patrón que Dashboard: esperar a que el store esté inicializado
+  // Leer datos frescos de Supabase cuando authStore termina de cargar
   useEffect(() => {
-    const checkInit = setInterval(() => {
-      if (store.isInitialized) {
-        setPatients(store.getPatients());
-        setAppointments(store.getAppointments());
-        setInvoices(store.getInvoices());
-        clearInterval(checkInit);
-      }
-    }, 100);
-    return () => clearInterval(checkInit);
+    const unsub = authStore.onAuthReady(() => {
+      setPatients(store.getPatients());
+      setAppointments(store.getAppointments());
+      setInvoices(store.getInvoices());
+    });
+    return unsub;
   }, []);
 
   const isInPeriod = (dateString: string) =>

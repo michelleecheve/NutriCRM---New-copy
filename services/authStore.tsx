@@ -61,6 +61,7 @@ export const DEFAULT_PERMISSIONS: PagePermission[] = [
 
 const SESSION_KEY = 'nutricrm_session_v1';
 const PERMISSIONS_KEY = 'nutricrm_permissions_v1.1';
+const SUBSCRIPTION_CACHE_KEY = 'nutricrm_subscription_v1';
 
 // ─── Utils ───────────────────────────────────────────────────────────────────
 
@@ -207,13 +208,23 @@ class AuthStore {
       this.currentUser = null;
     }
 
+    // Restaurar suscripción cacheada para evitar flash de banner gratuito
+    try {
+      const subRaw = localStorage.getItem(SUBSCRIPTION_CACHE_KEY);
+      if (subRaw) this.subscription = JSON.parse(subRaw) as SubscriptionState;
+    } catch {
+      this.subscription = null;
+    }
+
     // Verificar/actualizar con Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         this.handleSupabaseSession(session);
       } else {
         this.currentUser = null;
+        this.subscription = null;
         localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
         this.isLoading = false;
         this.notifyListeners();
       }
@@ -228,7 +239,9 @@ class AuthStore {
         this.handleSupabaseSession(session);
       } else {
         this.currentUser = null;
+        this.subscription = null;
         localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
         this.isLoading = false;
         this.notifyListeners();
       }
@@ -246,7 +259,10 @@ class AuthStore {
 
   async handleSupabaseSession(session: any) {
     this.isLoading = true;
-    this.notifyListeners();
+    // Solo notificar temprano si ya hay cache de suscripción — evita flash de banner gratuito
+    if (this.subscription !== null) {
+      this.notifyListeners();
+    }
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -309,6 +325,13 @@ class AuthStore {
       this.subscription = null;
     }
 
+    // Persistir suscripción en cache para el próximo reload
+    if (this.subscription !== null) {
+      localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(this.subscription));
+    } else {
+      localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
+    }
+
     await store.initForUser(user.id);
     this.isLoading = false;
     this.notifyListeners();
@@ -349,7 +372,9 @@ class AuthStore {
     await supabase.auth.signOut();
     this.currentUser = null;
     this.selectedNutritionistId = null;
+    this.subscription = null;
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
     await store.initForUser('guest');
   }
 

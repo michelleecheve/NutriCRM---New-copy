@@ -148,6 +148,18 @@ class Store {
       return;
     }
 
+    // Cargar desde cache inmediatamente para que la UI no espere
+    const cachedPatients = load<Patient[]>(this.K.patients, []);
+    if (cachedPatients.length > 0) {
+      this.patients     = cachedPatients;
+      this.invoices     = load(this.K.invoices,     []);
+      this.appointments = load(this.K.appointments, []);
+      this.user         = load(this.K.user,         null as any);
+      this.evaluations  = load(this.K.evaluations,  []);
+      this.statuses     = load(this.K.statuses,     DEFAULT_STATUSES);
+      this.isInitialized = true;
+    }
+
     try {
       const [patients, appointments, invoices, evaluations, menus, profile, menuRefs, menuRecs, template] = await Promise.all([
         supabaseService.getPatients(),
