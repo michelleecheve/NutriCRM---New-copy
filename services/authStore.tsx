@@ -157,7 +157,7 @@ const mapProfileToAppUser = (p: any): AppUser => ({
 type AuthListener = () => void;
 
 const RECURRENTE_PUBLIC_KEY  = 'pk_live_RNJkUyeRm9FOF1d5zOD9OwqieXUUB32E5FRwzTG85SCvkArmp4EnDPD9N';
-const RECURRENTE_PRODUCT_ID  = 'prod_fdnbsrhs';
+const RECURRENTE_PRODUCT_ID  = 'prod_22uktkdj';
 
 interface SubscriptionState {
   plan:                       string;
