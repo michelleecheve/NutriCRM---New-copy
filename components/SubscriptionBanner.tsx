@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Zap, Rocket } from 'lucide-react';
 import { authStore } from '../services/authStore';
 
@@ -10,6 +10,13 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({ onNaviga
   const [dismissed, setDismissed] = useState(false);
   const [loading, setLoading]     = useState(false);
   const [trialError, setTrialError] = useState<string | null>(null);
+  const [, forceUpdate] = useState(0);
+
+  // Re-render when authStore finishes loading the subscription
+  useEffect(() => {
+    const unsub = authStore.onAuthReady(() => forceUpdate(n => n + 1));
+    return unsub;
+  }, []);
 
   const currentUser  = authStore.getCurrentUser();
   const isPro        = authStore.isPro();
