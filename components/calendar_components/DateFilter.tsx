@@ -63,7 +63,7 @@ export const DateFilter: React.FC<DateFilterProps> = ({
   return (
     <div className="relative flex-shrink-0" ref={ref}>
       <button
-        onClick={onToggle}
+        onClick={(e) => { e.stopPropagation(); onToggle(); }}
         className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
           isFiltered
             ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
@@ -71,12 +71,12 @@ export const DateFilter: React.FC<DateFilterProps> = ({
         }`}
       >
         <Filter className="w-4 h-4" />
-        {`Fecha: ${PRESET_LABELS[activePreset]}`}
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="hidden sm:inline">Fecha: </span>{PRESET_LABELS[activePreset]}
+        <ChevronDown className={`hidden sm:block w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full mt-2 right-0 w-64 bg-white rounded-xl shadow-xl border border-slate-100 z-50 animate-in fade-in zoom-in duration-150">
+        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-0 w-64 bg-white rounded-xl shadow-xl border border-slate-100 z-50 animate-in fade-in zoom-in duration-150">
           <div className="p-1">
             {(['all', '1m', '3m', '6m', 'year'] as DatePreset[]).map(p => (
               <button

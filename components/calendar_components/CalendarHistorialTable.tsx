@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Appointment } from '../../types';
-import { FileText, Download, CalendarDays, History, Video, MapPin, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import { FileText, Download, CalendarDays, History, Video, MapPin, Edit2, Trash2, AlertTriangle, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { getStatusStyles } from './CalendarAppointmentModal';
 import { store } from '../../services/store';
 import { DateFilter, DatePreset, getPresetRange, PRESET_LABELS } from './DateFilter';
@@ -32,12 +32,18 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
   onEditClick,
   onRefresh,
   }) => {
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [deletingAppt, setDeletingAppt] = useState<Appointment | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [activePreset, setActivePreset] = useState<DatePreset>('all');
+  const [activePreset, setActivePreset] = useState<DatePreset>('1m');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+
+  const ITEMS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => { setCurrentPage(1); }, [activePreset, customFrom, customTo]);
 
   const handleDelete = async () => {
     if (deletingAppt) {
@@ -56,7 +62,7 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
     }
   };
 
-  const isFiltered = activePreset !== 'all';
+  const isFiltered = activePreset !== 'all' && activePreset !== '1m';
 
   const historyAppointments = [...appointments]
     .filter(appt => {
@@ -71,6 +77,10 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
       const dateB = new Date(b.updatedAt || b.createdAt || b.date + 'T00:00:00');
       return dateB.getTime() - dateA.getTime();
     });
+
+  const totalPages = Math.max(1, Math.ceil(historyAppointments.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedAppointments = historyAppointments.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
 
   const handleExportCSV = (scope: 'filtered' | 'all') => {
     const headers = ['Ultima Modificacion', 'Estado', 'Paciente', 'Fecha Cita', 'Hora', 'Tipo', 'Modalidad'];
@@ -114,74 +124,80 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
       className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-visible relative"
       onClick={() => setIsExportMenuOpen(false)}
     >
-      <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <FileText className="w-5 h-5 text-emerald-600" />
-          <div>
-            <h3 className="font-bold text-slate-900 text-lg">Registro Completo de Movimientos</h3>
+      <div
+        className={`p-6 ${!isCollapsed ? 'border-b border-slate-100' : ''} flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer select-none`}
+        onClick={(e) => { e.stopPropagation(); setIsCollapsed(v => !v); }}
+      >
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <FileText className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <div className="flex-1 sm:flex-none">
+            <h3 className="font-bold text-slate-900 text-lg">Registro Completo del calendario</h3>
             <p className="text-xs text-slate-400">Ordenado por última actividad realizada</p>
           </div>
+          <ChevronDown className={`sm:hidden w-5 h-5 text-slate-400 transition-transform flex-shrink-0 ${!isCollapsed ? 'rotate-180' : ''}`} />
         </div>
         <div className="flex items-center gap-3">
-          <div className="bg-slate-100 px-3 py-1 rounded-full text-xs font-bold text-slate-500">
-            {historyAppointments.length} Registros
-          </div>
-          <DateFilter
-            activePreset={activePreset}
-            onPresetChange={(p) => { setActivePreset(p); if (p !== 'custom') setIsFilterOpen(false); }}
-            customFrom={customFrom}
-            customTo={customTo}
-            onCustomFromChange={setCustomFrom}
-            onCustomToChange={setCustomTo}
-            isOpen={isFilterOpen}
-            onToggle={() => { setIsFilterOpen(v => !v); setIsExportMenuOpen(false); }}
-            onClose={() => setIsFilterOpen(false)}
-            isFiltered={isFiltered}
-          />
-          <div className="relative">
-            <button
-              onClick={(e) => { e.stopPropagation(); setIsExportMenuOpen(!isExportMenuOpen); }}
-              className="bg-emerald-50 text-emerald-700 p-2 rounded-lg hover:bg-emerald-100 transition-colors"
-              title="Exportar Registros"
-            >
-              <Download className="w-5 h-5" />
-            </button>
+          {!isCollapsed && (
+            <>
+              <DateFilter
+                activePreset={activePreset}
+                onPresetChange={(p) => { setActivePreset(p); if (p !== 'custom') setIsFilterOpen(false); }}
+                customFrom={customFrom}
+                customTo={customTo}
+                onCustomFromChange={setCustomFrom}
+                onCustomToChange={setCustomTo}
+                isOpen={isFilterOpen}
+                onToggle={() => { setIsFilterOpen(v => !v); setIsExportMenuOpen(false); }}
+                onClose={() => setIsFilterOpen(false)}
+                isFiltered={isFiltered}
+              />
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setIsExportMenuOpen(!isExportMenuOpen); }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-semibold transition-all bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Exportar</span>
+                </button>
 
-            {isExportMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                <div className="p-2 border-b border-slate-50 bg-slate-50/50 text-[10px] uppercase font-bold text-slate-400 tracking-wide text-center">
-                  Exportar CSV
-                </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleExportCSV('filtered'); }}
-                  className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors flex items-center gap-2"
-                >
-                  <CalendarDays className="w-4 h-4" />
-                  <span>
-                    Exportar filtro
-                    {isFiltered && (
-                      <span className="block text-[10px] text-emerald-600 font-bold leading-tight">{PRESET_LABELS[activePreset]}</span>
-                    )}
-                    {!isFiltered && (
-                      <span className="block text-[10px] text-slate-400 leading-tight">Sin filtro activo</span>
-                    )}
-                  </span>
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleExportCSV('all'); }}
-                  className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors flex items-center gap-2"
-                >
-                  <History className="w-4 h-4" /> Exportar Todo
-                </button>
+                {isExportMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="p-2 border-b border-slate-50 bg-slate-50/50 text-[10px] uppercase font-bold text-slate-400 tracking-wide text-center">
+                      Exportar CSV
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleExportCSV('filtered'); }}
+                      className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors flex items-center gap-2"
+                    >
+                      <CalendarDays className="w-4 h-4" />
+                      <span>
+                        Exportar filtro
+                        {activePreset !== 'all' && (
+                          <span className="block text-[10px] text-emerald-600 font-bold leading-tight">{PRESET_LABELS[activePreset]}</span>
+                        )}
+                        {activePreset === 'all' && (
+                          <span className="block text-[10px] text-slate-400 leading-tight">Sin filtro activo</span>
+                        )}
+                      </span>
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleExportCSV('all'); }}
+                      className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors flex items-center gap-2"
+                    >
+                      <History className="w-4 h-4" /> Exportar Todo
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
+          <ChevronDown className={`hidden sm:block w-5 h-5 text-slate-400 transition-transform flex-shrink-0 ${!isCollapsed ? 'rotate-180' : ''}`} />
         </div>
       </div>
 
-      <div className="overflow-x-auto overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-slate-200">
+      {!isCollapsed && <div className="overflow-x-auto">
         <table className="w-full text-left text-sm relative">
-          <thead className="bg-slate-50 text-slate-500 font-bold text-xs uppercase sticky top-0 z-10 shadow-sm">
+          <thead className="bg-slate-50 text-slate-500 font-bold text-xs uppercase">
             <tr>
               <th className="px-6 py-4 bg-slate-50">Estado Actual</th>
               <th className="px-6 py-4 bg-slate-50">Paciente</th>
@@ -193,10 +209,10 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {historyAppointments.map((appt, idx) => (
+            {paginatedAppointments.map((appt, idx) => (
               <tr
                 key={appt.id}
-                className={`hover:bg-slate-50 transition-colors group ${idx === 0 ? 'bg-emerald-50/20' : ''} ${appt.status === 'Cancelada' ? 'opacity-60 bg-slate-50' : ''}`}
+                className={`hover:bg-slate-50 transition-colors group ${idx === 0 && safePage === 1 ? 'bg-emerald-50/20' : ''} ${appt.status === 'Cancelada' ? 'opacity-60 bg-slate-50' : ''}`}
               >
                 <td className="px-6 py-4">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusStyles(appt.status)}`}>
@@ -246,7 +262,34 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
             )}
           </tbody>
         </table>
-      </div>
+      </div>}
+
+      {!isCollapsed && historyAppointments.length > 0 && (
+        <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+          <span className="text-sm text-slate-400 font-medium">
+            {historyAppointments.length} registro{historyAppointments.length !== 1 ? 's' : ''}
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+              className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-semibold text-slate-700 min-w-[90px] text-center">
+              Página {safePage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+              className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       {deletingAppt && (

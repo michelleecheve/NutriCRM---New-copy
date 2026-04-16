@@ -5,8 +5,8 @@ import { store } from '../services/store';
 import {
   Search, Plus, CreditCard, Edit2, Trash2, X,
   TrendingUp, TrendingDown, AlertTriangle, Filter,
-  ChevronDown, CheckCircle, ArrowUpCircle, ArrowDownCircle,
-  Wallet, BarChart2,
+  ChevronDown, ChevronLeft, ChevronRight, CheckCircle, ArrowUpCircle, ArrowDownCircle,
+  Wallet, BarChart2, Download, CalendarDays, History,
 } from 'lucide-react';
 import { getTodayStr } from '../src/utils/dateUtils';
 import { showPlanLimitModal } from '../components/PlanLimitModal';
@@ -76,6 +76,9 @@ export const Payments: React.FC = () => {
   const [statusFilterOpen, setStatusFilterOpen] = useState(false);
   const statusFilterRef = useRef<HTMLDivElement>(null);
 
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
   const emptyIngreso: Partial<Invoice> = {
     patientId:   '',
     patientName: '',
@@ -102,6 +105,11 @@ export const Payments: React.FC = () => {
 
   const [currentInvoice, setCurrentInvoice] = useState<Partial<Invoice>>(emptyIngreso);
 
+  // ── Pagination state ──────────────────────────────────────────────────────────
+  const ITEMS_PER_PAGE = 10;
+  const [currentPageIngresos, setCurrentPageIngresos] = useState(1);
+  const [currentPageEgresos,  setCurrentPageEgresos]  = useState(1);
+
   useEffect(() => {
     setPatients(store.getPatients());
   }, []);
@@ -110,6 +118,7 @@ export const Payments: React.FC = () => {
     const handler = (e: MouseEvent) => {
       if (filterRef.current       && !filterRef.current.contains(e.target as Node))       setFilterOpen(false);
       if (statusFilterRef.current && !statusFilterRef.current.contains(e.target as Node)) setStatusFilterOpen(false);
+      if (exportMenuRef.current   && !exportMenuRef.current.contains(e.target as Node))   setIsExportMenuOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -165,6 +174,39 @@ export const Payments: React.FC = () => {
     }
     return map;
   })();
+
+  // ── Export CSV ────────────────────────────────────────────────────────────────
+  const handleExportCSV = (scope: 'filtered' | 'all', tab: 'ingresos' | 'egresos') => {
+    const escapeCsv = (val: string) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+
+    const isIngresos = tab === 'ingresos';
+    const allOfType  = isIngresos
+      ? invoices.filter(i => i.type !== 'egreso')
+      : invoices.filter(i => i.type === 'egreso');
+    const filteredData = isIngresos ? filteredIngresos : filteredEgresos;
+    const dataToExport = scope === 'filtered' ? filteredData : allOfType;
+
+    const headers = isIngresos
+      ? ['Estado', 'Monto', 'Paciente', 'Fecha', 'Método']
+      : ['Estado', 'Monto', 'Categoría', 'Descripción', 'Fecha', 'Método'];
+
+    const rows = dataToExport.map(inv =>
+      isIngresos
+        ? [inv.status, `${currency}${inv.amount.toFixed(2)}`, getPatientName(inv), formatDate(inv.date), inv.method || '']
+        : [inv.status, `${currency}${inv.amount.toFixed(2)}`, inv.category || '', inv.description || '', formatDate(inv.date), inv.method || '']
+    );
+
+    const csvContent = [headers.map(escapeCsv).join(','), ...rows.map(r => r.map(escapeCsv).join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.setAttribute('href', URL.createObjectURL(blob));
+    link.setAttribute('download', `${tab}_${scope}_${getTodayStr(user.timezone)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setIsExportMenuOpen(false);
+  };
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
   const isFiltered = activePreset !== '1m' || (activePreset === 'custom' && (!customFrom || !customTo));
@@ -252,9 +294,23 @@ export const Payments: React.FC = () => {
     setActiveTab(tab);
     setSearchTerm('');
     setStatusFilter('all');
+    setIsExportMenuOpen(false);
+    setCurrentPageIngresos(1);
+    setCurrentPageEgresos(1);
   };
 
   const isEgresoModal = currentInvoice.type === 'egreso';
+
+  // ── Pagination computed ───────────────────────────────────────────────────────
+  const totalPagesIngresos = Math.max(1, Math.ceil(filteredIngresos.length / ITEMS_PER_PAGE));
+  const totalPagesEgresos  = Math.max(1, Math.ceil(filteredEgresos.length  / ITEMS_PER_PAGE));
+  const safePageIngresos   = Math.min(currentPageIngresos, totalPagesIngresos);
+  const safePageEgresos    = Math.min(currentPageEgresos,  totalPagesEgresos);
+  const paginatedIngresos  = filteredIngresos.slice((safePageIngresos - 1) * ITEMS_PER_PAGE, safePageIngresos * ITEMS_PER_PAGE);
+  const paginatedEgresos   = filteredEgresos.slice( (safePageEgresos  - 1) * ITEMS_PER_PAGE, safePageEgresos  * ITEMS_PER_PAGE);
+
+  useEffect(() => { setCurrentPageIngresos(1); }, [searchTerm, statusFilter, activePreset, customFrom, customTo]);
+  useEffect(() => { setCurrentPageEgresos(1);  }, [searchTerm, statusFilter, activePreset, customFrom, customTo]);
 
   // ── Tab styles ───────────────────────────────────────────────────────────────
   const tabCls = (tab: Tab) => `flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl transition-all ${
@@ -266,8 +322,8 @@ export const Payments: React.FC = () => {
   }`;
 
   // ── Shared toolbar JSX ────────────────────────────────────────────────────────
-  const renderToolbar = (searchPlaceholder: string, hideVencido = false) => (
-    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+  const renderToolbar = (searchPlaceholder: string, hideVencido = false, tab: 'ingresos' | 'egresos' = 'ingresos') => (
+    <div className="flex flex-col gap-3">
       <div className="relative w-full sm:w-96">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <input
@@ -278,6 +334,8 @@ export const Payments: React.FC = () => {
           className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all shadow-sm"
         />
       </div>
+
+      <div className="flex flex-row gap-2 items-center flex-wrap">
 
       {/* Date filter */}
       <div className="relative flex-shrink-0" ref={filterRef}>
@@ -290,7 +348,8 @@ export const Payments: React.FC = () => {
           }`}
         >
           <Filter className="w-4 h-4" />
-          {`Fecha: ${PRESET_LABELS[activePreset]}`}
+          <span className="sm:hidden">Fecha</span>
+          <span className="hidden sm:inline">{`Fecha: ${PRESET_LABELS[activePreset]}`}</span>
           <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
         </button>
 
@@ -381,6 +440,46 @@ export const Payments: React.FC = () => {
         )}
       </div>
 
+      {/* Export button */}
+      <div className="relative flex-shrink-0" ref={exportMenuRef}>
+        <button
+          onClick={(e) => { e.stopPropagation(); setIsExportMenuOpen(v => !v); }}
+          className="bg-white border border-slate-200 text-slate-600 p-2.5 rounded-lg hover:bg-slate-50 shadow-sm transition-colors"
+          title="Exportar CSV"
+        >
+          <Download className="w-4 h-4" />
+        </button>
+        {isExportMenuOpen && (
+          <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
+            <div className="p-2 border-b border-slate-50 bg-slate-50/50 text-[10px] uppercase font-bold text-slate-400 tracking-wide text-center">
+              Exportar CSV
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleExportCSV('filtered', tab); }}
+              className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors flex items-center gap-2"
+            >
+              <CalendarDays className="w-4 h-4 flex-shrink-0" />
+              <span>
+                Exportar filtro
+                {(activePreset !== 'all' || statusFilter !== 'all') ? (
+                  <span className="block text-[10px] text-emerald-600 font-bold leading-tight">
+                    {PRESET_LABELS[activePreset]}{statusFilter !== 'all' ? ` · ${statusFilter}` : ''}
+                  </span>
+                ) : (
+                  <span className="block text-[10px] text-slate-400 leading-tight">Sin filtro activo</span>
+                )}
+              </span>
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleExportCSV('all', tab); }}
+              className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-emerald-600 transition-colors flex items-center gap-2"
+            >
+              <History className="w-4 h-4 flex-shrink-0" /> Exportar Todo
+            </button>
+          </div>
+        )}
+      </div>
+
       {(isFiltered || statusFilter !== 'all') && (
         <button
           onClick={() => { setActivePreset('1m'); setCustomFrom(''); setCustomTo(''); setStatusFilter('all'); }}
@@ -389,6 +488,7 @@ export const Payments: React.FC = () => {
           <X className="w-3.5 h-3.5" /> Limpiar filtros
         </button>
       )}
+      </div>
     </div>
   );
 
@@ -490,7 +590,7 @@ export const Payments: React.FC = () => {
             </div>
           </div>
 
-          {renderToolbar('Buscar por paciente o ID...')}
+          {renderToolbar('Buscar por paciente o ID...', false, 'ingresos')}
 
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -506,7 +606,7 @@ export const Payments: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {filteredIngresos.map(inv => (
+                  {paginatedIngresos.map(inv => (
                     <tr key={inv.id} onClick={() => handleOpenEdit(inv)} className="hover:bg-slate-50 transition-colors cursor-pointer">
                       <td className="px-6 py-5">{statusBadge(inv.status)}</td>
                       <td className="px-6 py-5 font-bold text-slate-900">{currency}{inv.amount.toFixed(2)}</td>
@@ -522,6 +622,32 @@ export const Payments: React.FC = () => {
                 <div className="p-12 text-center text-slate-400">No se encontraron ingresos.</div>
               )}
             </div>
+            {filteredIngresos.length > 0 && (
+              <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-sm text-slate-400 font-medium">
+                  {filteredIngresos.length} ingreso{filteredIngresos.length !== 1 ? 's' : ''}
+                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setCurrentPageIngresos(p => Math.max(1, p - 1))}
+                    disabled={safePageIngresos === 1}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-sm font-semibold text-slate-700 min-w-[90px] text-center">
+                    Página {safePageIngresos} de {totalPagesIngresos}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPageIngresos(p => Math.min(totalPagesIngresos, p + 1))}
+                    disabled={safePageIngresos === totalPagesIngresos}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -561,7 +687,7 @@ export const Payments: React.FC = () => {
             </div>
           </div>
 
-          {renderToolbar('Buscar por categoría o descripción...', true)}
+          {renderToolbar('Buscar por categoría o descripción...', true, 'egresos')}
 
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -578,7 +704,7 @@ export const Payments: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {filteredEgresos.map(inv => (
+                  {paginatedEgresos.map(inv => (
                     <tr key={inv.id} onClick={() => handleOpenEdit(inv)} className="hover:bg-slate-50 transition-colors cursor-pointer">
                       <td className="px-6 py-5">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
@@ -609,6 +735,32 @@ export const Payments: React.FC = () => {
                 <div className="p-12 text-center text-slate-400">No se encontraron egresos.</div>
               )}
             </div>
+            {filteredEgresos.length > 0 && (
+              <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-sm text-slate-400 font-medium">
+                  {filteredEgresos.length} egreso{filteredEgresos.length !== 1 ? 's' : ''}
+                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setCurrentPageEgresos(p => Math.max(1, p - 1))}
+                    disabled={safePageEgresos === 1}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-sm font-semibold text-slate-700 min-w-[90px] text-center">
+                    Página {safePageEgresos} de {totalPagesEgresos}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPageEgresos(p => Math.min(totalPagesEgresos, p + 1))}
+                    disabled={safePageEgresos === totalPagesEgresos}
+                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Patient } from '../types';
 import { store } from '../services/store';
-import { Search, Plus, User, ChevronRight, Filter, Check, Settings, Trash2, X as CloseIcon } from 'lucide-react';
+import { Search, Plus, User, ChevronRight, Filter, Check, Settings, Trash2, X as CloseIcon, ArrowUpDown, ChevronLeft } from 'lucide-react';
 import { showPlanLimitModal } from '../components/PlanLimitModal';
 
 interface DashboardProps {
@@ -10,7 +10,14 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
   const [patients, setPatients] = useState<Patient[]>(store.getPatients());
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem('nutricrm_session_v1');
+      const userId = raw ? (JSON.parse(raw)?.id ?? 'guest') : 'guest';
+      const stored = localStorage.getItem(`nutriflow_dashboard_filters_v1_${userId}`);
+      return stored ? (JSON.parse(stored)?.searchTerm ?? '') : '';
+    } catch { return ''; }
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [statusList, setStatusList] = useState<string[]>(store.getPatientStatuses());
@@ -28,9 +35,57 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
     return () => clearInterval(checkInit);
   }, []);
 
-  // Filter State
-  const [filterStatus, setFilterStatus] = useState<string[]>([]);
+  // Filter State — persisted in localStorage per user
+  const [filterStatus, setFilterStatus] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem('nutricrm_session_v1');
+      const userId = raw ? (JSON.parse(raw)?.id ?? 'guest') : 'guest';
+      const stored = localStorage.getItem(`nutriflow_dashboard_filters_v1_${userId}`);
+      return stored ? (JSON.parse(stored)?.filterStatus ?? []) : [];
+    } catch { return []; }
+  });
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+
+  // Sort State — persisted in localStorage per user
+  type SortOrder = 'ultimo' | 'reciente' | 'alfabetico';
+  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
+    try {
+      const raw = localStorage.getItem('nutricrm_session_v1');
+      const userId = raw ? (JSON.parse(raw)?.id ?? 'guest') : 'guest';
+      const stored = localStorage.getItem(`nutriflow_dashboard_filters_v1_${userId}`);
+      return stored ? (JSON.parse(stored)?.sortOrder ?? 'reciente') : 'reciente';
+    } catch { return 'reciente'; }
+  });
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+
+  // Persist filters to localStorage whenever they change
+  React.useEffect(() => {
+    try {
+      const key = getDashboardFiltersKey();
+      localStorage.setItem(key, JSON.stringify({ filterStatus, sortOrder, searchTerm }));
+    } catch {}
+  }, [filterStatus, sortOrder, searchTerm]);
+
+  // Helpers for per-user localStorage keys
+  const getUserId = (): string => {
+    try {
+      const raw = localStorage.getItem('nutricrm_session_v1');
+      return raw ? (JSON.parse(raw)?.id ?? 'guest') : 'guest';
+    } catch { return 'guest'; }
+  };
+  const getLastSelectedKey = (): string => `nutriflow_last_selected_v1_${getUserId()}`;
+  const getDashboardFiltersKey = (): string => `nutriflow_dashboard_filters_v1_${getUserId()}`;
+
+  const [lastSelectedOrder, setLastSelectedOrder] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(getLastSelectedKey());
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
+  // Pagination State
+  const ITEMS_PER_PAGE = 8;
+  const [currentPage, setCurrentPage] = useState(1);
 
   // New Patient Form State
   const [newPatient, setNewPatient] = useState({ firstName: '', lastName: '', email: '', phone: '', status: 'Sin Status', birthdate: '' });
@@ -42,26 +97,70 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
     return `${month}/${day}/${year}`;
   };
 
-  const filteredPatients = patients.filter(p => {
-    const term = searchTerm.toLowerCase();
-    const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
-    const email = (p.clinical.email || '').toLowerCase();
-    const phone = (p.clinical.phone || '').toLowerCase();
-    const dobRaw = p.clinical.birthdate || '';
-    const dobFormatted = formatDate(dobRaw);
+  const sortLabels: Record<string, string> = {
+    ultimo: 'Último seleccionado',
+    reciente: 'Más reciente primero',
+    alfabetico: 'Alfabético (A-Z)',
+  };
 
-    const matchesSearch =
-      fullName.includes(term) ||
-      email.includes(term) ||
-      phone.includes(term) ||
-      dobRaw.includes(term) ||
-      dobFormatted.includes(term);
+  const filteredAndSortedPatients = React.useMemo(() => {
+    const filtered = patients.filter(p => {
+      const term = searchTerm.toLowerCase();
+      const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+      const email = (p.clinical.email || '').toLowerCase();
+      const phone = (p.clinical.phone || '').toLowerCase();
+      const dobRaw = p.clinical.birthdate || '';
+      const dobFormatted = formatDate(dobRaw);
 
-    const currentStatus = p.clinical.status || 'Sin Status';
-    const matchesFilter = filterStatus.length === 0 || filterStatus.includes(currentStatus);
+      const matchesSearch =
+        fullName.includes(term) ||
+        email.includes(term) ||
+        phone.includes(term) ||
+        dobRaw.includes(term) ||
+        dobFormatted.includes(term);
 
-    return matchesSearch && matchesFilter;
-  });
+      const currentStatus = p.clinical.status || 'Sin Status';
+      const matchesFilter = filterStatus.length === 0 || filterStatus.includes(currentStatus);
+
+      return matchesSearch && matchesFilter;
+    });
+
+    const sorted = [...filtered];
+    if (sortOrder === 'ultimo') {
+      sorted.sort((a, b) => {
+        const indexA = lastSelectedOrder.indexOf(a.id);
+        const indexB = lastSelectedOrder.indexOf(b.id);
+        const rankA = indexA === -1 ? Infinity : indexA;
+        const rankB = indexB === -1 ? Infinity : indexB;
+        return rankA - rankB;
+      });
+    } else if (sortOrder === 'alfabetico') {
+      sorted.sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
+    } else if (sortOrder === 'reciente') {
+      sorted.sort((a, b) => {
+        const dateA = new Date(a.registeredAt || 0).getTime();
+        const dateB = new Date(b.registeredAt || 0).getTime();
+        return dateB - dateA;
+      });
+    }
+
+    return sorted;
+  }, [patients, searchTerm, filterStatus, sortOrder, lastSelectedOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedPatients.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedPatients = filteredAndSortedPatients.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
+
+  // Reset to page 1 when filters/search/sort change
+  React.useEffect(() => { setCurrentPage(1); }, [searchTerm, filterStatus, sortOrder]);
+
+  const handleSelectPatient = (patientId: string, tab?: string) => {
+    const newOrder = [patientId, ...lastSelectedOrder.filter(id => id !== patientId)];
+    setLastSelectedOrder(newOrder);
+    // Persist synchronously before navigating away — useEffect may not fire in time
+    try { localStorage.setItem(getLastSelectedKey(), JSON.stringify(newOrder)); } catch {}
+    onSelectPatient(patientId, tab);
+  };
 
   const handleAddPatient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +209,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
   const filterOptions = [...statusList];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500" onClick={() => setIsFilterMenuOpen(false)}>
+    <div className="space-y-8 animate-in fade-in duration-500" onClick={() => { setIsFilterMenuOpen(false); setIsSortMenuOpen(false); }}>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Directorio de Pacientes</h2>
@@ -142,9 +241,70 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
           </div>
 
           <div className="flex items-center gap-2 order-first md:order-last self-start">
-          <div className="relative z-10">
+
+          {/* Sort Button */}
+          <div className="relative">
             <button
-              onClick={(e) => { e.stopPropagation(); setIsFilterMenuOpen(!isFilterMenuOpen); }}
+              onClick={(e) => { e.stopPropagation(); setIsSortMenuOpen(!isSortMenuOpen); setIsFilterMenuOpen(false); }}
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border transition-all ${
+                sortOrder !== 'reciente'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <ArrowUpDown className="w-4 h-4" />
+              <span className="hidden sm:inline">{sortLabels[sortOrder]}</span>
+              <span className="sm:hidden">Ordenar</span>
+            </button>
+
+            {isSortMenuOpen && (
+              <>
+                {/* Mobile */}
+                <div className="fixed inset-0 z-50 flex items-center justify-center md:hidden" onClick={() => setIsSortMenuOpen(false)}>
+                  <div className="w-64 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2" onClick={e => e.stopPropagation()}>
+                    <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/50">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wide">Ordenar por</span>
+                    </div>
+                    {(Object.keys(sortLabels) as (keyof typeof sortLabels)[]).map(key => (
+                      <button
+                        key={key}
+                        onClick={() => { setSortOrder(key as any); setIsSortMenuOpen(false); }}
+                        className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex items-center gap-3"
+                      >
+                        <span className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${sortOrder === key ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>
+                          {sortOrder === key && <span className="w-2 h-2 rounded-full bg-white block" />}
+                        </span>
+                        <span>{sortLabels[key]}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Desktop */}
+                <div className="hidden md:block absolute right-0 top-full mt-2 w-52 z-30 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/50">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wide">Ordenar por</span>
+                  </div>
+                  {(Object.keys(sortLabels) as (keyof typeof sortLabels)[]).map(key => (
+                    <button
+                      key={key}
+                      onClick={() => { setSortOrder(key as any); setIsSortMenuOpen(false); }}
+                      className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors flex items-center gap-3"
+                    >
+                      <span className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${sortOrder === key ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>
+                        {sortOrder === key && <span className="w-2 h-2 rounded-full bg-white block" />}
+                      </span>
+                      <span>{sortLabels[key]}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Filter Button */}
+          <div className="relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsFilterMenuOpen(!isFilterMenuOpen); setIsSortMenuOpen(false); }}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border transition-all ${
                 filterStatus.length > 0
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
@@ -184,7 +344,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
                   </div>
                 </div>
                 {/* Desktop: dropdown absoluto */}
-                <div className="hidden md:block absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                <div className="hidden md:block absolute right-0 top-full mt-2 w-56 z-30 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
                   <div className="px-3 py-2 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                     <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wide">Seleccionar Estado</span>
                     {filterStatus.length > 0 && (
@@ -231,11 +391,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredPatients.map((patient) => (
+              {paginatedPatients.map((patient) => (
                 <tr
                   key={patient.id}
                   className="hover:bg-slate-50 transition-colors cursor-pointer group"
-                  onClick={() => onSelectPatient(patient.id)}
+                  onClick={() => handleSelectPatient(patient.id)}
                 >
                   <td className="px-8 py-5">
                     <div>
@@ -276,7 +436,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
                   </td>
                 </tr>
               ))}
-              {filteredPatients.length === 0 && (
+              {filteredAndSortedPatients.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-6 py-16 text-center">
                     <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -290,6 +450,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {filteredAndSortedPatients.length > 0 && (
+          <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-sm text-slate-400 font-medium">
+              {filteredAndSortedPatients.length === patients.length
+                ? `${patients.length} paciente${patients.length !== 1 ? 's' : ''}`
+                : `${filteredAndSortedPatients.length} de ${patients.length} paciente${patients.length !== 1 ? 's' : ''}`}
+            </span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm font-semibold text-slate-700 min-w-[90px] text-center">
+                Página {safePage} de {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Patient Modal */}
