@@ -4,8 +4,9 @@ import { X, AlertTriangle } from "lucide-react";
 // ── Banner de avisos del servidor ──────────────────────────────────────────
 // Para activar:   cambia ACTIVE a true y escribe el mensaje en MESSAGE
 // Para desactivar: cambia ACTIVE a false
-const ACTIVE = false;
-const MESSAGE = "Estamos experimentando lentitud en el servidor DNS de redes wifi locales. Utiliza tu internet móvil para evitar el problema de hoy, se resolverá en un par de horas.";
+const ACTIVE = true;
+const MESSAGE =
+  "Estamos experimentando lentitud en el servidor DNS de redes wifi locales. Utiliza tu internet móvil para evitar el problema de hoy, se resolverá pronto";
 // ──────────────────────────────────────────────────────────────────────────
 
 export function SupabaseStatusBanner() {
