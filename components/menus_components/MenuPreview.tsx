@@ -188,13 +188,12 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
   };
 
   const renderTemplate = () => {
-    switch (currentTemplate) {
-      case 'plantilla_v2':
-        return <MenuTemplateV2 data={data} />;
-      case 'plantilla_v1':
-      default:
-        return <MenuTemplateV1 data={data} />;
+    const is4col = currentTemplate.endsWith('_4col');
+    const gridLayout = is4col ? '4col' : '3col';
+    if (currentTemplate.startsWith('plantilla_v2')) {
+      return <MenuTemplateV2 data={data} gridLayout={gridLayout} />;
     }
+    return <MenuTemplateV1 data={data} gridLayout={gridLayout} />;
   };
 
   const editZones = editMode
@@ -216,9 +215,9 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
           {!hideTemplateSelector && (
             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
               <button
-                onClick={() => updateTemplate('plantilla_v1')}
+                onClick={() => updateTemplate(currentTemplate.endsWith('_4col') ? 'plantilla_v1_4col' : 'plantilla_v1')}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5 ${
-                  currentTemplate === 'plantilla_v1'
+                  currentTemplate.startsWith('plantilla_v1')
                     ? 'bg-white text-emerald-600 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
@@ -227,9 +226,9 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
                 Plantilla V1
               </button>
               <button
-                onClick={() => updateTemplate('plantilla_v2')}
+                onClick={() => updateTemplate(currentTemplate.endsWith('_4col') ? 'plantilla_v2_4col' : 'plantilla_v2')}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5 ${
-                  currentTemplate === 'plantilla_v2'
+                  currentTemplate.startsWith('plantilla_v2')
                     ? 'bg-white text-emerald-600 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
                 }`}

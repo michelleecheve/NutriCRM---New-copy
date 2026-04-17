@@ -415,7 +415,7 @@ export interface MenuRecommendationRecord {
 
 // ─── Menu Templates ────────────────────────────────────────────────────────────
 
-export type MenuTemplateDesign = 'plantilla_v1' | 'plantilla_v2';
+export type MenuTemplateDesign = 'plantilla_v1' | 'plantilla_v2' | 'plantilla_v1_4col' | 'plantilla_v2_4col';
 export type MenuHeaderMode = 'default' | 'logo';
 
 export interface MenuFooterConfig {

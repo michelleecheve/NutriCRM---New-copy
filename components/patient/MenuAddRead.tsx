@@ -141,7 +141,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
   const [aiDraftText, setAiDraftText] = useState<string>("");
   const [aiRationale, setAiRationale] = useState<string>("");
   const [menuPreviewData, setMenuPreviewData] = useState<MenuPlanData | null>(null);
-  const [selectedPreviewTemplate, setSelectedPreviewTemplate] = useState<string>('plantilla_v1');
+  const [selectedPreviewTemplate, setSelectedPreviewTemplate] = useState<string>(() => store.getMenuTemplate()?.templateDesign ?? 'plantilla_v1');
   const [zoom, setZoom] = useState<number>(1);
 
   // ✅ Estados de vinculación
@@ -222,7 +222,11 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       setAiDraftText(menu.content || "");
       setAiRationale(menu.aiRationale || "");
       setMenuPreviewData(menu.menuData || null);
-      setSelectedPreviewTemplate(menu.templateId || 'plantilla_v1');
+      const savedDesign = menu.templateId || 'plantilla_v1';
+      const savedTemplate = store.getMenuTemplate();
+      const is4col = savedTemplate?.templateDesign?.endsWith('_4col') ?? false;
+      const base = savedDesign.replace('_4col', '');
+      setSelectedPreviewTemplate(is4col ? `${base}_4col` : base);
 
       // ✅ Precarga de vinculación: prioridad a linkedEvaluationId, luego date
       const linkedEvalId = (menu as any).linkedEvaluationId as string | undefined;
@@ -249,6 +253,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       setMenuName(`Menú para ${patient.firstName} ${new Date().toLocaleDateString()}`);
       setSelectedTemplateId("base_v1");
       setSelectedReferenceIds([]);
+      setSelectedPreviewTemplate(store.getMenuTemplate()?.templateDesign ?? 'plantilla_v1');
 
       const selected = store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id);
       const ev = selected ? store.getEvaluationById(selected) : null;

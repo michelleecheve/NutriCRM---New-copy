@@ -450,16 +450,17 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
             <span className="text-emerald-600 font-bold text-xs uppercase tracking-wide">Estructura: </span>
             <span className="text-slate-800 font-semibold text-sm">Hoja 1: Menú + Hoja 2: Recomendaciones</span>
             <div className="text-slate-500 text-xs mt-0.5">
-              {selectedTemplate === 'plantilla_v2' ? 'Tabla Porciones + Menu Semanal' : 'Tabla Porciones + Menu 6 dias'}
+              {selectedTemplate.startsWith('plantilla_v2') ? 'Tabla Porciones + Menú 7 días' : 'Tabla Porciones + Menú 6 días'}
+              {selectedTemplate.endsWith('_4col') ? ' · Grid 4 columnas' : ' · Grid 3 columnas'}
             </div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <span className="text-emerald-600 font-bold text-xs uppercase tracking-wide">Versión: </span>
             <span className="text-slate-800 font-semibold text-sm">
-              {selectedTemplate === 'plantilla_v2' ? 'Plantilla V2' : 'Plantilla V1'}
+              {selectedTemplate.startsWith('plantilla_v2') ? 'Plantilla V2' : 'Plantilla V1'}
             </span>
             <div className="text-slate-500 text-xs mt-0.5">
-              {selectedTemplate === 'plantilla_v2' ? 'Menú 7 días + nota corta' : 'Menú 6 días + Domingo libre'}
+              {selectedTemplate.startsWith('plantilla_v2') ? 'Domingo con tiempos de comida' : 'Domingo día libre'}
             </div>
           </div>
         </div>
@@ -882,6 +883,38 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
                     {opt.label}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Selector de grid */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Layout del Grid Semanal</label>
+              <p className="text-[11px] text-slate-400">Define cómo se distribuyen los días de la semana en el PDF.</p>
+              <div className="flex gap-2">
+                {([
+                  { value: '3col', label: '3 columnas', desc: 'Lun-Mar-Mié / Jue-Vie-Sáb' },
+                  { value: '4col', label: '4 columnas', desc: 'Lun-Mar-Mié-Jue / Vie-Sáb + split' },
+                ] as { value: string; label: string; desc: string }[]).map(opt => {
+                  const isActive = opt.value === '4col' ? selectedTemplate.endsWith('_4col') : !selectedTemplate.endsWith('_4col');
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => {
+                        const base = selectedTemplate.replace('_4col', '');
+                        const next = opt.value === '4col' ? `${base}_4col` : base;
+                        handleTemplateChange(next);
+                      }}
+                      className={`flex-1 flex flex-col items-start gap-0.5 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
+                        isActive
+                          ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
+                          : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                      <span className="text-[10px] text-slate-400 font-normal leading-tight">{opt.desc}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
