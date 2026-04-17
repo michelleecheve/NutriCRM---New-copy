@@ -17,6 +17,7 @@ import { AppRoute, UserRole } from './types';
 import { authStore } from './services/authStore';
 import { Landing } from './pages/Landing';
 import { PlanLimitModal } from './components/PlanLimitModal';
+import { SupabaseStatusBanner } from './components/SupabaseStatusBanner';
 
 const OAUTH_CALLBACK_ROUTE = '__oauth_callback__';
 
@@ -137,20 +138,23 @@ function App() {
   // ── Pantalla de loading mientras authStore carga ──
   if (!isAuthReady) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
-        <div className="animate-pulse">
-          <img src="/logo_nutrifollow.png" alt="NutriFollow" className="w-16 h-16 rounded-2xl object-contain" />
+      <>
+        <SupabaseStatusBanner />
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
+          <div className="animate-pulse">
+            <img src="/logo_nutrifollow.png" alt="NutriFollow" className="w-16 h-16 rounded-2xl object-contain" />
+          </div>
+          <div className="text-center">
+            <p className="text-slate-800 font-bold text-lg">NutriFollow</p>
+            <p className="text-slate-400 text-sm mt-1">Cargando...</p>
+          </div>
+          <div className="flex gap-1 mt-2">
+            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
         </div>
-        <div className="text-center">
-          <p className="text-slate-800 font-bold text-lg">NutriFollow</p>
-          <p className="text-slate-400 text-sm mt-1">Cargando...</p>
-        </div>
-        <div className="flex gap-1 mt-2">
-          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-        </div>
-      </div>
+      </>
     );
   }
 
@@ -218,12 +222,26 @@ function App() {
     }
   };
 
-  if (currentRoute === AppRoute.LANDING || currentRoute === AppRoute.LOGIN || currentRoute === AppRoute.REGISTER || currentRoute === AppRoute.RESET_PASSWORD) {
+  if (currentRoute === AppRoute.LANDING) {
     return renderContent();
+  }
+
+  if (
+    currentRoute === AppRoute.LOGIN ||
+    currentRoute === AppRoute.REGISTER ||
+    currentRoute === AppRoute.RESET_PASSWORD
+  ) {
+    return (
+      <>
+        <SupabaseStatusBanner />
+        {renderContent()}
+      </>
+    );
   }
 
   return (
     <>
+      <SupabaseStatusBanner />
       <Layout activePage={currentRoute} onNavigate={handleNavigate} onLogout={handleLogout}>
         {renderContent()}
       </Layout>
