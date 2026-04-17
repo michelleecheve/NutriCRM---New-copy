@@ -83,6 +83,7 @@ export interface MenuPlanData {
     sabado: MenuDay;
     domingo: DomingoData; // ✅ Siempre V1 (nota + hidratación)
     domingoV2?: DomingoV2; // ✅ Siempre V2 (tiempos de comida)
+    domingoMode?: 'libre' | 'completo';
   };
   recommendations?: MenuRecommendations;
   sectionTitles?: MenuSectionTitles;
@@ -182,7 +183,7 @@ const DayCard: React.FC<{ label: string; day: MenuDay; isFullWidth?: boolean }> 
       <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
         {mealKeys.map(mealKey => {
           const m = (day as any)[mealKey] as DayMeal;
-          if (!m) return null;
+          if (!m || !m.title?.trim()) return null;
           const displayLabel = m.label || (MEAL_LABELS[mealKey as MealKey] || mealKey);
           return (
             <div key={mealKey}>

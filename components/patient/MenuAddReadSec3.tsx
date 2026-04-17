@@ -12,6 +12,7 @@ import { MenuReferenceParsertoMenuData } from '../menus_components/Menu_Referenc
 import { MenuExportPDF } from '../menus_components/MenuExportPDF';
 import { MenuEditorToolbar, MenuEditorToolbarHandle } from '../menus_components/MenuEditorToolbar';
 import { MenuPreview } from '../menus_components/MenuPreview';
+import { MenuEditSec3 } from '../menus_components/menu_edit_sec3/MenuEditSec3';
 import { generateStructuredMenu } from '../../services/geminiService';
 import { store } from '../../services/store';
 import { authStore } from '../../services/authStore';
@@ -142,6 +143,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   };
 
   const [isVisible, setIsVisible] = useState(true);
+  const [editMode, setEditMode] = useState<'tabla' | 'preview'>('tabla');
   const [showSuccess, setShowSuccess] = useState(false);
   const [isLocked, setIsLocked] = useState<boolean>(() => {
   try { return localStorage.getItem('nutriflow_menu_locked') === 'true'; }
@@ -1047,36 +1049,86 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
           {/* Preview Area */}
           {menuPreviewData && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <MenuPreview
-                data={menuPreviewData}
-                zoom={zoom}
-                setZoom={setZoom}
-                elementId="menu-print-area"
-                selectedTemplate={selectedPreviewTemplate}
-                onTemplateChange={handleTemplateChange}
-                defaultEditMode={true}
-                onEditPatientInfo={() => toolbarRef.current?.openPatientInfo()}
-                onEditPortions={() => toolbarRef.current?.openPortions()}
-                onEditDay={(day) => toolbarRef.current?.openDay(day)}
-                onEditTemplateNote={() => toolbarRef.current?.openTemplateNote()}
-                onEditHydration={() => toolbarRef.current?.openHydration()}
-                onEditRecSection={(section) => toolbarRef.current?.openRecSection(section)}
-                onEditDomingoLibre={() => toolbarRef.current?.openDomingoLibre()}
-                onEditDomingoCompleto={() => toolbarRef.current?.openDomingoCompleto()}
-                onEditPlanTitle={() => toolbarRef.current?.openPlanTitle()}
-                onEditPage2Title={() => toolbarRef.current?.openPage2Title()}
-              />
 
-              {/* Editor Toolbar */}
-              <MenuEditorToolbar
-                ref={toolbarRef}
-                menuPreviewData={menuPreviewData}
-                setMenuPreviewData={setMenuPreviewData}
-                patient={patient}
-                vetData={vetData}
-                portions={portions}
-                evaluationId={evaluationId}
-              />
+              {/* ── Edit mode toggle ── */}
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl w-fit">
+                <button
+                  onClick={() => setEditMode('tabla')}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    editMode === 'tabla'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  ✏️ Editar en Tabla
+                </button>
+                <button
+                  onClick={() => setEditMode('preview')}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    editMode === 'preview'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  👁 Vista Previa
+                </button>
+              </div>
+
+              {/* ── Tabla mode ── */}
+              {editMode === 'tabla' && (
+                <MenuEditSec3
+                  key={`tabla-${menuPreviewData.kcal}-${menuPreviewData.patient.name}`}
+                  menuPreviewData={menuPreviewData}
+                  setMenuPreviewData={setMenuPreviewData}
+                  portions={portions}
+                />
+              )}
+
+              {/* ── Preview mode (visible) ── */}
+              {editMode === 'preview' && (
+                <>
+                  <MenuPreview
+                    data={menuPreviewData}
+                    zoom={zoom}
+                    setZoom={setZoom}
+                    elementId="menu-print-area"
+                    selectedTemplate={selectedPreviewTemplate}
+                    onTemplateChange={handleTemplateChange}
+                    defaultEditMode={true}
+                    onEditPatientInfo={() => toolbarRef.current?.openPatientInfo()}
+                    onEditPortions={() => toolbarRef.current?.openPortions()}
+                    onEditDay={(day) => toolbarRef.current?.openDay(day)}
+                    onEditTemplateNote={() => toolbarRef.current?.openTemplateNote()}
+                    onEditHydration={() => toolbarRef.current?.openHydration()}
+                    onEditRecSection={(section) => toolbarRef.current?.openRecSection(section)}
+                    onEditDomingoLibre={() => toolbarRef.current?.openDomingoLibre()}
+                    onEditDomingoCompleto={() => toolbarRef.current?.openDomingoCompleto()}
+                    onEditPlanTitle={() => toolbarRef.current?.openPlanTitle()}
+                    onEditPage2Title={() => toolbarRef.current?.openPage2Title()}
+                  />
+                  <MenuEditorToolbar
+                    ref={toolbarRef}
+                    menuPreviewData={menuPreviewData}
+                    setMenuPreviewData={setMenuPreviewData}
+                    patient={patient}
+                    vetData={vetData}
+                    portions={portions}
+                    evaluationId={evaluationId}
+                  />
+                </>
+              )}
+
+              {/* ── Hidden preview kept in DOM so PDF export always finds menu-print-area ── */}
+              {editMode === 'tabla' && (
+                <div style={{ position: 'absolute', left: '-9999px', top: 0, pointerEvents: 'none' }} aria-hidden="true">
+                  <MenuPreview
+                    data={menuPreviewData}
+                    elementId="menu-print-area"
+                    selectedTemplate={selectedPreviewTemplate}
+                    hideTemplateSelector
+                  />
+                </div>
+              )}
 
               {/* Save as Template */}
               <div className="space-y-3 pt-2">
