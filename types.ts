@@ -302,6 +302,7 @@ export interface Patient {
   accessToken?: string | null;
   accessCode?: string | null;
   portalGoal?: string | null;
+  portalShowMeasurementsDetail?: boolean | null;
 }
 
 export interface Invoice {
@@ -338,6 +339,7 @@ export interface UserProfile {
   labAIPrompt?: string;
   shareDigitalMenuMessage?: string;
   navbarConfig?: 'sidebar' | 'topnav';
+  portalConfig?: PortalConfig;
 }
 
 export type MealTimeKey = 'desayuno' | 'refaccion' | 'almuerzo' | 'merienda' | 'cena';
@@ -386,6 +388,10 @@ export interface MenuAIConfig {
   ideas:  MealTimeIdeas;
   fields: PatientDataFields;
   recommendationIdeas?: RecommendationIdeas;
+}
+
+export interface PortalConfig {
+  measurementsDetailDefault?: boolean;
 }
 
 export interface MenuReferenceRecord {
@@ -481,6 +487,8 @@ export const DEFAULT_VISUAL_THEME: VisualThemeConfig = {
   sizeScale: 'normal',
 };
 
+export type PageLayoutOption = 'layout1' | 'layout2' | 'layout3';
+
 export interface MenuTemplate {
   id: string;
   ownerId: string;
@@ -492,6 +500,7 @@ export interface MenuTemplate {
   footerConfig?: MenuFooterConfig;
   sectionTitles?: MenuSectionTitles;
   visualTheme?: VisualThemeConfig;
+  pageLayout?: PageLayoutOption;
   createdAt?: string;
   updatedAt?: string;
 }

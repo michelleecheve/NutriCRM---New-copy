@@ -379,7 +379,7 @@ import { MeasurementEntry, BioEntry } from '../components/patient_mobile_portal/
 
 interface PortalData {
   nutritionist: PortalNutritionist;
-  patient: { portalGoal?: string };
+  patient: { portalGoal?: string; showMeasurementsDetail: boolean };
   menus: GeneratedMenu[];
   activeTracking: TrackingRow | null;
   allTracking: TrackingRow[];
@@ -425,10 +425,10 @@ function mapTrackingFromRaw(row: any): TrackingRow {
 }
 
 async function loadPortalData(patientId: string): Promise<PortalData> {
-  // 1. Get patient owner_id + portal_goal
+  // 1. Get patient owner_id + portal_goal + measurements visibility
   const { data: patientRow } = await supabase
     .from('patients')
-    .select('owner_id, portal_goal')
+    .select('owner_id, portal_goal, portal_show_measurements_detail')
     .eq('id', patientId)
     .maybeSingle();
 
@@ -445,7 +445,7 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
     ownerId
       ? supabase
           .from('profiles')
-          .select('name, specialty, professional_title, avatar, email, contact_email, phone, personal_phone, instagram_handle, website, address')
+          .select('name, specialty, professional_title, avatar, email, contact_email, phone, personal_phone, instagram_handle, website, address, patient_portal_config')
           .eq('id', ownerId)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -588,7 +588,11 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
 
   return {
     nutritionist,
-    patient: { portalGoal: patientRow?.portal_goal ?? undefined },
+    patient: {
+      portalGoal: patientRow?.portal_goal ?? undefined,
+      showMeasurementsDetail: patientRow?.portal_show_measurements_detail
+        ?? (profile?.patient_portal_config?.measurementsDetailDefault ?? true),
+    },
     menus,
     activeTracking,
     allTracking,
@@ -623,6 +627,8 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session: initialSe
       setPortalData(prev => prev ? { ...prev, patient: { ...prev.patient, portalGoal: updates.portalGoal } } : prev);
     }
   }
+
+
 
   if (state === 'loading') return <LoadingScreen />;
 
@@ -660,6 +666,7 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session: initialSe
       nutritionist={portalData.nutritionist}
       measurements={portalData.measurements}
       bioMeasurements={portalData.bioMeasurements}
+      showMeasurementsDetail={portalData.patient.showMeasurementsDetail}
       onTrackingUpdate={setActiveTracking}
       onPatientUpdate={handlePatientUpdate}
     />

@@ -1,6 +1,7 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { MenuTemplateV1, MenuTemplateV2, MenuPlanData } from './MenuDesignTemplates';
 import { Layout, Pencil } from 'lucide-react';
+import { store } from '../../services/store';
 
 type RecSection = 'preparacion' | 'restricciones' | 'habitos' | 'organizacion';
 
@@ -150,32 +151,41 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
     else setInternalTemplate(id);
   };
 
-  const getPinchDist = (touches: React.TouchList) =>
+  const getPinchDist = (touches: TouchList) =>
     Math.hypot(
       touches[0].clientX - touches[1].clientX,
       touches[0].clientY - touches[1].clientY
     );
 
+  // Keep a ref to updateZoom so the non-passive listener always sees latest value
+  const updateZoomRef = useRef(updateZoom);
+  updateZoomRef.current = updateZoom;
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
-      pinchRef.current = { initialDist: getPinchDist(e.touches), initialZoom: currentZoom };
+      pinchRef.current = { initialDist: getPinchDist(e.nativeEvent.touches), initialZoom: currentZoom };
     }
   }, [currentZoom]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2 && pinchRef.current) {
-      e.preventDefault();
-      const newDist = getPinchDist(e.touches);
-      const ratio = newDist / pinchRef.current.initialDist;
-      const newZoom = Math.min(2, Math.max(0.3, pinchRef.current.initialZoom * ratio));
-      updateZoom(newZoom);
-    }
+  const handleTouchEnd = useCallback(() => {
+    pinchRef.current = null;
   }, []);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length < 2) {
-      pinchRef.current = null;
-    }
+  // Non-passive touchmove listener so preventDefault() actually works for pinch
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && pinchRef.current) {
+        e.preventDefault();
+        const newDist = getPinchDist(e.touches);
+        const ratio = newDist / pinchRef.current.initialDist;
+        const newZoom = Math.min(2, Math.max(0.3, pinchRef.current.initialZoom * ratio));
+        updateZoomRef.current(newZoom);
+      }
+    };
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => el.removeEventListener('touchmove', onTouchMove);
   }, []);
 
   const handleScroll = () => {
@@ -190,10 +200,11 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
   const renderTemplate = () => {
     const is4col = currentTemplate.endsWith('_4col');
     const gridLayout = is4col ? '4col' : '3col';
+    const pageLayout = (store.getMenuTemplate()?.pageLayout) || 'layout1';
     if (currentTemplate.startsWith('plantilla_v2')) {
-      return <MenuTemplateV2 data={data} gridLayout={gridLayout} />;
+      return <MenuTemplateV2 data={data} gridLayout={gridLayout} pageLayout={pageLayout} />;
     }
-    return <MenuTemplateV1 data={data} gridLayout={gridLayout} />;
+    return <MenuTemplateV1 data={data} gridLayout={gridLayout} pageLayout={pageLayout} />;
   };
 
   const editZones = editMode
@@ -362,11 +373,13 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
           ref={scrollRef}
           onScroll={handleScroll}
           onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className="bg-slate-200 p-4 md:p-8 rounded-3xl overflow-y-auto flex justify-center border border-slate-300 shadow-inner h-[850px]"
-          style={{ touchAction: 'pan-y' }}
+          className="bg-slate-200 rounded-3xl overflow-auto border border-slate-300 shadow-inner h-[850px]"
+          style={{ touchAction: 'pan-x pan-y' }}
         >
+          {/* Inner centering wrapper: min-width: 100% keeps it centered on wide screens;
+              fit-content lets it grow wider than the container on mobile so overflow-x scrolls */}
+          <div style={{ display: 'flex', justifyContent: 'center', minWidth: '100%', width: 'fit-content', padding: '16px 32px' }}>
           <div
             style={{
               transform: `scale(${currentZoom})`,
@@ -412,6 +425,7 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
                 ))}
               </div>
             )}
+          </div>
           </div>
         </div>
 

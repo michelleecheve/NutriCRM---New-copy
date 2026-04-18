@@ -41,6 +41,7 @@ export const supabaseService = {
     if (profile.menuAIConfig)      updateData.menu_ai_config     = profile.menuAIConfig;
     if (profile.labAIPrompt             !== undefined) updateData.lab_ai_prompt             = profile.labAIPrompt;
     if (profile.shareDigitalMenuMessage !== undefined) updateData.share_digital_menu_message = profile.shareDigitalMenuMessage;
+    if (profile.portalConfig            !== undefined) updateData.patient_portal_config      = profile.portalConfig;
 
     const { data, error } = await supabase
       .from('profiles')
@@ -211,11 +212,13 @@ export const supabaseService = {
     portalActive?: boolean;
     accessToken?: string;
     accessCode?: string;
+    portalShowMeasurementsDetail?: boolean;
   }): Promise<Patient> {
     const updateData: any = {};
-    if (patch.portalActive !== undefined) updateData.portal_active = patch.portalActive;
-    if (patch.accessToken  !== undefined) updateData.access_token  = patch.accessToken;
-    if (patch.accessCode   !== undefined) updateData.access_code   = patch.accessCode;
+    if (patch.portalActive                   !== undefined) updateData.portal_active                    = patch.portalActive;
+    if (patch.accessToken                    !== undefined) updateData.access_token                     = patch.accessToken;
+    if (patch.accessCode                     !== undefined) updateData.access_code                      = patch.accessCode;
+    if (patch.portalShowMeasurementsDetail   !== undefined) updateData.portal_show_measurements_detail  = patch.portalShowMeasurementsDetail;
 
     const { data, error } = await supabase
       .from('patients')
@@ -1005,6 +1008,7 @@ export const supabaseService = {
     footerConfig?: import('../types').MenuFooterConfig;
     sectionTitles?: import('../types').MenuSectionTitles;
     visualTheme?: import('../types').VisualThemeConfig;
+    pageLayout?: import('../types').PageLayoutOption;
   }) {
     const payload: any = {
       owner_id:        template.ownerId,
@@ -1016,6 +1020,7 @@ export const supabaseService = {
       footer_config:   template.footerConfig ?? null,
       section_titles:  template.sectionTitles ?? null,
       visual_theme:    template.visualTheme ?? null,
+      page_layout:     template.pageLayout ?? null,
       updated_at:      new Date().toISOString(),
     };
     if (template.id) payload.id = template.id;
@@ -1070,6 +1075,7 @@ export const supabaseService = {
       footerConfig:   db.footer_config || undefined,
       sectionTitles:  db.section_titles || undefined,
       visualTheme:    db.visual_theme || undefined,
+      pageLayout:     db.page_layout || undefined,
       createdAt:      db.created_at,
       updatedAt:      db.updated_at,
     };
@@ -1117,10 +1123,11 @@ export const supabaseService = {
       sportsProfile:      dbPatient.sports_profile || [],
       labs:               [],
       photos:             [],
-      portalActive:       dbPatient.portal_active  ?? false,
-      accessToken:        dbPatient.access_token   ?? null,
-      accessCode:         dbPatient.access_code    ?? null,
-      portalGoal:         dbPatient.portal_goal    ?? null,
+      portalActive:                   dbPatient.portal_active                    ?? false,
+      accessToken:                    dbPatient.access_token                     ?? null,
+      accessCode:                     dbPatient.access_code                      ?? null,
+      portalGoal:                     dbPatient.portal_goal                      ?? null,
+      portalShowMeasurementsDetail:   dbPatient.portal_show_measurements_detail  ?? null,
     };
   },
 

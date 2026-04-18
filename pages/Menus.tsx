@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Layout, Eye, EyeOff, Trash2, Save, CheckCircle, ChevronDown } from 'lucide-react';
-import type { MenuFooterConfig, MenuSectionTitles, VisualThemeConfig } from '../types';
+import type { MenuFooterConfig, MenuSectionTitles, VisualThemeConfig, PageLayoutOption } from '../types';
 import { DEFAULT_SECTION_TITLES, DEFAULT_VISUAL_THEME } from '../types';
+import { MenuDesignTemplatesPageLayout } from '../components/menus_components/MenuDesignTemplatesPageLayout';
 import { PALETTES } from '../components/menus_components/menu_css_templates/menuThemes';
 import type { Palette } from '../components/menus_components/menu_css_templates/menuThemes';
 import { MenuTemplateV1, MenuTemplateV2, MenuPlanData } from '../components/menus_components/MenuDesignTemplates';
@@ -15,7 +16,8 @@ import { MenuPreview } from '../components/menus_components/MenuPreview';
 import { MenuAIConfigurator } from '../components/menus_components/MenuAIConfigurator';
 import { MenuRecommendations } from '../components/menus_components/MenuRecommendations';
 import { MenuWrapper } from '../components/menus_components/MenuWrapper';
-import { Sparkles, FileText, ClipboardList, History } from 'lucide-react';
+import { Sparkles, FileText, ClipboardList, History, Smartphone } from 'lucide-react';
+import { MenuPatientPortal } from '../components/menus_components/MenuPatientPortal';
 
 const MOCK_MEAL_ORDER = ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
 
@@ -149,7 +151,7 @@ const FOOTER_FIELDS: { key: keyof MenuFooterConfig; label: string }[] = [
 ];
 
 const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boolean }> = ({ hideHeader, hideContainer }) => {
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
   const [logoUrl, setLogoUrl] = useState<string | undefined>(undefined);
   const [logoError, setLogoError] = useState('');
   const [headerMode, setHeaderMode] = useState<'default' | 'logo'>('default');
@@ -163,6 +165,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
   const [titlesOpen, setTitlesOpen] = useState(false);
   const [sectionTitles, setSectionTitles] = useState<MenuSectionTitles>(DEFAULT_SECTION_TITLES);
   const [visualTheme, setVisualTheme] = useState<VisualThemeConfig>(DEFAULT_VISUAL_THEME);
+  const [pageLayout, setPageLayout] = useState<PageLayoutOption>('layout1');
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [designOpen, setDesignOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -191,6 +194,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
         if (cached.footerConfig) setFooterConfig(cached.footerConfig);
         if (cached.sectionTitles) setSectionTitles(cached.sectionTitles);
         if (cached.visualTheme) setVisualTheme(cached.visualTheme);
+        if (cached.pageLayout) setPageLayout(cached.pageLayout);
         return;
       }
 
@@ -206,6 +210,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
           if (template.footerConfig) setFooterConfig(template.footerConfig);
           if (template.sectionTitles) setSectionTitles(template.sectionTitles);
           if (template.visualTheme) setVisualTheme(template.visualTheme);
+          if (template.pageLayout) setPageLayout(template.pageLayout);
           // Actualizar store para futuras navegaciones
           (store as any).menuTemplate = template;
         }
@@ -223,6 +228,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
     footerConfig?: MenuFooterConfig;
     sectionTitles?: MenuSectionTitles;
     visualTheme?: VisualThemeConfig;
+    pageLayout?: PageLayoutOption;
   }) => {
     const userId = authStore.getCurrentUser()?.id;
     if (!userId) return;
@@ -238,6 +244,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
         footerConfig:   updates.footerConfig ?? footerConfig,
         sectionTitles:  updates.sectionTitles ?? sectionTitles,
         visualTheme:    updates.visualTheme ?? visualTheme,
+        pageLayout:     updates.pageLayout ?? pageLayout,
       });
       setTemplateId(saved.id);
     } catch (err) {
@@ -377,29 +384,29 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
             )}
             <button
               onClick={() => setShowPreview(!showPreview)}
-              className="flex items-center gap-2 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors"
+              className="flex items-center gap-1.5 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 font-medium px-3 py-1.5 rounded-xl text-xs transition-colors"
             >
-              <Eye className="w-4 h-4 hidden md:inline" />
+              <Eye className="w-3.5 h-3.5 hidden md:inline" />
               {showPreview ? 'Ocultar preview' : 'Ver preview'}
             </button>
 
             <button
               onClick={() => saveTemplate({})}
               disabled={isSaving}
-              className={`flex items-center gap-2 font-bold px-4 py-2 rounded-xl text-sm transition-all ${
+              className={`flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-xl text-xs transition-all ${
                 saveSuccess
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                   : 'bg-white border border-slate-200 text-slate-700 hover:border-emerald-500 hover:text-emerald-600'
               }`}
             >
-              <Save className={`hidden md:inline w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
+              <Save className={`hidden md:inline w-3.5 h-3.5 ${isSaving ? 'animate-spin' : ''}`} />
               {isSaving ? 'Guardando...' : 'Guardar'}
             </button>
 
             <MenuExportPDF
               elementId="menu-print-area"
               filename={`Menu_${mockData.patient.name.replace(/\s+/g, '_')}`}
-              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm shadow-emerald-600/20"
+              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-xl text-xs transition-colors shadow-sm shadow-emerald-600/20"
               hideIconOnMobile
             />
           </div>
@@ -415,29 +422,29 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
           )}
           <button
             onClick={() => setShowPreview(!showPreview)}
-            className="flex items-center gap-2 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors"
+            className="flex items-center gap-1.5 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 font-medium px-3 py-1.5 rounded-xl text-xs transition-colors"
           >
-            <Eye className="w-4 h-4 hidden md:inline" />
+            <Eye className="w-3.5 h-3.5 hidden md:inline" />
             {showPreview ? 'Ocultar preview' : 'Ver preview'}
           </button>
 
           <button
             onClick={() => saveTemplate({})}
             disabled={isSaving}
-            className={`flex items-center gap-2 font-bold px-4 py-2 rounded-xl text-sm transition-all ${
+            className={`flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-xl text-xs transition-all ${
               saveSuccess
                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                 : 'bg-white border border-slate-200 text-slate-700 hover:border-emerald-500 hover:text-emerald-600'
             }`}
           >
-            <Save className={`hidden md:inline w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
+            <Save className={`hidden md:inline w-3.5 h-3.5 ${isSaving ? 'animate-spin' : ''}`} />
             {isSaving ? 'Guardando...' : 'Guardar'}
           </button>
 
           <MenuExportPDF
             elementId="menu-print-area"
             filename={`Menu_${mockData.patient.name.replace(/\s+/g, '_')}`}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors shadow-sm shadow-emerald-600/20"
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-xl text-xs transition-colors shadow-sm shadow-emerald-600/20"
             hideIconOnMobile
           />
         </div>
@@ -918,6 +925,15 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
               </div>
             </div>
 
+            {/* Layout de Hojas */}
+            <MenuDesignTemplatesPageLayout
+              value={pageLayout}
+              onChange={(v) => {
+                setPageLayout(v);
+                saveTemplate({ pageLayout: v });
+              }}
+            />
+
             {/* Reset */}
             <button
               onClick={() => {
@@ -948,6 +964,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
 };
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
+
 export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => void }> = ({ onSelectPatient }) => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -988,8 +1005,16 @@ export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => v
         <MenuRecommendations hideHeader hideContainer />
       </MenuWrapper>
 
-      <MenuWrapper 
-        title="Historial de Menús" 
+      <MenuWrapper
+        title="Portal Digital de Pacientes"
+        icon={<Smartphone className="w-5 h-5 text-emerald-600" />}
+        description="Configura el comportamiento por defecto del portal móvil para tus pacientes"
+      >
+        <MenuPatientPortal />
+      </MenuWrapper>
+
+      <MenuWrapper
+        title="Historial de Menús"
         icon={<History className="w-5 h-5 text-blue-600" />}
         description="Visualiza y exporta menús creados anteriormente para tus pacientes"
         defaultOpen={true}

@@ -190,6 +190,13 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   const [savingGoal, setSavingGoal] = useState(false);
   const [savedGoal, setSavedGoal] = useState(false);
 
+  // ── Measurements detail visibility ──
+  const nutriDefault = authStore.getCurrentUser()?.profile?.portalConfig?.measurementsDetailDefault ?? true;
+  const [showMeasurementsDetail, setShowMeasurementsDetail] = useState(
+    patient.portalShowMeasurementsDetail ?? nutriDefault,
+  );
+  const [savingMeasVis, setSavingMeasVis] = useState(false);
+
   // ── Message template state ──
   const [messageTemplate, setMessageTemplate] = useState<string>(() => {
     const profileMsg = authStore.getCurrentUser()?.profile?.shareDigitalMenuMessage;
@@ -274,6 +281,23 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       onUpdate({ ...patient, ...updated });
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ── Toggle measurements detail ──
+  async function handleToggleMeasurementsDetail() {
+    const next = !showMeasurementsDetail;
+    setShowMeasurementsDetail(next);
+    setSavingMeasVis(true);
+    try {
+      const updated = await supabaseService.updatePatientPortal(patient.id, {
+        portalShowMeasurementsDetail: next,
+      });
+      onUpdate({ ...patient, ...updated });
+    } catch {
+      setShowMeasurementsDetail(!next); // revert on error
+    } finally {
+      setSavingMeasVis(false);
     }
   }
 
@@ -742,6 +766,36 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                   <Save className="w-3 h-3" />
                 )}
                 {savedGoal ? "Guardado" : "Guardar"}
+              </button>
+            </div>
+          </div>
+
+          {/* ── Paso 2b: Visibilidad de medidas ── */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-700">
+                  Detalle de medidas en el portal
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {showMeasurementsDetail
+                    ? "El paciente puede expandir sus medidas y ver todos los datos."
+                    : "El paciente solo verá la tarjeta resumida, sin poder expandirla."}
+                </p>
+              </div>
+              <button
+                onClick={handleToggleMeasurementsDetail}
+                disabled={savingMeasVis}
+                className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+                  showMeasurementsDetail ? "bg-emerald-500" : "bg-slate-300"
+                }`}
+                title={showMeasurementsDetail ? "Desactivar detalle" : "Activar detalle"}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                    showMeasurementsDetail ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
               </button>
             </div>
           </div>

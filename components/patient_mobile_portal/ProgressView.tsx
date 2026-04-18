@@ -13,6 +13,7 @@ interface Props {
   activeMenu: GeneratedMenu | null;
   measurements?: MeasurementEntry[];
   bioMeasurements?: BioEntry[];
+  showMeasurementsDetail?: boolean;
   timezone: string;
 }
 
@@ -139,7 +140,7 @@ const TabBtn: React.FC<{ label: string; active: boolean; onClick: () => void }> 
 
 export const ProgressView: React.FC<Props> = ({
   patient, menus, activeTracking, allTracking,
-  activeMenu, measurements, bioMeasurements, timezone,
+  activeMenu, measurements, bioMeasurements, showMeasurementsDetail = true, timezone,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('medidas');
 
@@ -284,6 +285,7 @@ export const ProgressView: React.FC<Props> = ({
           <MeasurementsView
             measurements={measurements ?? []}
             bioMeasurements={bioMeasurements ?? []}
+            showDetail={showMeasurementsDetail}
           />
         )}
         {activeTab === 'historial' && (

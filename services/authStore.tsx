@@ -296,6 +296,7 @@ class AuthStore {
         currency:          profile?.currency            || '$',
         shareDigitalMenuMessage: profile?.share_digital_menu_message || undefined,
         navbarConfig:      (profile?.navbarconfig as 'sidebar' | 'topnav') || 'sidebar',
+        portalConfig:      profile?.patient_portal_config || undefined,
       } as any,
     };
 

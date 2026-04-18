@@ -108,6 +108,7 @@ interface Props {
   nutritionist: PortalNutritionist;
   measurements?: MeasurementEntry[];
   bioMeasurements?: BioEntry[];
+  showMeasurementsDetail?: boolean;
   onTrackingUpdate: (t: TrackingRow) => void;
   onPatientUpdate?: (updates: Partial<PortalPatient>) => void;
 }
@@ -264,6 +265,7 @@ export const PortalShell: React.FC<Props> = ({
   nutritionist,
   measurements,
   bioMeasurements,
+  showMeasurementsDetail = true,
   onTrackingUpdate,
   onPatientUpdate,
 }) => {
@@ -386,6 +388,7 @@ export const PortalShell: React.FC<Props> = ({
               activeMenu={activeMenu}
               measurements={measurements}
               bioMeasurements={bioMeasurements}
+              showMeasurementsDetail={showMeasurementsDetail}
               timezone={timezone}
             />
           )}

@@ -5,6 +5,7 @@ import { MeasurementEntry, BioEntry } from './PortalShell';
 interface Props {
   measurements: MeasurementEntry[];
   bioMeasurements: BioEntry[];
+  showDetail?: boolean;
 }
 
 function formatDateLong(d?: string): string {
@@ -422,7 +423,8 @@ const MeasurementCard: React.FC<{
   card: CardData;
   isOpen: boolean;
   onToggle: () => void;
-}> = ({ card, isOpen, onToggle }) => {
+  showDetail: boolean;
+}> = ({ card, isOpen, onToggle, showDetail }) => {
   const isAntro = card.kind === 'antro';
   const style = isAntro ? ANTRO_STYLE : BIO_STYLE;
 
@@ -442,9 +444,9 @@ const MeasurementCard: React.FC<{
       }}
     >
       <button
-        onClick={onToggle}
+        onClick={showDetail ? onToggle : undefined}
         className="w-full text-left p-4"
-        style={{ background: 'none', border: 'none', outline: 'none' }}
+        style={{ background: 'none', border: 'none', outline: 'none', cursor: showDetail ? 'pointer' : 'default' }}
       >
         {/* Date + meta + chevron */}
         <div className="flex items-center justify-between mb-2.5 gap-2">
@@ -464,15 +466,17 @@ const MeasurementCard: React.FC<{
               </div>
             )}
           </div>
-          <div
-            className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: '#F4F6F5' }}
-          >
-            {isOpen
-              ? <ChevronUp   className="w-3.5 h-3.5" style={{ color: '#6B7C73' }} />
-              : <ChevronDown className="w-3.5 h-3.5" style={{ color: '#6B7C73' }} />
-            }
-          </div>
+          {showDetail && (
+            <div
+              className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: '#F4F6F5' }}
+            >
+              {isOpen
+                ? <ChevronUp   className="w-3.5 h-3.5" style={{ color: '#6B7C73' }} />
+                : <ChevronDown className="w-3.5 h-3.5" style={{ color: '#6B7C73' }} />
+              }
+            </div>
+          )}
         </div>
 
         {/* Badge */}
@@ -493,7 +497,7 @@ const MeasurementCard: React.FC<{
 
       </button>
 
-      {isOpen && (
+      {showDetail && isOpen && (
         <div className="px-4 pb-5" style={{ borderTop: '1px solid #F4F6F5' }}>
           {isAntro
             ? <AntroExpanded m={card.entry as MeasurementEntry} />
@@ -507,7 +511,7 @@ const MeasurementCard: React.FC<{
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export const MeasurementsView: React.FC<Props> = ({ measurements, bioMeasurements }) => {
+export const MeasurementsView: React.FC<Props> = ({ measurements, bioMeasurements, showDetail = true }) => {
   const [openKey, setOpenKey] = useState<string | null>(null);
 
   const cards: CardData[] = [
@@ -544,6 +548,7 @@ export const MeasurementsView: React.FC<Props> = ({ measurements, bioMeasurement
               card={card}
               isOpen={openKey === key}
               onToggle={() => toggle(key)}
+              showDetail={showDetail}
             />
           );
         })}
