@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { Info, Calculator, Variable, X, ClipboardList } from 'lucide-react';
+import { Info, Calculator, Variable, X, ClipboardList, Save, Check } from 'lucide-react';
 import { VetCalculation, MacrosRecord, PortionsRecord, MacroRecord } from '../../types';
 
 const ACTIVITY_FACTORS = {
@@ -121,6 +121,7 @@ interface MenuAddReadSec1Props {
   setPortions: React.Dispatch<React.SetStateAction<PortionsRecord>>;
   birthdate?: string;
   evaluationDate?: string;
+  onSave?: () => Promise<boolean>;
 }
 
 export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
@@ -132,8 +133,12 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
   setPortions,
   birthdate,
   evaluationDate = '',
+  onSave,
 }) => {
   const [showExchangeModal, setShowExchangeModal] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showBottomSuccess, setShowBottomSuccess] = useState(false);
+  const [chonPerKgDisplay, setChonPerKgDisplay] = useState<string>('');
 
   // Recalculate VET in real-time
   const calculatedVet = useMemo(() => {
@@ -215,6 +220,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
 
   const updateVetField = (field: keyof VetCalculation, value: any) => {
     setVetData(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
   };
 
   const updateMacroField = (macro: 'cho' | 'chon' | 'fat', field: keyof MacroRecord, value: any) => {
@@ -222,10 +228,12 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
       ...prev,
       [macro]: { ...prev[macro], [field]: value }
     }));
+    setIsDirty(true);
   };
 
   const updatePortionField = (group: keyof PortionsRecord, value: number) => {
     setPortions(prev => ({ ...prev, [group]: value }));
+    setIsDirty(true);
   };
 
   const totalPct = macros.cho.pct + macros.chon.pct + macros.fat.pct;
@@ -266,6 +274,23 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
       fat: (portionsTotals.fat * 100) / totalGrams
     };
   }, [portionsTotals]);
+
+  const chonPerKgCalc = useMemo(() => {
+    const chonSum =
+      (portions.lec || 0) * EXCHANGE_LIST.lec.chon +
+      (portions.lecDesc || 0) * EXCHANGE_LIST.lecDesc.chon +
+      (portions.cer || 0) * EXCHANGE_LIST.cer.chon +
+      (portions.carMagra || 0) * EXCHANGE_LIST.carMagra.chon +
+      (portions.carSemi || 0) * EXCHANGE_LIST.carSemi.chon +
+      (portions.carAlta || 0) * EXCHANGE_LIST.carAlta.chon;
+    const weight = vetData.weight || 1;
+    return parseFloat((chonSum / weight).toFixed(2));
+  }, [portions.lec, portions.lecDesc, portions.cer, portions.carMagra, portions.carSemi, portions.carAlta, vetData.weight]);
+
+  useEffect(() => {
+    setMacros(prev => ({ ...prev, chonPerKg: chonPerKgCalc }));
+    setChonPerKgDisplay(chonPerKgCalc === 0 ? '' : String(chonPerKgCalc));
+  }, [chonPerKgCalc]);
 
   const getAdequacyColor = (val: number) => (val >= 95 && val <= 105 ? 'text-emerald-600' : 'text-red-500');
 
@@ -565,6 +590,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
                     onChange={(e) => {
                       const val = parseInt(e.target.value) || 0;
                       setMacros(prev => ({ ...prev, totalKcal: val }));
+                      setIsDirty(true);
                     }}
                     className="w-24 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                   />
@@ -667,10 +693,74 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
                 <td className="px-6 py-4 text-sm text-slate-600">{realMacrosPct.chon.toFixed(1)}%</td>
                 <td className="px-6 py-4 text-sm text-slate-600">{realMacrosPct.fat.toFixed(1)}%</td>
               </tr>
+
+              {/* CHON g|kg|día Row */}
+              <tr className="bg-emerald-50/50 font-bold border-t border-emerald-100">
+                <td className="px-6 py-4 text-xs font-bold text-emerald-800 uppercase" colSpan={4}>CHON g|kg|día</td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                      step="0.01"
+                      value={chonPerKgDisplay}
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setChonPerKgDisplay(raw);
+                        const parsed = parseFloat(raw);
+                        if (!isNaN(parsed)) {
+                          setMacros(prev => ({ ...prev, chonPerKg: parsed }));
+                        }
+                        setIsDirty(true);
+                      }}
+                      className="w-24 bg-white border border-emerald-200 rounded-lg px-3 py-1.5 text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                    />
+                    <Tooltip content={
+                      <div className="space-y-1">
+                        <p className="font-bold border-b border-white/20 pb-1 mb-1">CHON g|kg|día</p>
+                        <p>(LEC + LEC DESC + CER + CAR Magra + CAR Semi + CAR Alta) ÷ Peso kg</p>
+                        <p className="text-[10px] opacity-50 mt-1">Solo suma CHON de grupos proteicos</p>
+                      </div>
+                    }>
+                      <span className="inline-flex items-center justify-center text-[11px] font-bold text-slate-400 hover:text-emerald-600 transition-colors select-none cursor-help">(x)</span>
+                    </Tooltip>
+                  </div>
+                </td>
+                <td className="px-6 py-4"></td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Bottom Save Bar */}
+      {onSave && (
+        <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
+          {isDirty && (
+            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-500">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block"></span>
+              Hay cambios sin guardar
+            </span>
+          )}
+          <button
+            onClick={async () => {
+              const ok = await onSave();
+              if (ok) {
+                setIsDirty(false);
+                setShowBottomSuccess(true);
+                setTimeout(() => setShowBottomSuccess(false), 3000);
+              }
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+          >
+            {showBottomSuccess ? (
+              <><Check className="w-4 h-4" /> Guardado</>
+            ) : (
+              <><Save className="w-4 h-4" /> Guardar sección</>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Exchange List Modal */}
       {showExchangeModal && (

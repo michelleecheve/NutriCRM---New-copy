@@ -145,6 +145,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const [isVisible, setIsVisible] = useState(true);
   const [editMode, setEditMode] = useState<'tabla' | 'preview'>('tabla');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showBottomSuccess, setShowBottomSuccess] = useState(false);
   const [isLocked, setIsLocked] = useState<boolean>(() => {
   try { return localStorage.getItem('nutriflow_menu_locked') === 'true'; }
   catch { return false; }
@@ -162,6 +164,12 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const [saveTemplateSuccess, setSaveTemplateSuccess] = useState<'ref' | 'rec' | null>(null);
 
   const toolbarRef = useRef<MenuEditorToolbarHandle>(null);
+
+  // ─── Wrapper for setMenuPreviewData that marks dirty ─────────────────────
+  const handleSetMenuPreviewData = (data: MenuPlanData | null) => {
+    setMenuPreviewData(data);
+    setIsDirty(true);
+  };
 
   // ─── Template change ──────────────────────────────────────────────────────
   const handleTemplateChange = (templateId: string) => {
@@ -216,7 +224,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   // ─── Iniciar Menú en Blanco ────────────────────────────────────────────────
   const handleStartBlank = () => {
     const blank = buildBlankMenuPlanData(patient, vetData, getNutritionistData(), evaluationId);
-    setMenuPreviewData(withTemplateTitles(blank));
+    handleSetMenuPreviewData(withTemplateTitles(blank));
     setAiRationale('');
     setAiDraftText('');
   };
@@ -302,7 +310,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       recommendations: recommendations
     };
 
-    setMenuPreviewData(withTemplateTitles(withPatient));
+    handleSetMenuPreviewData(withTemplateTitles(withPatient));
     setAiRationale('');
     setAiDraftText('');
     setShowCopyRefModal(false);
@@ -397,24 +405,24 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       if (scope === 'page1') {
         // Keep existing recommendations if any
         const currentRecs = menuPreviewData?.recommendations;
-        setMenuPreviewData(withTemplateTitles({
+        handleSetMenuPreviewData(withTemplateTitles({
           ...finalPlan,
           recommendations: currentRecs || finalPlan.recommendations
         }));
       } else if (scope === 'page2') {
         // Keep existing menu if any, but update patient info and recommendations
         if (menuPreviewData) {
-          setMenuPreviewData(withTemplateTitles({
+          handleSetMenuPreviewData(withTemplateTitles({
             ...menuPreviewData,
             patient: finalPlan.patient,
             kcal: finalPlan.kcal,
             recommendations: finalPlan.recommendations
           }));
         } else {
-          setMenuPreviewData(withTemplateTitles(finalPlan));
+          handleSetMenuPreviewData(withTemplateTitles(finalPlan));
         }
       } else {
-        setMenuPreviewData(withTemplateTitles(finalPlan));
+        handleSetMenuPreviewData(withTemplateTitles(finalPlan));
       }
 
       setAiRationale(result.rationale);
@@ -1079,7 +1087,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                 <MenuEditSec3
                   key={`tabla-${menuPreviewData.kcal}-${menuPreviewData.patient.name}`}
                   menuPreviewData={menuPreviewData}
-                  setMenuPreviewData={setMenuPreviewData}
+                  setMenuPreviewData={handleSetMenuPreviewData}
                   portions={portions}
                 />
               )}
@@ -1109,7 +1117,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                   <MenuEditorToolbar
                     ref={toolbarRef}
                     menuPreviewData={menuPreviewData}
-                    setMenuPreviewData={setMenuPreviewData}
+                    setMenuPreviewData={handleSetMenuPreviewData}
                     patient={patient}
                     vetData={vetData}
                     portions={portions}
@@ -1146,6 +1154,35 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                   Opciones para guardar como plantilla
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Bottom Save Bar */}
+          {onSave && (
+            <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
+              {isDirty && (
+                <span className="flex items-center gap-1.5 text-xs font-bold text-amber-500">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block"></span>
+                  Hay cambios sin guardar
+                </span>
+              )}
+              <button
+                onClick={async () => {
+                  const ok = await onSave();
+                  if (ok) {
+                    setIsDirty(false);
+                    setShowBottomSuccess(true);
+                    setTimeout(() => setShowBottomSuccess(false), 3000);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+              >
+                {showBottomSuccess ? (
+                  <><Check className="w-4 h-4" /> Guardado</>
+                ) : (
+                  <><Save className="w-4 h-4" /> Guardar sección</>
+                )}
+              </button>
             </div>
           )}
 

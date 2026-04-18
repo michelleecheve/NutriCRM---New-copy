@@ -31,7 +31,7 @@ export const MenuCard: React.FC<{
       </h3>
 
       <p className="text-sm text-slate-500 mb-4">
-        {menu?.vet?.kcalToWork} kcal · {menu?.macros?.cho?.pct}/{menu?.macros?.chon?.pct}/{menu?.macros?.fat?.pct}
+        {menu?.kcalToWork} kcal · {menu?.macros?.cho?.pct}/{menu?.macros?.chon?.pct}/{menu?.macros?.fat?.pct} · CHON g|kg|dia: {menu?.macros?.chonPerKg}
       </p>
 
       <div className="flex items-center gap-2 text-emerald-600 text-xs font-bold">

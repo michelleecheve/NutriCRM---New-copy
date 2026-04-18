@@ -20,6 +20,8 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showBottomSuccess, setShowBottomSuccess] = useState(false);
   const [showSelector, setShowSelector] = useState(false);
   const [selectorType, setSelectorType] = useState<'references' | 'recommendations'>('references');
   const [tempSelectedIds, setTempSelectedIds] = useState<string[]>([]);
@@ -59,14 +61,17 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
       setSelectedRecommendationIds(tempSelectedIds);
     }
     setShowSelector(false);
+    setIsDirty(true);
   };
 
   const handleRemoveReference = (id: string) => {
     setSelectedReferenceIds(selectedReferenceIds.filter(i => i !== id));
+    setIsDirty(true);
   };
 
   const handleRemoveRecommendation = (id: string) => {
     setSelectedRecommendationIds(selectedRecommendationIds.filter(i => i !== id));
+    setIsDirty(true);
   };
 
   return (
@@ -187,6 +192,35 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
               )}
             </div>
           </div>
+
+          {/* Bottom Save Bar */}
+          {onSave && (
+            <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
+              {isDirty && (
+                <span className="flex items-center gap-1.5 text-xs font-bold text-amber-500">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block"></span>
+                  Hay cambios sin guardar
+                </span>
+              )}
+              <button
+                onClick={async () => {
+                  const ok = await onSave();
+                  if (ok) {
+                    setIsDirty(false);
+                    setShowBottomSuccess(true);
+                    setTimeout(() => setShowBottomSuccess(false), 3000);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+              >
+                {showBottomSuccess ? (
+                  <><Check className="w-4 h-4" /> Guardado</>
+                ) : (
+                  <><Save className="w-4 h-4" /> Guardar sección</>
+                )}
+              </button>
+            </div>
+          )}
 
           {/* D) Panel Selector Inline */}
           {showSelector && (

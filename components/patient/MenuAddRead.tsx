@@ -636,6 +636,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
 
           {isCalculationVisible && (
             <MenuAddReadSec1
+              key={currentMenuId || 'new'}
               vetData={vetData}
               setVetData={setVetData}
               macros={macros}
@@ -644,11 +645,13 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
               setPortions={setPortions}
               birthdate={patient.clinical?.birthdate}
               evaluationDate={formEvaluation?.date ?? ''}
+              onSave={handleSaveOnly}
             />
           )}
         </section>
 
         <MenuAddReadSec2
+          key={currentMenuId || 'new'}
           selectedReferenceIds={selectedReferenceIds}
           setSelectedReferenceIds={setSelectedReferenceIds}
           selectedRecommendationIds={selectedRecommendationIds}
@@ -657,6 +660,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         />
 
         <MenuAddReadSec3
+          key={currentMenuId || 'new'}
           patient={patient}
           vetData={vetData}
           macros={macros}

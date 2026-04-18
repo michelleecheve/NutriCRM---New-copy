@@ -138,6 +138,7 @@ export interface MacrosRecord {
   chon: MacroRecord;
   fat: MacroRecord;
   totalKcal: number;
+  chonPerKg?: number;
 }
 
 export interface PortionRow {
