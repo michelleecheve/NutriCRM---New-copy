@@ -67,8 +67,7 @@ export interface MeasurementEntry {
   endomorfo?: number;
   mesomorfo?: number;
   ectomorfo?: number;
-  diagnosticN?: string;
-  subjectiveValuation?: string;
+  notes?: string;
   metaComplied?: boolean;
 }
 
@@ -97,6 +96,7 @@ export interface BioEntry {
   armRelaxed?: number;
   armContracted?: number;
   metaComplied?: string;
+  notes?: string;
 }
 
 interface Props {

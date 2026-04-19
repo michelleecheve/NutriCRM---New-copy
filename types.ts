@@ -98,8 +98,7 @@ export interface Measurement {
   ectomorfo?: number;
   x?: number;
   y?: number;
-  diagnosticN?: string;
-  subjectiveValuation?: number;
+  notes?: string;
   [key: string]: any;
 }
 
@@ -560,6 +559,7 @@ export interface BioimpedanciaRecord {
   abdominalLow?: number;
   thighRight?: number;
   thighLeft?: number;
+  notes?: string;
   created_at?: string;
 }
 

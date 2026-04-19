@@ -473,7 +473,7 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
         if (evalIds.length === 0) return { data: [] };
         return await supabase
           .from('measurements')
-          .select('date, weight, height, imc, age, gender, body_fat_pct, lean_mass_pct, lean_mass_kg, fat_kg, muscle_mass_kg, bone_mass, residual_mass, biceps, triceps, subscapular, supraspinal, abdomen, thigh, calf, iliac_crest, skinfold_sum, humerus, femur, wrist, arm_relaxed, arm_contracted, waist, umbilical, hip, abdominal_low, thigh_right, thigh_left, calf_girth, endomorfo, mesomorfo, ectomorfo, diagnostic_n, subjective_valuation, meta_complied')
+          .select('date, weight, height, imc, age, gender, body_fat_pct, lean_mass_pct, lean_mass_kg, fat_kg, muscle_mass_kg, bone_mass, residual_mass, biceps, triceps, subscapular, supraspinal, abdomen, thigh, calf, iliac_crest, skinfold_sum, humerus, femur, wrist, arm_relaxed, arm_contracted, waist, umbilical, hip, abdominal_low, thigh_right, thigh_left, calf_girth, endomorfo, mesomorfo, ectomorfo, notes, meta_complied')
           .in('evaluation_id', evalIds)
           .order('date', { ascending: false });
       } catch { return { data: [] }; }
@@ -489,7 +489,7 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
         if (evalIds.length === 0) return { data: [] };
         return await supabase
           .from('bioimpedancia_measurements')
-          .select('date, weight, height, imc, age, gender, body_fat_pct, water_pct, muscle_mass, bone_mass, visceral_fat, bmr, metabolic_age, physique_rating, waist, umbilical, hip, "thighLeft", "thighRight", "abdominalLow", "calfGirth", "armRelaxed", "armContracted", meta_complied')
+          .select('date, weight, height, imc, age, gender, body_fat_pct, water_pct, muscle_mass, bone_mass, visceral_fat, bmr, metabolic_age, physique_rating, waist, umbilical, hip, "thighLeft", "thighRight", "abdominalLow", "calfGirth", "armRelaxed", "armContracted", meta_complied, notes')
           .in('evaluation_id', evalIds)
           .order('date', { ascending: false });
       } catch { return { data: [] }; }
@@ -553,8 +553,7 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
     endomorfo:          r.endomorfo,
     mesomorfo:          r.mesomorfo,
     ectomorfo:          r.ectomorfo,
-    diagnosticN:        r.diagnostic_n,
-    subjectiveValuation: r.subjective_valuation,
+    notes:              r.notes,
     metaComplied:       r.meta_complied,
   }));
 
@@ -584,6 +583,7 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
     armRelaxed:     r.armRelaxed,
     armContracted:  r.armContracted,
     metaComplied:   r.meta_complied,
+    notes:          r.notes,
   }));
 
   return {

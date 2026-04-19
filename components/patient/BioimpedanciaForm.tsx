@@ -104,6 +104,7 @@ export const BioimpedanciaForm: React.FC<{
     abdominalLow: '',
     thighRight: '',
     thighLeft: '',
+    notes: '',
   });
 
   // Load existing record if editingId is provided
@@ -135,6 +136,7 @@ export const BioimpedanciaForm: React.FC<{
           abdominalLow: record.abdominalLow?.toString() || '',
           thighRight: record.thighRight?.toString() || '',
           thighLeft: record.thighLeft?.toString() || '',
+          notes: record.notes || '',
         });
         setEvaluationId(record.evaluation_id);
       }
@@ -459,6 +461,20 @@ export const BioimpedanciaForm: React.FC<{
               type="number"
             />
           </div>
+        </div>
+
+        {/* Notas */}
+        <div className="space-y-4">
+          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+            NOTAS
+          </h4>
+          <textarea
+            value={formData.notes || ''}
+            onChange={(e: any) => handleChange('notes', e.target.value)}
+            rows={3}
+            placeholder="Escribe tus notas aquí..."
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none placeholder:text-slate-300"
+          />
         </div>
 
         {/* Visual Interpretation */}

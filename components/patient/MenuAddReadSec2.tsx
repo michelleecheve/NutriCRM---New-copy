@@ -267,6 +267,11 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
                             <div className={`text-sm font-bold ${isSelected ? 'text-indigo-700' : 'text-slate-700'}`}>
                               {ref.data.kcal} kcal
                             </div>
+                            {ref.data.patientName && (
+                              <div className={`text-[11px] font-semibold truncate max-w-[110px] ${isSelected ? 'text-indigo-500' : 'text-slate-500'}`}>
+                                {ref.data.patientName}
+                              </div>
+                            )}
                             <div className="text-[10px] text-slate-400 uppercase font-medium">{ref.data.type}</div>
                           </div>
                           <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${

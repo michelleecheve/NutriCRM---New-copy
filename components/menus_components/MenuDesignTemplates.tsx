@@ -485,7 +485,7 @@ const PatientBar: React.FC<{
               whiteSpace: "nowrap",
             }}
           >
-            <span style={{ color: "#64748b", fontWeight: 600 }}>GRASA: </span>
+            <span style={{ color: "#64748b", fontWeight: 600 }}>% GRASA: </span>
             <span style={{ color: "#0f172a", fontWeight: 700 }}>
               {patient?.fatPct || 0}%
             </span>

@@ -9,28 +9,6 @@ import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
 import { calculateAnthropometry } from '../../services/MeasurementsFormulas';
 
-const DIAGNOSTIC_OPTIONS = [
-  "% de grasa adecuado, buen desarrollo muscular, EN normal según IMC",
-  "% de grasa adecuado, bajo desarrollo muscular, EN normal según IMC",
-  "% de grasa elevado, buen desarrollo muscular, EN normal según IMC",
-  "% de grasa bajo, buen desarrollo muscular, EN normal según IMC",
-  "% de grasa adecuado, desarrollo muscular elevado, EN sobrepeso según IMC",
-  "Deshidratado",
-  "Bien hidratado",
-  "Hidratado",
-  "Peso corporal total adecuado para etapa",
-  "Peso corporal total alto para etapa",
-  "Peso corporal total bajo para etapa",
-  "Sobrepeso según IMC, % de grasa elevado y desarrollo muscular adecuado",
-  "Obesidad según IMC, % de grasa elevado y desarrollo muscular adecuado",
-  "Obesidad según IMC, % de grasa y desarrollo muscular elevado.",
-  "Bajo peso para estatura según percentiles OMS",
-  "Peso normal para estatura según percentiles OMS",
-  "Sobrepeso para estatura según percentiles OMS",
-  "% de grasa bajo, bajo desarrollo muscular, EN bajo peso según IMC",
-  "% de grasa elevado, desarrollo muscular elevado, EN obesidad según IMC",
-  "% de grasa adecuado, bajo desarrollo muscular, EN bajo peso según IMC"
-];
 
 const FORM_SECTIONS: any[] = [
   {
@@ -104,10 +82,9 @@ const FORM_SECTIONS: any[] = [
     ]
   },
   {
-    title: 'DIAGNÓSTICO NUTRICIONAL',
+    title: 'NOTAS',
     fields: [
-      { key: 'diagnosticN', label: 'Diagnóstico N', isSelect: true, options: DIAGNOSTIC_OPTIONS, isManual: true, isFullWidth: true },
-      { key: 'subjectiveValuation', label: 'Valoración Subjetiva (1-10)', type: 'number', isManual: true, isFullWidth: true },
+      { key: 'notes', label: 'Notas', isTextarea: true, isManual: true, isFullWidth: true },
     ]
   }
 ];
@@ -498,6 +475,21 @@ export const NewMeasurementForm: React.FC<{
                           <Star className={`w-6 h-6 transition-colors ${isChecked ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300 group-hover:text-yellow-200'}`} />
                         </button>
                         <label className="text-sm font-bold text-slate-700">{field.label}</label>
+                      </div>
+                    );
+                  }
+
+                  if (field.isTextarea) {
+                    return (
+                      <div key={field.key} className={`flex flex-col ${fieldWrapperClass}`}>
+                        <label className="text-xs font-bold text-slate-500 mb-1.5 uppercase">{field.label}</label>
+                        <textarea
+                          value={(formData as any)[field.key] ?? ''}
+                          onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                          rows={3}
+                          placeholder="Escribe tus notas aquí..."
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none placeholder:text-slate-300"
+                        />
                       </div>
                     );
                   }

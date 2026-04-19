@@ -44,6 +44,12 @@ const BIO_SECTIONS = [
       { key: 'thighRight', label: 'Muslo der.' },
       { key: 'thighLeft', label: 'Muslo izq.' },
     ]
+  },
+  {
+    title: 'NOTAS',
+    rows: [
+      { key: 'notes', label: 'Notas' },
+    ]
   }
 ];
 
@@ -232,9 +238,12 @@ export const BioimpedanciaTable: React.FC<{ patient: Patient }> = ({ patient }) 
                     </td>
                     {sortedRecords.map((r) => {
                       const val = (r as any)[row.key];
+                      const display = val !== undefined && val !== null && val !== '' ? val : '-';
                       return (
-                        <td key={`${r.id}-${row.key}`} className="p-3 border-r border-slate-50 text-center text-slate-600 font-medium">
-                          {val !== undefined && val !== null && val !== '' ? val : '-'}
+                        <td key={`${r.id}-${row.key}`} className={`p-3 border-r border-slate-50 text-center text-slate-600 font-medium ${row.key === 'notes' ? 'align-top' : ''}`}>
+                          <div className={row.key === 'notes' ? 'text-[10px] leading-tight text-left w-36 whitespace-pre-wrap break-words' : ''}>
+                            {display}
+                          </div>
                         </td>
                       );
                     })}

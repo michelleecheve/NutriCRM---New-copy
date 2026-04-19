@@ -76,11 +76,11 @@ export function MenuReferenceDataToMenuPlanData(data: MenuReferenceData): MenuPl
 
   return {
     patient: {
-      name:   "Referencia (sin paciente)",
-      age:    0,
-      weight: 0,
-      height: 0,
-      fatPct: 0,
+      name:   data.patientName || "Referencia",
+      age:    data.age      ?? 0,
+      weight: data.weightKg ?? 0,
+      height: data.heightCm ?? 0,
+      fatPct: data.fatPct   ?? 0,
     },
     kcal: data.kcal,
     portions: {

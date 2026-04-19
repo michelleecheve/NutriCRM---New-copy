@@ -191,7 +191,30 @@ export const EvaluationDetail: React.FC<{
 
   const [notes, setNotes] = useState(selected?.notes || '');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
-  const [notesExpanded, setNotesExpanded] = useState(false);
+  const [notesExpanded, setNotesExpanded] = useState(true);
+
+  const [prefValue, setPrefValue] = useState(patient.dietary?.preferences || '');
+  const [isSavingPref, setIsSavingPref] = useState(false);
+
+  useEffect(() => {
+    setPrefValue(patient.dietary?.preferences || '');
+  }, [patient.id, patient.dietary?.preferences]);
+
+  const hasPrefChanges = prefValue !== (patient.dietary?.preferences || '');
+
+  const handleSavePref = async () => {
+    setIsSavingPref(true);
+    try {
+      const updated: Patient = {
+        ...patient,
+        dietary: { ...patient.dietary, preferences: prefValue },
+      };
+      onUpdate(updated);
+      await store.updatePatient(updated);
+    } finally {
+      setIsSavingPref(false);
+    }
+  };
 
   const patientEvaluations: PatientEvaluation[] = useMemo(
     () => store.getEvaluations(patient.id),
@@ -552,6 +575,36 @@ export const EvaluationDetail: React.FC<{
               className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
               <Plus className="w-4 h-4" /> Crear
             </button>
+          </div>
+
+          {/* Preferencias y Aversiones — campo general del paciente */}
+          <div className="mb-5 rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Preferencias y Aversiones</p>
+            <textarea
+              value={prefValue}
+              onChange={(e) => setPrefValue(e.target.value)}
+              rows={3}
+              placeholder="Escribe aquí las preferencias y aversiones alimentarias del paciente..."
+              className="w-full p-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300 transition-all resize-y"
+            />
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <p className="text-[10px] text-slate-400 leading-relaxed">
+                Este campo es general del paciente — también puedes editarlo desde la pestaña <span className="font-semibold text-slate-500">Evaluación Dietética</span>. Los cambios se reflejan en ambos lugares.
+              </p>
+              <button
+                type="button"
+                onClick={handleSavePref}
+                disabled={isSavingPref || !hasPrefChanges}
+                className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-colors ${
+                  hasPrefChanges
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                <Save className="w-3 h-3" />
+                {isSavingPref ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
           </div>
 
           {dietaryView === 'edit' ? (

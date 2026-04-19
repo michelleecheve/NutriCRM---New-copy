@@ -101,10 +101,9 @@ const MEASUREMENT_SECTIONS = [
     ]
   },
   {
-    title: 'DIAGNÓSTICO NUTRICIONAL',
+    title: 'NOTAS',
     rows: [
-      { key: 'diagnosticN', label: 'Diagnóstico N' },
-      { key: 'subjectiveValuation', label: 'Valoración Subjetiva' },
+      { key: 'notes', label: 'Notas' },
     ]
   }
 ];
@@ -148,20 +147,19 @@ export const AnthropometryTable: React.FC<{ patient: Patient; onUpdate: (p: Pati
       tableBody.push([{ content: section.title, colSpan: dates.length + 1, styles: { fillColor: [240, 240, 240], fontStyle: 'bold', halign: 'left', textColor: [100, 116, 139] } }]);
       
       section.rows.forEach(row => {
-        const isDiagnostic = row.key === 'diagnosticN';
+        const isNotes = row.key === 'notes';
         const rowData: any[] = [];
-        
-        // Parameter name cell
-        rowData.push(isDiagnostic 
-          ? { content: row.label, styles: { fontSize: 7, fontStyle: 'bold' } } 
+
+        rowData.push(isNotes
+          ? { content: row.label, styles: { fontSize: 7, fontStyle: 'bold' } }
           : row.label
         );
 
         sortedMeasurements.forEach(m => {
           const val = (m as any)[row.key];
           const content = val !== undefined && val !== null ? val.toString() : '-';
-          rowData.push(isDiagnostic 
-            ? { content: content, styles: { fontSize: 5, halign: 'center' } } 
+          rowData.push(isNotes
+            ? { content: content, styles: { fontSize: 6, halign: 'left' } }
             : content
           );
         });
@@ -324,8 +322,8 @@ export const AnthropometryTable: React.FC<{ patient: Patient; onUpdate: (p: Pati
                          }
 
                          return (
-                            <td key={`${m.id || m.date}-${row.key}`} className={`p-3 border-r border-slate-50 text-center ${row.isCalculated ? 'bg-emerald-50/30 text-emerald-700 font-bold' : 'text-slate-600 font-medium'}`}>
-                               <div className={row.key === 'diagnosticN' ? 'text-[10px] leading-tight max-w-[150px] mx-auto' : ''}>
+                            <td key={`${m.id || m.date}-${row.key}`} className={`p-3 border-r border-slate-50 text-center ${row.isCalculated ? 'bg-emerald-50/30 text-emerald-700 font-bold' : 'text-slate-600 font-medium'} ${row.key === 'notes' ? 'align-top' : ''}`}>
+                               <div className={row.key === 'notes' ? 'text-[10px] leading-tight text-left w-36 whitespace-pre-wrap break-words' : ''}>
                                  {displayValue}
                                </div>
                             </td>

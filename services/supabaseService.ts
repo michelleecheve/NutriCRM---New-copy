@@ -396,8 +396,7 @@ export const supabaseService = {
       ectomorfo:           measurement.ectomorfo,
       x:                   measurement.x,
       y:                   measurement.y,
-      diagnostic_n:        measurement.diagnosticN,
-      subjective_valuation: measurement.subjectiveValuation,
+      notes:               measurement.notes ?? null,
     };
     // ⬇️ Este if es lo clave
     if (measurement.id) payload.id = measurement.id;
@@ -453,6 +452,7 @@ export const supabaseService = {
       abdominalLow:    toNum(record.abdominalLow),
       thighRight:      toNum(record.thighRight),
       thighLeft:       toNum(record.thighLeft),
+      notes:           record.notes ?? null,
     };
     if (record.id) payload.id = record.id;
 
@@ -1183,8 +1183,7 @@ export const supabaseService = {
             ectomorfo:           m.ectomorfo,
             x:                   m.x,
             y:                   m.y,
-            diagnosticN:         m.diagnostic_n,
-            subjectiveValuation: m.subjective_valuation,
+            notes:               m.notes ?? undefined,
           } as any);
         });
 
@@ -1274,8 +1273,9 @@ export const supabaseService = {
       abdominalLow:    db.abdominalLow,
       thighRight:      db.thighRight,
       thighLeft:       db.thighLeft,
+      notes:           db.notes ?? undefined,
       created_at:      db.created_at,
-    };
+    } as any;
   },
 
   mapMenuFromDb(menu: any): GeneratedMenu {

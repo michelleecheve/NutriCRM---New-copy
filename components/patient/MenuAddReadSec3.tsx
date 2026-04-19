@@ -706,11 +706,16 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     }
 
     return {
-      kcal: plan.kcal || 0,
-      type: 'SEMANAL',
+      kcal:        plan.kcal || 0,
+      type:        'SEMANAL',
       meals,
-      weeklyMenu: refWeeklyMenu,
-      hydration: (plan.weeklyMenu as any)?.domingo?.hydration || '2.5L Agua/Día',
+      weeklyMenu:  refWeeklyMenu,
+      hydration:   (plan.weeklyMenu as any)?.domingo?.hydration || '2.5L Agua/Día',
+      patientName: plan.patient?.name   || undefined,
+      age:         plan.patient?.age    || undefined,
+      weightKg:    plan.patient?.weight || undefined,
+      heightCm:    plan.patient?.height || undefined,
+      fatPct:      plan.patient?.fatPct || undefined,
     };
   };
 

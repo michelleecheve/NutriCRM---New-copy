@@ -350,12 +350,11 @@ const AntroExpanded: React.FC<{ m: MeasurementEntry }> = ({ m }) => (
     </ExpandedSection>
 
     <ExpandedSection
-      title="Evaluación"
+      title="Notas"
       accentColor="#64748B"
-      show={!!(m.diagnosticN && m.diagnosticN !== 0) || !!(m.subjectiveValuation && m.subjectiveValuation !== 0)}
+      show={!!m.notes}
     >
-      <ExpandedRow label="Diagnóstico"        value={m.diagnosticN}        small />
-      <ExpandedRow label="Valoración subjetiva" value={m.subjectiveValuation} small />
+      <ExpandedRow label="Notas" value={m.notes} small />
     </ExpandedSection>
   </div>
 );
@@ -404,6 +403,14 @@ const BioExpanded: React.FC<{ b: BioEntry }> = ({ b }) => (
       <ExpandedRow label="Pantorrilla"     value={b.calfGirth}     unit="cm" />
       <ExpandedRow label="Brazo relajado"  value={b.armRelaxed}    unit="cm" />
       <ExpandedRow label="Brazo contraído" value={b.armContracted} unit="cm" />
+    </ExpandedSection>
+
+    <ExpandedSection
+      title="Notas"
+      accentColor="#64748B"
+      show={!!b.notes}
+    >
+      <ExpandedRow label="Notas" value={b.notes} small />
     </ExpandedSection>
   </div>
 );
