@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, PatientEvaluation, GeneratedMenu } from '../../types';
 import { store } from '../../services/store';
 import { Calculator, Eye, EyeOff, ArrowLeft, Edit2, Pencil, X, Trash2, AlertTriangle, Save, Check } from 'lucide-react';
+
 import { MenuAddReadSec1 } from './MenuAddReadSec1';
 import { MenuAddReadSec2 } from './MenuAddReadSec2';
 import { MenuAddReadSec3 } from './MenuAddReadSec3';
@@ -102,7 +103,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(editingMenuId);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isCalculationVisible, setIsCalculationVisible] = useState(false);
-  const [section1Success, setSection1Success] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isStickySuccess, setIsStickySuccess] = useState(false);
 
   const patientEvaluations: PatientEvaluation[] = useMemo(
     () => store.getEvaluations(patient.id),
@@ -262,6 +264,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     }
 
     setEvalSelectorOpen(false);
+    setHasUnsavedChanges(false);
   }, [currentMenuId, patient.id]);
 
   // Auto-fill age from birthdate when evaluation date changes (new menus only)
@@ -606,37 +609,13 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
                 >
                   {isCalculationVisible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
-                <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    const ok = await handleSaveOnly();
-                    if (ok) {
-                      setSection1Success(true);
-                      setTimeout(() => setSection1Success(false), 3000);
-                    }
-                  }}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
-                  title="Guardar cambios"
-                >
-                  {section1Success ? (
-                    <>
-                      <Check className="w-4 h-4 text-emerald-500" />
-                      <span className="text-xs font-bold text-emerald-600">Guardado con éxito</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span className="text-xs font-bold">Guardar</span>
-                    </>
-                  )}
-                </button>
               </div>
             </div>
           </div>
 
           {isCalculationVisible && (
             <MenuAddReadSec1
-              key={currentMenuId || 'new'}
+              key={editingMenuId || 'new'}
               vetData={vetData}
               setVetData={setVetData}
               macros={macros}
@@ -645,22 +624,22 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
               setPortions={setPortions}
               birthdate={patient.clinical?.birthdate}
               evaluationDate={formEvaluation?.date ?? ''}
-              onSave={handleSaveOnly}
+              onDirty={() => setHasUnsavedChanges(true)}
             />
           )}
         </section>
 
         <MenuAddReadSec2
-          key={currentMenuId || 'new'}
+          key={editingMenuId || 'new'}
           selectedReferenceIds={selectedReferenceIds}
           setSelectedReferenceIds={setSelectedReferenceIds}
           selectedRecommendationIds={selectedRecommendationIds}
           setSelectedRecommendationIds={setSelectedRecommendationIds}
-          onSave={handleSaveOnly}
+          onDirty={() => setHasUnsavedChanges(true)}
         />
 
         <MenuAddReadSec3
-          key={currentMenuId || 'new'}
+          key={editingMenuId || 'new'}
           patient={patient}
           vetData={vetData}
           macros={macros}
@@ -679,8 +658,35 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           setZoom={setZoom}
           selectedPreviewTemplate={selectedPreviewTemplate}
           setSelectedPreviewTemplate={setSelectedPreviewTemplate}
-          onSave={handleSaveOnly}
+          onDirty={() => setHasUnsavedChanges(true)}
         />
+
+        {/* Sticky Save Button */}
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            onClick={async () => {
+              const ok = await handleSaveOnly();
+              if (ok) {
+                setHasUnsavedChanges(false);
+                setIsStickySuccess(true);
+                setTimeout(() => setIsStickySuccess(false), 2500);
+              }
+            }}
+            className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm shadow-xl transition-all ${
+              isStickySuccess
+                ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                : hasUnsavedChanges
+                  ? 'bg-amber-500 text-white shadow-amber-500/40 hover:bg-amber-600'
+                  : 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
+            }`}
+          >
+            {isStickySuccess ? (
+              <><Check className="w-4 h-4" /> Guardado</>
+            ) : (
+              <><Save className="w-4 h-4" /> {hasUnsavedChanges ? 'Hay cambios sin guardar' : 'Guardar'}</>
+            )}
+          </button>
+        </div>
 
         {/* Bottom action bar */}
         <div className="flex items-center justify-between pt-4">

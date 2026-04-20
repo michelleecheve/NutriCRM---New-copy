@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { Info, Calculator, Variable, X, ClipboardList, Save, Check } from 'lucide-react';
+import { Info, Calculator, Variable, X, ClipboardList } from 'lucide-react';
 import { VetCalculation, MacrosRecord, PortionsRecord, MacroRecord } from '../../types';
 
 const ACTIVITY_FACTORS = {
@@ -121,7 +121,7 @@ interface MenuAddReadSec1Props {
   setPortions: React.Dispatch<React.SetStateAction<PortionsRecord>>;
   birthdate?: string;
   evaluationDate?: string;
-  onSave?: () => Promise<boolean>;
+  onDirty?: () => void;
 }
 
 export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
@@ -133,11 +133,9 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
   setPortions,
   birthdate,
   evaluationDate = '',
-  onSave,
+  onDirty,
 }) => {
   const [showExchangeModal, setShowExchangeModal] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
-  const [showBottomSuccess, setShowBottomSuccess] = useState(false);
   const [chonPerKgDisplay, setChonPerKgDisplay] = useState<string>('');
 
   // Recalculate VET in real-time
@@ -220,7 +218,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
 
   const updateVetField = (field: keyof VetCalculation, value: any) => {
     setVetData(prev => ({ ...prev, [field]: value }));
-    setIsDirty(true);
+    onDirty?.();
   };
 
   const updateMacroField = (macro: 'cho' | 'chon' | 'fat', field: keyof MacroRecord, value: any) => {
@@ -228,12 +226,12 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
       ...prev,
       [macro]: { ...prev[macro], [field]: value }
     }));
-    setIsDirty(true);
+    onDirty?.();
   };
 
   const updatePortionField = (group: keyof PortionsRecord, value: number) => {
     setPortions(prev => ({ ...prev, [group]: value }));
-    setIsDirty(true);
+    onDirty?.();
   };
 
   const totalPct = macros.cho.pct + macros.chon.pct + macros.fat.pct;
@@ -590,7 +588,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
                     onChange={(e) => {
                       const val = parseInt(e.target.value) || 0;
                       setMacros(prev => ({ ...prev, totalKcal: val }));
-                      setIsDirty(true);
+                      onDirty?.();
                     }}
                     className="w-24 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                   />
@@ -711,7 +709,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
                         if (!isNaN(parsed)) {
                           setMacros(prev => ({ ...prev, chonPerKg: parsed }));
                         }
-                        setIsDirty(true);
+                        onDirty?.();
                       }}
                       className="w-24 bg-white border border-emerald-200 rounded-lg px-3 py-1.5 text-sm font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                     />
@@ -732,35 +730,6 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
           </table>
         </div>
       </div>
-
-      {/* Bottom Save Bar */}
-      {onSave && (
-        <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
-          {isDirty && (
-            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-500">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block"></span>
-              Hay cambios sin guardar
-            </span>
-          )}
-          <button
-            onClick={async () => {
-              const ok = await onSave();
-              if (ok) {
-                setIsDirty(false);
-                setShowBottomSuccess(true);
-                setTimeout(() => setShowBottomSuccess(false), 3000);
-              }
-            }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
-          >
-            {showBottomSuccess ? (
-              <><Check className="w-4 h-4" /> Guardado</>
-            ) : (
-              <><Save className="w-4 h-4" /> Guardar sección</>
-            )}
-          </button>
-        </div>
-      )}
 
       {/* Exchange List Modal */}
       {showExchangeModal && (

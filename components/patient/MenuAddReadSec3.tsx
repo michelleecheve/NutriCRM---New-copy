@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles, Eye, EyeOff, Layout,
-  ChevronDown, ChevronUp, Save, X,
+  ChevronDown, ChevronUp, X,
   Table as TableIcon, FileText, Copy, Check,
   Lock, Unlock, Bookmark
 } from 'lucide-react';
@@ -38,7 +38,7 @@ interface MenuAddReadSec3Props {
   setZoom: (z: number) => void;
   selectedPreviewTemplate: string;
   setSelectedPreviewTemplate: (id: string) => void;
-  onSave?: () => Promise<boolean>;
+  onDirty?: () => void;
 }
 
 // ─── Helper: build a blank MenuPlanData ───────────────────────────────────────
@@ -133,7 +133,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   selectedPreviewTemplate,
   setSelectedPreviewTemplate,
   evaluationId,
-  onSave
+  onDirty
 }) => {
   // ── Helper: merge current template sectionTitles into a MenuPlanData ──────────
   const withTemplateTitles = (plan: MenuPlanData): MenuPlanData => {
@@ -144,9 +144,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
 
   const [isVisible, setIsVisible] = useState(true);
   const [editMode, setEditMode] = useState<'tabla' | 'preview'>('tabla');
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
-  const [showBottomSuccess, setShowBottomSuccess] = useState(false);
   const [isLocked, setIsLocked] = useState<boolean>(() => {
   try { return localStorage.getItem('nutriflow_menu_locked') === 'true'; }
   catch { return false; }
@@ -168,7 +165,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   // ─── Wrapper for setMenuPreviewData that marks dirty ─────────────────────
   const handleSetMenuPreviewData = (data: MenuPlanData | null) => {
     setMenuPreviewData(data);
-    setIsDirty(true);
+    onDirty?.();
   };
 
   // ─── Template change ──────────────────────────────────────────────────────
@@ -929,32 +926,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             >
               {isVisible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
-            {onSave && (
-              <button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  const ok = await onSave();
-                  if (ok) {
-                    setShowSuccess(true);
-                    setTimeout(() => setShowSuccess(false), 3000);
-                  }
-                }}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
-                title="Guardar cambios"
-              >
-                {showSuccess ? (
-                  <>
-                    <Check className="w-4 h-4 text-emerald-500" />
-                    <span className="text-xs font-bold text-emerald-600">Guardado con éxito</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    <span className="text-xs font-bold">Guardar</span>
-                  </>
-                )}
-              </button>
-            )}
           </div>
         </div>
         {/* Lock toggle — siempre visible en el header */}
@@ -1159,35 +1130,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                   Opciones para guardar como plantilla
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* Bottom Save Bar */}
-          {onSave && (
-            <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
-              {isDirty && (
-                <span className="flex items-center gap-1.5 text-xs font-bold text-amber-500">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block"></span>
-                  Hay cambios sin guardar
-                </span>
-              )}
-              <button
-                onClick={async () => {
-                  const ok = await onSave();
-                  if (ok) {
-                    setIsDirty(false);
-                    setShowBottomSuccess(true);
-                    setTimeout(() => setShowBottomSuccess(false), 3000);
-                  }
-                }}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
-              >
-                {showBottomSuccess ? (
-                  <><Check className="w-4 h-4" /> Guardado</>
-                ) : (
-                  <><Save className="w-4 h-4" /> Guardar sección</>
-                )}
-              </button>
             </div>
           )}
 
