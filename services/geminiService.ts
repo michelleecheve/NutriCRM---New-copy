@@ -81,7 +81,7 @@ GRASAS:
   grasas_2 = 2 cdtas aceite O ½ aguacate O 12 almendras O combinación
   grasas_3 = 3 porciones combinadas`;
 
-const MENU_SYSTEM_INSTRUCTION = `Eres nutricionista deportivo experto. Generas menús semanales personalizados en español usando comida guatemalteca típica.
+const MENU_SYSTEM_INSTRUCTION = `Eres nutricionista experta. Generas menús semanales personalizados en español.
 
 ${PORTION_EQUIVALENTS}
 
@@ -93,6 +93,61 @@ Responde SOLO con JSON válido, sin texto adicional ni markdown.`;
 // ─── Grupos de porciones ──────────────────────────────────────────────────────
 
 const GROUPS = ['lacteos', 'vegetales', 'frutas', 'cereales', 'carnes', 'grasas'] as const;
+
+const GROUP_LABELS: Record<string, string> = {
+  lacteos:   'LÁCTEO',
+  vegetales: 'VEGETALES',
+  frutas:    'FRUTA',
+  cereales:  'CEREALES',
+  carnes:    'CARNES',
+  grasas:    'GRASA',
+};
+
+// Ejemplos de medidas caseras por grupo y cantidad de porciones
+const GROUP_EXAMPLES: Record<string, Record<number, string>> = {
+  lacteos: {
+    1: '1 vaso leche / 1 yogurt',
+    2: '2 vasos leche / 2 yogurts',
+    3: '3 vasos/yogurts combinados',
+    4: '4 vasos/yogurts combinados',
+  },
+  vegetales: {
+    1: '1 tz crudos / ½ tz cocidos',
+    2: '2 tz crudos / 1 tz cocidos',
+    3: '3 tz crudos / 1½ tz cocidos',
+    4: '2 tz crudos + 1 tz cocidos',
+    5: '2 tz ensalada + 1½ tz cocidos',
+  },
+  frutas: {
+    1: '1 fruta mediana / 1 tz en trozos',
+    2: '2 frutas / 1 fruta + 1 tz trozos',
+    3: '3 frutas / combinación',
+    4: '4 frutas / combinación',
+    5: '5 frutas / combinación',
+  },
+  cereales: {
+    1: '1 tortilla / 1 rodaja pan / ½ tz arroz',
+    2: '2 tortillas / 1 tortilla + ½ tz arroz',
+    3: '1 tortilla + ½ tz arroz + ½ tz frijol',
+    4: '2 tortillas + ½ tz arroz + ½ tz frijol',
+    5: '3 tortillas + ½ tz arroz + ½ tz frijol',
+  },
+  carnes: {
+    1: '1 oz proteína / 1 huevo / 2 claras',
+    2: '2 oz proteína / 2 huevos',
+    3: '3 oz proteína / 1 chuleta',
+    4: '4 oz proteína / 1 pechuga / 1 lata atún',
+    5: '5 oz / pechuga grande / 1 lata atún + 1 huevo',
+    6: '6 oz / 2 chuletas / 1 filete grande',
+    7: '7 oz / filete grande + 1 huevo',
+    8: '8 oz / 2 pechugas / 2 latas atún',
+  },
+  grasas: {
+    1: '1 cdta aceite / ¼ aguacate / 6 almendras',
+    2: '½ aguacate / 2 cdtas aceite / 12 almendras',
+    3: '¾ aguacate / 3 cdtas aceite / 18 almendras',
+  },
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -140,16 +195,22 @@ function structuredMealToTitle(meal: any): string {
 // ─── Extract mealStructure from portions.byMeal ──────────────────────────────
 
 const MEAL_LABELS: Record<string, string> = {
-  desayuno:    'Desayuno',
-  refaccion1:  'Refacción 1',
-  refaccion_1: 'Refacción 1',
-  almuerzo:    'Almuerzo',
-  refaccion2:  'Refacción 2',
-  refaccion_2: 'Refacción 2',
-  cena:        'Cena',
+  desayuno:        'Desayuno',
+  refaccion1:      'Refacción 1',
+  refaccion_1:     'Refacción 1',
+  almuerzo:        'Almuerzo',
+  refaccion2:      'Refacción 2',
+  refaccion_2:     'Refacción 2',
+  cena:            'Cena',
+  slot_desayuno:   'Desayuno',
+  slot_refaccion1: 'Refacción 1',
+  slot_almuerzo:   'Almuerzo',
+  slot_refaccion2: 'Refacción 2',
+  slot_cena:       'Cena',
 };
 
-const DEFAULT_MEALS_ORDER = ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
+const DEFAULT_MEALS_ORDER = ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena',
+  'slot_desayuno', 'slot_refaccion1', 'slot_almuerzo', 'slot_refaccion2', 'slot_cena'];
 
 function extractMealStructure(portions: any, vetData: any): AIMealEntry[] {
   const byMeal = portions?.byMeal 
@@ -191,21 +252,22 @@ function extractMealStructure(portions: any, vetData: any): AIMealEntry[] {
 // ─── Build JSON template for one meal ────────────────────────────────────────
 
 function buildMealJsonTemplate(meal: AIMealEntry): string {
-  const fields: string[] = [`        "id": "${meal.id}"`];
-  for (const g of GROUPS) {
-    const n = meal.portions[g];
-    if (n > 0) fields.push(`        "${g}_${n}": "..."`);
-  }
-  return `      {\n${fields.join(',\n')}\n      }`;
+  return `      {"id": "${meal.id}", "title": "..."}`;
 }
 
-// ─── Build compact portion summary ───────────────────────────────────────────
+// ─── Build explicit portion summary with examples ─────────────────────────────
 
 function buildPortionSummary(meals: AIMealEntry[]): string {
   return meals.map(m => {
-    const active = GROUPS.filter(g => m.portions[g] > 0).map(g => `${g}_${m.portions[g]}`);
-    return `${m.label} (${m.id}): ${active.length ? active.join(', ') : 'sin porciones'}`;
-  }).join('\n');
+    const active = GROUPS.filter(g => m.portions[g] > 0);
+    if (!active.length) return `${m.label.toUpperCase()} (id="${m.id}"): sin porciones — omitir este tiempo`;
+    const lines = active.map(g => {
+      const n = m.portions[g];
+      const ex = GROUP_EXAMPLES[g]?.[n] ?? `${n} porciones`;
+      return `  • ${n} ${GROUP_LABELS[g]} → ej: ${ex}`;
+    }).join('\n');
+    return `${m.label.toUpperCase()} (id="${m.id}") — escribe ${active.length} líneas en "title":\n${lines}`;
+  }).join('\n\n');
 }
 
 // ─── Build reference context (solo 3 días) ───────────────────────────────────
@@ -312,7 +374,7 @@ async function generateWeeklyMenu(
   const portionSummary = buildPortionSummary(mealStructure);
   const mealExamples   = mealStructure.map(m => buildMealJsonTemplate(m)).join(',\n');
 
-  const prompt = `Nutricionista deportivo. Genera menú semanal personalizado.
+  const prompt = `Nutricionista experta. Genera menú semanal personalizado.
 ${scopeInstr}
 
 PACIENTE:
@@ -320,17 +382,15 @@ ${patientCtx}
 ${bioCtx}
 Kcal: ${kcal}
 
-PORCIONES POR TIEMPO (definidas por la nutricionista — NO MODIFICAR):
+DISTRIBUCIÓN DE PORCIONES (nutricionista — respetar exactamente):
 ${portionSummary}
 
-El número en cada campo indica cuántas porciones incluir.
-carnes_3 = 3 oz de proteína. lacteos_2 = 2 porciones de lácteo. Etc.
-Si un grupo no aparece, NO incluir alimentos de ese grupo.
+REGLA DE PORCIONES: En "title" de cada tiempo de comida escribe EXACTAMENTE las líneas indicadas arriba, una por grupo activo, en ese orden, separadas por \n. Cada grupo con porciones > 0 DEBE aparecer en ese tiempo. Si un grupo tiene 0 para ese tiempo, NO incluirlo. Puedes repetir alimentos o preparaciones entre días si es necesario.
 
 REFERENCIAS — COPIA ESTE ESTILO de escritura e ideas de comidas:
 ${refContext}
 
-JSON — cada meal tiene "id" + solo campos activos (nombre = grupo_cantidad):
+JSON — cada meal: {"id": "...", "title": "línea1\nlínea2\n..."} (una \n entre cada línea de grupo):
 {
   "weeklyMenu": [
     {"dayKey":"lunes","meals":[
@@ -352,7 +412,7 @@ DOMINGO — OBLIGATORIO generar ambas versiones:
 - domingoV1: Día libre. "note" = observación breve sobre el día libre y porciones. "hydration" = "2.5L Agua/Día".
 - domingoV2: Día completo. Mismos campos por meal que lunes-sábado + "note" = nota personalizada para el paciente sobre su plan nutricional (consejo motivacional, recordatorio importante o tip práctico relacionado a su meta y condición) + "hydration" = "2.5L Agua/Día".
 
-Mismos campos por meal todos los días. Varía alimentos. Solo JSON.
+Mismos campos por meal todos los días. Solo JSON.
 ${promptSuffix}`;
 
   const resp = await aiService.invokeGemini(prompt, 'menu', MENU_SYSTEM_INSTRUCTION);
@@ -364,8 +424,7 @@ ${promptSuffix}`;
       dayKey: day.dayKey,
       meals: toArray(day.meals).map((meal: any) => {
         if (!meal?.id) return meal;
-        const title = meal.title ? meal.title : structuredMealToTitle(meal);
-        return { id: meal.id, title: cleanTitle(title) };
+        return { id: meal.id, title: cleanTitle(meal.title || '') };
       }),
     };
   });
@@ -373,8 +432,7 @@ ${promptSuffix}`;
   if (parsed.domingoV2?.meals) {
     parsed.domingoV2.meals = toArray(parsed.domingoV2.meals).map((meal: any) => {
       if (!meal?.id) return meal;
-      const title = meal.title ? meal.title : structuredMealToTitle(meal);
-      return { id: meal.id, title: cleanTitle(title) };
+      return { id: meal.id, title: cleanTitle(meal.title || '') };
     });
   }
 
@@ -520,6 +578,294 @@ export const generateStructuredMenu = async (
     console.error("AI Generation error:", error);
     throw error;
   }
+};
+
+// ─── Build full 7-day reference text (all days, not just 3) ──────────────────
+
+const ALL_DAYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+
+function buildFullRefContext(references: { title: string; data: MenuReferenceData }[]): string {
+  return references.map((ref, idx) => {
+    const { data } = ref;
+    const dayLines = ALL_DAYS.map(dayKey => {
+      const day = data.weeklyMenu[dayKey];
+      const meals = data.meals.map(slot => {
+        const text = day?.[slot.id]?.trim();
+        if (!text) return null;
+        return `    ${slot.label}:\n      ${text.split('\n').join('\n      ')}`;
+      }).filter(Boolean).join('\n');
+      return meals ? `  ${dayKey.toUpperCase()}:\n${meals}` : null;
+    }).filter(Boolean).join('\n');
+
+    const domNote = data.weeklyMenu['domingo']?.note?.trim();
+    const domLine = domNote ? `  DOMINGO (día libre):\n    ${domNote}` : '';
+
+    return `REFERENCIA_${idx + 1} [${data.kcal} kcal · ${data.type}]:\n${dayLines}${domLine ? '\n' + domLine : ''}`;
+  }).join('\n\n═══════════════════\n\n');
+}
+
+// ─── Mix de plantillas de referencia ─────────────────────────────────────────
+
+export const generateMixFromReferences = async (
+  patient:      Patient,
+  vetData:      any,
+  portions:     any,
+  references:   { title: string; data: MenuReferenceData }[],
+  nutritionist: any,
+  evaluationId?: string | null,
+  bioimpedance?: any
+): Promise<{ plan: MenuPlanData; rationale: string }> => {
+
+  if (references.length < 2) {
+    throw new Error('Se necesitan al menos 2 referencias seleccionadas para usar Mix de plantillas.');
+  }
+
+  const mealStructure = extractMealStructure(portions, vetData);
+  if (!mealStructure.length) {
+    throw new Error('Para generar el Mix, primero define la tabla de porciones por tiempo de comida.');
+  }
+
+  const portionSummary = buildPortionSummary(mealStructure);
+  const mealExamples   = mealStructure.map(m => buildMealJsonTemplate(m)).join(',\n');
+  const fullRefCtx     = buildFullRefContext(references);
+
+  const patientLine = `${patient.firstName} ${patient.lastName} | ${vetData.age || patient.clinical?.age} años | ${patient.clinical?.sex} | ${vetData.kcalToWork} kcal`;
+  let bioCtx = '';
+  if (bioimpedance) {
+    bioCtx = `Bioimpedancia: Peso ${bioimpedance.weight}kg | Grasa ${bioimpedance.fat_pct}% | Músculo ${bioimpedance.muscle_pct}% | Visc ${bioimpedance.visceral_fat} | TMB ${bioimpedance.basal_metabolism}kcal`;
+  }
+
+  const allergies = patient.clinical?.allergies ? `\nALERGIAS/RESTRICCIONES ABSOLUTAS (no incluir bajo ningún motivo): ${patient.clinical.allergies}` : '';
+  const excluded  = patient.dietary?.preferences ? `\nEvita: ${patient.dietary.preferences}` : '';
+
+  const numRefs = references.length;
+  const assignmentLines = ALL_DAYS.map((day, i) => {
+    const refIdx = (i % numRefs) + 1;
+    return `  - ${day.toUpperCase()}: base en REFERENCIA_${refIdx}`;
+  }).join('\n');
+
+  const aiConfig = store.getUserProfile()?.menuAIConfig || {
+    prompt: DEFAULT_MENU_PROMPT_SUFFIX,
+    ideas: { desayuno: [], refaccion: [], almuerzo: [], merienda: [], cena: [] },
+    fields: DEFAULT_PATIENT_FIELDS,
+    recommendationIdeas: { preparacion: [], restricciones: [], habitos: [], organizacion: [] },
+  };
+  const mixFoodIdeasCtx = buildFoodIdeasContext(aiConfig.ideas);
+
+  const prompt = `Eres nutricionista experta. Tu tarea es generar un menú semanal que sea un MIX FIEL de las ${numRefs} referencias alimentarias proporcionadas.
+
+PACIENTE: ${patientLine}
+${bioCtx}${allergies}${excluded}
+
+════════════════════════════════════════
+REFERENCIAS COMPLETAS (TU PRINCIPAL FUENTE DE ALIMENTOS):
+════════════════════════════════════════
+${fullRefCtx}
+
+════════════════════════════════════════
+REGLAS ABSOLUTAS — NO NEGOCIABLES:
+════════════════════════════════════════
+1. Usa principalmente alimentos que aparecen en las referencias. Si la tabla de porciones requiere un grupo alimentario que no está en la referencia asignada para ese tiempo de comida, selecciona un alimento apropiado de ese grupo desde otras referencias o usa un alimento típico de ese grupo.
+2. Los alimentos de cada día deben provenir principalmente de la referencia asignada a ese día (ver asignación abajo). Puedes combinar elementos de distintas referencias dentro del mismo día, siempre dentro del universo de alimentos de las referencias.
+3. OBLIGATORIO respetar EXACTAMENTE las porciones por tiempo de comida definidas en la tabla de porciones. Cada grupo con porciones > 0 DEBE aparecer en ese tiempo con la cantidad correcta. Si un grupo tiene 0 para ese tiempo, NO incluirlo.
+4. Puedes repetir alimentos o preparaciones entre días si es necesario o conveniente para el plan.
+5. Si las referencias muestran "½ taza arroz + frijoles", respeta esa combinación como unidad. No separes alimentos que en la referencia aparecen juntos como componente de una misma porción.
+6. Sábado puede tener ligeras variaciones creativas usando alimentos de las referencias.
+7. Mantén el estilo de escritura de las referencias: natural, conciso, medidas caseras (tazas, oz, cdas), máximo 4 líneas por tiempo de comida. NUNCA escribir solo el nombre del alimento sin medida.
+
+ASIGNACIÓN DE REFERENCIA POR DÍA (guía de distribución):
+${assignmentLines}
+  - SABADO: libre mix de todas las referencias
+  - DOMINGO v1: día libre (solo nota y hidratación)
+  - DOMINGO v2: menú completo usando alimentos de las referencias
+
+DISTRIBUCIÓN DE PORCIONES (nutricionista — respetar exactamente):
+${portionSummary}
+
+REGLA DE PORCIONES: En "title" de cada tiempo de comida escribe EXACTAMENTE las líneas indicadas, una por grupo activo, en ese orden, separadas por \n. Cada grupo con porciones > 0 DEBE aparecer. Si un grupo tiene 0, NO incluirlo.${mixFoodIdeasCtx ? `\n\nPREFERENCIAS DE COMIDAS (tomar en cuenta al elegir alimentos):\n${mixFoodIdeasCtx}` : ''}
+
+RATIONALE: Explica brevemente (3-5 frases) de qué referencias tomaste cada día, cómo adaptaste las porciones y si tuviste que hacer alguna sustitución menor.
+
+Responde SOLO con JSON válido (sin markdown, sin texto extra). Cada meal: {"id":"...","title":"línea1\nlínea2\n..."}:
+{
+  "weeklyMenu": [
+    {"dayKey":"lunes","meals":[
+${mealExamples}
+    ]},
+    {"dayKey":"martes","meals":[...]},{"dayKey":"miercoles","meals":[...]},
+    {"dayKey":"jueves","meals":[...]},{"dayKey":"viernes","meals":[...]},
+    {"dayKey":"sabado","meals":[...]}
+  ],
+  "domingoV1":{"note":"...","hydration":"2.5L Agua/Día"},
+  "domingoV2":{"note":"...","hydration":"2.5L Agua/Día","meals":[...]},
+  "patient":{"name":"${patient.firstName} ${patient.lastName}","age":${vetData.age || patient.clinical?.age || 0},"weight":${vetData.weight || 0},"height":${vetData.height || 0},"fatPct":0},
+  "kcal":${vetData.kcalToWork || 0},
+  "recommendations":{"preparacion":[],"restricciones":[],"habitos":[],"organizacion":[]},
+  "rationale":"..."
+}`;
+
+  const resp   = await aiService.invokeGemini(prompt, 'menu', MENU_SYSTEM_INSTRUCTION);
+  const parsed = parseGeminiJson(resp.output);
+
+  parsed.weeklyMenu = toArray(parsed.weeklyMenu).map((day: any) => {
+    if (!day?.dayKey) return day;
+    return {
+      dayKey: day.dayKey,
+      meals:  toArray(day.meals).map((meal: any) => {
+        if (!meal?.id) return meal;
+        return { id: meal.id, title: cleanTitle(meal.title || '') };
+      }),
+    };
+  });
+
+  if (parsed.domingoV2?.meals) {
+    parsed.domingoV2.meals = toArray(parsed.domingoV2.meals).map((meal: any) => {
+      if (!meal?.id) return meal;
+      return { id: meal.id, title: cleanTitle(meal.title || '') };
+    });
+  }
+
+  if (!parsed.weeklyMenu?.length) throw new Error('La IA no generó el mix de referencias. Intenta de nuevo.');
+
+  const plan = transformToMenuPlanData(mealStructure, parsed as AIMenuResponse, nutritionist, patient, vetData, portions);
+  return { plan, rationale: parsed.rationale || '' };
+};
+
+// ─── Adaptar porciones de referencia copiada ─────────────────────────────────
+
+export const adaptPortionsFromMenu = async (
+  currentMenu:  MenuPlanData,
+  portions:     any,
+  patient:      Patient,
+  vetData:      any,
+  nutritionist: any,
+): Promise<{ plan: MenuPlanData; rationale: string }> => {
+
+  const mealStructure = extractMealStructure(portions, vetData);
+  if (!mealStructure.length) {
+    throw new Error('No se encontró tabla de porciones. Define la distribución por tiempo de comida antes de adaptar.');
+  }
+
+  const portionSummary = buildPortionSummary(mealStructure);
+  const mealExamples   = mealStructure.map(m => buildMealJsonTemplate(m)).join(',\n');
+
+  // Serializar el menú actual como texto para enviarlo a la IA
+  const menuLines: string[] = [];
+  for (const dayKey of ALL_DAYS) {
+    const dayData = (currentMenu.weeklyMenu as any)?.[dayKey];
+    if (!dayData) continue;
+    const mealsOrder: string[] = dayData.mealsOrder || mealStructure.map(m => m.id);
+    const dayLines = mealsOrder.map((slotId: string) => {
+      const mealText = dayData[slotId]?.title?.trim();
+      const label    = dayData[slotId]?.label || slotId;
+      if (!mealText) return null;
+      return `    ${label}:\n      ${mealText.split('\n').join('\n      ')}`;
+    }).filter(Boolean).join('\n');
+    if (dayLines) menuLines.push(`  ${dayKey.toUpperCase()}:\n${dayLines}`);
+  }
+
+  // Incluir domingoV2 si existe
+  const domV2 = (currentMenu.weeklyMenu as any)?.domingoV2;
+  if (domV2) {
+    const mealsOrder: string[] = domV2.mealsOrder || mealStructure.map(m => m.id);
+    const domLines = mealsOrder.map((slotId: string) => {
+      const mealText = domV2[slotId]?.title?.trim();
+      const label    = domV2[slotId]?.label || slotId;
+      if (!mealText) return null;
+      return `    ${label}:\n      ${mealText.split('\n').join('\n      ')}`;
+    }).filter(Boolean).join('\n');
+    if (domLines) menuLines.push(`  DOMINGO v2:\n${domLines}`);
+  }
+
+  const patientLine = `${patient.firstName} ${patient.lastName} | ${vetData.age || patient.clinical?.age} años | ${patient.clinical?.sex} | ${vetData.kcalToWork} kcal`;
+  const allergies   = patient.clinical?.allergies ? `\nALERGIAS/RESTRICCIONES (respetar): ${patient.clinical.allergies}` : '';
+
+  const adaptAiConfig = store.getUserProfile()?.menuAIConfig || {
+    prompt: DEFAULT_MENU_PROMPT_SUFFIX,
+    ideas: { desayuno: [], refaccion: [], almuerzo: [], merienda: [], cena: [] },
+    fields: DEFAULT_PATIENT_FIELDS,
+    recommendationIdeas: { preparacion: [], restricciones: [], habitos: [], organizacion: [] },
+  };
+  const adaptFoodIdeasCtx = buildFoodIdeasContext(adaptAiConfig.ideas);
+
+  const prompt = `Eres nutricionista experta. Tu tarea es ADAPTAR el menú semanal existente para que coincida exactamente con la tabla de porciones indicada.
+
+PACIENTE: ${patientLine}${allergies}
+
+════════════════════════════════════════
+MENÚ ACTUAL (estructura base a conservar):
+════════════════════════════════════════
+${menuLines.join('\n\n')}
+
+════════════════════════════════════════
+DISTRIBUCIÓN DE PORCIONES OBJETIVO (nutricionista — respetar exactamente):
+════════════════════════════════════════
+${portionSummary}
+
+════════════════════════════════════════
+REGLAS ABSOLUTAS — NO NEGOCIABLES:
+════════════════════════════════════════
+1. MANTÉN los alimentos base del menú actual en cada tiempo de comida. Solo ajusta cantidades.
+2. Si la tabla de porciones requiere un grupo alimentario (ej: 1 LÁCTEO, 1 FRUTA) que NO estaba en ese tiempo de comida del menú original, AGRÉGALO con la cantidad exacta indicada usando un alimento apropiado de ese grupo (guíate por las preferencias de la nutricionista si las hay).
+3. Cada grupo con porciones > 0 DEBE aparecer en ese tiempo. Si un grupo tiene 0 para ese tiempo, NO incluirlo.
+4. Usa los ejemplos de medidas caseras como guía (ej: 3 CARNES = "3 oz pollo" / "1 chuleta").
+5. Si un alimento no pertenece a ningún grupo (especias, agua, café negro), mantenlo sin cambios.
+6. Si la distribución indica 0 para un grupo que sí está en el menú actual, ELIMÍNALO.
+7. Si un tiempo no tiene porciones asignadas, cópialo exactamente igual sin cambios.
+8. Conserva estilo natural, medidas caseras. SIEMPRE cantidad antes del alimento.
+9. En "title" escribe las líneas separadas por \n, una por grupo activo en el orden del resumen.
+10. Mantén las notas de domingo v1 y v2 sin cambios.${adaptFoodIdeasCtx ? `\n\nPREFERENCIAS DE COMIDAS (usar al agregar grupos alimentarios faltantes):\n${adaptFoodIdeasCtx}` : ''}
+
+RATIONALE: Explica brevemente (2-4 frases) qué ajustes realizaste y por qué son correctos.
+
+Responde SOLO con JSON válido (sin markdown, sin texto extra). Cada meal: {"id":"...","title":"línea1\nlínea2\n..."}:
+{
+  "weeklyMenu": [
+    {"dayKey":"lunes","meals":[
+${mealExamples}
+    ]},
+    {"dayKey":"martes","meals":[...]},{"dayKey":"miercoles","meals":[...]},
+    {"dayKey":"jueves","meals":[...]},{"dayKey":"viernes","meals":[...]},
+    {"dayKey":"sabado","meals":[...]}
+  ],
+  "domingoV1":{"note":"${(currentMenu.weeklyMenu as any)?.domingo?.note || ''}","hydration":"${(currentMenu.weeklyMenu as any)?.domingo?.hydration || '2.5L Agua/Día'}"},
+  "domingoV2":{"note":"${domV2?.note || ''}","hydration":"${domV2?.hydration || '2.5L Agua/Día'}","meals":[...]},
+  "patient":{"name":"${patient.firstName} ${patient.lastName}","age":${vetData.age || patient.clinical?.age || 0},"weight":${vetData.weight || 0},"height":${vetData.height || 0},"fatPct":0},
+  "kcal":${vetData.kcalToWork || 0},
+  "recommendations":{"preparacion":[],"restricciones":[],"habitos":[],"organizacion":[]},
+  "rationale":"..."
+}`;
+
+  const resp   = await aiService.invokeGemini(prompt, 'menu', MENU_SYSTEM_INSTRUCTION);
+  const parsed = parseGeminiJson(resp.output);
+
+  parsed.weeklyMenu = toArray(parsed.weeklyMenu).map((day: any) => {
+    if (!day?.dayKey) return day;
+    return {
+      dayKey: day.dayKey,
+      meals:  toArray(day.meals).map((meal: any) => {
+        if (!meal?.id) return meal;
+        return { id: meal.id, title: cleanTitle(meal.title || '') };
+      }),
+    };
+  });
+
+  if (parsed.domingoV2?.meals) {
+    parsed.domingoV2.meals = toArray(parsed.domingoV2.meals).map((meal: any) => {
+      if (!meal?.id) return meal;
+      return { id: meal.id, title: cleanTitle(meal.title || '') };
+    });
+  }
+
+  // Preservar recomendaciones existentes
+  const planBase = transformToMenuPlanData(mealStructure, parsed as AIMenuResponse, nutritionist, patient, vetData, portions);
+  const plan: MenuPlanData = {
+    ...planBase,
+    recommendations: currentMenu.recommendations || planBase.recommendations,
+    sectionTitles:   currentMenu.sectionTitles   || planBase.sectionTitles,
+  };
+
+  return { plan, rationale: parsed.rationale || '' };
 };
 
 // ─── Other exports ────────────────────────────────────────────────────────────

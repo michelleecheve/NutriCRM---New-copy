@@ -3,7 +3,7 @@ import {
   Sparkles, Eye, EyeOff, Layout,
   ChevronDown, ChevronUp, X,
   Table as TableIcon, FileText, Copy, Check,
-  Lock, Unlock, Bookmark
+  Lock, Unlock, Bookmark, Shuffle, Sliders
 } from 'lucide-react';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, MenuTemplateDesign, MenuRecommendationData } from '../../types';
 import { MealLabel, MealSlot, WEEKDAY_KEYS, MenuReferenceData, emptyMealPortions } from '../menus_components/Menu_References_Components/MenuReferencesStorage';
@@ -13,7 +13,7 @@ import { MenuExportPDF } from '../menus_components/MenuExportPDF';
 import { MenuEditorToolbar, MenuEditorToolbarHandle } from '../menus_components/MenuEditorToolbar';
 import { MenuPreview } from '../menus_components/MenuPreview';
 import { MenuEditSec3 } from '../menus_components/menu_edit_sec3/MenuEditSec3';
-import { generateStructuredMenu } from '../../services/geminiService';
+import { generateStructuredMenu, generateMixFromReferences, adaptPortionsFromMenu } from '../../services/geminiService';
 import { store } from '../../services/store';
 import { authStore } from '../../services/authStore';
 import { showPlanLimitModal } from '../PlanLimitModal';
@@ -151,6 +151,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const [showRationale, setShowRationale] = useState(true);
   const [showAiOptionsModal, setShowAiOptionsModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isMixing, setIsMixing] = useState(false);
+  const [isAdapting, setIsAdapting] = useState(false);
   const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
 
   // ─── Save-as-template state ────────────────────────────────────────────────
@@ -436,14 +438,98 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     }
   };
 
+  // ─── Mix de plantillas de referencia ──────────────────────────────────────
+  const handleMixReferences = async () => {
+    if (!authStore.canUseAI()) { showPlanLimitModal(); return; }
+    if (selectedReferenceIds.length < 2) return;
+    setIsMixing(true);
+    try {
+      const refs = store.menuReferences
+        .filter(r => selectedReferenceIds.includes(r.id))
+        .map(r => ({ title: `${r.data.kcal} kcal`, data: r.data }));
+
+      let bioData = null;
+      if (evaluationId) {
+        bioData = patient.bioimpedancias?.find(b => b.evaluation_id === evaluationId) || null;
+        if (!bioData) {
+          const meas = patient.measurements?.find(m => m.linkedEvaluationId === evaluationId);
+          if (meas) bioData = { weight: meas.weight, fat_pct: meas.bodyFat, muscle_pct: meas.muscleKg ? ((meas.muscleKg / (meas.weight || 1)) * 100).toFixed(1) : undefined, visceral_fat: meas.visceralFat, basal_metabolism: meas.basalMetabolism, metabolic_age: meas.metabolicAge };
+        }
+      }
+
+      const result = await generateMixFromReferences(
+        patient, vetData,
+        menuPreviewData?.portions || portions,
+        refs, getNutritionistData(),
+        evaluationId, bioData
+      );
+
+      let fat = 0;
+      if (evaluationId) {
+        const bio = patient.bioimpedancias?.find(b => b.evaluation_id === evaluationId);
+        if (bio) fat = bio.body_fat_pct;
+        else { const meas = patient.measurements?.find(m => m.linkedEvaluationId === evaluationId); if (meas) fat = meas.bodyFat || 0; }
+      }
+
+      const finalPlan: MenuPlanData = {
+        ...result.plan,
+        patient: { name: `${patient.firstName} ${patient.lastName}`, age: vetData.age || patient.clinical?.age || 0, weight: vetData.weight || 0, height: vetData.height || 0, fatPct: fat },
+        kcal: vetData.kcalToWork || result.plan.kcal,
+      };
+
+      handleSetMenuPreviewData(withTemplateTitles(finalPlan));
+      setAiRationale(result.rationale);
+      setAiDraftText('Menú generado — Mix de referencias');
+    } catch (error: any) {
+      setInfoModal({ title: 'Error en Mix de referencias', message: error.message || 'Hubo un error al generar el mix. Intenta de nuevo.' });
+    } finally {
+      setIsMixing(false);
+    }
+  };
+
+  // ─── Adaptar porciones de referencia copiada ──────────────────────────────
+  const handleAdaptPortions = async () => {
+    if (!authStore.canUseAI()) { showPlanLimitModal(); return; }
+    if (!menuPreviewData) return;
+    setIsAdapting(true);
+    try {
+      const result = await adaptPortionsFromMenu(
+        menuPreviewData,
+        menuPreviewData?.portions || portions,
+        patient, vetData, getNutritionistData()
+      );
+
+      let fat = 0;
+      if (evaluationId) {
+        const bio = patient.bioimpedancias?.find(b => b.evaluation_id === evaluationId);
+        if (bio) fat = bio.body_fat_pct;
+        else { const meas = patient.measurements?.find(m => m.linkedEvaluationId === evaluationId); if (meas) fat = meas.bodyFat || 0; }
+      }
+
+      const finalPlan: MenuPlanData = {
+        ...result.plan,
+        patient: { name: `${patient.firstName} ${patient.lastName}`, age: vetData.age || patient.clinical?.age || 0, weight: vetData.weight || 0, height: vetData.height || 0, fatPct: fat },
+        kcal: vetData.kcalToWork || result.plan.kcal,
+      };
+
+      handleSetMenuPreviewData(withTemplateTitles(finalPlan));
+      setAiRationale(result.rationale);
+      setAiDraftText('Porciones adaptadas por IA');
+    } catch (error: any) {
+      setInfoModal({ title: 'Error al adaptar porciones', message: error.message || 'Hubo un error al adaptar las porciones. Intenta de nuevo.' });
+    } finally {
+      setIsAdapting(false);
+    }
+  };
+
   // ─── AI Options Modal ──────────────────────────────────────────────────────
   const AiOptionsModal = () => {
     // If no portion table, show inline editor first
     if (!hasPortionTable) {
       return (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl flex-shrink-0">
               <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-indigo-600" />
                 Antes de generar
@@ -452,7 +538,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                 <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
                 <TableIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div className="space-y-1">
@@ -474,7 +560,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                 Editar Tabla de Porciones
               </button>
             </div>
-            <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl">
+            <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex-shrink-0">
               <button onClick={() => setShowAiOptionsModal(false)} className="w-full py-2 font-bold text-slate-500 hover:bg-white rounded-xl transition-all">
                 Cancelar
               </button>
@@ -485,10 +571,13 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     }
 
     // Normal options when portion table exists
+    const canMix = selectedReferenceIds.length >= 2;
+    const canAdapt = !!menuPreviewData;
+
     return (
       <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl">
+        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl flex-shrink-0">
             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-indigo-600" />
               Opciones de Generación
@@ -497,7 +586,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               <X className="w-5 h-5 text-slate-400" />
             </button>
           </div>
-          <div className="p-6 space-y-3">
+          <div className="p-6 space-y-3 overflow-y-auto flex-1">
             <button onClick={() => handleGenerateAi('page1')} className="w-full flex items-center gap-3 p-4 rounded-2xl border border-slate-200 hover:border-indigo-600 hover:bg-indigo-50 transition-all text-left group">
               <div className="bg-slate-100 p-2 rounded-xl group-hover:bg-white transition-colors">
                 <Layout className="w-5 h-5 text-slate-600 group-hover:text-indigo-600" />
@@ -525,8 +614,52 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                 <div className="text-xs text-indigo-500/70 font-medium">Plan completo (Menú + Recs)</div>
               </div>
             </button>
+
+            <div className="pt-1 border-t border-slate-100" />
+
+            <button
+              onClick={() => { setShowAiOptionsModal(false); handleMixReferences(); }}
+              disabled={!canMix}
+              title={!canMix ? 'Selecciona 2 o 3 referencias en la sección anterior para activar' : `Genera un mix fiel de ${selectedReferenceIds.length} referencias seleccionadas`}
+              className={`w-full flex items-center gap-3 p-4 rounded-2xl border transition-all text-left group ${
+                canMix
+                  ? 'border-slate-200 hover:border-violet-500 hover:bg-violet-50'
+                  : 'border-slate-100 opacity-40 cursor-not-allowed'
+              }`}
+            >
+              <div className={`p-2 rounded-xl transition-colors ${canMix ? 'bg-slate-100 group-hover:bg-white' : 'bg-slate-50'}`}>
+                <Shuffle className="w-5 h-5 text-slate-500 group-hover:text-violet-600" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-slate-700 group-hover:text-violet-700">Mix de referencias</div>
+                <div className="text-xs text-slate-400 font-medium">
+                  {canMix ? `Combina ${selectedReferenceIds.length} referencias seleccionadas` : 'Requiere 2+ referencias seleccionadas'}
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => { setShowAiOptionsModal(false); handleAdaptPortions(); }}
+              disabled={!canAdapt}
+              title={!canAdapt ? 'Copia o genera un menú primero' : 'Adapta las cantidades del menú actual a la tabla de porciones'}
+              className={`w-full flex items-center gap-3 p-4 rounded-2xl border transition-all text-left group ${
+                canAdapt
+                  ? 'border-slate-200 hover:border-teal-500 hover:bg-teal-50'
+                  : 'border-slate-100 opacity-40 cursor-not-allowed'
+              }`}
+            >
+              <div className={`p-2 rounded-xl transition-colors ${canAdapt ? 'bg-slate-100 group-hover:bg-white' : 'bg-slate-50'}`}>
+                <Sliders className="w-5 h-5 text-slate-500 group-hover:text-teal-600" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-slate-700 group-hover:text-teal-700">Adaptar porciones</div>
+                <div className="text-xs text-slate-400 font-medium">
+                  {canAdapt ? 'Ajusta el menú actual a la tabla de porciones' : 'Requiere un menú cargado primero'}
+                </div>
+              </div>
+            </button>
           </div>
-          <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-3xl">
+          <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex-shrink-0">
             <button onClick={() => setShowAiOptionsModal(false)} className="w-full py-2 font-bold text-slate-500 hover:bg-white rounded-xl transition-all">
               Cancelar
             </button>
@@ -986,9 +1119,9 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             {/* EXISTING: Generar menú con AI — modified to open options modal */}
             <button
               onClick={() => setShowAiOptionsModal(true)}
-              disabled={isGenerating || isLocked}
+              disabled={isGenerating || isMixing || isAdapting || isLocked}
               className={`flex-1 min-w-[180px] flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition-all shadow-lg ${
-                isGenerating || isLocked
+                isGenerating || isMixing || isAdapting || isLocked
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/20'
               }`}

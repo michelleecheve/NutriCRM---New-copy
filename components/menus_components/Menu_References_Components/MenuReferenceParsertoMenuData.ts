@@ -28,7 +28,7 @@ export function MenuReferenceDataToMenuPlanData(data: MenuReferenceData): MenuPl
 
   const byMeal: Record<string, any> = {};
   data.meals.forEach(slot => {
-    byMeal[slot.id] = { ...slot.portions };
+    byMeal[slot.id] = { ...slot.portions, label: slot.label };
   });
 
   const mealOrder = data.meals.map(s => s.id);
