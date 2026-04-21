@@ -260,13 +260,13 @@ function buildMealJsonTemplate(meal: AIMealEntry): string {
 function buildPortionSummary(meals: AIMealEntry[]): string {
   return meals.map(m => {
     const active = GROUPS.filter(g => m.portions[g] > 0);
-    if (!active.length) return `${m.label.toUpperCase()} (id="${m.id}"): sin porciones — omitir este tiempo`;
+    if (!active.length) return `${m.label.toUpperCase()} (id="${m.id}"): sin porciones — omitir`;
     const lines = active.map(g => {
       const n = m.portions[g];
       const ex = GROUP_EXAMPLES[g]?.[n] ?? `${n} porciones`;
-      return `  • ${n} ${GROUP_LABELS[g]} → ej: ${ex}`;
+      return `  · ${GROUP_LABELS[g]}: ${n} porción${n > 1 ? 'es' : ''} (equivale a ${ex})`;
     }).join('\n');
-    return `${m.label.toUpperCase()} (id="${m.id}") — escribe ${active.length} líneas en "title":\n${lines}`;
+    return `${m.label.toUpperCase()} (id="${m.id}") — metas nutricionales:\n${lines}`;
   }).join('\n\n');
 }
 
@@ -351,9 +351,16 @@ function buildPatientContext(
   }
 
   if (fields.laboratorios && linkedDate) {
-    const labs = (patient.labs || []).filter((l: any) => l?.date === linkedDate && l?.labInterpretation?.trim());
-    if (labs.length)
-      lines.push(`Labs: ${labs.map((l: any) => `${l.name}: ${l.labInterpretation.trim().substring(0, 200)}`).join(' | ')}`);
+    const labs = (patient.labs || []).filter(
+      (l: any) => l?.linkedEvaluationId === linkedDate && l?.labInterpretation?.trim()
+    );
+    if (labs.length) {
+      const labSummaries = labs.map((l: any) => {
+        const key = extractLabKeyFindings(l.labInterpretation.trim(), 300);
+        return key ? `${l.name}: ${key}` : null;
+      }).filter(Boolean).join(' | ');
+      if (labSummaries) lines.push(`Labs (hallazgos relevantes): ${labSummaries}`);
+    }
   }
 
   return lines.join('\n');
@@ -382,15 +389,20 @@ ${patientCtx}
 ${bioCtx}
 Kcal: ${kcal}
 
-DISTRIBUCIÓN DE PORCIONES (nutricionista — respetar exactamente):
+METAS NUTRICIONALES POR TIEMPO DE COMIDA (cuántas porciones de cada grupo debe haber):
 ${portionSummary}
 
-REGLA DE PORCIONES: En "title" de cada tiempo de comida escribe EXACTAMENTE las líneas indicadas arriba, una por grupo activo, en ese orden, separadas por \n. Cada grupo con porciones > 0 DEBE aparecer en ese tiempo. Si un grupo tiene 0 para ese tiempo, NO incluirlo. Puedes repetir alimentos o preparaciones entre días si es necesario.
+CÓMO ESCRIBIR EL CAMPO "title" DE CADA TIEMPO:
+- Escribe ALIMENTOS REALES con nombre y medida casera, una línea por grupo activo, en el mismo orden.
+- Usa las equivalencias indicadas para respetar la cantidad de porciones.
+- CORRECTO: "2 huevos revueltos con chile pimiento\\n1 vaso de leche descremada\\n2 tortillas de maíz\\n1 banano mediano"
+- INCORRECTO (PROHIBIDO): "2 CARNES\\n1 LÁCTEO\\n2 CEREALES\\n1 FRUTA" — nunca escribas el nombre del grupo, siempre el alimento real.
+- Si un grupo tiene 0 porciones para ese tiempo, NO incluirlo. Puedes variar alimentos entre días.
 
-REFERENCIAS — COPIA ESTE ESTILO de escritura e ideas de comidas:
+REFERENCIAS DE COMIDAS — USA ESTOS ALIMENTOS E IDEAS COMO BASE PRINCIPAL:
 ${refContext}
 
-JSON — cada meal: {"id": "...", "title": "línea1\nlínea2\n..."} (una \n entre cada línea de grupo):
+JSON — cada meal: {"id": "...", "title": "línea1\nlínea2\n..."} (una \n entre cada línea):
 {
   "weeklyMenu": [
     {"dayKey":"lunes","meals":[
@@ -682,7 +694,10 @@ ${assignmentLines}
 DISTRIBUCIÓN DE PORCIONES (nutricionista — respetar exactamente):
 ${portionSummary}
 
-REGLA DE PORCIONES: En "title" de cada tiempo de comida escribe EXACTAMENTE las líneas indicadas, una por grupo activo, en ese orden, separadas por \n. Cada grupo con porciones > 0 DEBE aparecer. Si un grupo tiene 0, NO incluirlo.${mixFoodIdeasCtx ? `\n\nPREFERENCIAS DE COMIDAS (tomar en cuenta al elegir alimentos):\n${mixFoodIdeasCtx}` : ''}
+CÓMO ESCRIBIR EL CAMPO "title": Escribe ALIMENTOS REALES con medidas caseras, una línea por grupo activo en el orden indicado. NUNCA escribas el nombre del grupo — escribe el alimento concreto.
+CORRECTO: "3 oz pollo a la plancha\\n½ taza arroz\\n½ taza frijoles\\n1 taza ensalada mixta"
+INCORRECTO (PROHIBIDO): "3 CARNES\\n2 CEREALES\\n1 VEGETAL" — esto nunca debe aparecer en el menú.
+Cada grupo con porciones > 0 DEBE aparecer. Si tiene 0, NO incluirlo.${mixFoodIdeasCtx ? `\n\nPREFERENCIAS DE COMIDAS (tomar en cuenta al elegir alimentos):\n${mixFoodIdeasCtx}` : ''}
 
 RATIONALE: Explica brevemente (3-5 frases) de qué referencias tomaste cada día, cómo adaptaste las porciones y si tuviste que hacer alguna sustitución menor.
 
@@ -788,33 +803,36 @@ export const adaptPortionsFromMenu = async (
   };
   const adaptFoodIdeasCtx = buildFoodIdeasContext(adaptAiConfig.ideas);
 
-  const prompt = `Eres nutricionista experta. Tu tarea es ADAPTAR el menú semanal existente para que coincida exactamente con la tabla de porciones indicada.
+  const prompt = `Eres nutricionista experta. Tu tarea es ADAPTAR el menú semanal existente para que coincida con las metas nutricionales por tiempo de comida.
 
 PACIENTE: ${patientLine}${allergies}
 
 ════════════════════════════════════════
-MENÚ ACTUAL (estructura base a conservar):
+MENÚ ACTUAL (conserva estos alimentos — solo ajusta cantidades):
 ════════════════════════════════════════
 ${menuLines.join('\n\n')}
 
 ════════════════════════════════════════
-DISTRIBUCIÓN DE PORCIONES OBJETIVO (nutricionista — respetar exactamente):
+METAS NUTRICIONALES OBJETIVO (cuántas porciones de cada grupo por tiempo):
 ════════════════════════════════════════
 ${portionSummary}
 
 ════════════════════════════════════════
 REGLAS ABSOLUTAS — NO NEGOCIABLES:
 ════════════════════════════════════════
-1. MANTÉN los alimentos base del menú actual en cada tiempo de comida. Solo ajusta cantidades.
-2. Si la tabla de porciones requiere un grupo alimentario (ej: 1 LÁCTEO, 1 FRUTA) que NO estaba en ese tiempo de comida del menú original, AGRÉGALO con la cantidad exacta indicada usando un alimento apropiado de ese grupo (guíate por las preferencias de la nutricionista si las hay).
-3. Cada grupo con porciones > 0 DEBE aparecer en ese tiempo. Si un grupo tiene 0 para ese tiempo, NO incluirlo.
-4. Usa los ejemplos de medidas caseras como guía (ej: 3 CARNES = "3 oz pollo" / "1 chuleta").
-5. Si un alimento no pertenece a ningún grupo (especias, agua, café negro), mantenlo sin cambios.
-6. Si la distribución indica 0 para un grupo que sí está en el menú actual, ELIMÍNALO.
-7. Si un tiempo no tiene porciones asignadas, cópialo exactamente igual sin cambios.
-8. Conserva estilo natural, medidas caseras. SIEMPRE cantidad antes del alimento.
-9. En "title" escribe las líneas separadas por \n, una por grupo activo en el orden del resumen.
-10. Mantén las notas de domingo v1 y v2 sin cambios.${adaptFoodIdeasCtx ? `\n\nPREFERENCIAS DE COMIDAS (usar al agregar grupos alimentarios faltantes):\n${adaptFoodIdeasCtx}` : ''}
+1. CONSERVA los alimentos del menú actual. Solo cambia la cantidad (medida) para que coincida con las porciones objetivo.
+2. Si las metas requieren un grupo que NO estaba en ese tiempo del menú original, AGRÉGALO con un alimento concreto apropiado (ej: si falta 1 Lácteo, agrega "1 vaso de leche descremada"; si falta 1 Fruta, agrega "1 manzana mediana").
+3. NUNCA escribas el nombre del grupo en el menú — siempre escribe el alimento real con su medida casera.
+4. Si la meta es 0 para un grupo que sí está en el menú actual, ELIMÍNALO.
+5. Si un tiempo no tiene porciones asignadas, cópialo exactamente igual.
+6. Estilo: medidas caseras, cantidad siempre antes del alimento, máx 4 líneas por tiempo.
+7. En "title", una línea por grupo activo en el orden de las metas, separadas por \n.
+
+CÓMO ESCRIBIR "title" CORRECTO:
+- BIEN: "3 oz pollo a la plancha\\n½ taza arroz\\n½ taza frijoles\\n1 taza ensalada"
+- MAL (PROHIBIDO): "3 CARNES\\n2 CEREALES\\n1 VEGETAL" — nunca nombres de grupos.
+
+8. Mantén las notas de domingo v1 y v2 sin cambios.${adaptFoodIdeasCtx ? `\n\nPREFERENCIAS DE COMIDAS (usar al agregar grupos faltantes):\n${adaptFoodIdeasCtx}` : ''}
 
 RATIONALE: Explica brevemente (2-4 frases) qué ajustes realizaste y por qué son correctos.
 
@@ -866,6 +884,228 @@ ${mealExamples}
   };
 
   return { plan, rationale: parsed.rationale || '' };
+};
+
+// ─── Extract key lab findings from long interpretation text ──────────────────
+
+export function extractLabKeyFindings(text: string, maxLength = 350): string {
+  if (!text?.trim()) return '';
+
+  // Indicadores de anormalidad — si no hay ninguno, la línea se descarta
+  const IS_ABNORMAL = /\b(ALTO|BAJO|ELEVADO|ANORMAL|DEFICIENCIA|ALTERADO|AUMENTADO|DISMINUIDO|CRÍTICO|LÍMITE|BORDERLINE|POSITIVO|INSUFICIENCIA|DÉFICIT|PREDIABETES|RESISTENCIA|alto|bajo|elevado|anormal|deficiencia|alterado|aumentado|disminuido|crítico|límite|insuficiencia|déficit|prediabetes|resistencia a la insulina|fuera de rango|por encima|por debajo)\b/i;
+
+  // Frases que indican normalidad — descartar aunque contengan keywords
+  const IS_NORMAL = /\b(normal|dentro de (rango|límites)|sin alteracion|sin cambio|adecuado|óptimo|en rango|dentro del rango|valores normales|resultado normal|no se observa|sin evidencia)\b/i;
+
+  // Marcadores con impacto nutricional directo
+  const NUTRITIONAL_RELEVANCE = /\b(glucosa|glicemia|HbA1c|hemoglobina glicosilada|insulina|colesterol|triglicérid|LDL|HDL|VLDL|hemoglobin|ferritin|hierro|vitamina|vitamina D|vitamina B|folato|ácido fólico|zinc|magnesio|calcio|proteína|albúmina|tiroides|TSH|T3|T4|ácido úrico|creatinin|urea|transaminasa|ALT|AST|bilirrubina|hígado|riñón|anemia|desnutrición|inflamación|PCR|proteína C reactiva)\b/i;
+
+  const raw = text.replace(/\r/g, '').trim();
+  const sentences = raw
+    .split(/[.\n;]+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 10);
+
+  const important = sentences.filter(s => {
+    if (IS_NORMAL.test(s)) return false;
+    if (!IS_ABNORMAL.test(s)) return false;
+    return true;
+  }).filter(s => NUTRITIONAL_RELEVANCE.test(s) || IS_ABNORMAL.test(s));
+
+  if (!important.length) return '';
+
+  let result = '';
+  for (const line of important.slice(0, 5)) {
+    const candidate = result ? result + ' | ' + line : line;
+    if (candidate.length > maxLength) break;
+    result = candidate;
+  }
+  return result || important[0].substring(0, maxLength);
+}
+
+// ─── Compact patient restrictions string ─────────────────────────────────────
+
+function buildPatientRestrictions(patient: Patient, vetData: any): string {
+  const parts: string[] = [];
+  if (patient.firstName) parts.push(`${patient.firstName} ${patient.lastName}`);
+  if (vetData?.kcalToWork) parts.push(`${vetData.kcalToWork} kcal`);
+  if (patient.clinical?.allergies) parts.push(`ALERGIAS: ${patient.clinical.allergies}`);
+  if (patient.clinical?.diagnosis) parts.push(`Dx: ${patient.clinical.diagnosis}`);
+  if (patient.clinical?.consultmotive) parts.push(`Meta: ${patient.clinical.consultmotive}`);
+  if (patient.clinical?.medications) parts.push(`Med: ${patient.clinical.medications}`);
+  const de = patient.dietaryEvaluations?.[0];
+  if (de?.excludedFoods) parts.push(`Evita: ${de.excludedFoods}`);
+  if (patient.dietary?.preferences) parts.push(`Pref: ${patient.dietary.preferences}`);
+  return parts.join(' | ');
+}
+
+// ─── Regenerate a single day ──────────────────────────────────────────────────
+
+export const regenerateSingleDay = async (
+  currentMenu: MenuPlanData,
+  dayKey: string,
+  patient: Patient,
+  vetData: any,
+): Promise<MenuPlanData> => {
+
+  const aiConfig = store.getUserProfile()?.menuAIConfig || {
+    prompt: DEFAULT_MENU_PROMPT_SUFFIX,
+    ideas: { desayuno: [], refaccion: [], almuerzo: [], merienda: [], cena: [] },
+    fields: DEFAULT_PATIENT_FIELDS,
+    recommendationIdeas: { preparacion: [], restricciones: [], habitos: [], organizacion: [] },
+  };
+
+  const portions = (currentMenu as any).portions;
+  const mealStructure = extractMealStructure(portions, {});
+  if (!mealStructure.length) throw new Error('No se encontró tabla de porciones en el menú actual.');
+
+  const portionSummary = buildPortionSummary(mealStructure);
+  const restrictions = buildPatientRestrictions(patient, vetData);
+
+  // Compact style context: 2 other days at most
+  const otherDays = ALL_DAYS.filter(d => d !== dayKey).slice(0, 2);
+  const styleCtx = otherDays.map(d => {
+    const dayData = (currentMenu.weeklyMenu as any)?.[d];
+    if (!dayData) return null;
+    const mealsOrder: string[] = dayData.mealsOrder || mealStructure.map(m => m.id);
+    const lines = mealsOrder.map((id: string) => {
+      const t = dayData[id]?.title?.trim();
+      if (!t) return null;
+      const label = dayData[id]?.label || id;
+      return `  ${label}: ${t.split('\n')[0]}`;
+    }).filter(Boolean).join('\n');
+    return lines ? `${d.toUpperCase()}:\n${lines}` : null;
+  }).filter(Boolean).join('\n\n');
+
+  const mealExamples = mealStructure.map(m => buildMealJsonTemplate(m)).join(',\n');
+  const foodIdeasCtx = buildFoodIdeasContext(aiConfig.ideas);
+
+  const prompt = `Nutricionista experta. Regenera SOLO el día ${dayKey.toUpperCase()} con opciones variadas y apetitosas.
+
+PACIENTE: ${restrictions}
+
+METAS NUTRICIONALES POR TIEMPO (cuántas porciones de cada grupo):
+${portionSummary}
+
+ESTILO DE REFERENCIA (mantener consistencia con el resto del menú):
+${styleCtx || 'Comida guatemalteca típica, medidas caseras.'}
+${foodIdeasCtx ? `\nPREFERENCIAS: ${foodIdeasCtx}` : ''}
+
+REGLAS: Escribe ALIMENTOS REALES con medidas caseras — nunca el nombre del grupo.
+CORRECTO: "2 huevos revueltos\\n1 vaso leche\\n2 tortillas\\n1 naranja"
+INCORRECTO (PROHIBIDO): "2 CARNES\\n1 LÁCTEO\\n2 CEREALES\\n1 FRUTA"
+Cada grupo con porciones > 0 DEBE aparecer. Si tiene 0, NO incluirlo. Máx 4 líneas por tiempo.
+
+Solo JSON (un solo día):
+{"dayKey":"${dayKey}","meals":[
+${mealExamples}
+]}`;
+
+  const resp = await aiService.invokeGemini(prompt, 'menu', MENU_SYSTEM_INSTRUCTION);
+  const parsed = parseGeminiJson(resp.output);
+
+  const dayResult = parsed?.dayKey ? parsed : parsed?.weeklyMenu?.[0] ?? parsed;
+  const meals = toArray(dayResult?.meals || parsed?.meals || []);
+  if (!meals.length) throw new Error(`La IA no generó el día ${dayKey}. Intenta de nuevo.`);
+
+  const mealLabels: Record<string, string> = {};
+  mealStructure.forEach(m => { mealLabels[m.id] = m.label; });
+
+  const newDayObj: any = { mealsOrder: mealStructure.map(m => m.id) };
+  meals.forEach((meal: any) => {
+    if (!meal?.id) return;
+    newDayObj[meal.id] = { title: cleanTitle(meal.title || ''), label: mealLabels[meal.id] || meal.id };
+  });
+
+  return {
+    ...currentMenu,
+    weeklyMenu: { ...(currentMenu.weeklyMenu as any), [dayKey]: newDayObj } as any,
+  };
+};
+
+// ─── Regenerate one meal slot across all days ─────────────────────────────────
+
+export const regenerateMealSlot = async (
+  currentMenu: MenuPlanData,
+  mealSlotId: string,
+  mealLabel: string,
+  patient: Patient,
+  vetData: any,
+): Promise<MenuPlanData> => {
+
+  const aiConfig = store.getUserProfile()?.menuAIConfig || {
+    prompt: DEFAULT_MENU_PROMPT_SUFFIX,
+    ideas: { desayuno: [], refaccion: [], almuerzo: [], merienda: [], cena: [] },
+    fields: DEFAULT_PATIENT_FIELDS,
+    recommendationIdeas: { preparacion: [], restricciones: [], habitos: [], organizacion: [] },
+  };
+
+  const portions = (currentMenu as any).portions;
+  const mealStructure = extractMealStructure(portions, {});
+  const slotEntry = mealStructure.find(m => m.id === mealSlotId);
+  if (!slotEntry) throw new Error(`Tiempo de comida "${mealSlotId}" no encontrado.`);
+
+  const restrictions = buildPatientRestrictions(patient, vetData);
+
+  const active = (['lacteos', 'vegetales', 'frutas', 'cereales', 'carnes', 'grasas'] as const)
+    .filter(g => slotEntry.portions[g] > 0);
+
+  const portionLines = active.map(g => {
+    const n = slotEntry.portions[g];
+    const ex = GROUP_EXAMPLES[g]?.[n] ?? `${n} porciones`;
+    return `· ${GROUP_LABELS[g]}: ${n} porción${n > 1 ? 'es' : ''} (equivale a ${ex})`;
+  }).join('\n');
+
+  const currentValues = ALL_DAYS.map(d => {
+    const t = (currentMenu.weeklyMenu as any)?.[d]?.[mealSlotId]?.title?.trim();
+    return t ? `  ${d.toUpperCase()}: ${t.split('\n')[0]}` : null;
+  }).filter(Boolean).join('\n');
+
+  const foodIdeasCtx = buildFoodIdeasContext(aiConfig.ideas);
+
+  const prompt = `Nutricionista experta. Cambia SOLO el tiempo "${mealLabel}" en los 6 días. Genera opciones variadas y apetitosas.
+
+PACIENTE: ${restrictions}
+
+METAS NUTRICIONALES PARA "${mealLabel}" (cuántas porciones de cada grupo):
+${portionLines || 'Sin porciones definidas — omitir este tiempo.'}
+
+VALORES ACTUALES (reemplazar con opciones nuevas variadas):
+${currentValues || 'Sin datos previos.'}
+${foodIdeasCtx ? `\nPREFERENCIAS: ${foodIdeasCtx}` : ''}
+
+REGLAS: Escribe ALIMENTOS REALES con medidas caseras. NUNCA el nombre del grupo.
+CORRECTO: "3 oz pechuga a la plancha\\n½ taza arroz\\n1 taza ensalada"
+INCORRECTO (PROHIBIDO): "3 CARNES\\n2 CEREALES\\n1 VEGETAL"
+Máx 4 líneas por tiempo. Cantidad siempre antes del alimento.
+
+Solo JSON — array de 6 objetos:
+[
+  {"dayKey":"lunes","id":"${mealSlotId}","title":"línea1\\nlínea2"},
+  {"dayKey":"martes","id":"${mealSlotId}","title":"..."},
+  {"dayKey":"miercoles","id":"${mealSlotId}","title":"..."},
+  {"dayKey":"jueves","id":"${mealSlotId}","title":"..."},
+  {"dayKey":"viernes","id":"${mealSlotId}","title":"..."},
+  {"dayKey":"sabado","id":"${mealSlotId}","title":"..."}
+]`;
+
+  const resp = await aiService.invokeGemini(prompt, 'menu', MENU_SYSTEM_INSTRUCTION);
+  const parsed = parseGeminiJson(resp.output);
+  const items = toArray(parsed);
+
+  if (!items.length) throw new Error(`La IA no generó los ${mealLabel}. Intenta de nuevo.`);
+
+  const newWeeklyMenu = { ...(currentMenu.weeklyMenu as any) };
+  items.forEach((item: any) => {
+    if (!item?.dayKey || !item?.id) return;
+    const existing = newWeeklyMenu[item.dayKey] || {};
+    newWeeklyMenu[item.dayKey] = {
+      ...existing,
+      [item.id]: { title: cleanTitle(item.title || ''), label: existing[item.id]?.label || mealLabel },
+    };
+  });
+
+  return { ...currentMenu, weeklyMenu: newWeeklyMenu as any };
 };
 
 // ─── Other exports ────────────────────────────────────────────────────────────

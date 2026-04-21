@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Table as TableIcon, Plus, Trash2, MoveUp, MoveDown, Save, ChevronDown, ChevronUp } from 'lucide-react';
 import { MenuPlanData, MealPortions } from '../MenuDesignTemplates';
 import { PortionsRecord } from '../../../types';
@@ -11,6 +11,7 @@ interface Props {
 
 export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewData, portions }) => {
   const [open, setOpen] = useState(true);
+  const [saved, setSaved] = useState(false);
 
   const initMeals = (): { id: string; label: string }[] => {
     const order = menuPreviewData.weeklyMenu.lunes.mealsOrder ||
@@ -27,6 +28,8 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
 
   const [meals, setMeals] = useState<{ id: string; label: string }[]>(initMeals);
   const [localPortions, setLocalPortions] = useState(menuPreviewData.portions);
+  // Tracks raw string values while editing to allow empty/intermediate states
+  const [editingValues, setEditingValues] = useState<Record<string, string>>({});
 
   const groups: (keyof MealPortions)[] = ['lacteos', 'vegetales', 'frutas', 'cereales', 'carnes', 'grasas'];
   const groupLabels = ['🥛 Lác', '🥦 Veg', '🍎 Fru', '🌾 Cer', '🥩 Car', '🫒 Gra'];
@@ -68,6 +71,31 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
       byMeal: { ...prev.byMeal, [mealId]: { ...prev.byMeal[mealId], [g]: val } },
     }));
 
+  const editKey = (mealId: string, g: keyof MealPortions) => `${mealId}_${g}`;
+
+  const handlePortionChange = useCallback((mealId: string, g: keyof MealPortions, raw: string) => {
+    const key = editKey(mealId, g);
+    setEditingValues(prev => ({ ...prev, [key]: raw }));
+    const parsed = parseFloat(raw);
+    if (!isNaN(parsed) && parsed >= 0) updatePortion(mealId, g, parsed);
+  }, []);
+
+  const handlePortionBlur = useCallback((mealId: string, g: keyof MealPortions) => {
+    const key = editKey(mealId, g);
+    setEditingValues(prev => {
+      const { [key]: _, ...rest } = prev;
+      return rest;
+    });
+    // Commit 0 if left empty
+    setLocalPortions(prev => {
+      const current = (prev.byMeal[mealId] as any)?.[g];
+      if (current === undefined || isNaN(current)) {
+        return { ...prev, byMeal: { ...prev.byMeal, [mealId]: { ...prev.byMeal[mealId], [g]: 0 } } };
+      }
+      return prev;
+    });
+  }, []);
+
   const handleSave = () => {
     const byMeal = { ...localPortions.byMeal };
     meals.forEach(m => { byMeal[m.id] = { ...byMeal[m.id], label: m.label }; });
@@ -87,6 +115,8 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
       newWeekly[dayKey] = day;
     });
     setMenuPreviewData({ ...menuPreviewData, portions: updated, weeklyMenu: newWeekly });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   return (
@@ -150,17 +180,25 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
                         />
                       </div>
                     </td>
-                    {groups.map(g => (
-                      <td key={g} className="px-1 py-2">
-                        <input
-                          type="number" step="0.5" min="0"
-                          value={(localPortions.byMeal[meal.id] as any)?.[g] || 0}
-                          onChange={e => updatePortion(meal.id, g, parseFloat(e.target.value) || 0)}
-                          onWheel={e => (e.target as HTMLInputElement).blur()}
-                          className="w-full text-center bg-slate-50 border border-slate-200 rounded-lg py-1 text-xs font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                        />
-                      </td>
-                    ))}
+                    {groups.map(g => {
+                      const key = editKey(meal.id, g);
+                      const isEditing = key in editingValues;
+                      const storedVal = (localPortions.byMeal[meal.id] as any)?.[g] ?? 0;
+                      const displayVal = isEditing ? editingValues[key] : String(storedVal);
+                      return (
+                        <td key={g} className="px-1 py-2">
+                          <input
+                            type="number" step="0.5" min="0"
+                            value={displayVal}
+                            onChange={e => handlePortionChange(meal.id, g, e.target.value)}
+                            onFocus={e => e.target.select()}
+                            onBlur={() => handlePortionBlur(meal.id, g)}
+                            onWheel={e => (e.target as HTMLInputElement).blur()}
+                            className="w-full text-center bg-slate-50 border border-slate-200 rounded-lg py-1 text-xs font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                          />
+                        </td>
+                      );
+                    })}
                     <td className="px-2 py-2 text-center">
                       <button onClick={() => removeMeal(meal.id)}
                         className="p-1.5 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all">

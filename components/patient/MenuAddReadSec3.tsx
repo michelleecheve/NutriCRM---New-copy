@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles, Eye, EyeOff, Layout,
-  ChevronDown, ChevronUp, X,
+  X,
   Table as TableIcon, FileText, Copy, Check,
   Lock, Unlock, Bookmark, Shuffle, Sliders
 } from 'lucide-react';
@@ -13,7 +13,8 @@ import { MenuExportPDF } from '../menus_components/MenuExportPDF';
 import { MenuEditorToolbar, MenuEditorToolbarHandle } from '../menus_components/MenuEditorToolbar';
 import { MenuPreview } from '../menus_components/MenuPreview';
 import { MenuEditSec3 } from '../menus_components/menu_edit_sec3/MenuEditSec3';
-import { generateStructuredMenu, generateMixFromReferences, adaptPortionsFromMenu } from '../../services/geminiService';
+import { generateStructuredMenu, generateMixFromReferences, adaptPortionsFromMenu, regenerateSingleDay, regenerateMealSlot } from '../../services/geminiService';
+import { MenuAIActionsPanel } from '../menus_components/MenuAIActionsPanel';
 import { store } from '../../services/store';
 import { authStore } from '../../services/authStore';
 import { showPlanLimitModal } from '../PlanLimitModal';
@@ -148,7 +149,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   try { return localStorage.getItem('nutriflow_menu_locked') === 'true'; }
   catch { return false; }
   });
-  const [showRationale, setShowRationale] = useState(true);
   const [showAiOptionsModal, setShowAiOptionsModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isMixing, setIsMixing] = useState(false);
@@ -370,9 +370,9 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         vetData,
         menuPreviewData?.portions || portions,
         refs,
-        nutritionistData, // ✅ logo aplicado vía helper
-        undefined,
-        templateDesign,    // ✅ plantilla aplicada vía store
+        nutritionistData,
+        evaluationId || undefined,
+        templateDesign,
         scope,
         bioData
       );
@@ -520,6 +520,24 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     } finally {
       setIsAdapting(false);
     }
+  };
+
+  // ─── Regenerar un día ─────────────────────────────────────────────────────
+  const handleRegenerateDay = async (dayKey: string) => {
+    if (!authStore.canUseAI()) { showPlanLimitModal(); throw new Error('Límite de tokens alcanzado.'); }
+    if (!menuPreviewData) throw new Error('No hay menú cargado.');
+    const updated = await regenerateSingleDay(menuPreviewData, dayKey, patient, vetData);
+    handleSetMenuPreviewData(withTemplateTitles(updated));
+    setAiDraftText(`Día ${dayKey} regenerado por IA`);
+  };
+
+  // ─── Cambiar un tiempo de comida ───────────────────────────────────────────
+  const handleRegenerateMealSlot = async (slotId: string, label: string) => {
+    if (!authStore.canUseAI()) { showPlanLimitModal(); throw new Error('Límite de tokens alcanzado.'); }
+    if (!menuPreviewData) throw new Error('No hay menú cargado.');
+    const updated = await regenerateMealSlot(menuPreviewData, slotId, label, patient, vetData);
+    handleSetMenuPreviewData(withTemplateTitles(updated));
+    setAiDraftText(`${label} actualizado por IA (toda la semana)`);
   };
 
   // ─── AI Options Modal ──────────────────────────────────────────────────────
@@ -1142,25 +1160,17 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             />
           </div>
 
-          {/* Rationale Box */}
-          {aiRationale && (
-            <div className="bg-indigo-50 rounded-2xl border border-indigo-100 overflow-hidden transition-all">
-              <button
-                onClick={() => setShowRationale(!showRationale)}
-                className="w-full p-4 flex items-center justify-between text-indigo-700 font-bold text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  ¿Qué hizo la IA y por qué?
-                </div>
-                {showRationale ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
-              {showRationale && (
-                <div className="p-6 pt-0 text-sm text-indigo-600/80 font-medium leading-relaxed whitespace-pre-line animate-in fade-in duration-300">
-                  {aiRationale}
-                </div>
-              )}
-            </div>
+          {/* AI Actions Panel — visible cuando hay menú generado */}
+          {menuPreviewData && (
+            <MenuAIActionsPanel
+              patient={patient}
+              menuPreviewData={menuPreviewData}
+              aiRationale={aiRationale}
+              isLocked={isLocked}
+              evaluationId={evaluationId}
+              onRegenerateDay={handleRegenerateDay}
+              onRegenerateMealSlot={handleRegenerateMealSlot}
+            />
           )}
 
           {/* Preview Area */}
