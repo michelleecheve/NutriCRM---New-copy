@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Table as TableIcon, Plus, Trash2, MoveUp, MoveDown, Save, ChevronDown, ChevronUp } from 'lucide-react';
+import { Table as TableIcon, Plus, Trash2, MoveUp, MoveDown, Save, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { MenuPlanData, MealPortions } from '../MenuDesignTemplates';
 import { PortionsRecord } from '../../../types';
 
@@ -237,9 +237,16 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
           <div className="px-4 py-3 border-t border-slate-100 flex justify-end bg-slate-50">
             <button
               onClick={handleSave}
-              className="flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all"
+              className={`flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-xl shadow-lg transition-all ${
+                saved
+                  ? 'bg-emerald-500 text-white shadow-emerald-500/20'
+                  : 'bg-indigo-600 text-white shadow-indigo-600/20 hover:bg-indigo-700'
+              }`}
             >
-              <Save className="w-3.5 h-3.5" />Guardar Porciones
+              {saved
+                ? <><Check className="w-3.5 h-3.5" />Guardado exitoso</>
+                : <><Save className="w-3.5 h-3.5" />Guardar Porciones</>
+              }
             </button>
           </div>
         </>
