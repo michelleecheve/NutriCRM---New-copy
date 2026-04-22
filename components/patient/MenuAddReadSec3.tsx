@@ -145,6 +145,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
 
   const [isVisible, setIsVisible] = useState(true);
   const [editMode, setEditMode] = useState<'tabla' | 'preview'>('tabla');
+  const [editTablaKey, setEditTablaKey] = useState(0);
   const [isLocked, setIsLocked] = useState<boolean>(() => {
   try { return localStorage.getItem('nutriflow_menu_locked') === 'true'; }
   catch { return false; }
@@ -226,6 +227,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     handleSetMenuPreviewData(withTemplateTitles(blank));
     setAiRationale('');
     setAiDraftText('');
+    setEditTablaKey(k => k + 1);
   };
 
   // ─── Open Copy from Reference modal ───────────────────────────────────────
@@ -315,6 +317,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     setShowCopyRefModal(false);
     setSelectedCopyRefId(null);
     setSelectedCopyRecId(null);
+    setEditTablaKey(k => k + 1);
   };
 
   // ─── AI Generation ─────────────────────────────────────────────────────────
@@ -426,6 +429,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
 
       setAiRationale(result.rationale);
       setAiDraftText(`Menú generado por IA (${scope === 'both' ? 'Completo' : scope === 'page1' ? 'Página 1' : 'Página 2'})`);
+      setEditTablaKey(k => k + 1);
 
     } catch (error: any) {
       console.error("Error generating menu:", error);
@@ -480,6 +484,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       handleSetMenuPreviewData(withTemplateTitles(finalPlan));
       setAiRationale(result.rationale);
       setAiDraftText('Menú generado — Mix de referencias');
+      setEditTablaKey(k => k + 1);
     } catch (error: any) {
       setInfoModal({ title: 'Error en Mix de referencias', message: error.message || 'Hubo un error al generar el mix. Intenta de nuevo.' });
     } finally {
@@ -515,6 +520,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       handleSetMenuPreviewData(withTemplateTitles(finalPlan));
       setAiRationale(result.rationale);
       setAiDraftText('Porciones adaptadas por IA');
+      setEditTablaKey(k => k + 1);
     } catch (error: any) {
       setInfoModal({ title: 'Error al adaptar porciones', message: error.message || 'Hubo un error al adaptar las porciones. Intenta de nuevo.' });
     } finally {
@@ -1099,8 +1105,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         </button>
       </div>
 
-      {isVisible && (
-        <div className="p-8 space-y-8 animate-in slide-in-from-top-2 duration-300">
+      <div className={isVisible ? 'p-8 space-y-8' : 'hidden'}>
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3">
@@ -1201,15 +1206,15 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                 </button>
               </div>
 
-              {/* ── Tabla mode ── */}
-              {editMode === 'tabla' && (
+              {/* ── Tabla mode — kept in DOM to preserve unsaved edits ── */}
+              <div style={{ display: editMode === 'tabla' ? '' : 'none' }}>
                 <MenuEditSec3
-                  key={`tabla-${menuPreviewData.kcal}-${menuPreviewData.patient.name}`}
+                  key={`tabla-${editTablaKey}-${menuPreviewData.kcal}-${menuPreviewData.patient.name}`}
                   menuPreviewData={menuPreviewData}
                   setMenuPreviewData={handleSetMenuPreviewData}
                   portions={portions}
                 />
-              )}
+              </div>
 
               {/* ── Preview mode (visible) ── */}
               {editMode === 'preview' && (
@@ -1281,7 +1286,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
           {showAiOptionsModal && <AiOptionsModal />}
           {showSaveAsTemplateModal && <SaveAsTemplateModal />}
         </div>
-      )}
     </section>
   );
 };

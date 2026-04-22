@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, Copy, ChevronDown, ChevronUp, Sun, CalendarDays, Save, AlertCircle, Paintbrush } from 'lucide-react';
+import { Calendar, Copy, ChevronDown, ChevronUp, Sun, CalendarDays, AlertCircle, Paintbrush, Upload, X, Info, CheckCircle } from 'lucide-react';
 import { MenuPlanData, DomingoV2 } from '../MenuDesignTemplates';
 
 const WEEKDAYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'] as const;
@@ -25,6 +25,36 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
   const [copiedSource, setCopiedSource] = useState<WeekDay | 'domingo' | null>(null);
   const [clipboard, setClipboard] = useState<Record<string, string> | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [tableCopied, setTableCopied] = useState(false);
+  const [copyPasteOpen, setCopyPasteOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importSuccess, setImportSuccess] = useState(false);
+
+  // Ref that always tracks the latest menuPreviewData prop for use inside timers
+  const menuPreviewDataRef = useRef(menuPreviewData);
+  useEffect(() => { menuPreviewDataRef.current = menuPreviewData; });
+
+  // Keep latestRef in sync so flush-on-unmount always has current values
+  useEffect(() => {
+    latestRef.current = { grid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration };
+  });
+
+  // Flush any pending debounce commit when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (commitTimerRef.current) {
+        clearTimeout(commitTimerRef.current);
+        commitTimerRef.current = null;
+        const s = latestRef.current;
+        setMenuPreviewData(buildWeeklyData(s.grid, s.meals, s.domingoNote, s.hydration, s.domingoV2Grid, s.domingoV2Note, s.domingoV2Hydration));
+      }
+    };
+  }, []); // eslint-disable-line
+
+  // Debounce timer for auto-committing local edits to the parent
+  const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getMeals = (): { id: string; label: string }[] => {
     const order = menuPreviewData.weeklyMenu.lunes.mealsOrder ||
@@ -79,6 +109,9 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
   const topScrollRef = useRef<HTMLDivElement>(null);
   const isSyncing = useRef(false);
 
+  // Tracks latest state values so the cleanup effect can flush on unmount
+  const latestRef = useRef({ grid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration });
+
   const handleTableScroll = () => {
     if (isSyncing.current) return;
     isSyncing.current = true;
@@ -113,37 +146,60 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     setTimeout(() => meals.forEach(meal => syncRowHeights(meal.id)), 0);
   }, [domingoMode]); // eslint-disable-line
 
-  const handleSaveAll = () => {
-    const newWeekly = { ...menuPreviewData.weeklyMenu } as any;
-    const newOrder = meals.map(m => m.id);
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => meals.forEach(meal => syncRowHeights(meal.id)), 0);
+    }
+  }, [open]); // eslint-disable-line
 
-    // Commit grid cells + labels + order for each weekday
+  // Builds a full MenuPlanData merging local edits into the latest parent state
+  const buildWeeklyData = (
+    g: LocalGrid,
+    ms: { id: string; label: string }[],
+    dNote: string,
+    dHydration: string,
+    dV2Grid: Record<string, string>,
+    dV2Note: string,
+    dV2Hydration: string
+  ): MenuPlanData => {
+    const base = menuPreviewDataRef.current;
+    const newWeekly = { ...base.weeklyMenu } as any;
+    const newOrder = ms.map(m => m.id);
+
     WEEKDAYS.forEach(day => {
       const dayData = { ...newWeekly[day], mealsOrder: newOrder };
-      meals.forEach(({ id, label }) => {
-        dayData[id] = { ...dayData[id], title: grid[id]?.[day] || '', label };
+      ms.forEach(({ id, label }) => {
+        dayData[id] = { ...dayData[id], title: g[id]?.[day] || '', label };
       });
       newWeekly[day] = dayData;
     });
 
-    // Commit domingoV2 grid + meta + order + labels
     const baseV2: any = newWeekly.domingoV2 || {};
-    const updatedV2: DomingoV2 = {
-      ...baseV2,
-      mealsOrder: newOrder,
-      note: domingoV2Note,
-      hydration: domingoV2Hydration,
-    };
-    meals.forEach(({ id, label }) => {
-      (updatedV2 as any)[id] = { ...(baseV2[id] || {}), title: domingoV2Grid[id] || '', label };
+    const updatedV2: DomingoV2 = { ...baseV2, mealsOrder: newOrder, note: dV2Note, hydration: dV2Hydration };
+    ms.forEach(({ id, label }) => {
+      (updatedV2 as any)[id] = { ...(baseV2[id] || {}), title: dV2Grid[id] || '', label };
     });
     newWeekly.domingoV2 = updatedV2;
+    newWeekly.domingo = { ...newWeekly.domingo, note: dNote, hydration: dHydration };
 
-    // Commit domingo libre meta
-    newWeekly.domingo = { ...newWeekly.domingo, note: domingoNote, hydration };
+    return { ...base, weeklyMenu: newWeekly };
+  };
 
-    setMenuPreviewData({ ...menuPreviewData, weeklyMenu: newWeekly });
-    setIsDirty(false);
+  // Debounced commit: schedules a parent update 500ms after the last change
+  const scheduleCommit = (
+    g: LocalGrid,
+    ms: { id: string; label: string }[],
+    dNote: string,
+    dHydration: string,
+    dV2Grid: Record<string, string>,
+    dV2Note: string,
+    dV2Hydration: string
+  ) => {
+    if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+    commitTimerRef.current = setTimeout(() => {
+      commitTimerRef.current = null;
+      setMenuPreviewData(buildWeeklyData(g, ms, dNote, dHydration, dV2Grid, dV2Note, dV2Hydration));
+    }, 500);
   };
 
   const switchDomingoMode = (mode: 'libre' | 'completo') => {
@@ -169,6 +225,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     });
     setGrid(newGrid);
     setIsDirty(true);
+    scheduleCommit(newGrid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
     setTimeout(() => meals.forEach(meal => syncRowHeights(meal.id)), 0);
   };
 
@@ -181,9 +238,161 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
 
   const pasteToDomingo = () => {
     if (!clipboard || copiedSource === 'domingo') return;
-    setDomingoV2Grid({ ...clipboard });
+    const newDomingoV2Grid = { ...clipboard };
+    setDomingoV2Grid(newDomingoV2Grid);
     setIsDirty(true);
+    scheduleCommit(grid, meals, domingoNote, hydration, newDomingoV2Grid, domingoV2Note, domingoV2Hydration);
     setTimeout(() => meals.forEach(meal => syncRowHeights(meal.id)), 0);
+  };
+
+  const copyTableAsText = () => {
+    const FULL_DAY_LABEL: Record<string, string> = {
+      lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles',
+      jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo',
+    };
+
+    const allDays = domingoMode === 'completo'
+      ? [...WEEKDAYS, 'domingo']
+      : [...WEEKDAYS];
+
+    const blocks: string[] = [];
+
+    allDays.forEach(day => {
+      const lines: string[] = [`${FULL_DAY_LABEL[day]}:`];
+      meals.forEach(meal => {
+        const content = day === 'domingo'
+          ? (domingoV2Grid[meal.id] || '').trim()
+          : (grid[meal.id]?.[day as WeekDay] || '').trim();
+        if (content) {
+          lines.push(`- ${meal.label}:`);
+          lines.push(content);
+        }
+      });
+      if (lines.length > 1) blocks.push(lines.join('\n'));
+    });
+
+    if (domingoMode === 'libre') {
+      const domingoLines: string[] = ['Domingo:'];
+      if (domingoNote) domingoLines.push(`- Indicaciones:\n${domingoNote}`);
+      if (hydration) domingoLines.push(`- Hidratación:\n${hydration}`);
+      if (domingoLines.length > 1) blocks.push(domingoLines.join('\n'));
+    } else {
+      const extras: string[] = [];
+      if (domingoV2Note) extras.push(`- Nota:\n${domingoV2Note}`);
+      if (domingoV2Hydration) extras.push(`- Hidratación:\n${domingoV2Hydration}`);
+      if (extras.length) blocks.push(['Domingo (observaciones):', ...extras].join('\n'));
+    }
+
+    const text = blocks.join('\n\n');
+
+    navigator.clipboard.writeText(text).then(() => {
+      setTableCopied(true);
+      setTimeout(() => setTableCopied(false), 2000);
+    });
+  };
+
+  const normStr = (s: string) =>
+    s.toLowerCase()
+     .normalize('NFD').replace(/[̀-ͯ]/g, '')
+     .replace(/[^a-z0-9\s]/g, '')
+     .trim();
+
+  const DAY_NORM_KEY: Record<string, WeekDay | 'domingo'> = {
+    lunes: 'lunes', martes: 'martes', miercoles: 'miercoles',
+    jueves: 'jueves', viernes: 'viernes', sabado: 'sabado', domingo: 'domingo',
+  };
+
+  const parseAndApply = () => {
+    const errors: string[] = [];
+    const newGrid = grid;
+    const newDomingoV2Grid = { ...domingoV2Grid };
+    // deep-clone grid to avoid mutating state directly
+    const clonedGrid: LocalGrid = {};
+    Object.keys(newGrid).forEach(mId => { clonedGrid[mId] = { ...newGrid[mId] }; });
+
+    let newDomingoNote = domingoNote;
+    let newHydration = hydration;
+    let newDomingoV2Note = domingoV2Note;
+    let newDomingoV2Hydration = domingoV2Hydration;
+
+    const blocks = importText.trim().split(/\n\n+/);
+
+    blocks.forEach(block => {
+      const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length === 0) return;
+
+      const firstLine = lines[0];
+      // Skip observaciones block
+      if (firstLine.toLowerCase().includes('observaciones')) return;
+
+      const dayNorm = normStr(firstLine);
+      const dayKey = DAY_NORM_KEY[dayNorm];
+      if (!dayKey) {
+        errors.push(`Día no reconocido: "${firstLine}"`);
+        return;
+      }
+
+      // Find meal entries (lines starting with "- ")
+      const mealStarts: { index: number; label: string }[] = [];
+      lines.forEach((line, i) => {
+        if (i === 0) return;
+        if (line.startsWith('- ')) {
+          mealStarts.push({ index: i, label: line.slice(2).replace(/:$/, '').trim() });
+        }
+      });
+
+      mealStarts.forEach(({ index, label }, mi) => {
+        const nextIndex = mealStarts[mi + 1]?.index ?? lines.length;
+        const content = lines.slice(index + 1, nextIndex).join('\n').trim();
+
+        const normLabel = normStr(label);
+        // Handle special domingo-libre fields
+        if (normLabel === 'indicaciones') {
+          if (domingoMode === 'libre') newDomingoNote = content;
+          else newDomingoV2Note = content;
+          return;
+        }
+        if (normLabel === 'hidratacion') {
+          if (domingoMode === 'libre') newHydration = content;
+          else newDomingoV2Hydration = content;
+          return;
+        }
+        const meal = meals.find(m => normStr(m.label) === normLabel);
+        if (!meal) {
+          errors.push(`Tiempo no reconocido en ${firstLine}: "${label}"`);
+          return;
+        }
+
+        if (dayKey === 'domingo') {
+          newDomingoV2Grid[meal.id] = content;
+        } else {
+          clonedGrid[meal.id] = { ...clonedGrid[meal.id], [dayKey]: content };
+        }
+      });
+    });
+
+    setImportErrors(errors);
+
+    // Apply what was parsed (even with warnings)
+    setGrid(clonedGrid);
+    setDomingoV2Grid(newDomingoV2Grid);
+    setDomingoNote(newDomingoNote);
+    setHydration(newHydration);
+    setDomingoV2Note(newDomingoV2Note);
+    setDomingoV2Hydration(newDomingoV2Hydration);
+    setIsDirty(true);
+    scheduleCommit(clonedGrid, meals, newDomingoNote, newHydration, newDomingoV2Grid, newDomingoV2Note, newDomingoV2Hydration);
+    setTimeout(() => meals.forEach(m => syncRowHeights(m.id)), 0);
+
+    if (errors.length === 0) {
+      setImportSuccess(true);
+      setTimeout(() => {
+        setImportOpen(false);
+        setImportText('');
+        setImportSuccess(false);
+        setImportErrors([]);
+      }, 1200);
+    }
   };
 
   const moveMeal = (index: number, dir: -1 | 1) => {
@@ -193,12 +402,15 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     [newMeals[index], newMeals[target]] = [newMeals[target], newMeals[index]];
     setMeals(newMeals);
     setIsDirty(true);
+    scheduleCommit(grid, newMeals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
     setTimeout(() => newMeals.forEach(m => syncRowHeights(m.id)), 0);
   };
 
   const updateMealLabel = (id: string, label: string) => {
-    setMeals(prev => prev.map(m => m.id === id ? { ...m, label } : m));
+    const newMeals = meals.map(m => m.id === id ? { ...m, label } : m);
+    setMeals(newMeals);
     setIsDirty(true);
+    scheduleCommit(grid, newMeals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
   };
 
   const copyMealToAll = (mealId: string) => {
@@ -207,6 +419,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     WEEKDAYS.forEach(day => { newGrid[mealId] = { ...newGrid[mealId], [day]: srcTitle }; });
     setGrid(newGrid);
     setIsDirty(true);
+    scheduleCommit(newGrid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
     setTimeout(() => syncRowHeights(mealId), 0);
   };
 
@@ -229,8 +442,45 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
           {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
         </button>
 
-        {/* Domingo toggle */}
-        <div className="flex items-center gap-1.5 bg-slate-100 rounded-xl p-1">
+        <div className="flex items-center gap-2">
+          {/* Dropdown Copiar / Pegar */}
+          <div className="relative">
+            <button
+              onClick={() => setCopyPasteOpen(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border bg-white text-slate-500 border-slate-200 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
+            >
+              <Copy className="w-3 h-3" />
+              Copiar / Pegar
+              <ChevronDown className={`w-3 h-3 transition-transform ${copyPasteOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {copyPasteOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setCopyPasteOpen(false)} />
+                <div className="absolute right-0 mt-1.5 z-20 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-44">
+                  <button
+                    onClick={() => { copyTableAsText(); setCopyPasteOpen(false); }}
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold transition-colors ${
+                      tableCopied ? 'text-emerald-600 bg-emerald-50' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
+                    }`}
+                  >
+                    <Copy className="w-3.5 h-3.5 shrink-0" />
+                    {tableCopied ? '¡Copiado!' : 'Copiar tabla'}
+                  </button>
+                  <div className="border-t border-slate-100" />
+                  <button
+                    onClick={() => { setImportOpen(true); setImportErrors([]); setImportSuccess(false); setCopyPasteOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5 shrink-0" />
+                    Pegar en tabla
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Domingo toggle */}
+          <div className="flex items-center gap-1.5 bg-slate-100 rounded-xl p-1">
           <button
             onClick={() => switchDomingoMode('libre')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
@@ -253,6 +503,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
             <CalendarDays className="w-3 h-3" />
             Dom. Completo
           </button>
+          </div>
         </div>
       </div>
 
@@ -404,12 +655,14 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
                           rows={1}
                           ref={el => setTextareaRef(meal.id, day, el)}
                           onChange={e => {
-                            setGrid(prev => ({
-                              ...prev,
-                              [meal.id]: { ...prev[meal.id], [day]: e.target.value },
-                            }));
+                            const newGrid = {
+                              ...grid,
+                              [meal.id]: { ...grid[meal.id], [day]: e.target.value },
+                            };
+                            setGrid(newGrid);
                             setIsDirty(true);
                             syncRowHeights(meal.id);
+                            scheduleCommit(newGrid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
                           }}
                           className={cellCls}
                           style={{ minHeight: '36px' }}
@@ -426,9 +679,11 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
                           rows={1}
                           ref={el => setTextareaRef(meal.id, 'domingo', el)}
                           onChange={e => {
-                            setDomingoV2Grid(prev => ({ ...prev, [meal.id]: e.target.value }));
+                            const newDomingoV2Grid = { ...domingoV2Grid, [meal.id]: e.target.value };
+                            setDomingoV2Grid(newDomingoV2Grid);
                             setIsDirty(true);
                             syncRowHeights(meal.id);
+                            scheduleCommit(grid, meals, domingoNote, hydration, newDomingoV2Grid, domingoV2Note, domingoV2Hydration);
                           }}
                           className={`${cellCls} focus:ring-indigo-500/20 focus:border-indigo-400`}
                           style={{ minHeight: '36px' }}
@@ -457,7 +712,11 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
                   <textarea
                     value={domingoNote}
                     rows={3}
-                    onChange={e => { setDomingoNote(e.target.value); setIsDirty(true); }}
+                    onChange={e => {
+                      setDomingoNote(e.target.value);
+                      setIsDirty(true);
+                      scheduleCommit(grid, meals, e.target.value, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
+                    }}
                     className="w-full bg-white border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-amber-400/20 focus:border-amber-400 outline-none transition-all resize-none leading-relaxed"
                     placeholder="Ej: Día de descanso, puede comer más flexible. Evitar excesos. Priorizar proteína en almuerzo..."
                   />
@@ -469,7 +728,11 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
                   <input
                     type="text"
                     value={hydration}
-                    onChange={e => { setHydration(e.target.value); setIsDirty(true); }}
+                    onChange={e => {
+                      setHydration(e.target.value);
+                      setIsDirty(true);
+                      scheduleCommit(grid, meals, domingoNote, e.target.value, domingoV2Grid, domingoV2Note, domingoV2Hydration);
+                    }}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 outline-none transition-all"
                     placeholder="Ej: 2.5L de agua"
                   />
@@ -493,7 +756,11 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
                   <textarea
                     value={domingoV2Note}
                     rows={3}
-                    onChange={e => { setDomingoV2Note(e.target.value); setIsDirty(true); }}
+                    onChange={e => {
+                      setDomingoV2Note(e.target.value);
+                      setIsDirty(true);
+                      scheduleCommit(grid, meals, domingoNote, hydration, domingoV2Grid, e.target.value, domingoV2Hydration);
+                    }}
                     className="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-indigo-400/20 focus:border-indigo-400 outline-none transition-all resize-none leading-relaxed"
                     placeholder="Observaciones del día..."
                   />
@@ -505,7 +772,11 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
                   <input
                     type="text"
                     value={domingoV2Hydration}
-                    onChange={e => { setDomingoV2Hydration(e.target.value); setIsDirty(true); }}
+                    onChange={e => {
+                      setDomingoV2Hydration(e.target.value);
+                      setIsDirty(true);
+                      scheduleCommit(grid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, e.target.value);
+                    }}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 outline-none transition-all"
                     placeholder="Ej: 2.5L de agua"
                   />
@@ -543,34 +814,104 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
             </div>
           </div>
 
-          {/* Footer: aviso de cambios + botón guardar */}
-          <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+          {/* Footer: hints de uso */}
+          <div className="px-4 py-3 bg-slate-50 border-t border-slate-100">
             <p className="text-[10px] text-slate-400 italic">
               Usa Enter para listar varias opciones por tiempo de comida.
               <Copy className="w-2.5 h-2.5 inline mx-0.5" /> copia el día · <Paintbrush className="w-2.5 h-2.5 inline mx-0.5" /> pega el día copiado · "→ todos" copia desde Lunes a toda la semana.
             </p>
-            <div className="flex items-center gap-2 shrink-0">
-              {isDirty && (
-                <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  Hay cambios sin guardar
-                </span>
-              )}
+          </div>
+        </>
+      )}
+
+      {/* Modal importar */}
+      {importOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
+
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Upload className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-black text-slate-700">Importar menú editado</span>
+              </div>
               <button
-                onClick={handleSaveAll}
-                disabled={!isDirty}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                  isDirty
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                onClick={() => { setImportOpen(false); setImportText(''); setImportErrors([]); setImportSuccess(false); }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Tips */}
+            <div className="mx-5 mt-4 rounded-xl bg-sky-50 border border-sky-100 p-3.5 space-y-1.5">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Info className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                <span className="text-[11px] font-black text-sky-600 uppercase tracking-wide">Antes de pegar, ten en cuenta:</span>
+              </div>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Puedes editar libremente el contenido de cada comida.</p>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Si dejas una comida vacía, se borrará su contenido.</p>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No cambies los nombres de los días (<span className="font-bold">Lunes:</span>, <span className="font-bold">Martes:</span>, etc.).</p>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No cambies los nombres de los tiempos (<span className="font-bold">- Desayuno:</span>, <span className="font-bold">- Almuerzo:</span>, etc.).</p>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No elimines las líneas en blanco entre días.</p>
+            </div>
+
+            {/* Textarea */}
+            <div className="px-5 pt-4">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1.5">
+                Pega aquí el texto editado
+              </label>
+              <textarea
+                value={importText}
+                onChange={e => { setImportText(e.target.value); setImportErrors([]); setImportSuccess(false); }}
+                rows={10}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all resize-none leading-relaxed"
+                placeholder={'Lunes:\n- Desayuno:\nAvena con frutas\n- Almuerzo:\nPollo con arroz\n\nMartes:\n- Desayuno:\n...'}
+              />
+            </div>
+
+            {/* Errores / éxito */}
+            {importErrors.length > 0 && (
+              <div className="mx-5 mt-3 rounded-xl bg-amber-50 border border-amber-200 p-3">
+                <p className="text-[11px] font-black text-amber-600 mb-1.5 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  Se aplicaron los cambios pero hay advertencias:
+                </p>
+                {importErrors.map((e, i) => (
+                  <p key={i} className="text-[11px] text-amber-700">• {e}</p>
+                ))}
+              </div>
+            )}
+            {importSuccess && (
+              <div className="mx-5 mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-500" />
+                <p className="text-[11px] font-black text-emerald-600">¡Menú importado correctamente!</p>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 px-5 py-4 mt-3 border-t border-slate-100">
+              <button
+                onClick={() => { setImportOpen(false); setImportText(''); setImportErrors([]); setImportSuccess(false); }}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={parseAndApply}
+                disabled={!importText.trim()}
+                className={`flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold transition-all ${
+                  importText.trim()
+                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
                     : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                 }`}
               >
-                <Save className="w-3.5 h-3.5" />
-                Guardar Cambios
+                <Upload className="w-3.5 h-3.5" />
+                Aplicar cambios
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

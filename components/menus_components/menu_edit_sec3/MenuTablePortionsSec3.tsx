@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Table as TableIcon, Plus, Trash2, MoveUp, MoveDown, Save, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Table as TableIcon, Plus, Trash2, MoveUp, MoveDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { MenuPlanData, MealPortions } from '../MenuDesignTemplates';
 import { PortionsRecord } from '../../../types';
 
@@ -11,7 +11,6 @@ interface Props {
 
 export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewData, portions }) => {
   const [open, setOpen] = useState(true);
-  const [saved, setSaved] = useState(false);
 
   const initMeals = (): { id: string; label: string }[] => {
     const order = menuPreviewData.weeklyMenu.lunes.mealsOrder ||
@@ -36,6 +35,63 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
 
   const calcTotal = (g: keyof MealPortions) =>
     meals.reduce((s, m) => s + Number((localPortions.byMeal[m.id] as any)?.[g] || 0), 0);
+
+  // ── Refs for debounced auto-commit (same pattern as MenuWeeklyTableEditorSec3) ──
+  const menuPreviewDataRef = useRef(menuPreviewData);
+  const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestRef = useRef({ localPortions, meals });
+
+  useEffect(() => { menuPreviewDataRef.current = menuPreviewData; });
+  useEffect(() => { latestRef.current = { localPortions, meals }; });
+
+  // Builds and commits the current portions state to the parent
+  const buildAndCommit = (lp: typeof localPortions, ms: typeof meals) => {
+    const base = menuPreviewDataRef.current;
+    const byMeal = { ...lp.byMeal };
+    ms.forEach(m => { byMeal[m.id] = { ...byMeal[m.id], label: m.label }; });
+    const gTotal = (g: keyof MealPortions) =>
+      ms.reduce((s, m) => s + Number((byMeal[m.id] as any)?.[g] || 0), 0);
+    const updated = {
+      ...lp, byMeal,
+      lacteos: gTotal('lacteos'), vegetales: gTotal('vegetales'),
+      frutas: gTotal('frutas'),   cereales:  gTotal('cereales'),
+      carnes: gTotal('carnes'),   grasas:    gTotal('grasas'),
+    };
+    const newWeekly = { ...base.weeklyMenu };
+    (['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'] as const).forEach(dayKey => {
+      const day = { ...(newWeekly[dayKey] as any) };
+      day.mealsOrder = ms.map(m => m.id);
+      ms.forEach(m => {
+        day[m.id] = day[m.id] ? { ...day[m.id], label: m.label } : { title: '', label: m.label };
+      });
+      newWeekly[dayKey] = day;
+    });
+    setMenuPreviewData({ ...base, portions: updated, weeklyMenu: newWeekly });
+  };
+
+  // Debounced auto-commit: fires 500ms after the last change to localPortions or meals
+  const didMountRef = useRef(false);
+  useEffect(() => {
+    if (!didMountRef.current) { didMountRef.current = true; return; }
+    if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+    commitTimerRef.current = setTimeout(() => {
+      commitTimerRef.current = null;
+      const { localPortions: lp, meals: ms } = latestRef.current;
+      buildAndCommit(lp, ms);
+    }, 500);
+  }, [localPortions, meals]); // eslint-disable-line
+
+  // Flush pending commit on unmount
+  useEffect(() => {
+    return () => {
+      if (commitTimerRef.current) {
+        clearTimeout(commitTimerRef.current);
+        commitTimerRef.current = null;
+        const { localPortions: lp, meals: ms } = latestRef.current;
+        buildAndCommit(lp, ms);
+      }
+    };
+  }, []); // eslint-disable-line
 
   const addMeal = () => {
     const id = `meal_${Date.now()}`;
@@ -78,7 +134,7 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
     setEditingValues(prev => ({ ...prev, [key]: raw }));
     const parsed = parseFloat(raw);
     if (!isNaN(parsed) && parsed >= 0) updatePortion(mealId, g, parsed);
-  }, []);
+  }, []); // eslint-disable-line
 
   const handlePortionBlur = useCallback((mealId: string, g: keyof MealPortions) => {
     const key = editKey(mealId, g);
@@ -95,29 +151,6 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
       return prev;
     });
   }, []);
-
-  const handleSave = () => {
-    const byMeal = { ...localPortions.byMeal };
-    meals.forEach(m => { byMeal[m.id] = { ...byMeal[m.id], label: m.label }; });
-    const updated = {
-      ...localPortions, byMeal,
-      lacteos:   calcTotal('lacteos'),   vegetales: calcTotal('vegetales'),
-      frutas:    calcTotal('frutas'),    cereales:  calcTotal('cereales'),
-      carnes:    calcTotal('carnes'),    grasas:    calcTotal('grasas'),
-    };
-    const newWeekly = { ...menuPreviewData.weeklyMenu };
-    (['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'] as const).forEach(dayKey => {
-      const day = { ...(newWeekly[dayKey] as any) };
-      day.mealsOrder = meals.map(m => m.id);
-      meals.forEach(m => {
-        day[m.id] = day[m.id] ? { ...day[m.id], label: m.label } : { title: '', label: m.label };
-      });
-      newWeekly[dayKey] = day;
-    });
-    setMenuPreviewData({ ...menuPreviewData, portions: updated, weeklyMenu: newWeekly });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
@@ -234,22 +267,7 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
             </table>
           </div>
 
-          <div className="px-4 py-3 border-t border-slate-100 flex justify-end bg-slate-50">
-            <button
-              onClick={handleSave}
-              className={`flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-xl shadow-lg transition-all ${
-                saved
-                  ? 'bg-emerald-500 text-white shadow-emerald-500/20'
-                  : 'bg-indigo-600 text-white shadow-indigo-600/20 hover:bg-indigo-700'
-              }`}
-            >
-              {saved
-                ? <><Check className="w-3.5 h-3.5" />Guardado exitoso</>
-                : <><Save className="w-3.5 h-3.5" />Guardar Porciones</>
-              }
-            </button>
-          </div>
-        </>
+</>
       )}
     </div>
   );

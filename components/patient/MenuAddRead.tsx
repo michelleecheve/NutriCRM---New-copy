@@ -683,7 +683,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
             {isStickySuccess ? (
               <><Check className="w-4 h-4" /> Guardado</>
             ) : (
-              <><Save className="w-4 h-4" /> {hasUnsavedChanges ? 'Hay cambios sin guardar' : 'Guardar'}</>
+              <><Save className="w-4 h-4" /> {hasUnsavedChanges ? 'Hay cambios sin guardar' : 'Guardar Menú'}</>
             )}
           </button>
         </div>
