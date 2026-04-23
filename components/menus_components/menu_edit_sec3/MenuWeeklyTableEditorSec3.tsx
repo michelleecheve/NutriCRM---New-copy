@@ -252,38 +252,40 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     };
 
     const allDays = domingoMode === 'completo'
-      ? [...WEEKDAYS, 'domingo']
+      ? [...WEEKDAYS, 'domingo' as const]
       : [...WEEKDAYS];
 
     const blocks: string[] = [];
 
     allDays.forEach(day => {
-      const lines: string[] = [`${FULL_DAY_LABEL[day]}:`];
+      const dayLabel = FULL_DAY_LABEL[day];
+      const mealChunks: string[] = [];
       meals.forEach(meal => {
         const content = day === 'domingo'
           ? (domingoV2Grid[meal.id] || '').trim()
           : (grid[meal.id]?.[day as WeekDay] || '').trim();
         if (content) {
-          lines.push(`- ${meal.label}:`);
-          lines.push(content);
+          mealChunks.push(`${meal.label} ${dayLabel}:\n${content}`);
         }
       });
-      if (lines.length > 1) blocks.push(lines.join('\n'));
+      if (mealChunks.length > 0) {
+        blocks.push(`Dia: ${dayLabel}\n${mealChunks.join('\n\n')}`);
+      }
     });
 
     if (domingoMode === 'libre') {
-      const domingoLines: string[] = ['Domingo:'];
-      if (domingoNote) domingoLines.push(`- Indicaciones:\n${domingoNote}`);
-      if (hydration) domingoLines.push(`- Hidratación:\n${hydration}`);
-      if (domingoLines.length > 1) blocks.push(domingoLines.join('\n'));
+      const extras: string[] = [];
+      if (domingoNote) extras.push(`Indicaciones domingo:\n${domingoNote}`);
+      if (hydration) extras.push(`Hidratación domingo:\n${hydration}`);
+      if (extras.length > 0) blocks.push(`Dia: Domingo\n${extras.join('\n\n')}`);
     } else {
       const extras: string[] = [];
-      if (domingoV2Note) extras.push(`- Nota:\n${domingoV2Note}`);
-      if (domingoV2Hydration) extras.push(`- Hidratación:\n${domingoV2Hydration}`);
-      if (extras.length) blocks.push(['Domingo (observaciones):', ...extras].join('\n'));
+      if (domingoV2Note) extras.push(`Nota domingo:\n${domingoV2Note}`);
+      if (domingoV2Hydration) extras.push(`Hidratación domingo:\n${domingoV2Hydration}`);
+      if (extras.length > 0) blocks.push(`Dia: Domingo\n${extras.join('\n\n')}`);
     }
 
-    const text = blocks.join('\n\n');
+    const text = blocks.join('\n\n\n');
 
     navigator.clipboard.writeText(text).then(() => {
       setTableCopied(true);
@@ -304,84 +306,110 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
 
   const parseAndApply = () => {
     const errors: string[] = [];
-    const newGrid = grid;
-    const newDomingoV2Grid = { ...domingoV2Grid };
-    // deep-clone grid to avoid mutating state directly
+
     const clonedGrid: LocalGrid = {};
-    Object.keys(newGrid).forEach(mId => { clonedGrid[mId] = { ...newGrid[mId] }; });
+    Object.keys(grid).forEach(mId => { clonedGrid[mId] = { ...grid[mId] }; });
+    const newDomingoV2Grid = { ...domingoV2Grid };
 
-    let newDomingoNote = domingoNote;
-    let newHydration = hydration;
-    let newDomingoV2Note = domingoV2Note;
-    let newDomingoV2Hydration = domingoV2Hydration;
+    // Pre-compute normalized meal labels (skip empty labels)
+    const mealNormMap = meals
+      .map(m => ({ id: m.id, norm: normStr(m.label) }))
+      .filter(m => m.norm.length > 0);
 
-    const blocks = importText.trim().split(/\n\n+/);
+    // Trigger 1: line is "dia" + optional punct + day name (e.g. "Dia: Lunes", "Día Martes:")
+    const matchDayTrigger = (norm: string): WeekDay | 'domingo' | null => {
+      const m = norm.match(/^dia\s*:?\s*(\w+)/);
+      if (!m) return null;
+      return DAY_NORM_KEY[m[1]] ?? null;
+    };
 
-    blocks.forEach(block => {
-      const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
-      if (lines.length === 0) return;
+    // Trigger 2: line is [meal label] [day name] only (e.g. "Desayuno Lunes:", "Refacción 1 Martes")
+    const matchMealDayTrigger = (norm: string): { mealId: string; dayKey: WeekDay | 'domingo' } | null => {
+      for (const { id, norm: mNorm } of mealNormMap) {
+        if (!norm.startsWith(mNorm)) continue;
+        // Require a word boundary after the meal label
+        const boundary = norm[mNorm.length];
+        if (boundary !== undefined && boundary !== ' ') continue;
+        const rest = norm.slice(mNorm.length).replace(/^[\s:]+/, '').replace(/[\s:]+$/, '');
+        const parts = rest.split(/\s+/).filter(Boolean);
+        // Must be exactly one word left and that word must be a day name
+        if (parts.length !== 1) continue;
+        const dayKey = DAY_NORM_KEY[parts[0]];
+        if (dayKey) return { mealId: id, dayKey };
+      }
+      return null;
+    };
 
-      const firstLine = lines[0];
-      // Skip observaciones block
-      if (firstLine.toLowerCase().includes('observaciones')) return;
+    let currentMealId: string | null = null;
+    let currentDayKey: WeekDay | 'domingo' | null = null;
+    let contentLines: string[] = [];
 
-      const dayNorm = normStr(firstLine);
-      const dayKey = DAY_NORM_KEY[dayNorm];
-      if (!dayKey) {
-        errors.push(`Día no reconocido: "${firstLine}"`);
-        return;
+    const flushContent = () => {
+      if (!currentMealId || !currentDayKey) return;
+      const content = contentLines.join('\n').trim();
+      if (currentDayKey === 'domingo') {
+        newDomingoV2Grid[currentMealId] = content;
+      } else {
+        clonedGrid[currentMealId] = { ...clonedGrid[currentMealId], [currentDayKey as WeekDay]: content };
+      }
+    };
+
+    for (const rawLine of importText.split('\n')) {
+      const norm = normStr(rawLine);
+
+      // Check meal+day trigger first (more specific)
+      const mealDay = matchMealDayTrigger(norm);
+      if (mealDay) {
+        flushContent();
+        currentMealId = mealDay.mealId;
+        currentDayKey = mealDay.dayKey;
+        contentLines = [];
+        continue;
       }
 
-      // Find meal entries (lines starting with "- ")
-      const mealStarts: { index: number; label: string }[] = [];
-      lines.forEach((line, i) => {
-        if (i === 0) return;
-        if (line.startsWith('- ')) {
-          mealStarts.push({ index: i, label: line.slice(2).replace(/:$/, '').trim() });
-        }
-      });
+      // Check day trigger (section marker — resets context without assigning content)
+      if (matchDayTrigger(norm) !== null) {
+        flushContent();
+        currentMealId = null;
+        currentDayKey = null;
+        contentLines = [];
+        continue;
+      }
 
-      mealStarts.forEach(({ index, label }, mi) => {
-        const nextIndex = mealStarts[mi + 1]?.index ?? lines.length;
-        const content = lines.slice(index + 1, nextIndex).join('\n').trim();
+      // Warn if line looks like a day header but the day name isn't recognized
+      const dayAttemptMatch = norm.match(/^dia\s*:?\s*([a-z]+)/);
+      if (dayAttemptMatch && !DAY_NORM_KEY[dayAttemptMatch[1]]) {
+        errors.push(`Día no reconocido: "${rawLine.trim()}". Asegúrate de escribirlo así: Dia Lunes, Dia: Lunes, Día Martes — la palabra "Dia" debe ir siempre al inicio seguida del nombre del día.`);
+      }
 
-        const normLabel = normStr(label);
-        // Handle special domingo-libre fields
-        if (normLabel === 'indicaciones') {
-          if (domingoMode === 'libre') newDomingoNote = content;
-          else newDomingoV2Note = content;
-          return;
+      // Warn if line looks like a meal+day trigger but the day name isn't recognized
+      for (const { id: _id, norm: mNorm } of mealNormMap) {
+        if (!norm.startsWith(mNorm)) continue;
+        const boundary = norm[mNorm.length];
+        if (boundary !== undefined && boundary !== ' ') break;
+        const rest = norm.slice(mNorm.length).replace(/^[\s:]+/, '').replace(/[\s:]+$/, '');
+        const parts = rest.split(/\s+/).filter(Boolean);
+        if (parts.length === 1 && !DAY_NORM_KEY[parts[0]]) {
+          const mealLabel = meals.find(m => normStr(m.label) === mNorm)?.label || mNorm;
+          errors.push(`Tiempo de comida no reconocido: "${rawLine.trim()}". Asegúrate de escribirlo así: ${mealLabel} Lunes, ${mealLabel} Martes: — primero el tiempo de comida y luego el nombre del día.`);
         }
-        if (normLabel === 'hidratacion') {
-          if (domingoMode === 'libre') newHydration = content;
-          else newDomingoV2Hydration = content;
-          return;
-        }
-        const meal = meals.find(m => normStr(m.label) === normLabel);
-        if (!meal) {
-          errors.push(`Tiempo no reconocido en ${firstLine}: "${label}"`);
-          return;
-        }
+        break;
+      }
 
-        if (dayKey === 'domingo') {
-          newDomingoV2Grid[meal.id] = content;
-        } else {
-          clonedGrid[meal.id] = { ...clonedGrid[meal.id], [dayKey]: content };
-        }
-      });
-    });
+      // Content line (blank or text) — accumulate regardless of blank lines
+      if (currentMealId && currentDayKey) {
+        contentLines.push(rawLine);
+      }
+    }
+
+    // Flush last accumulated content
+    flushContent();
 
     setImportErrors(errors);
-
-    // Apply what was parsed (even with warnings)
     setGrid(clonedGrid);
     setDomingoV2Grid(newDomingoV2Grid);
-    setDomingoNote(newDomingoNote);
-    setHydration(newHydration);
-    setDomingoV2Note(newDomingoV2Note);
-    setDomingoV2Hydration(newDomingoV2Hydration);
     setIsDirty(true);
-    scheduleCommit(clonedGrid, meals, newDomingoNote, newHydration, newDomingoV2Grid, newDomingoV2Note, newDomingoV2Hydration);
+    scheduleCommit(clonedGrid, meals, domingoNote, hydration, newDomingoV2Grid, domingoV2Note, domingoV2Hydration);
     setTimeout(() => meals.forEach(m => syncRowHeights(m.id)), 0);
 
     if (errors.length === 0) {
@@ -464,15 +492,15 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
                     }`}
                   >
                     <Copy className="w-3.5 h-3.5 shrink-0" />
-                    {tableCopied ? '¡Copiado!' : 'Copiar tabla'}
+                    {tableCopied ? '¡Copiado!' : 'Copiar Menú'}
                   </button>
                   <div className="border-t border-slate-100" />
                   <button
                     onClick={() => { setImportOpen(true); setImportErrors([]); setImportSuccess(false); setCopyPasteOpen(false); }}
                     className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                   >
-                    <Upload className="w-3.5 h-3.5 shrink-0" />
-                    Pegar en tabla
+                    <Paintbrush className="w-3.5 h-3.5 shrink-0" />
+                    Pegar en Menú
                   </button>
                 </div>
               </>
@@ -827,10 +855,10 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
       {/* Modal importar */}
       {importOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
 
             {/* Modal header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
               <div className="flex items-center gap-2">
                 <Upload className="w-4 h-4 text-emerald-600" />
                 <span className="text-sm font-black text-slate-700">Importar menú editado</span>
@@ -843,54 +871,56 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
               </button>
             </div>
 
-            {/* Tips */}
-            <div className="mx-5 mt-4 rounded-xl bg-sky-50 border border-sky-100 p-3.5 space-y-1.5">
-              <div className="flex items-center gap-1.5 mb-2">
-                <Info className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                <span className="text-[11px] font-black text-sky-600 uppercase tracking-wide">Antes de pegar, ten en cuenta:</span>
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Tips */}
+              <div className="mx-5 mt-4 rounded-xl bg-sky-50 border border-sky-100 p-3.5 space-y-1.5">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Info className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                  <span className="text-[11px] font-black text-sky-600 uppercase tracking-wide">Antes de pegar, ten en cuenta:</span>
+                </div>
+                <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Copia primero el menú para tener la estructura — cambia solo las comidas, sin modificar los títulos de los días ni de los tiempos de comida. Luego pégalo aquí con el mismo formato en que se copió.</p>
+                <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Si el contenido de un tiempo queda vacío, se borrará esa celda.</p>
               </div>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Puedes editar libremente el contenido de cada comida.</p>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Si dejas una comida vacía, se borrará su contenido.</p>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No cambies los nombres de los días (<span className="font-bold">Lunes:</span>, <span className="font-bold">Martes:</span>, etc.).</p>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No cambies los nombres de los tiempos (<span className="font-bold">- Desayuno:</span>, <span className="font-bold">- Almuerzo:</span>, etc.).</p>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No elimines las líneas en blanco entre días.</p>
-            </div>
 
-            {/* Textarea */}
-            <div className="px-5 pt-4">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1.5">
-                Pega aquí el texto editado
-              </label>
-              <textarea
-                value={importText}
-                onChange={e => { setImportText(e.target.value); setImportErrors([]); setImportSuccess(false); }}
-                rows={10}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all resize-none leading-relaxed"
-                placeholder={'Lunes:\n- Desayuno:\nAvena con frutas\n- Almuerzo:\nPollo con arroz\n\nMartes:\n- Desayuno:\n...'}
-              />
-            </div>
+              {/* Textarea */}
+              <div className="px-5 pt-4">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1.5">
+                  Pega aquí el texto editado — Recuerda copiar antes la estructura completa en <span className="text-indigo-400">Copiar Menú</span>
+                </label>
+                <textarea
+                  value={importText}
+                  onChange={e => { setImportText(e.target.value); setImportErrors([]); setImportSuccess(false); }}
+                  rows={10}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all resize-none leading-relaxed"
+                  placeholder={'Dia: Lunes\nDesayuno Lunes:\nAvena con frutas y yogur\nAlmuerzo Lunes:\nPollo a la plancha con arroz\n\nDia: Martes\nDesayuno Martes:\nHuevos revueltos con tostadas\nAlmuerzo Martes:\n...'}
+                />
+              </div>
 
-            {/* Errores / éxito */}
-            {importErrors.length > 0 && (
-              <div className="mx-5 mt-3 rounded-xl bg-amber-50 border border-amber-200 p-3">
-                <p className="text-[11px] font-black text-amber-600 mb-1.5 flex items-center gap-1.5">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  Se aplicaron los cambios pero hay advertencias:
-                </p>
-                {importErrors.map((e, i) => (
-                  <p key={i} className="text-[11px] text-amber-700">• {e}</p>
-                ))}
-              </div>
-            )}
-            {importSuccess && (
-              <div className="mx-5 mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-500" />
-                <p className="text-[11px] font-black text-emerald-600">¡Menú importado correctamente!</p>
-              </div>
-            )}
+              {/* Errores / éxito */}
+              {importErrors.length > 0 && (
+                <div className="mx-5 mt-3 mb-1 rounded-xl bg-amber-50 border border-amber-200 p-3">
+                  <p className="text-[11px] font-black text-amber-600 mb-1.5 flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    Se aplicaron los cambios pero hay advertencias:
+                  </p>
+                  <div className="max-h-32 overflow-y-auto space-y-0.5">
+                    {importErrors.map((e, i) => (
+                      <p key={i} className="text-[11px] text-amber-700">• {e}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {importSuccess && (
+                <div className="mx-5 mt-3 mb-1 rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  <p className="text-[11px] font-black text-emerald-600">¡Menú importado correctamente!</p>
+                </div>
+              )}
+            </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-5 py-4 mt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100 shrink-0">
               <button
                 onClick={() => { setImportOpen(false); setImportText(''); setImportErrors([]); setImportSuccess(false); }}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors"
