@@ -27,10 +27,11 @@ const BASE_OPT = {
   margin: 0,
   image: { type: 'jpeg' as const, quality: 0.95 },
   html2canvas: {
-    scale: 2,
+    scale: 3,
     useCORS: true,
     logging: false,
     letterRendering: true,
+    windowWidth: 1200,
   },
   jsPDF: {
     unit: 'mm' as const,

@@ -240,20 +240,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   // ─── Open Copy from Reference modal ───────────────────────────────────────
   const handleOpenCopyRef = () => {
     if (availableRefs.length === 0 && availableRecs.length === 0) return;
-
-    // Pre-select the first available ref if exists
-    if (availableRefs.length > 0) {
-      setSelectedCopyRefId(availableRefs[0].id);
-    } else {
-      setSelectedCopyRefId(null);
-    }
-
-    // Pre-select the first available rec if exists
-    if (availableRecs.length > 0) {
-      setSelectedCopyRecId(availableRecs[0].id);
-    } else {
-      setSelectedCopyRecId(null);
-    }
+    setSelectedCopyRefId(null);
+    setSelectedCopyRecId(null);
     setShowCopyRefModal(true);
   };
 
@@ -1134,16 +1122,28 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             {/* NEW: Copiar Menú de Ref. */}
             <button
               onClick={handleOpenCopyRef}
-              disabled={isLocked || availableRefs.length === 0}
-              title={isLocked ? 'Desbloquea para usar este botón' : availableRefs.length === 0 ? 'Selecciona referencias en la sección anterior' : 'Copiar estructura y datos de una referencia'}
+              disabled={isLocked || (availableRefs.length === 0 && availableRecs.length === 0)}
+              title={
+                isLocked
+                  ? 'Desbloquea para usar este botón'
+                  : availableRefs.length === 0 && availableRecs.length === 0
+                  ? 'Selecciona referencias o recomendaciones en la sección anterior'
+                  : 'Copiar estructura y datos de una referencia o recomendaciones'
+              }
               className={`flex-1 min-w-[180px] flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition-all border-2 ${
-                isLocked || availableRefs.length === 0
+                isLocked || (availableRefs.length === 0 && availableRecs.length === 0)
                   ? 'border-slate-100 text-slate-300 cursor-not-allowed'
                   : 'border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
               }`}
             >
               <Copy className="w-5 h-5" />
-              Copiar desde Plantilla
+              {availableRefs.length > 0 && availableRecs.length > 0
+                ? 'Copiar Ambas Plantillas'
+                : availableRefs.length > 0
+                ? 'Copiar Referencia'
+                : availableRecs.length > 0
+                ? 'Copiar Recomendación'
+                : 'Copiar desde Plantilla'}
             </button>
 
             {/* EXISTING: Generar menú con AI — modified to open options modal */}

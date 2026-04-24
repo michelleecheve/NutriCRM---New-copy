@@ -713,7 +713,7 @@ const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => {
             DOMINGO
           </td>
           {/* Note */}
-          <td style={{ padding: "8px 14px", verticalAlign: "middle" }}>
+          <td style={{ padding: "8px 14px", verticalAlign: "middle", width: "50%" }}>
             <div
               style={{
                 fontSize: `${7.5 * ts.fontSizeMultiplier}px`,
@@ -743,8 +743,7 @@ const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => {
               textAlign: "right",
               verticalAlign: "middle",
               borderLeft: "1px solid #f1f5f9",
-              whiteSpace: "nowrap",
-              width: "1%",
+              width: "50%",
             }}
           >
             <div
@@ -763,6 +762,7 @@ const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => {
                 fontSize: `${9 * ts.fontSizeMultiplier}px`,
                 color: ts.colors.primary,
                 fontWeight: 800,
+                wordBreak: "break-word",
               }}
             >
               💧 {domingo.hydration}
@@ -1375,9 +1375,9 @@ const MenuOnlyPage: React.FC<{
               <td style={{ padding: "8px 14px", verticalAlign: "middle" }}>
                 <div style={{ fontSize: `${8.5 * ts.fontSizeMultiplier}px`, color: "#334155", fontWeight: 600 }}>{noteText}</div>
               </td>
-              <td style={{ padding: "8px 14px", textAlign: "right", verticalAlign: "middle", borderLeft: "1px solid #f1f5f9", whiteSpace: "nowrap", width: "1%" }}>
+              <td style={{ padding: "8px 14px", textAlign: "right", verticalAlign: "middle", borderLeft: "1px solid #f1f5f9", width: "50%" }}>
                 <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600, marginBottom: "3px" }}>META HIDRATACIÓN</div>
-                <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800 }}>💧 {hydrationText}</div>
+                <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, wordBreak: "break-word" }}>💧 {hydrationText}</div>
               </td>
             </tr>
           </tbody>
