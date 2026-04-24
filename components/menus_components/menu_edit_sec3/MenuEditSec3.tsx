@@ -10,9 +10,10 @@ interface Props {
   menuPreviewData: MenuPlanData;
   setMenuPreviewData: (d: MenuPlanData) => void;
   portions: PortionsRecord;
+  visible?: boolean;
 }
 
-export const MenuEditSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewData, portions }) => {
+export const MenuEditSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewData, portions, visible }) => {
   // key forces MenuWeeklyTableEditorSec3 to remount when meal structure changes
   const mealOrderKey = menuPreviewData.weeklyMenu.lunes.mealsOrder?.join(',') || 'default';
 
@@ -31,6 +32,7 @@ export const MenuEditSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewD
         key={mealOrderKey}
         menuPreviewData={menuPreviewData}
         setMenuPreviewData={setMenuPreviewData}
+        visible={visible}
       />
       <MenuPage2Sec3
         menuPreviewData={menuPreviewData}

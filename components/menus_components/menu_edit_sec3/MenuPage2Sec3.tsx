@@ -1,19 +1,35 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { FileText, Plus, Trash2, ChevronDown, ChevronUp, Copy, Upload, X, Info, AlertCircle, CheckCircle } from 'lucide-react';
-import { MenuPlanData } from '../MenuDesignTemplates';
-import { DEFAULT_SECTION_TITLES, MenuSectionTitles } from '../../../types';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  FileText,
+  Plus,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Upload,
+  X,
+  Info,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
+import { MenuPlanData } from "../MenuDesignTemplates";
+import { DEFAULT_SECTION_TITLES, MenuSectionTitles } from "../../../types";
 
-type RecSection = 'preparacion' | 'restricciones' | 'habitos' | 'organizacion';
+type RecSection = "preparacion" | "restricciones" | "habitos" | "organizacion";
 
-const AutoResizeTextarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = ({ onChange, className, ...props }) => {
+const AutoResizeTextarea: React.FC<
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>
+> = ({ onChange, className, ...props }) => {
   const ref = useRef<HTMLTextAreaElement>(null);
   const resize = () => {
     const el = ref.current;
     if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
   };
-  useEffect(() => { resize(); }, [props.value]);
+  useEffect(() => {
+    resize();
+  }, [props.value]);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -25,7 +41,10 @@ const AutoResizeTextarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElem
     <textarea
       ref={ref}
       rows={1}
-      onChange={e => { onChange?.(e); resize(); }}
+      onChange={(e) => {
+        onChange?.(e);
+        resize();
+      }}
       className={`${className} overflow-hidden`}
       {...props}
     />
@@ -33,26 +52,31 @@ const AutoResizeTextarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElem
 };
 
 const SECTION_EMOJI_KEY: Record<RecSection, keyof MenuSectionTitles> = {
-  preparacion:   'preparacionEmoji',
-  restricciones: 'restriccionesEmoji',
-  habitos:       'habitosEmoji',
-  organizacion:  'organizacionEmoji',
+  preparacion: "preparacionEmoji",
+  restricciones: "restriccionesEmoji",
+  habitos: "habitosEmoji",
+  organizacion: "organizacionEmoji",
 };
 const SECTION_TITLE_KEY: Record<RecSection, keyof MenuSectionTitles> = {
-  preparacion:   'preparacionTitle',
-  restricciones: 'restriccionesTitle',
-  habitos:       'habitosTitle',
-  organizacion:  'organizacionTitle',
+  preparacion: "preparacionTitle",
+  restricciones: "restriccionesTitle",
+  habitos: "habitosTitle",
+  organizacion: "organizacionTitle",
 };
 
 const SECTION_COLORS: Record<RecSection, string> = {
-  preparacion:   'indigo',
-  restricciones: 'rose',
-  habitos:       'emerald',
-  organizacion:  'amber',
+  preparacion: "indigo",
+  restricciones: "rose",
+  habitos: "emerald",
+  organizacion: "amber",
 };
 
-const ALL_SECTIONS: RecSection[] = ['preparacion', 'restricciones', 'habitos', 'organizacion'];
+const ALL_SECTIONS: RecSection[] = [
+  "preparacion",
+  "restricciones",
+  "habitos",
+  "organizacion",
+];
 
 interface Props {
   menuPreviewData: MenuPlanData;
@@ -67,18 +91,26 @@ const RecSectionBlock: React.FC<{
 }> = ({ section, menuPreviewData, setMenuPreviewData }) => {
   const [open, setOpen] = useState(true);
   const st = menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES;
-  const recs = menuPreviewData.recommendations || { preparacion: [], restricciones: [], habitos: [], organizacion: [] };
+  const recs = menuPreviewData.recommendations || {
+    preparacion: [],
+    restricciones: [],
+    habitos: [],
+    organizacion: [],
+  };
 
-  const [emoji, setEmoji]   = useState(st[SECTION_EMOJI_KEY[section]] as string);
-  const [title, setTitle]   = useState(st[SECTION_TITLE_KEY[section]] as string);
-  const [items, setItems]   = useState<string[]>(recs[section] || []);
+  const [emoji, setEmoji] = useState(st[SECTION_EMOJI_KEY[section]] as string);
+  const [title, setTitle] = useState(st[SECTION_TITLE_KEY[section]] as string);
+  const [items, setItems] = useState<string[]>(recs[section] || []);
 
   const color = SECTION_COLORS[section];
 
   const commit = (newEmoji: string, newTitle: string, newItems: string[]) => {
     setMenuPreviewData({
       ...menuPreviewData,
-      recommendations: { ...recs, [section]: newItems.filter(i => i.trim() !== '') },
+      recommendations: {
+        ...recs,
+        [section]: newItems.filter((i) => i.trim() !== ""),
+      },
       sectionTitles: {
         ...(menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES),
         [SECTION_EMOJI_KEY[section]]: newEmoji,
@@ -88,7 +120,7 @@ const RecSectionBlock: React.FC<{
   };
 
   const addItem = () => {
-    const newItems = [...items, ''];
+    const newItems = [...items, ""];
     setItems(newItems);
   };
 
@@ -104,20 +136,26 @@ const RecSectionBlock: React.FC<{
     setItems(newItems);
   };
 
-  const inp =`w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-${color}-500/20 focus:border-${color}-400 outline-none transition-all`;
+  const inp = `w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-${color}-500/20 focus:border-${color}-400 outline-none transition-all`;
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden">
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={() => setOpen((v) => !v)}
         className="w-full px-4 py-2.5 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors"
       >
         <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
           <span>{emoji}</span>
           {title}
-          <span className="hidden sm:inline text-[10px] font-medium text-slate-400 ml-1">({items.length} ítems)</span>
+          <span className="hidden sm:inline text-[10px] font-medium text-slate-400 ml-1">
+            ({items.length} ítems)
+          </span>
         </span>
-        {open ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+        {open ? (
+          <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+        ) : (
+          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+        )}
       </button>
 
       {open && (
@@ -128,13 +166,13 @@ const RecSectionBlock: React.FC<{
               type="text"
               value={emoji}
               maxLength={4}
-              onChange={e => setEmoji(e.target.value)}
+              onChange={(e) => setEmoji(e.target.value)}
               onBlur={() => commit(emoji, title, items)}
               className="w-14 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-sm text-center focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
             />
             <AutoResizeTextarea
               value={title}
-              onChange={e => setTitle(e.target.value)}
+              onChange={(e) => setTitle(e.target.value)}
               onBlur={() => commit(emoji, title, items)}
               className={`flex-1 ${inp} resize-none`}
               placeholder="Título de la sección..."
@@ -145,10 +183,12 @@ const RecSectionBlock: React.FC<{
           <div className="space-y-2">
             {items.map((item, idx) => (
               <div key={idx} className="flex gap-2 items-start">
-                <span className="text-xs text-slate-400 font-bold mt-2.5 w-4 flex-shrink-0">{idx + 1}.</span>
+                <span className="text-xs text-slate-400 font-bold mt-2.5 w-4 flex-shrink-0">
+                  {idx + 1}.
+                </span>
                 <AutoResizeTextarea
                   value={item}
-                  onChange={e => updateItem(idx, e.target.value)}
+                  onChange={(e) => updateItem(idx, e.target.value)}
                   onBlur={() => commit(emoji, title, items)}
                   placeholder="Escribe una recomendación..."
                   className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all resize-none leading-relaxed"
@@ -167,7 +207,8 @@ const RecSectionBlock: React.FC<{
             onClick={addItem}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all border border-indigo-100"
           >
-            <Plus className="w-3.5 h-3.5" />Agregar ítem
+            <Plus className="w-3.5 h-3.5" />
+            Agregar ítem
           </button>
         </div>
       )}
@@ -176,13 +217,16 @@ const RecSectionBlock: React.FC<{
 };
 
 // ─── Main Page 2 Component ────────────────────────────────────────────────────
-export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewData }) => {
+export const MenuPage2Sec3: React.FC<Props> = ({
+  menuPreviewData,
+  setMenuPreviewData,
+}) => {
   const [open, setOpen] = useState(true);
   const [resetKey, setResetKey] = useState(0);
   const [copyPasteOpen, setCopyPasteOpen] = useState(false);
   const [tableCopied, setTableCopied] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [importText, setImportText] = useState('');
+  const [importText, setImportText] = useState("");
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importSuccess, setImportSuccess] = useState(false);
 
@@ -192,28 +236,36 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
   const commitTitle = (val: string) => {
     setMenuPreviewData({
       ...menuPreviewData,
-      sectionTitles: { ...(menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES), page2Title: val },
+      sectionTitles: {
+        ...(menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES),
+        page2Title: val,
+      },
     });
   };
 
   const copyPage2AsText = () => {
     const currentSt = menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES;
-    const recs = menuPreviewData.recommendations || { preparacion: [], restricciones: [], habitos: [], organizacion: [] };
+    const recs = menuPreviewData.recommendations || {
+      preparacion: [],
+      restricciones: [],
+      habitos: [],
+      organizacion: [],
+    };
 
     const lines: string[] = [];
 
     ALL_SECTIONS.forEach((section, idx) => {
-      if (idx > 0) lines.push('');
+      if (idx > 0) lines.push("");
       lines.push(`[Sección ${idx + 1}]`);
       lines.push(`Emoji: ${currentSt[SECTION_EMOJI_KEY[section]]}`);
       lines.push(`Titulo: ${currentSt[SECTION_TITLE_KEY[section]]}`);
-      const items = (recs as any)[section] as string[] || [];
+      const items = ((recs as any)[section] as string[]) || [];
       items.forEach((item, i) => {
-        lines.push(`${i + 1}. ${item.split('\n').join('\n   ')}`);
+        lines.push(`${i + 1}. ${item.split("\n").join("\n   ")}`);
       });
     });
 
-    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
       setTableCopied(true);
       setTimeout(() => setTableCopied(false), 2000);
     });
@@ -224,20 +276,24 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
     const currentSt = menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES;
     const newSectionTitles = { ...currentSt };
     const newRecs: Record<RecSection, string[]> = {
-      preparacion: [], restricciones: [], habitos: [], organizacion: [],
+      preparacion: [],
+      restricciones: [],
+      habitos: [],
+      organizacion: [],
     };
 
-    const lines = importText.split('\n');
+    const lines = importText.split("\n");
 
     // Split into section blocks by [Sección N] markers
     const sectionBlocks: { key: RecSection; lines: string[] }[] = [];
     let currentSection: RecSection | null = null;
     let currentLines: string[] = [];
 
-    lines.forEach(line => {
+    lines.forEach((line) => {
       const m = line.match(/^\[Secci[oó]n\s+(\d+)\]$/i);
       if (m) {
-        if (currentSection) sectionBlocks.push({ key: currentSection, lines: currentLines });
+        if (currentSection)
+          sectionBlocks.push({ key: currentSection, lines: currentLines });
         const idx = parseInt(m[1], 10) - 1;
         currentSection = ALL_SECTIONS[idx] ?? null;
         currentLines = [];
@@ -245,35 +301,44 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
       }
       if (currentSection) currentLines.push(line);
     });
-    if (currentSection) sectionBlocks.push({ key: currentSection, lines: currentLines });
+    if (currentSection)
+      sectionBlocks.push({ key: currentSection, lines: currentLines });
 
     if (sectionBlocks.length === 0) {
-      errors.push('No se encontraron secciones válidas. Verifica que el texto incluya marcadores como [Sección 1], [Sección 2], etc.');
+      errors.push(
+        "No se encontraron secciones válidas. Verifica que el texto incluya marcadores como [Sección 1], [Sección 2], etc.",
+      );
     }
 
     sectionBlocks.forEach(({ key, lines: sLines }) => {
-      const emojiLine = sLines.find(l => l.startsWith('Emoji:'));
-      if (emojiLine) (newSectionTitles as any)[SECTION_EMOJI_KEY[key]] = emojiLine.replace('Emoji:', '').trim();
+      const emojiLine = sLines.find((l) => l.startsWith("Emoji:"));
+      if (emojiLine)
+        (newSectionTitles as any)[SECTION_EMOJI_KEY[key]] = emojiLine
+          .replace("Emoji:", "")
+          .trim();
 
-      const secTitleLine = sLines.find(l => l.startsWith('Titulo:'));
-      if (secTitleLine) (newSectionTitles as any)[SECTION_TITLE_KEY[key]] = secTitleLine.replace('Titulo:', '').trim();
+      const secTitleLine = sLines.find((l) => l.startsWith("Titulo:"));
+      if (secTitleLine)
+        (newSectionTitles as any)[SECTION_TITLE_KEY[key]] = secTitleLine
+          .replace("Titulo:", "")
+          .trim();
 
       // Parse numbered items; blank lines and indented continuation lines are handled gracefully
       const items: string[] = [];
       let currentItem: string[] | null = null;
-      sLines.forEach(line => {
-        if (line.startsWith('Emoji:') || line.startsWith('Titulo:')) return;
-        if (line.trim() === '') return;
+      sLines.forEach((line) => {
+        if (line.startsWith("Emoji:") || line.startsWith("Titulo:")) return;
+        if (line.trim() === "") return;
         const numMatch = line.match(/^(\d+)\.\s*(.*)/);
         if (numMatch) {
-          if (currentItem !== null) items.push(currentItem.join('\n'));
+          if (currentItem !== null) items.push(currentItem.join("\n"));
           currentItem = [numMatch[2]];
         } else if (currentItem !== null) {
-          currentItem.push(line.replace(/^   /, ''));
+          currentItem.push(line.replace(/^   /, ""));
         }
       });
-      if (currentItem !== null) items.push(currentItem.join('\n'));
-      newRecs[key] = items.filter(i => i.trim() !== '');
+      if (currentItem !== null) items.push(currentItem.join("\n"));
+      newRecs[key] = items.filter((i) => i.trim() !== "");
     });
 
     setImportErrors(errors);
@@ -286,13 +351,13 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
 
     setMenuPreviewData(newData);
     setPage2Title(newSectionTitles.page2Title);
-    setResetKey(k => k + 1);
+    setResetKey((k) => k + 1);
 
     if (errors.length === 0) {
       setImportSuccess(true);
       setTimeout(() => {
         setImportOpen(false);
-        setImportText('');
+        setImportText("");
         setImportSuccess(false);
         setImportErrors([]);
       }, 1200);
@@ -306,44 +371,63 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
         {/* Title row */}
         <div className="px-4 py-3 flex items-center justify-between">
           <button
-            onClick={() => setOpen(v => !v)}
+            onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-slate-900 transition-colors"
           >
             <FileText className="w-4 h-4 text-indigo-600" />
-            Página 2 — Recomendaciones y Hábitos
-            {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            Sección Recomendaciones y Hábitos
+            {open ? (
+              <ChevronUp className="w-4 h-4 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            )}
           </button>
 
           {/* Dropdown Copiar / Pegar — desktop */}
           <div className="relative hidden sm:block">
             <button
-              onClick={() => setCopyPasteOpen(v => !v)}
+              onClick={() => setCopyPasteOpen((v) => !v)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border bg-white text-slate-500 border-slate-200 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
             >
               <Copy className="w-3 h-3" />
               Copiar / Pegar
-              <ChevronDown className={`w-3 h-3 transition-transform ${copyPasteOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-3 h-3 transition-transform ${copyPasteOpen ? "rotate-180" : ""}`}
+              />
             </button>
             {copyPasteOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setCopyPasteOpen(false)} />
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setCopyPasteOpen(false)}
+                />
                 <div className="absolute right-0 mt-1.5 z-20 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-44">
                   <button
-                    onClick={() => { copyPage2AsText(); setCopyPasteOpen(false); }}
+                    onClick={() => {
+                      copyPage2AsText();
+                      setCopyPasteOpen(false);
+                    }}
                     className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold transition-colors ${
-                      tableCopied ? 'text-emerald-600 bg-emerald-50' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
+                      tableCopied
+                        ? "text-emerald-600 bg-emerald-50"
+                        : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-600"
                     }`}
                   >
                     <Copy className="w-3.5 h-3.5 shrink-0" />
-                    {tableCopied ? '¡Copiado!' : 'Copiar página 2'}
+                    {tableCopied ? "¡Copiado!" : "Copiar"}
                   </button>
                   <div className="border-t border-slate-100" />
                   <button
-                    onClick={() => { setImportOpen(true); setImportErrors([]); setImportSuccess(false); setCopyPasteOpen(false); }}
+                    onClick={() => {
+                      setImportOpen(true);
+                      setImportErrors([]);
+                      setImportSuccess(false);
+                      setCopyPasteOpen(false);
+                    }}
                     className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                   >
                     <Upload className="w-3.5 h-3.5 shrink-0" />
-                    Pegar en página 2
+                    Pegar
                   </button>
                 </div>
               </>
@@ -355,33 +439,48 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
         <div className="sm:hidden px-4 pb-3">
           <div className="relative inline-block">
             <button
-              onClick={() => setCopyPasteOpen(v => !v)}
+              onClick={() => setCopyPasteOpen((v) => !v)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border bg-white text-slate-500 border-slate-200 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
             >
               <Copy className="w-3 h-3" />
               Copiar / Pegar
-              <ChevronDown className={`w-3 h-3 transition-transform ${copyPasteOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-3 h-3 transition-transform ${copyPasteOpen ? "rotate-180" : ""}`}
+              />
             </button>
             {copyPasteOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setCopyPasteOpen(false)} />
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setCopyPasteOpen(false)}
+                />
                 <div className="absolute left-0 mt-1.5 z-20 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-44">
                   <button
-                    onClick={() => { copyPage2AsText(); setCopyPasteOpen(false); }}
+                    onClick={() => {
+                      copyPage2AsText();
+                      setCopyPasteOpen(false);
+                    }}
                     className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold transition-colors ${
-                      tableCopied ? 'text-emerald-600 bg-emerald-50' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
+                      tableCopied
+                        ? "text-emerald-600 bg-emerald-50"
+                        : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-600"
                     }`}
                   >
                     <Copy className="w-3.5 h-3.5 shrink-0" />
-                    {tableCopied ? '¡Copiado!' : 'Copiar página 2'}
+                    {tableCopied ? "¡Copiado!" : "Copiar"}
                   </button>
                   <div className="border-t border-slate-100" />
                   <button
-                    onClick={() => { setImportOpen(true); setImportErrors([]); setImportSuccess(false); setCopyPasteOpen(false); }}
+                    onClick={() => {
+                      setImportOpen(true);
+                      setImportErrors([]);
+                      setImportSuccess(false);
+                      setCopyPasteOpen(false);
+                    }}
                     className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                   >
                     <Upload className="w-3.5 h-3.5 shrink-0" />
-                    Pegar en página 2
+                    Pegar
                   </button>
                 </div>
               </>
@@ -394,11 +493,13 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
         <div className="p-4 space-y-4">
           {/* Page 2 title */}
           <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Título de Página 2</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Título de Sección
+            </label>
             <input
               type="text"
               value={page2Title}
-              onChange={e => setPage2Title(e.target.value)}
+              onChange={(e) => setPage2Title(e.target.value)}
               onBlur={() => commitTitle(page2Title)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
             />
@@ -406,7 +507,7 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
 
           {/* 4 recommendation sections */}
           <div className="space-y-3">
-            {ALL_SECTIONS.map(section => (
+            {ALL_SECTIONS.map((section) => (
               <RecSectionBlock
                 key={`${section}-${resetKey}`}
                 section={section}
@@ -422,15 +523,21 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
       {importOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
-
             {/* Modal header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Upload className="w-4 h-4 text-emerald-600" />
-                <span className="text-sm font-black text-slate-700">Importar recomendaciones editadas</span>
+                <span className="text-sm font-black text-slate-700">
+                  Importar recomendaciones editadas
+                </span>
               </div>
               <button
-                onClick={() => { setImportOpen(false); setImportText(''); setImportErrors([]); setImportSuccess(false); }}
+                onClick={() => {
+                  setImportOpen(false);
+                  setImportText("");
+                  setImportErrors([]);
+                  setImportSuccess(false);
+                }}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -441,12 +548,30 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
             <div className="mx-5 mt-4 rounded-xl bg-sky-50 border border-sky-100 p-3.5 space-y-1.5">
               <div className="flex items-center gap-1.5 mb-2">
                 <Info className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                <span className="text-[11px] font-black text-sky-600 uppercase tracking-wide">Antes de pegar, ten en cuenta:</span>
+                <span className="text-[11px] font-black text-sky-600 uppercase tracking-wide">
+                  Antes de pegar, ten en cuenta:
+                </span>
               </div>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Puedes editar el emoji, el título y los ítems de cada sección.</p>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Agrega o elimina ítems libremente, pero cada uno debe estar enumerado (<span className="font-bold">1. 2. 3.</span>).</p>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No cambies los marcadores entre corchetes (<span className="font-bold">[Sección 1]</span>, <span className="font-bold">[Sección 2]</span>, etc.).</p>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No cambies los prefijos <span className="font-bold">Emoji:</span> y <span className="font-bold">Titulo:</span>.</p>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5">
+                <span className="text-emerald-500 font-black">✓</span> Puedes
+                editar el emoji, el título y los ítems de cada sección.
+              </p>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5">
+                <span className="text-emerald-500 font-black">✓</span> Agrega o
+                elimina ítems libremente, pero cada uno debe estar enumerado (
+                <span className="font-bold">1. 2. 3.</span>).
+              </p>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5">
+                <span className="text-rose-500 font-black">✗</span> No cambies
+                los marcadores entre corchetes (
+                <span className="font-bold">[Sección 1]</span>,{" "}
+                <span className="font-bold">[Sección 2]</span>, etc.).
+              </p>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5">
+                <span className="text-rose-500 font-black">✗</span> No cambies
+                los prefijos <span className="font-bold">Emoji:</span> y{" "}
+                <span className="font-bold">Titulo:</span>.
+              </p>
             </div>
 
             {/* Textarea */}
@@ -456,10 +581,16 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
               </label>
               <textarea
                 value={importText}
-                onChange={e => { setImportText(e.target.value); setImportErrors([]); setImportSuccess(false); }}
+                onChange={(e) => {
+                  setImportText(e.target.value);
+                  setImportErrors([]);
+                  setImportSuccess(false);
+                }}
                 rows={12}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all resize-none leading-relaxed"
-                placeholder={'[Sección 1]\nEmoji: 🥗\nTitulo: Preparación de Alimentos\n1. Primera recomendación\n2. Segunda recomendación\n\n[Sección 2]\nEmoji: ✅\nTitulo: Hábitos saludables\n1. Beber 2L de agua al día\n...'}
+                placeholder={
+                  "[Sección 1]\nEmoji: 🥗\nTitulo: Preparación de Alimentos\n1. Primera recomendación\n2. Segunda recomendación\n\n[Sección 2]\nEmoji: ✅\nTitulo: Hábitos saludables\n1. Beber 2L de agua al día\n..."
+                }
               />
             </div>
 
@@ -471,21 +602,30 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
                   Advertencias:
                 </p>
                 {importErrors.map((e, i) => (
-                  <p key={i} className="text-[11px] text-amber-700">• {e}</p>
+                  <p key={i} className="text-[11px] text-amber-700">
+                    • {e}
+                  </p>
                 ))}
               </div>
             )}
             {importSuccess && (
               <div className="mx-5 mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-emerald-500" />
-                <p className="text-[11px] font-black text-emerald-600">¡Página 2 importada correctamente!</p>
+                <p className="text-[11px] font-black text-emerald-600">
+                  ¡Sección importada correctamente!
+                </p>
               </div>
             )}
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-2 px-5 py-4 mt-3 border-t border-slate-100">
               <button
-                onClick={() => { setImportOpen(false); setImportText(''); setImportErrors([]); setImportSuccess(false); }}
+                onClick={() => {
+                  setImportOpen(false);
+                  setImportText("");
+                  setImportErrors([]);
+                  setImportSuccess(false);
+                }}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors"
               >
                 Cancelar
@@ -495,8 +635,8 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
                 disabled={!importText.trim()}
                 className={`flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold transition-all ${
                   importText.trim()
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
                 }`}
               >
                 <Upload className="w-3.5 h-3.5" />

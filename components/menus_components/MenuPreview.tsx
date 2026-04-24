@@ -328,7 +328,7 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
               ) : null;
             })}
 
-            {currentTemplate === 'plantilla_v1' && onEditDomingoLibre && (
+            {currentTemplate.startsWith('plantilla_v1') && onEditDomingoLibre && (
               <button
                 onClick={onEditDomingoLibre}
                 title="Editar domingo (día libre)"
@@ -337,7 +337,7 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
                 dom
               </button>
             )}
-            {currentTemplate === 'plantilla_v2' && onEditDomingoCompleto && (
+            {currentTemplate.startsWith('plantilla_v2') && onEditDomingoCompleto && (
               <button
                 onClick={onEditDomingoCompleto}
                 title="Editar domingo (menú completo)"
@@ -347,7 +347,7 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
               </button>
             )}
 
-            {currentTemplate === 'plantilla_v2' && onEditTemplateNote && (
+            {currentTemplate.startsWith('plantilla_v2') && onEditTemplateNote && (
               <button
                 onClick={onEditTemplateNote}
                 title="Editar notas"

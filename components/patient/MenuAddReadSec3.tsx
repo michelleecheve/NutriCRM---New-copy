@@ -171,6 +171,13 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     onDirty?.();
   };
 
+  // Toolbar (preview mode) saves → also remount the tabla so its local state is fresh
+  const handleSetMenuPreviewDataFromToolbar = (data: MenuPlanData | null) => {
+    setMenuPreviewData(data);
+    setEditTablaKey(k => k + 1);
+    onDirty?.();
+  };
+
   // ─── Template change ──────────────────────────────────────────────────────
   const handleTemplateChange = (templateId: string) => {
     setSelectedPreviewTemplate(templateId);
@@ -1213,6 +1220,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                   menuPreviewData={menuPreviewData}
                   setMenuPreviewData={handleSetMenuPreviewData}
                   portions={portions}
+                  visible={editMode === 'tabla'}
                 />
               </div>
 
@@ -1241,7 +1249,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                   <MenuEditorToolbar
                     ref={toolbarRef}
                     menuPreviewData={menuPreviewData}
-                    setMenuPreviewData={handleSetMenuPreviewData}
+                    setMenuPreviewData={handleSetMenuPreviewDataFromToolbar}
                     patient={patient}
                     vetData={vetData}
                     portions={portions}

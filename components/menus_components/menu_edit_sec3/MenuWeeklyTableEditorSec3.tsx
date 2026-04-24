@@ -15,12 +15,13 @@ type LocalGrid = Record<string, Record<string, string>>; // mealId → dayKey �
 interface Props {
   menuPreviewData: MenuPlanData;
   setMenuPreviewData: (d: MenuPlanData) => void;
+  visible?: boolean;
 }
 
 const TABLE_MIN_WIDTH_LIBRE = 1360;
 const TABLE_MIN_WIDTH_COMPLETO = 1570;
 
-export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewData }) => {
+export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewData, visible }) => {
   const [open, setOpen] = useState(true);
   const [copiedSource, setCopiedSource] = useState<WeekDay | 'domingo' | null>(null);
   const [clipboard, setClipboard] = useState<Record<string, string> | null>(null);
@@ -151,6 +152,14 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
       setTimeout(() => meals.forEach(meal => syncRowHeights(meal.id)), 0);
     }
   }, [open]); // eslint-disable-line
+
+  // Re-sync row heights when the section becomes visible again (e.g. switching from preview to tabla)
+  // because scrollHeight measurements are 0 while the container is display:none
+  useEffect(() => {
+    if (visible) {
+      setTimeout(() => latestRef.current.meals.forEach(m => syncRowHeights(m.id)), 50);
+    }
+  }, [visible]); // eslint-disable-line
 
   // Builds a full MenuPlanData merging local edits into the latest parent state
   const buildWeeklyData = (
@@ -822,15 +831,15 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
                   <label className="text-[10px] font-black text-sky-500 uppercase tracking-wider block mb-1.5">
                     Hidratación
                   </label>
-                  <input
-                    type="text"
+                  <textarea
+                    rows={3}
                     value={hydration}
                     onChange={e => {
                       setHydration(e.target.value);
                       setIsDirty(true);
                       scheduleCommit(grid, meals, domingoNote, e.target.value, domingoV2Grid, domingoV2Note, domingoV2Hydration);
                     }}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 outline-none transition-all"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 outline-none transition-all resize-none overflow-y-auto leading-relaxed"
                     placeholder="Ej: 2.5L de agua"
                   />
                 </div>
@@ -866,15 +875,15 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
                   <label className="text-[10px] font-black text-sky-500 uppercase tracking-wider block mb-1.5">
                     Hidratación
                   </label>
-                  <input
-                    type="text"
+                  <textarea
+                    rows={3}
                     value={domingoV2Hydration}
                     onChange={e => {
                       setDomingoV2Hydration(e.target.value);
                       setIsDirty(true);
                       scheduleCommit(grid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, e.target.value);
                     }}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 outline-none transition-all"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 outline-none transition-all resize-none overflow-y-auto leading-relaxed"
                     placeholder="Ej: 2.5L de agua"
                   />
                 </div>
