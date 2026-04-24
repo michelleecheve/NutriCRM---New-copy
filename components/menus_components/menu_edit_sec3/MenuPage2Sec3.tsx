@@ -14,6 +14,13 @@ const AutoResizeTextarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElem
     el.style.height = el.scrollHeight + 'px';
   };
   useEffect(() => { resize(); }, [props.value]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(resize);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   return (
     <textarea
       ref={ref}
@@ -108,7 +115,7 @@ const RecSectionBlock: React.FC<{
         <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
           <span>{emoji}</span>
           {title}
-          <span className="text-[10px] font-medium text-slate-400 ml-1">({items.length} ítems)</span>
+          <span className="hidden sm:inline text-[10px] font-medium text-slate-400 ml-1">({items.length} ítems)</span>
         </span>
         {open ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
       </button>
@@ -125,12 +132,11 @@ const RecSectionBlock: React.FC<{
               onBlur={() => commit(emoji, title, items)}
               className="w-14 bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-sm text-center focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all"
             />
-            <input
-              type="text"
+            <AutoResizeTextarea
               value={title}
               onChange={e => setTitle(e.target.value)}
               onBlur={() => commit(emoji, title, items)}
-              className={`flex-1 ${inp}`}
+              className={`flex-1 ${inp} resize-none`}
               placeholder="Título de la sección..."
             />
           </div>
@@ -296,50 +302,91 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       {/* Header */}
-      <div className="w-full px-4 py-3 flex items-center justify-between bg-slate-50 border-b border-slate-100">
-        <button
-          onClick={() => setOpen(v => !v)}
-          className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-slate-900 transition-colors"
-        >
-          <FileText className="w-4 h-4 text-indigo-600" />
-          Página 2 — Recomendaciones y Hábitos
-          {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-        </button>
-
-        {/* Dropdown Copiar / Pegar */}
-        <div className="relative">
+      <div className="w-full bg-slate-50 border-b border-slate-100">
+        {/* Title row */}
+        <div className="px-4 py-3 flex items-center justify-between">
           <button
-            onClick={() => setCopyPasteOpen(v => !v)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border bg-white text-slate-500 border-slate-200 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
+            onClick={() => setOpen(v => !v)}
+            className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-slate-900 transition-colors"
           >
-            <Copy className="w-3 h-3" />
-            Copiar / Pegar
-            <ChevronDown className={`w-3 h-3 transition-transform ${copyPasteOpen ? 'rotate-180' : ''}`} />
+            <FileText className="w-4 h-4 text-indigo-600" />
+            Página 2 — Recomendaciones y Hábitos
+            {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
           </button>
-          {copyPasteOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setCopyPasteOpen(false)} />
-              <div className="absolute right-0 mt-1.5 z-20 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-44">
-                <button
-                  onClick={() => { copyPage2AsText(); setCopyPasteOpen(false); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold transition-colors ${
-                    tableCopied ? 'text-emerald-600 bg-emerald-50' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
-                  }`}
-                >
-                  <Copy className="w-3.5 h-3.5 shrink-0" />
-                  {tableCopied ? '¡Copiado!' : 'Copiar página 2'}
-                </button>
-                <div className="border-t border-slate-100" />
-                <button
-                  onClick={() => { setImportOpen(true); setImportErrors([]); setImportSuccess(false); setCopyPasteOpen(false); }}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                >
-                  <Upload className="w-3.5 h-3.5 shrink-0" />
-                  Pegar en página 2
-                </button>
-              </div>
-            </>
-          )}
+
+          {/* Dropdown Copiar / Pegar — desktop */}
+          <div className="relative hidden sm:block">
+            <button
+              onClick={() => setCopyPasteOpen(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border bg-white text-slate-500 border-slate-200 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
+            >
+              <Copy className="w-3 h-3" />
+              Copiar / Pegar
+              <ChevronDown className={`w-3 h-3 transition-transform ${copyPasteOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {copyPasteOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setCopyPasteOpen(false)} />
+                <div className="absolute right-0 mt-1.5 z-20 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-44">
+                  <button
+                    onClick={() => { copyPage2AsText(); setCopyPasteOpen(false); }}
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold transition-colors ${
+                      tableCopied ? 'text-emerald-600 bg-emerald-50' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
+                    }`}
+                  >
+                    <Copy className="w-3.5 h-3.5 shrink-0" />
+                    {tableCopied ? '¡Copiado!' : 'Copiar página 2'}
+                  </button>
+                  <div className="border-t border-slate-100" />
+                  <button
+                    onClick={() => { setImportOpen(true); setImportErrors([]); setImportSuccess(false); setCopyPasteOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5 shrink-0" />
+                    Pegar en página 2
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Dropdown Copiar / Pegar — mobile, below title */}
+        <div className="sm:hidden px-4 pb-3">
+          <div className="relative inline-block">
+            <button
+              onClick={() => setCopyPasteOpen(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border bg-white text-slate-500 border-slate-200 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
+            >
+              <Copy className="w-3 h-3" />
+              Copiar / Pegar
+              <ChevronDown className={`w-3 h-3 transition-transform ${copyPasteOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {copyPasteOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setCopyPasteOpen(false)} />
+                <div className="absolute left-0 mt-1.5 z-20 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-44">
+                  <button
+                    onClick={() => { copyPage2AsText(); setCopyPasteOpen(false); }}
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold transition-colors ${
+                      tableCopied ? 'text-emerald-600 bg-emerald-50' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
+                    }`}
+                  >
+                    <Copy className="w-3.5 h-3.5 shrink-0" />
+                    {tableCopied ? '¡Copiado!' : 'Copiar página 2'}
+                  </button>
+                  <div className="border-t border-slate-100" />
+                  <button
+                    onClick={() => { setImportOpen(true); setImportErrors([]); setImportSuccess(false); setCopyPasteOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5 shrink-0" />
+                    Pegar en página 2
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

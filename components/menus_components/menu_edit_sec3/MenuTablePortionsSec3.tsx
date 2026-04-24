@@ -154,33 +154,45 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-      <div className="px-4 py-3 flex items-center justify-between bg-slate-50">
-        <button
-          onClick={() => setOpen(v => !v)}
-          className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-indigo-600 transition-colors"
-        >
-          <TableIcon className="w-4 h-4 text-indigo-600" />
-          Tabla de Porciones
-          {open ? <ChevronUp className="w-4 h-4 text-slate-400 ml-1" /> : <ChevronDown className="w-4 h-4 text-slate-400 ml-1" />}
-        </button>
-        {open && (
+      <div className="bg-slate-50">
+        <div className="px-4 py-3 flex items-center justify-between">
           <button
-            onClick={addMeal}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all border border-indigo-100"
+            onClick={() => setOpen(v => !v)}
+            className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-indigo-600 transition-colors"
           >
-            <Plus className="w-3.5 h-3.5" />Agregar Tiempo
+            <TableIcon className="w-4 h-4 text-indigo-600" />
+            Tabla de Porciones
+            {open ? <ChevronUp className="w-4 h-4 text-slate-400 ml-1" /> : <ChevronDown className="w-4 h-4 text-slate-400 ml-1" />}
           </button>
+          {open && (
+            <button
+              onClick={addMeal}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all border border-indigo-100"
+            >
+              <Plus className="w-3.5 h-3.5" />Agregar Tiempo
+            </button>
+          )}
+        </div>
+        {open && (
+          <div className="sm:hidden px-4 pb-3">
+            <button
+              onClick={addMeal}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all border border-indigo-100"
+            >
+              Agregar Tiempo
+            </button>
+          </div>
         )}
       </div>
 
       {open && (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse table-fixed">
+            <table className="text-sm border-collapse" style={{ minWidth: 560 }}>
               <colgroup>
-                <col style={{ width: '22%' }} />
-                {groupLabels.map((_, i) => <col key={i} style={{ width: '12%' }} />)}
-                <col style={{ width: '6%' }} />
+                <col style={{ minWidth: 130 }} />
+                {groupLabels.map((_, i) => <col key={i} style={{ minWidth: 68 }} />)}
+                <col style={{ minWidth: 40 }} />
               </colgroup>
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">

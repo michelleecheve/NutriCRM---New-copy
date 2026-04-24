@@ -45,7 +45,8 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
 
       {open && (
         <div className="p-4">
-          <div className="flex items-start gap-2">
+          <div className="overflow-x-auto">
+          <div className="flex items-start gap-2 min-w-max">
             <div className="space-y-1 w-44 flex-shrink-0">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Título del Plan</label>
               <textarea
@@ -57,30 +58,31 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
               />
               <p className="text-[10px] text-slate-400 italic">Enter = 2 líneas</p>
             </div>
-            <div className="w-64 flex-shrink-0 space-y-1">
+            <div className="w-52 flex-shrink-0 space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nombre</label>
               <input type="text" value={name} onChange={e => setName(e.target.value)} onBlur={commit} className={inp} />
             </div>
-            <div className="flex-1 space-y-1">
+            <div className="w-24 flex-shrink-0 space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Edad</label>
               <input type="number" value={age} onChange={e => setAge(Number(e.target.value))} onBlur={commit}
                 onWheel={e => (e.target as HTMLInputElement).blur()} className={inp} />
             </div>
-            <div className="flex-1 space-y-1">
+            <div className="w-24 flex-shrink-0 space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peso (kg)</label>
               <input type="number" step="0.1" value={weight} onChange={e => setWeight(Number(e.target.value))} onBlur={commit}
                 onWheel={e => (e.target as HTMLInputElement).blur()} className={inp} />
             </div>
-            <div className="flex-1 space-y-1">
+            <div className="w-24 flex-shrink-0 space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">% Grasa</label>
               <input type="number" step="0.1" value={fatPct} onChange={e => setFatPct(Number(e.target.value))} onBlur={commit}
                 onWheel={e => (e.target as HTMLInputElement).blur()} className={inp} />
             </div>
-            <div className="flex-1 space-y-1">
+            <div className="w-24 flex-shrink-0 space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kcal</label>
               <input type="number" value={kcal} onChange={e => setKcal(Number(e.target.value))} onBlur={commit}
                 onWheel={e => (e.target as HTMLInputElement).blur()} className={inp} />
             </div>
+          </div>
           </div>
         </div>
       )}
