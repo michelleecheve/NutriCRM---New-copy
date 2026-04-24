@@ -630,7 +630,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         </section>
 
         <MenuAddReadSec2
-          key={editingMenuId || 'new'}
+          key={`sec2-${editingMenuId || 'new'}`}
           selectedReferenceIds={selectedReferenceIds}
           setSelectedReferenceIds={setSelectedReferenceIds}
           selectedRecommendationIds={selectedRecommendationIds}
@@ -639,7 +639,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         />
 
         <MenuAddReadSec3
-          key={editingMenuId || 'new'}
+          key={`sec3-${editingMenuId || 'new'}`}
           patient={patient}
           vetData={vetData}
           macros={macros}

@@ -1,9 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FileText, Plus, Trash2, ChevronDown, ChevronUp, Copy, Upload, X, Info, AlertCircle, CheckCircle } from 'lucide-react';
 import { MenuPlanData } from '../MenuDesignTemplates';
 import { DEFAULT_SECTION_TITLES, MenuSectionTitles } from '../../../types';
 
 type RecSection = 'preparacion' | 'restricciones' | 'habitos' | 'organizacion';
+
+const AutoResizeTextarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = ({ onChange, className, ...props }) => {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const resize = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  };
+  useEffect(() => { resize(); }, [props.value]);
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      onChange={e => { onChange?.(e); resize(); }}
+      className={`${className} overflow-hidden`}
+      {...props}
+    />
+  );
+};
 
 const SECTION_EMOJI_KEY: Record<RecSection, keyof MenuSectionTitles> = {
   preparacion:   'preparacionEmoji',
@@ -77,9 +97,7 @@ const RecSectionBlock: React.FC<{
     setItems(newItems);
   };
 
-  const rowCount = (text: string) => Math.max(1, text.split('\n').length);
-
-  const inp = `w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-${color}-500/20 focus:border-${color}-400 outline-none transition-all`;
+  const inp =`w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-${color}-500/20 focus:border-${color}-400 outline-none transition-all`;
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden">
@@ -122,9 +140,8 @@ const RecSectionBlock: React.FC<{
             {items.map((item, idx) => (
               <div key={idx} className="flex gap-2 items-start">
                 <span className="text-xs text-slate-400 font-bold mt-2.5 w-4 flex-shrink-0">{idx + 1}.</span>
-                <textarea
+                <AutoResizeTextarea
                   value={item}
-                  rows={rowCount(item)}
                   onChange={e => updateItem(idx, e.target.value)}
                   onBlur={() => commit(emoji, title, items)}
                   placeholder="Escribe una recomendación..."
@@ -179,14 +196,13 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
 
     const lines: string[] = [];
 
-    ALL_SECTIONS.forEach(section => {
-      lines.push('');
-      lines.push(`[${section}]`);
+    ALL_SECTIONS.forEach((section, idx) => {
+      if (idx > 0) lines.push('');
+      lines.push(`[Sección ${idx + 1}]`);
       lines.push(`Emoji: ${currentSt[SECTION_EMOJI_KEY[section]]}`);
-      lines.push(`Título: ${currentSt[SECTION_TITLE_KEY[section]]}`);
+      lines.push(`Titulo: ${currentSt[SECTION_TITLE_KEY[section]]}`);
       const items = (recs as any)[section] as string[] || [];
       items.forEach((item, i) => {
-        // Indent continuation lines so the numbered item is unambiguous
         lines.push(`${i + 1}. ${item.split('\n').join('\n   ')}`);
       });
     });
@@ -207,16 +223,17 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
 
     const lines = importText.split('\n');
 
-    // Split into section blocks by [sectionKey] markers
+    // Split into section blocks by [Sección N] markers
     const sectionBlocks: { key: RecSection; lines: string[] }[] = [];
     let currentSection: RecSection | null = null;
     let currentLines: string[] = [];
 
     lines.forEach(line => {
-      const m = line.match(/^\[([a-z]+)\]$/);
-      if (m && ALL_SECTIONS.includes(m[1] as RecSection)) {
+      const m = line.match(/^\[Secci[oó]n\s+(\d+)\]$/i);
+      if (m) {
         if (currentSection) sectionBlocks.push({ key: currentSection, lines: currentLines });
-        currentSection = m[1] as RecSection;
+        const idx = parseInt(m[1], 10) - 1;
+        currentSection = ALL_SECTIONS[idx] ?? null;
         currentLines = [];
         return;
       }
@@ -225,27 +242,27 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
     if (currentSection) sectionBlocks.push({ key: currentSection, lines: currentLines });
 
     if (sectionBlocks.length === 0) {
-      errors.push('No se encontraron secciones válidas. Verifica que el texto incluya marcadores como [preparacion], [habitos], etc.');
+      errors.push('No se encontraron secciones válidas. Verifica que el texto incluya marcadores como [Sección 1], [Sección 2], etc.');
     }
 
     sectionBlocks.forEach(({ key, lines: sLines }) => {
       const emojiLine = sLines.find(l => l.startsWith('Emoji:'));
       if (emojiLine) (newSectionTitles as any)[SECTION_EMOJI_KEY[key]] = emojiLine.replace('Emoji:', '').trim();
 
-      const secTitleLine = sLines.find(l => l.startsWith('Título:'));
-      if (secTitleLine) (newSectionTitles as any)[SECTION_TITLE_KEY[key]] = secTitleLine.replace('Título:', '').trim();
+      const secTitleLine = sLines.find(l => l.startsWith('Titulo:'));
+      if (secTitleLine) (newSectionTitles as any)[SECTION_TITLE_KEY[key]] = secTitleLine.replace('Titulo:', '').trim();
 
-      // Parse numbered items; indented continuation lines belong to the current item
+      // Parse numbered items; blank lines and indented continuation lines are handled gracefully
       const items: string[] = [];
       let currentItem: string[] | null = null;
       sLines.forEach(line => {
-        if (line.startsWith('Emoji:') || line.startsWith('Título:')) return;
-        const numMatch = line.match(/^(\d+)\. (.*)/);
+        if (line.startsWith('Emoji:') || line.startsWith('Titulo:')) return;
+        if (line.trim() === '') return;
+        const numMatch = line.match(/^(\d+)\.\s*(.*)/);
         if (numMatch) {
           if (currentItem !== null) items.push(currentItem.join('\n'));
           currentItem = [numMatch[2]];
         } else if (currentItem !== null) {
-          // Strip leading indentation added during copy
           currentItem.push(line.replace(/^   /, ''));
         }
       });
@@ -380,10 +397,9 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
                 <span className="text-[11px] font-black text-sky-600 uppercase tracking-wide">Antes de pegar, ten en cuenta:</span>
               </div>
               <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Puedes editar el emoji, el título y los ítems de cada sección.</p>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Agrega o elimina ítems numerados libremente.</p>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No cambies las claves entre corchetes (<span className="font-bold">[preparacion]</span>, <span className="font-bold">[habitos]</span>, etc.).</p>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No cambies los prefijos <span className="font-bold">Emoji:</span> y <span className="font-bold">Título:</span>.</p>
-              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No elimines las líneas en blanco entre secciones.</p>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Agrega o elimina ítems libremente, pero cada uno debe estar enumerado (<span className="font-bold">1. 2. 3.</span>).</p>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No cambies los marcadores entre corchetes (<span className="font-bold">[Sección 1]</span>, <span className="font-bold">[Sección 2]</span>, etc.).</p>
+              <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-rose-500 font-black">✗</span> No cambies los prefijos <span className="font-bold">Emoji:</span> y <span className="font-bold">Titulo:</span>.</p>
             </div>
 
             {/* Textarea */}
@@ -396,7 +412,7 @@ export const MenuPage2Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
                 onChange={e => { setImportText(e.target.value); setImportErrors([]); setImportSuccess(false); }}
                 rows={12}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all resize-none leading-relaxed"
-                placeholder={'[preparacion]\nEmoji: 🥗\nTítulo: Preparación de Alimentos\n1. Primera recomendación\n2. Segunda recomendación\n\n[habitos]\nEmoji: ✅\nTítulo: Hábitos saludables\n1. Beber 2L de agua al día\n...'}
+                placeholder={'[Sección 1]\nEmoji: 🥗\nTitulo: Preparación de Alimentos\n1. Primera recomendación\n2. Segunda recomendación\n\n[Sección 2]\nEmoji: ✅\nTitulo: Hábitos saludables\n1. Beber 2L de agua al día\n...'}
               />
             </div>
 

@@ -218,9 +218,9 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
   return (
     <div className="space-y-6">
       {/* ── Header bar ── */}
-      <div className="flex flex-row items-center justify-between gap-3 border-b border-slate-100 pb-4">
-        {/* Left: title + templates + edit (desktop) */}
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 border-b border-slate-100 pb-4">
+        {/* Row 1 (mobile) / Left (desktop): title + templates + edit */}
+        <div className="flex items-center gap-3 flex-wrap">
           <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Vista Previa</h3>
 
           {!hideTemplateSelector && (
@@ -266,8 +266,8 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
           )}
         </div>
 
-        {/* Right: edit (mobile) + zoom */}
-        <div className="flex items-center justify-end gap-3">
+        {/* Row 2 (mobile) / Right (desktop): edit + zoom */}
+        <div className="flex items-center justify-between sm:justify-end gap-3">
           {/* Edit mode toggle — mobile only */}
           {hasEditCallbacks && (
             <button

@@ -1183,10 +1183,10 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
               {/* ── Edit mode toggle ── */}
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl w-fit">
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl w-full sm:w-fit">
                 <button
                   onClick={() => setEditMode('tabla')}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                     editMode === 'tabla'
                       ? 'bg-white text-indigo-600 shadow-sm'
                       : 'text-slate-500 hover:text-slate-700'
@@ -1196,7 +1196,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                 </button>
                 <button
                   onClick={() => setEditMode('preview')}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                     editMode === 'preview'
                       ? 'bg-white text-indigo-600 shadow-sm'
                       : 'text-slate-500 hover:text-slate-700'
