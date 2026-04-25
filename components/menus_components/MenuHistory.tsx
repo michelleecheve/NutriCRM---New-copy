@@ -372,8 +372,10 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                   <MenuPreview
                     data={selectedEntry.menu.menuData}
                     elementId={`menu-history-${selectedEntry.menu.id}`}
-                    selectedTemplate={selectedEntry.menu.templateId || 'plantilla_v1'}
+                    selectedTemplate={selectedEntry.menu.designConfig?.templateDesign || selectedEntry.menu.templateId || 'plantilla_v1'}
                     hideTemplateSelector={true}
+                    visualTheme={selectedEntry.menu.designConfig?.visualTheme}
+                    pageLayout={selectedEntry.menu.designConfig?.pageLayout}
                   />
                 ) : (
                   <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">

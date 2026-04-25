@@ -222,6 +222,9 @@ export interface GeneratedMenu {
   content?: string;
   aiRationale?: string;
   menuPreviewData?: any;
+
+  // Per-menu design config
+  designConfig?: MenuDesignConfig;
 }
 
 // SIMPLIFICADO - Eliminados: currentDiet, dailyCaloriesTarget, menus, notes
@@ -303,6 +306,7 @@ export interface Patient {
   accessCode?: string | null;
   portalGoal?: string | null;
   portalShowMeasurementsDetail?: boolean | null;
+  portalMeasurementsConfig?: PatientPortalMeasurementsConfig | null;
 }
 
 export interface Invoice {
@@ -390,8 +394,81 @@ export interface MenuAIConfig {
   recommendationIdeas?: RecommendationIdeas;
 }
 
+export interface AntroFieldsConfig {
+  weight?: boolean;
+  height?: boolean;
+  imc?: boolean;
+  bodyFatPct?: boolean;
+  fatKg?: boolean;
+  leanMassKg?: boolean;
+  leanMassPct?: boolean;
+  muscleKg?: boolean;
+  boneMass?: boolean;
+  residualMass?: boolean;
+  showImcChart?: boolean;
+  showBodyFatChart?: boolean;
+  biceps?: boolean;
+  triceps?: boolean;
+  subscapular?: boolean;
+  supraspinal?: boolean;
+  abdomen?: boolean;
+  thigh?: boolean;
+  calf?: boolean;
+  iliacCrest?: boolean;
+  skinfoldSum?: boolean;
+  armRelaxed?: boolean;
+  armContracted?: boolean;
+  waist?: boolean;
+  umbilical?: boolean;
+  hip?: boolean;
+  abdominalLow?: boolean;
+  thighRight?: boolean;
+  thighLeft?: boolean;
+  calfGirth?: boolean;
+  humerus?: boolean;
+  femur?: boolean;
+  wrist?: boolean;
+  endomorfo?: boolean;
+  mesomorfo?: boolean;
+  ectomorfo?: boolean;
+  notes?: boolean;
+}
+
+export interface BioFieldsConfig {
+  weight?: boolean;
+  height?: boolean;
+  imc?: boolean;
+  bodyFatPct?: boolean;
+  muscleMass?: boolean;
+  boneMass?: boolean;
+  waterPct?: boolean;
+  visceralFat?: boolean;
+  bmr?: boolean;
+  metabolicAge?: boolean;
+  physiqueRating?: boolean;
+  showImcChart?: boolean;
+  showBodyFatChart?: boolean;
+  waist?: boolean;
+  umbilical?: boolean;
+  hip?: boolean;
+  thighLeft?: boolean;
+  thighRight?: boolean;
+  abdominalLow?: boolean;
+  calfGirth?: boolean;
+  armRelaxed?: boolean;
+  armContracted?: boolean;
+  notes?: boolean;
+}
+
+export interface PatientPortalMeasurementsConfig {
+  antro?: AntroFieldsConfig;
+  bio?: BioFieldsConfig;
+}
+
 export interface PortalConfig {
   measurementsDetailDefault?: boolean;
+  antroFieldsDefault?: AntroFieldsConfig;
+  bioFieldsDefault?: BioFieldsConfig;
 }
 
 export interface MenuReferenceRecord {
@@ -488,6 +565,12 @@ export const DEFAULT_VISUAL_THEME: VisualThemeConfig = {
 };
 
 export type PageLayoutOption = 'layout1' | 'layout2' | 'layout3';
+
+export interface MenuDesignConfig {
+  templateDesign: MenuTemplateDesign;
+  pageLayout: PageLayoutOption;
+  visualTheme: VisualThemeConfig;
+}
 
 export interface MenuTemplate {
   id: string;

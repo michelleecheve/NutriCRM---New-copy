@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { MeasurementEntry, BioEntry } from './PortalShell';
+import { AntroFieldsConfig, BioFieldsConfig, PatientPortalMeasurementsConfig } from '../../types';
 
 interface Props {
   measurements: MeasurementEntry[];
   bioMeasurements: BioEntry[];
   showDetail?: boolean;
+  measurementsConfig?: PatientPortalMeasurementsConfig | null;
+}
+
+function fieldOn(config: AntroFieldsConfig | BioFieldsConfig | undefined, key: string): boolean {
+  if (!config) return true;
+  const val = (config as Record<string, boolean | undefined>)[key];
+  return val === undefined ? true : val;
 }
 
 function formatDateLong(d?: string): string {
@@ -157,9 +165,11 @@ const MeasurementCharts: React.FC<{
   age?: number | null;
   gender?: string | null;
   chartPrefix: string;
-}> = ({ imc, bodyFatPct, age, gender, chartPrefix }) => {
-  const hasImc = imc != null && imc !== 0;
-  const hasBodyFat = bodyFatPct != null && bodyFatPct !== 0 && age != null && age !== 0 && !!gender;
+  showImcChart?: boolean;
+  showBodyFatChart?: boolean;
+}> = ({ imc, bodyFatPct, age, gender, chartPrefix, showImcChart = true, showBodyFatChart = true }) => {
+  const hasImc = showImcChart && imc != null && imc !== 0;
+  const hasBodyFat = showBodyFatChart && bodyFatPct != null && bodyFatPct !== 0 && age != null && age !== 0 && !!gender;
   if (!hasImc && !hasBodyFat) return null;
 
   const sex = gender ?? '';
@@ -270,150 +280,181 @@ const ExpandedSection: React.FC<{
 
 // ─── Expanded: Antropometría ──────────────────────────────────────────────────
 
-const AntroExpanded: React.FC<{ m: MeasurementEntry }> = ({ m }) => (
-  <div className="mt-4">
-    <MeasurementCharts
-      imc={m.imc}
-      bodyFatPct={m.bodyFatPct}
-      age={m.age}
-      gender={m.gender}
-      chartPrefix={`antro-${m.date ?? 'x'}`}
-    />
+const AntroExpanded: React.FC<{ m: MeasurementEntry; cfg?: AntroFieldsConfig }> = ({ m, cfg }) => {
+  const f = (key: string) => fieldOn(cfg, key);
+  return (
+    <div className="mt-4">
+      <MeasurementCharts
+        imc={m.imc}
+        bodyFatPct={m.bodyFatPct}
+        age={m.age}
+        gender={m.gender}
+        chartPrefix={`antro-${m.date ?? 'x'}`}
+        showImcChart={f('showImcChart')}
+        showBodyFatChart={f('showBodyFatChart')}
+      />
 
-    <ExpandedSection
-      title="Composición corporal"
-      accentColor="#2D5A4B"
-      show={[m.weight, m.height, m.imc, m.bodyFatPct, m.fatKg, m.leanMassKg, m.leanMassPct, m.muscleKg, m.boneMass, m.residualMass].some(v => v != null && v !== 0 && v !== '')}
-    >
-      <ExpandedRow label="Peso"          value={m.weight}          unit="kg"  />
-      <ExpandedRow label="Talla"         value={m.height}          unit="cm"  />
-      <ExpandedRow label="IMC"           value={m.imc}             unit="kg/m²" />
-      <ExpandedRow label="% Grasa"       value={m.bodyFatPct}      unit="%"   />
-      <ExpandedRow label="Masa grasa"    value={m.fatKg}           unit="kg"  />
-      <ExpandedRow label="Masa magra"    value={m.leanMassKg}      unit="kg"  />
-      <ExpandedRow label="% Masa magra"  value={m.leanMassPct}     unit="%"   />
-      <ExpandedRow label="Masa muscular" value={m.muscleKg}        unit="kg"  />
-      <ExpandedRow label="Masa ósea"     value={m.boneMass}        unit="kg"  />
-      <ExpandedRow label="Masa residual" value={m.residualMass}    unit="kg"  />
-    </ExpandedSection>
+      <ExpandedSection
+        title="Composición corporal"
+        accentColor="#2D5A4B"
+        show={[
+          f('weight') && m.weight, f('height') && m.height, f('imc') && m.imc,
+          f('bodyFatPct') && m.bodyFatPct, f('fatKg') && m.fatKg,
+          f('leanMassKg') && m.leanMassKg, f('leanMassPct') && m.leanMassPct,
+          f('muscleKg') && m.muscleKg, f('boneMass') && m.boneMass, f('residualMass') && m.residualMass,
+        ].some(v => v != null && v !== 0 && v !== false && v !== '')}
+      >
+        {f('weight')       && <ExpandedRow label="Peso"          value={m.weight}       unit="kg"    />}
+        {f('height')       && <ExpandedRow label="Talla"         value={m.height}       unit="cm"    />}
+        {f('imc')          && <ExpandedRow label="IMC"           value={m.imc}          unit="kg/m²" />}
+        {f('bodyFatPct')   && <ExpandedRow label="% Grasa"       value={m.bodyFatPct}   unit="%"     />}
+        {f('fatKg')        && <ExpandedRow label="Masa grasa"    value={m.fatKg}        unit="kg"    />}
+        {f('leanMassKg')   && <ExpandedRow label="Masa magra"    value={m.leanMassKg}   unit="kg"    />}
+        {f('leanMassPct')  && <ExpandedRow label="% Masa magra"  value={m.leanMassPct}  unit="%"     />}
+        {f('muscleKg')     && <ExpandedRow label="Masa muscular" value={m.muscleKg}     unit="kg"    />}
+        {f('boneMass')     && <ExpandedRow label="Masa ósea"     value={m.boneMass}     unit="kg"    />}
+        {f('residualMass') && <ExpandedRow label="Masa residual" value={m.residualMass} unit="kg"    />}
+      </ExpandedSection>
 
-    <ExpandedSection
-      title="Pliegues cutáneos"
-      accentColor="#F59E0B"
-      show={[m.biceps, m.triceps, m.subscapular, m.supraspinal, m.abdomen, m.thigh, m.calf, m.iliacCrest, m.skinfoldSum].some(v => v != null && v !== 0 && v !== '')}
-    >
-      <ExpandedRow label="Bíceps"        value={m.biceps}       unit="mm" />
-      <ExpandedRow label="Tríceps"       value={m.triceps}      unit="mm" />
-      <ExpandedRow label="Subescapular"  value={m.subscapular}  unit="mm" />
-      <ExpandedRow label="Suprailíaco"   value={m.supraspinal}  unit="mm" />
-      <ExpandedRow label="Abdominal"     value={m.abdomen}      unit="mm" />
-      <ExpandedRow label="Muslo"         value={m.thigh}        unit="mm" />
-      <ExpandedRow label="Pierna"        value={m.calf}         unit="mm" />
-      <ExpandedRow label="Cresta ilíaca" value={m.iliacCrest}   unit="mm" />
-      <ExpandedRow label="Suma pliegues" value={m.skinfoldSum}  unit="mm" />
-    </ExpandedSection>
+      <ExpandedSection
+        title="Pliegues cutáneos"
+        accentColor="#F59E0B"
+        show={[
+          f('biceps') && m.biceps, f('triceps') && m.triceps, f('subscapular') && m.subscapular,
+          f('supraspinal') && m.supraspinal, f('abdomen') && m.abdomen, f('thigh') && m.thigh,
+          f('calf') && m.calf, f('iliacCrest') && m.iliacCrest, f('skinfoldSum') && m.skinfoldSum,
+        ].some(v => v != null && v !== 0 && v !== false && v !== '')}
+      >
+        {f('biceps')      && <ExpandedRow label="Bíceps"        value={m.biceps}      unit="mm" />}
+        {f('triceps')     && <ExpandedRow label="Tríceps"       value={m.triceps}     unit="mm" />}
+        {f('subscapular') && <ExpandedRow label="Subescapular"  value={m.subscapular} unit="mm" />}
+        {f('supraspinal') && <ExpandedRow label="Suprailíaco"   value={m.supraspinal} unit="mm" />}
+        {f('abdomen')     && <ExpandedRow label="Abdominal"     value={m.abdomen}     unit="mm" />}
+        {f('thigh')       && <ExpandedRow label="Muslo"         value={m.thigh}       unit="mm" />}
+        {f('calf')        && <ExpandedRow label="Pierna"        value={m.calf}        unit="mm" />}
+        {f('iliacCrest')  && <ExpandedRow label="Cresta ilíaca" value={m.iliacCrest}  unit="mm" />}
+        {f('skinfoldSum') && <ExpandedRow label="Suma pliegues" value={m.skinfoldSum} unit="mm" />}
+      </ExpandedSection>
 
-    <ExpandedSection
-      title="Perímetros"
-      accentColor="#6366F1"
-      show={[m.armRelaxed, m.armContracted, m.waist, m.umbilical, m.hip, m.abdominalLow, m.thighRight, m.thighLeft, m.calfGirth].some(v => v != null && v !== 0 && v !== '')}
-    >
-      <ExpandedRow label="Brazo relajado"   value={m.armRelaxed}    unit="cm" />
-      <ExpandedRow label="Brazo contraído"  value={m.armContracted} unit="cm" />
-      <ExpandedRow label="Cintura"          value={m.waist}         unit="cm" />
-      <ExpandedRow label="Umbilical"        value={m.umbilical}     unit="cm" />
-      <ExpandedRow label="Cadera"           value={m.hip}           unit="cm" />
-      <ExpandedRow label="Abdominal bajo"   value={m.abdominalLow}  unit="cm" />
-      <ExpandedRow label="Muslo derecho"    value={m.thighRight}    unit="cm" />
-      <ExpandedRow label="Muslo izquierdo"  value={m.thighLeft}     unit="cm" />
-      <ExpandedRow label="Pantorrilla"      value={m.calfGirth}     unit="cm" />
-    </ExpandedSection>
+      <ExpandedSection
+        title="Perímetros"
+        accentColor="#6366F1"
+        show={[
+          f('armRelaxed') && m.armRelaxed, f('armContracted') && m.armContracted,
+          f('waist') && m.waist, f('umbilical') && m.umbilical, f('hip') && m.hip,
+          f('abdominalLow') && m.abdominalLow, f('thighRight') && m.thighRight,
+          f('thighLeft') && m.thighLeft, f('calfGirth') && m.calfGirth,
+        ].some(v => v != null && v !== 0 && v !== false && v !== '')}
+      >
+        {f('armRelaxed')    && <ExpandedRow label="Brazo relajado"   value={m.armRelaxed}    unit="cm" />}
+        {f('armContracted') && <ExpandedRow label="Brazo contraído"  value={m.armContracted} unit="cm" />}
+        {f('waist')         && <ExpandedRow label="Cintura"          value={m.waist}         unit="cm" />}
+        {f('umbilical')     && <ExpandedRow label="Umbilical"        value={m.umbilical}     unit="cm" />}
+        {f('hip')           && <ExpandedRow label="Cadera"           value={m.hip}           unit="cm" />}
+        {f('abdominalLow')  && <ExpandedRow label="Abdominal bajo"   value={m.abdominalLow}  unit="cm" />}
+        {f('thighRight')    && <ExpandedRow label="Muslo derecho"    value={m.thighRight}    unit="cm" />}
+        {f('thighLeft')     && <ExpandedRow label="Muslo izquierdo"  value={m.thighLeft}     unit="cm" />}
+        {f('calfGirth')     && <ExpandedRow label="Pantorrilla"      value={m.calfGirth}     unit="cm" />}
+      </ExpandedSection>
 
-    <ExpandedSection
-      title="Diámetros"
-      accentColor="#0EA5E9"
-      show={[m.humerus, m.femur, m.wrist].some(v => v != null && v !== 0 && v !== '')}
-    >
-      <ExpandedRow label="Húmero" value={m.humerus} unit="cm" />
-      <ExpandedRow label="Fémur"  value={m.femur}   unit="cm" />
-      <ExpandedRow label="Muñeca" value={m.wrist}   unit="cm" />
-    </ExpandedSection>
+      <ExpandedSection
+        title="Diámetros"
+        accentColor="#0EA5E9"
+        show={[f('humerus') && m.humerus, f('femur') && m.femur, f('wrist') && m.wrist].some(v => v != null && v !== 0 && v !== false && v !== '')}
+      >
+        {f('humerus') && <ExpandedRow label="Húmero" value={m.humerus} unit="cm" />}
+        {f('femur')   && <ExpandedRow label="Fémur"  value={m.femur}   unit="cm" />}
+        {f('wrist')   && <ExpandedRow label="Muñeca" value={m.wrist}   unit="cm" />}
+      </ExpandedSection>
 
-    <ExpandedSection
-      title="Somatotipo"
-      accentColor="#A855F7"
-      show={[m.endomorfo, m.mesomorfo, m.ectomorfo].some(v => v != null && v !== 0 && v !== '')}
-    >
-      <ExpandedRow label="Endomorfo" value={m.endomorfo} />
-      <ExpandedRow label="Mesomorfo" value={m.mesomorfo} />
-      <ExpandedRow label="Ectomorfo" value={m.ectomorfo} />
-    </ExpandedSection>
+      <ExpandedSection
+        title="Somatotipo"
+        accentColor="#A855F7"
+        show={[f('endomorfo') && m.endomorfo, f('mesomorfo') && m.mesomorfo, f('ectomorfo') && m.ectomorfo].some(v => v != null && v !== 0 && v !== false && v !== '')}
+      >
+        {f('endomorfo') && <ExpandedRow label="Endomorfo" value={m.endomorfo} />}
+        {f('mesomorfo') && <ExpandedRow label="Mesomorfo" value={m.mesomorfo} />}
+        {f('ectomorfo') && <ExpandedRow label="Ectomorfo" value={m.ectomorfo} />}
+      </ExpandedSection>
 
-    <ExpandedSection
-      title="Notas"
-      accentColor="#64748B"
-      show={!!m.notes}
-    >
-      <ExpandedRow label="Notas" value={m.notes} small />
-    </ExpandedSection>
-  </div>
-);
+      {f('notes') && (
+        <ExpandedSection title="Notas" accentColor="#64748B" show={!!m.notes}>
+          <ExpandedRow label="Notas" value={m.notes} small />
+        </ExpandedSection>
+      )}
+    </div>
+  );
+};
 
 // ─── Expanded: Bioimpedancia ──────────────────────────────────────────────────
 
-const BioExpanded: React.FC<{ b: BioEntry }> = ({ b }) => (
-  <div className="mt-4">
-    <MeasurementCharts
-      imc={b.imc}
-      bodyFatPct={b.bodyFatPct}
-      age={b.age}
-      gender={b.gender}
-      chartPrefix={`bio-${b.date ?? 'x'}`}
-    />
+const BioExpanded: React.FC<{ b: BioEntry; cfg?: BioFieldsConfig }> = ({ b, cfg }) => {
+  const f = (key: string) => fieldOn(cfg, key);
+  return (
+    <div className="mt-4">
+      <MeasurementCharts
+        imc={b.imc}
+        bodyFatPct={b.bodyFatPct}
+        age={b.age}
+        gender={b.gender}
+        chartPrefix={`bio-${b.date ?? 'x'}`}
+        showImcChart={f('showImcChart')}
+        showBodyFatChart={f('showBodyFatChart')}
+      />
 
-    <ExpandedSection
-      title="Composición corporal"
-      accentColor="#6366F1"
-      show={[b.weight, b.height, b.imc, b.bodyFatPct, b.muscleMass, b.boneMass, b.waterPct, b.visceralFat, b.bmr, b.metabolicAge, b.physiqueRating].some(v => v != null && v !== 0 && v !== '')}
-    >
-      <ExpandedRow label="Peso"           value={b.weight}        unit="kg"   />
-      <ExpandedRow label="Talla"          value={b.height}        unit="cm"   />
-      <ExpandedRow label="IMC"            value={b.imc}           unit="kg/m²" />
-      <ExpandedRow label="% Grasa"        value={b.bodyFatPct}    unit="%"    />
-      <ExpandedRow label="Masa muscular"  value={b.muscleMass}    unit="kg"   />
-      <ExpandedRow label="Masa ósea"      value={b.boneMass}      unit="kg"   />
-      <ExpandedRow label="% Agua"         value={b.waterPct}      unit="%"    />
-      <ExpandedRow label="Grasa visceral" value={b.visceralFat}               />
-      <ExpandedRow label="TMB"            value={b.bmr}           unit="kcal" />
-      <ExpandedRow label="Edad metabólica" value={b.metabolicAge} unit="años" />
-      <ExpandedRow label="Rating físico"  value={b.physiqueRating}            />
-    </ExpandedSection>
+      <ExpandedSection
+        title="Composición corporal"
+        accentColor="#6366F1"
+        show={[
+          f('weight') && b.weight, f('height') && b.height, f('imc') && b.imc,
+          f('bodyFatPct') && b.bodyFatPct, f('muscleMass') && b.muscleMass,
+          f('boneMass') && b.boneMass, f('waterPct') && b.waterPct,
+          f('visceralFat') && b.visceralFat, f('bmr') && b.bmr,
+          f('metabolicAge') && b.metabolicAge, f('physiqueRating') && b.physiqueRating,
+        ].some(v => v != null && v !== 0 && v !== false && v !== '')}
+      >
+        {f('weight')         && <ExpandedRow label="Peso"            value={b.weight}         unit="kg"    />}
+        {f('height')         && <ExpandedRow label="Talla"           value={b.height}         unit="cm"    />}
+        {f('imc')            && <ExpandedRow label="IMC"             value={b.imc}            unit="kg/m²" />}
+        {f('bodyFatPct')     && <ExpandedRow label="% Grasa"         value={b.bodyFatPct}     unit="%"     />}
+        {f('muscleMass')     && <ExpandedRow label="Masa muscular"   value={b.muscleMass}     unit="kg"    />}
+        {f('boneMass')       && <ExpandedRow label="Masa ósea"       value={b.boneMass}       unit="kg"    />}
+        {f('waterPct')       && <ExpandedRow label="% Agua"          value={b.waterPct}       unit="%"     />}
+        {f('visceralFat')    && <ExpandedRow label="Grasa visceral"  value={b.visceralFat}                 />}
+        {f('bmr')            && <ExpandedRow label="TMB"             value={b.bmr}            unit="kcal"  />}
+        {f('metabolicAge')   && <ExpandedRow label="Edad metabólica" value={b.metabolicAge}   unit="años"  />}
+        {f('physiqueRating') && <ExpandedRow label="Rating físico"   value={b.physiqueRating}              />}
+      </ExpandedSection>
 
-    <ExpandedSection
-      title="Perímetros"
-      accentColor="#0EA5E9"
-      show={[b.waist, b.umbilical, b.hip, b.thighLeft, b.thighRight, b.abdominalLow, b.calfGirth, b.armRelaxed, b.armContracted].some(v => v != null && v !== 0 && v !== '')}
-    >
-      <ExpandedRow label="Cintura"         value={b.waist}         unit="cm" />
-      <ExpandedRow label="Umbilical"       value={b.umbilical}     unit="cm" />
-      <ExpandedRow label="Cadera"          value={b.hip}           unit="cm" />
-      <ExpandedRow label="Muslo izquierdo" value={b.thighLeft}     unit="cm" />
-      <ExpandedRow label="Muslo derecho"   value={b.thighRight}    unit="cm" />
-      <ExpandedRow label="Abdominal bajo"  value={b.abdominalLow}  unit="cm" />
-      <ExpandedRow label="Pantorrilla"     value={b.calfGirth}     unit="cm" />
-      <ExpandedRow label="Brazo relajado"  value={b.armRelaxed}    unit="cm" />
-      <ExpandedRow label="Brazo contraído" value={b.armContracted} unit="cm" />
-    </ExpandedSection>
+      <ExpandedSection
+        title="Perímetros"
+        accentColor="#0EA5E9"
+        show={[
+          f('waist') && b.waist, f('umbilical') && b.umbilical, f('hip') && b.hip,
+          f('thighLeft') && b.thighLeft, f('thighRight') && b.thighRight,
+          f('abdominalLow') && b.abdominalLow, f('calfGirth') && b.calfGirth,
+          f('armRelaxed') && b.armRelaxed, f('armContracted') && b.armContracted,
+        ].some(v => v != null && v !== 0 && v !== false && v !== '')}
+      >
+        {f('waist')         && <ExpandedRow label="Cintura"         value={b.waist}         unit="cm" />}
+        {f('umbilical')     && <ExpandedRow label="Umbilical"       value={b.umbilical}     unit="cm" />}
+        {f('hip')           && <ExpandedRow label="Cadera"          value={b.hip}           unit="cm" />}
+        {f('thighLeft')     && <ExpandedRow label="Muslo izquierdo" value={b.thighLeft}     unit="cm" />}
+        {f('thighRight')    && <ExpandedRow label="Muslo derecho"   value={b.thighRight}    unit="cm" />}
+        {f('abdominalLow')  && <ExpandedRow label="Abdominal bajo"  value={b.abdominalLow}  unit="cm" />}
+        {f('calfGirth')     && <ExpandedRow label="Pantorrilla"     value={b.calfGirth}     unit="cm" />}
+        {f('armRelaxed')    && <ExpandedRow label="Brazo relajado"  value={b.armRelaxed}    unit="cm" />}
+        {f('armContracted') && <ExpandedRow label="Brazo contraído" value={b.armContracted} unit="cm" />}
+      </ExpandedSection>
 
-    <ExpandedSection
-      title="Notas"
-      accentColor="#64748B"
-      show={!!b.notes}
-    >
-      <ExpandedRow label="Notas" value={b.notes} small />
-    </ExpandedSection>
-  </div>
-);
+      {f('notes') && (
+        <ExpandedSection title="Notas" accentColor="#64748B" show={!!b.notes}>
+          <ExpandedRow label="Notas" value={b.notes} small />
+        </ExpandedSection>
+      )}
+    </div>
+  );
+};
 
 // ─── Card types ───────────────────────────────────────────────────────────────
 
@@ -431,7 +472,9 @@ const MeasurementCard: React.FC<{
   isOpen: boolean;
   onToggle: () => void;
   showDetail: boolean;
-}> = ({ card, isOpen, onToggle, showDetail }) => {
+  antroConfig?: AntroFieldsConfig;
+  bioConfig?: BioFieldsConfig;
+}> = ({ card, isOpen, onToggle, showDetail, antroConfig, bioConfig }) => {
   const isAntro = card.kind === 'antro';
   const style = isAntro ? ANTRO_STYLE : BIO_STYLE;
 
@@ -507,8 +550,8 @@ const MeasurementCard: React.FC<{
       {showDetail && isOpen && (
         <div className="px-4 pb-5" style={{ borderTop: '1px solid #F4F6F5' }}>
           {isAntro
-            ? <AntroExpanded m={card.entry as MeasurementEntry} />
-            : <BioExpanded   b={card.entry as BioEntry} />
+            ? <AntroExpanded m={card.entry as MeasurementEntry} cfg={antroConfig} />
+            : <BioExpanded   b={card.entry as BioEntry}         cfg={bioConfig}   />
           }
         </div>
       )}
@@ -518,8 +561,13 @@ const MeasurementCard: React.FC<{
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export const MeasurementsView: React.FC<Props> = ({ measurements, bioMeasurements, showDetail = true }) => {
+export const MeasurementsView: React.FC<Props> = ({
+  measurements, bioMeasurements, showDetail = true, measurementsConfig,
+}) => {
   const [openKey, setOpenKey] = useState<string | null>(null);
+
+  const antroConfig = measurementsConfig?.antro;
+  const bioConfig   = measurementsConfig?.bio;
 
   const cards: CardData[] = [
     ...measurements.map((m): AntroCard => ({ kind: 'antro', entry: m })),
@@ -556,6 +604,8 @@ export const MeasurementsView: React.FC<Props> = ({ measurements, bioMeasurement
               isOpen={openKey === key}
               onToggle={() => toggle(key)}
               showDetail={showDetail}
+              antroConfig={antroConfig}
+              bioConfig={bioConfig}
             />
           );
         })}

@@ -3,9 +3,10 @@ import {
   Sparkles, Eye, EyeOff, Layout,
   X,
   Table as TableIcon, FileText, Copy, Check,
-  Lock, Unlock, Bookmark, Shuffle, Sliders
+  Lock, Unlock, Bookmark, Shuffle, Sliders, Palette
 } from 'lucide-react';
-import { Patient, VetCalculation, MacrosRecord, PortionsRecord, MenuTemplateDesign, MenuRecommendationData } from '../../types';
+import { Patient, VetCalculation, MacrosRecord, PortionsRecord, MenuTemplateDesign, MenuRecommendationData, MenuDesignConfig, DEFAULT_VISUAL_THEME } from '../../types';
+import { MenuDesignPanel } from '../menus_components/MenuDesignPanel';
 import { MealLabel, MealSlot, WEEKDAY_KEYS, MenuReferenceData, emptyMealPortions } from '../menus_components/Menu_References_Components/MenuReferencesStorage';
 import { MenuPlanData, MealPortions } from '../menus_components/MenuDesignTemplates';
 import { MenuReferenceParsertoMenuData } from '../menus_components/Menu_References_Components/MenuReferenceParsertoMenuData';
@@ -39,6 +40,8 @@ interface MenuAddReadSec3Props {
   setZoom: (z: number) => void;
   selectedPreviewTemplate: string;
   setSelectedPreviewTemplate: (id: string) => void;
+  localDesignConfig: MenuDesignConfig;
+  setLocalDesignConfig: (cfg: MenuDesignConfig) => void;
   onDirty?: () => void;
 }
 
@@ -133,6 +136,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   setZoom,
   selectedPreviewTemplate,
   setSelectedPreviewTemplate,
+  localDesignConfig,
+  setLocalDesignConfig,
   evaluationId,
   onDirty
 }) => {
@@ -164,6 +169,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const [saveTemplateSuccess, setSaveTemplateSuccess] = useState<'ref' | 'rec' | null>(null);
 
   const toolbarRef = useRef<MenuEditorToolbarHandle>(null);
+  const [designModalOpen, setDesignModalOpen] = useState(false);
 
   // ─── Wrapper for setMenuPreviewData that marks dirty ─────────────────────
   const handleSetMenuPreviewData = (data: MenuPlanData | null) => {
@@ -181,6 +187,16 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   // ─── Template change ──────────────────────────────────────────────────────
   const handleTemplateChange = (templateId: string) => {
     setSelectedPreviewTemplate(templateId);
+    setLocalDesignConfig({ ...localDesignConfig, templateDesign: templateId as MenuDesignConfig['templateDesign'] });
+  };
+
+  // ─── Design config change ─────────────────────────────────────────────────
+  const handleDesignChange = (updates: Partial<MenuDesignConfig>) => {
+    const next = { ...localDesignConfig, ...updates };
+    setLocalDesignConfig(next);
+    if (updates.templateDesign) {
+      setSelectedPreviewTemplate(updates.templateDesign);
+    }
   };
 
   // ─── Helper: Get current nutritionist data with logo ──────────────────────
@@ -1102,6 +1118,39 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
 
       <div className={isVisible ? 'p-8 space-y-8' : 'hidden'}>
 
+          {/* Design Config Modal */}
+          {designModalOpen && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl flex-shrink-0">
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <Palette className="w-5 h-5 text-violet-600" />
+                    Configurar diseño para este menú
+                  </h3>
+                  <button onClick={() => setDesignModalOpen(false)} className="p-2 hover:bg-white rounded-xl transition-colors">
+                    <X className="w-5 h-5 text-slate-400" />
+                  </button>
+                </div>
+                <div className="p-6 overflow-y-auto flex-1">
+                  <MenuDesignPanel
+                    templateDesign={localDesignConfig.templateDesign}
+                    pageLayout={localDesignConfig.pageLayout}
+                    visualTheme={localDesignConfig.visualTheme}
+                    onChange={handleDesignChange}
+                  />
+                </div>
+                <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex-shrink-0">
+                  <button
+                    onClick={() => setDesignModalOpen(false)}
+                    className="w-full py-2 font-bold text-slate-500 hover:bg-white rounded-xl transition-all"
+                  >
+                    Listo
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-3">
 
@@ -1170,6 +1219,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                 : 'border-slate-800 text-slate-800 hover:bg-slate-50'
               }`}
             />
+
           </div>
 
           {/* AI Actions Panel — visible cuando hay menú generado */}
@@ -1190,27 +1240,38 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
               {/* ── Edit mode toggle ── */}
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl w-full sm:w-fit">
-                <button
-                  onClick={() => setEditMode('tabla')}
-                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    editMode === 'tabla'
-                      ? 'bg-white text-indigo-600 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  ✏️ Editar en Tabla
-                </button>
-                <button
-                  onClick={() => setEditMode('preview')}
-                  className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    editMode === 'preview'
-                      ? 'bg-white text-indigo-600 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  👁 Vista Previa
-                </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl w-full sm:w-fit">
+                  <button
+                    onClick={() => setEditMode('tabla')}
+                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      editMode === 'tabla'
+                        ? 'bg-white text-indigo-600 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    ✏️ Editar en Tabla
+                  </button>
+                  <button
+                    onClick={() => setEditMode('preview')}
+                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      editMode === 'preview'
+                        ? 'bg-white text-indigo-600 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    👁 Vista Previa
+                  </button>
+                </div>
+                {editMode === 'preview' && (
+                  <button
+                    onClick={() => setDesignModalOpen(true)}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-violet-600 hover:bg-violet-100 hover:text-violet-700"
+                  >
+                    <Palette className="w-3.5 h-3.5" />
+                    Configurar diseño
+                  </button>
+                )}
               </div>
 
               {/* ── Tabla mode — kept in DOM to preserve unsaved edits ── */}
@@ -1235,6 +1296,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                     selectedTemplate={selectedPreviewTemplate}
                     onTemplateChange={handleTemplateChange}
                     defaultEditMode={true}
+                    visualTheme={localDesignConfig.visualTheme}
+                    pageLayout={localDesignConfig.pageLayout}
                     onEditPatientInfo={() => toolbarRef.current?.openPatientInfo()}
                     onEditPortions={() => toolbarRef.current?.openPortions()}
                     onEditDay={(day) => toolbarRef.current?.openDay(day)}
@@ -1266,6 +1329,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                     elementId="menu-print-area"
                     selectedTemplate={selectedPreviewTemplate}
                     hideTemplateSelector
+                    visualTheme={localDesignConfig.visualTheme}
+                    pageLayout={localDesignConfig.pageLayout}
                   />
                 </div>
               )}

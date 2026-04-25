@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
-import { GeneratedMenu, TrackingRow } from '../types';
+import { GeneratedMenu, TrackingRow, PatientPortalMeasurementsConfig } from '../types';
 import { PortalShell, PortalNutritionist } from '../components/patient_mobile_portal/PortalShell';
 
 // ─── Session helpers ─────────────────────────────────────────────────────────
@@ -379,7 +379,11 @@ import { MeasurementEntry, BioEntry } from '../components/patient_mobile_portal/
 
 interface PortalData {
   nutritionist: PortalNutritionist;
-  patient: { portalGoal?: string; showMeasurementsDetail: boolean };
+  patient: {
+    portalGoal?: string;
+    showMeasurementsDetail: boolean;
+    measurementsConfig: PatientPortalMeasurementsConfig | null;
+  };
   menus: GeneratedMenu[];
   activeTracking: TrackingRow | null;
   allTracking: TrackingRow[];
@@ -428,7 +432,7 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
   // 1. Get patient owner_id + portal_goal + measurements visibility
   const { data: patientRow } = await supabase
     .from('patients')
-    .select('owner_id, portal_goal, portal_show_measurements_detail')
+    .select('owner_id, portal_goal, portal_show_measurements_detail, portal_measurements_config')
     .eq('id', patientId)
     .maybeSingle();
 
@@ -586,12 +590,25 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
     notes:          r.notes,
   }));
 
+  const nutriPortalConfig = profile?.patient_portal_config ?? null;
+
+  // Per-patient config; fall back to nutritionist global defaults
+  const measConfig: PatientPortalMeasurementsConfig | null =
+    patientRow?.portal_measurements_config
+    ?? (nutriPortalConfig
+      ? {
+          antro: nutriPortalConfig.antroFieldsDefault ?? undefined,
+          bio:   nutriPortalConfig.bioFieldsDefault   ?? undefined,
+        }
+      : null);
+
   return {
     nutritionist,
     patient: {
       portalGoal: patientRow?.portal_goal ?? undefined,
       showMeasurementsDetail: patientRow?.portal_show_measurements_detail
-        ?? (profile?.patient_portal_config?.measurementsDetailDefault ?? true),
+        ?? (nutriPortalConfig?.measurementsDetailDefault ?? true),
+      measurementsConfig: measConfig,
     },
     menus,
     activeTracking,
@@ -667,6 +684,7 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session: initialSe
       measurements={portalData.measurements}
       bioMeasurements={portalData.bioMeasurements}
       showMeasurementsDetail={portalData.patient.showMeasurementsDetail}
+      measurementsConfig={portalData.patient.measurementsConfig}
       onTrackingUpdate={setActiveTracking}
       onPatientUpdate={handlePatientUpdate}
     />

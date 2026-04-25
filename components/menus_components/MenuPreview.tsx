@@ -2,6 +2,8 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { MenuTemplateV1, MenuTemplateV2, MenuPlanData } from './MenuDesignTemplates';
 import { Layout, Pencil } from 'lucide-react';
 import { store } from '../../services/store';
+import { MenuDesignOverrideContext } from './MenuDesignContext';
+import type { VisualThemeConfig, PageLayoutOption } from '../../types';
 
 type RecSection = 'preparacion' | 'restricciones' | 'habitos' | 'organizacion';
 
@@ -24,6 +26,8 @@ interface MenuPreviewProps {
   onEditDomingoCompleto?: () => void;
   onEditPlanTitle?: () => void;
   onEditPage2Title?: () => void;
+  visualTheme?: VisualThemeConfig;
+  pageLayout?: PageLayoutOption;
 }
 
 interface EditZone {
@@ -124,6 +128,8 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
   onEditDomingoCompleto,
   onEditPlanTitle,
   onEditPage2Title,
+  visualTheme,
+  pageLayout: pageLayoutProp,
 }) => {
   const [internalZoom, setInternalZoom] = useState(0.8);
   const [internalTemplate, setInternalTemplate] = useState("plantilla_v1");
@@ -200,11 +206,15 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
   const renderTemplate = () => {
     const is4col = currentTemplate.endsWith('_4col');
     const gridLayout = is4col ? '4col' : '3col';
-    const pageLayout = (store.getMenuTemplate()?.pageLayout) || 'layout1';
-    if (currentTemplate.startsWith('plantilla_v2')) {
-      return <MenuTemplateV2 data={data} gridLayout={gridLayout} pageLayout={pageLayout} />;
-    }
-    return <MenuTemplateV1 data={data} gridLayout={gridLayout} pageLayout={pageLayout} />;
+    const pageLayout = pageLayoutProp ?? (store.getMenuTemplate()?.pageLayout) ?? 'layout1';
+    const template = currentTemplate.startsWith('plantilla_v2')
+      ? <MenuTemplateV2 data={data} gridLayout={gridLayout} pageLayout={pageLayout} />
+      : <MenuTemplateV1 data={data} gridLayout={gridLayout} pageLayout={pageLayout} />;
+    return (
+      <MenuDesignOverrideContext.Provider value={visualTheme ? { visualTheme } : null}>
+        {template}
+      </MenuDesignOverrideContext.Provider>
+    );
   };
 
   const editZones = editMode

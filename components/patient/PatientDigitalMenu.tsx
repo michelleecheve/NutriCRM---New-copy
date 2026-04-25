@@ -15,11 +15,13 @@ import {
   Settings,
   Lock,
   Unlock,
+  RotateCcw,
 } from "lucide-react";
-import { Patient, GeneratedMenu, TrackingRow } from "../../types";
+import { Patient, GeneratedMenu, TrackingRow, AntroFieldsConfig, BioFieldsConfig } from "../../types";
 import { supabaseService } from "../../services/supabaseService";
 import { supabase } from "../../services/supabase";
 import { authStore } from "../../services/authStore";
+import { MeasurementsToggle } from "../patient_mobile_portal/MeasurementsToggle";
 
 interface Props {
   patient: Patient;
@@ -202,11 +204,23 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   const [savedGoal, setSavedGoal] = useState(false);
 
   // ── Measurements detail visibility ──
-  const nutriDefault = authStore.getCurrentUser()?.profile?.portalConfig?.measurementsDetailDefault ?? true;
+  const nutriPortalConfig = authStore.getCurrentUser()?.profile?.portalConfig;
+  const nutriDefault = nutriPortalConfig?.measurementsDetailDefault ?? true;
   const [showMeasurementsDetail, setShowMeasurementsDetail] = useState(
     patient.portalShowMeasurementsDetail ?? nutriDefault,
   );
   const [savingMeasVis, setSavingMeasVis] = useState(false);
+
+  // ── Per-patient measurements field config ──
+  const defaultAntro: AntroFieldsConfig = nutriPortalConfig?.antroFieldsDefault ?? {};
+  const defaultBio: BioFieldsConfig = nutriPortalConfig?.bioFieldsDefault ?? {};
+  const [measAntro, setMeasAntro] = useState<AntroFieldsConfig>(
+    patient.portalMeasurementsConfig?.antro ?? defaultAntro,
+  );
+  const [measBio, setMeasBio] = useState<BioFieldsConfig>(
+    patient.portalMeasurementsConfig?.bio ?? defaultBio,
+  );
+  const [savingMeasConfig, setSavingMeasConfig] = useState(false);
 
   // ── Message template state ──
   const [messageTemplate, setMessageTemplate] = useState<string>(() => {
@@ -309,10 +323,30 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       });
       onUpdate({ ...patient, ...updated });
     } catch {
-      setShowMeasurementsDetail(!next); // revert on error
+      setShowMeasurementsDetail(!next);
     } finally {
       setSavingMeasVis(false);
     }
+  }
+
+  // ── Save per-patient measurements field config ──
+  async function handleMeasFieldsChange(antro: AntroFieldsConfig, bio: BioFieldsConfig) {
+    setMeasAntro(antro);
+    setMeasBio(bio);
+    setSavingMeasConfig(true);
+    try {
+      const updated = await supabaseService.updatePatientPortal(patient.id, {
+        portalMeasurementsConfig: { antro, bio },
+      });
+      onUpdate({ ...patient, ...updated });
+    } finally {
+      setSavingMeasConfig(false);
+    }
+  }
+
+  // ── Reset to global defaults ──
+  async function handleResetMeasConfig() {
+    await handleMeasFieldsChange(defaultAntro, defaultBio);
   }
 
   // ── Save portal goal ──
@@ -788,7 +822,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
           </div>
 
           {/* ── Paso 2b: Visibilidad de medidas ── */}
-          <div className="relative bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div className="relative bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
             {!paso1Saved && <StepLockOverlay message="Guarda el Paso 1 para continuar" />}
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -797,7 +831,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                 </p>
                 <p className="text-xs text-slate-400 mt-0.5">
                   {showMeasurementsDetail
-                    ? "El paciente puede expandir sus medidas y ver todos los datos."
+                    ? "El paciente puede expandir sus medidas y ver los campos configurados."
                     : "El paciente solo verá la tarjeta resumida, sin poder expandirla."}
                 </p>
               </div>
@@ -816,6 +850,35 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                 />
               </button>
             </div>
+
+            {showMeasurementsDetail && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-slate-500">
+                    Campos visibles para este paciente
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResetMeasConfig}
+                    disabled={savingMeasConfig}
+                    className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-40"
+                    title="Restablecer a los defaults globales"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Restablecer defaults
+                  </button>
+                </div>
+                <MeasurementsToggle
+                  antro={measAntro}
+                  bio={measBio}
+                  onChange={handleMeasFieldsChange}
+                  defaultOpen={false}
+                />
+                {savingMeasConfig && (
+                  <p className="text-xs text-slate-400 animate-pulse">Guardando...</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ── Paso 3: Compartir link + PIN ── */}

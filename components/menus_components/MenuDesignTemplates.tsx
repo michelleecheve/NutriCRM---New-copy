@@ -1,9 +1,15 @@
-import React from "react";
+import React, { useContext } from "react";
 import type { MenuFooterConfig, MenuSectionTitles } from "../../types";
 import { DEFAULT_SECTION_TITLES } from "../../types";
 import { store } from "../../services/store";
 import { getThemeStyles } from "./menu_css_templates/menuThemes";
 import type { ThemeStyles } from "./menu_css_templates/menuThemes";
+import { MenuDesignOverrideContext } from "./MenuDesignContext";
+
+function useVisualTheme() {
+  const override = useContext(MenuDesignOverrideContext);
+  return override?.visualTheme ?? store.getMenuTemplate()?.visualTheme;
+}
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 export interface MealPortions {
@@ -201,7 +207,7 @@ const DayCard: React.FC<{
   day: MenuDay;
   isFullWidth?: boolean;
 }> = ({ label, day, isFullWidth }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   const mealKeys = day.mealsOrder || MEAL_KEYS;
   return (
     <div
@@ -278,7 +284,7 @@ const Header: React.FC<{
   nutritionist: MenuPlanData["nutritionist"];
   planTitle?: string;
 }> = ({ nutritionist, planTitle }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   const titleParts = (planTitle || DEFAULT_SECTION_TITLES.planTitle).split(
     "\n",
   );
@@ -426,7 +432,7 @@ const PatientBar: React.FC<{
   patient: MenuPlanData["patient"];
   kcal: number;
 }> = ({ patient, kcal }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   return (
     <table
       style={{
@@ -535,7 +541,7 @@ const PortionsTable: React.FC<{
   portions: MenuPlanData["portions"];
   weeklyMenu: MenuPlanData["weeklyMenu"];
 }> = ({ portions, weeklyMenu }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   const totals: MealPortions = {
     lacteos: portions.lacteos,
     vegetales: portions.vegetales,
@@ -683,7 +689,7 @@ const PortionsTable: React.FC<{
 
 // ── DomingoRow: tabla en lugar de flex — elimina todos los alignSelf/alignItems ─
 const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   return (
     <table
       style={{
@@ -884,7 +890,7 @@ const A4Wrapper: React.FC<{
   children: React.ReactNode;
   footer: React.ReactNode;
 }> = ({ id = "menu-print-area", children, footer }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   return (
     <div
       id={id}
@@ -946,7 +952,7 @@ const A4Wrapper: React.FC<{
 
 // ─── RecommendationsPage: Segunda hoja con estética de tarjetas ────────────────
 const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   const cardStyle: React.CSSProperties = {
     backgroundColor: ts.recsCardBackground,
     border: ts.recsCardBorder,
@@ -1225,7 +1231,7 @@ const SplitCell: React.FC<{
   noteLabel?: string;
   flex?: number;
 }> = ({ note, hydration, noteLabel, flex = 1 }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   return (
     <div style={{ flex, minWidth: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
       {/* Card de nota — header secundario, crece con el contenido */}
@@ -1263,7 +1269,7 @@ const MenuOnlyPage: React.FC<{
   gridLayout: "3col" | "4col";
   version: "v1" | "v2";
 }> = ({ data, gridLayout, version }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   const domingoV1 = data.weeklyMenu.domingo as DomingoData;
   const domingoV2 = data.weeklyMenu.domingoV2;
   const noteText = domingoV2?.note || domingoV1.note;
@@ -1400,7 +1406,7 @@ const MenuOnlyPage: React.FC<{
 
 // ─── PortionsAndRecsPage: Hoja 2 para layout 2 (porciones + recomendaciones) ──
 const PortionsAndRecsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   const titles = data.sectionTitles || DEFAULT_SECTION_TITLES;
 
   const defaultRecs: MenuRecommendations = {
@@ -1537,7 +1543,7 @@ export const MenuTemplateV1: React.FC<{
   gridLayout?: "3col" | "4col";
   pageLayout?: "layout1" | "layout2" | "layout3";
 }> = ({ data, gridLayout = "3col", pageLayout = "layout1" }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   const domingo = data.weeklyMenu.domingo as DomingoData;
 
   if (pageLayout === "layout2") {
@@ -1673,7 +1679,7 @@ export const MenuTemplateV2: React.FC<{
   gridLayout?: "3col" | "4col";
   pageLayout?: "layout1" | "layout2" | "layout3";
 }> = ({ data, gridLayout = "3col", pageLayout = "layout1" }) => {
-  const ts: ThemeStyles = getThemeStyles(store.getMenuTemplate()?.visualTheme);
+  const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   const domingoV1 = data.weeklyMenu.domingo;
   const domingoV2 = data.weeklyMenu.domingoV2;
   const noteText = domingoV2?.note || domingoV1.note;

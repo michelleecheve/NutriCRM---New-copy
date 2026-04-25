@@ -2,14 +2,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Layout, Eye, EyeOff, Trash2, Save, CheckCircle, ChevronDown } from 'lucide-react';
 import type { MenuFooterConfig, MenuSectionTitles, VisualThemeConfig, PageLayoutOption } from '../types';
 import { DEFAULT_SECTION_TITLES, DEFAULT_VISUAL_THEME } from '../types';
-import { MenuDesignTemplatesPageLayout } from '../components/menus_components/MenuDesignTemplatesPageLayout';
-import { PALETTES } from '../components/menus_components/menu_css_templates/menuThemes';
-import type { Palette } from '../components/menus_components/menu_css_templates/menuThemes';
-import { MenuTemplateV1, MenuTemplateV2, MenuPlanData } from '../components/menus_components/MenuDesignTemplates';
+import { MenuPlanData } from '../components/menus_components/MenuDesignTemplates';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
 import { supabaseService } from '../services/supabaseService';
 import { MenuReferences } from '../components/menus_components/MenuReferences';
+import { MenuDesignPanel } from '../components/menus_components/MenuDesignPanel';
 import { MenuHistory } from '../components/menus_components/MenuHistory';
 import { MenuExportPDF } from '../components/menus_components/MenuExportPDF';
 import { MenuPreview } from '../components/menus_components/MenuPreview';
@@ -166,7 +164,6 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
   const [sectionTitles, setSectionTitles] = useState<MenuSectionTitles>(DEFAULT_SECTION_TITLES);
   const [visualTheme, setVisualTheme] = useState<VisualThemeConfig>(DEFAULT_VISUAL_THEME);
   const [pageLayout, setPageLayout] = useState<PageLayoutOption>('layout1');
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [designOpen, setDesignOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -695,255 +692,25 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
         </button>
 
         {designOpen && (
-          <div className="px-6 pb-6 space-y-5">
-            <p className="text-xs text-slate-500">Personaliza la apariencia del PDF exportado. Elige un tema, paleta de colores, fuente y escala de texto.</p>
-
-            {/* Selector de tema */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Tema</label>
-              <div className="flex gap-3">
-                {(['original', 'minimalista'] as const).map(themeId => {
-                  const isActive = visualTheme.theme === themeId;
-                  const firstPalette = PALETTES[themeId][0];
-                  return (
-                    <button
-                      key={themeId}
-                      onClick={() => {
-                        const defaultPalette = PALETTES[themeId][0];
-                        const next: VisualThemeConfig = {
-                          ...visualTheme,
-                          theme: themeId,
-                          colors: { primary: defaultPalette.primary, secondary: defaultPalette.secondary, tertiary: defaultPalette.tertiary },
-                          paletteId: defaultPalette.id,
-                        };
-                        setVisualTheme(next);
-                        saveTemplate({ visualTheme: next });
-                      }}
-                      className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
-                        isActive
-                          ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
-                          : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
-                      }`}
-                    >
-                      <span
-                        className="w-5 h-5 rounded-full flex-shrink-0 border border-white shadow-sm"
-                        style={{ backgroundColor: firstPalette.primary }}
-                      />
-                      <span className="capitalize">{themeId === 'original' ? 'Original' : 'Minimalista'}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Paletas predefinidas */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Paleta de Color</label>
-              <div className="flex gap-3 flex-wrap">
-                {PALETTES[visualTheme.theme].map((palette: Palette) => {
-                  const isActive = visualTheme.paletteId === palette.id;
-                  return (
-                    <button
-                      key={palette.id}
-                      title={palette.name}
-                      onClick={() => {
-                        const next: VisualThemeConfig = {
-                          ...visualTheme,
-                          colors: { primary: palette.primary, secondary: palette.secondary, tertiary: palette.tertiary },
-                          paletteId: palette.id,
-                        };
-                        setVisualTheme(next);
-                        saveTemplate({ visualTheme: next });
-                      }}
-                      className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
-                        isActive ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <div className="flex gap-1">
-                        <span className="w-5 h-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: palette.primary }} />
-                        <span className="w-5 h-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: palette.secondary }} />
-                        <span className="w-5 h-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: palette.tertiary }} />
-                      </div>
-                      <span className="text-[10px] text-slate-500 font-medium leading-none">{palette.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Acordeón colores avanzados */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setColorPickerOpen(o => !o)}
-                className="w-full px-4 py-2.5 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors text-xs font-bold text-slate-600 uppercase tracking-wide"
-              >
-                <span>▸ Personalizar colores</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${colorPickerOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {colorPickerOpen && (
-                <div className="p-4 space-y-3 bg-white">
-                  {(
-                    [
-                      { key: 'primary',   label: 'Color primario'   },
-                      { key: 'secondary', label: 'Color secundario' },
-                      { key: 'tertiary',  label: 'Color terciario'  },
-                    ] as { key: keyof VisualThemeConfig['colors']; label: string }[]
-                  ).map(({ key, label }) => (
-                    <div key={key} className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={visualTheme.colors[key]}
-                        onChange={e => {
-                          const next: VisualThemeConfig = {
-                            ...visualTheme,
-                            colors: { ...visualTheme.colors, [key]: e.target.value },
-                            paletteId: 'custom',
-                          };
-                          setVisualTheme(next);
-                        }}
-                        onBlur={() => saveTemplate({ visualTheme })}
-                        className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white"
-                      />
-                      <label className="text-xs text-slate-600 font-medium w-32 flex-shrink-0">{label}</label>
-                      <input
-                        type="text"
-                        value={visualTheme.colors[key]}
-                        onChange={e => {
-                          const val = e.target.value;
-                          if (/^#[0-9a-fA-F]{0,6}$/.test(val)) {
-                            setVisualTheme(prev => ({
-                              ...prev,
-                              colors: { ...prev.colors, [key]: val },
-                              paletteId: 'custom',
-                            }));
-                          }
-                        }}
-                        onBlur={e => {
-                          if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
-                            saveTemplate({ visualTheme });
-                          }
-                        }}
-                        maxLength={7}
-                        className="w-24 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-mono focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Selector de fuente */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Fuente</label>
-              <div className="flex gap-2">
-                {(
-                  [
-                    { value: 'sans',     label: 'Sans',      hint: 'Arial / Helvetica' },
-                    { value: 'serif',    label: 'Serif',     hint: 'Georgia' },
-                    { value: 'humanist', label: 'Humanista', hint: 'Trebuchet MS' },
-                  ] as { value: VisualThemeConfig['font']; label: string; hint: string }[]
-                ).map(opt => (
-                  <button
-                    key={opt.value}
-                    title={opt.hint}
-                    onClick={() => {
-                      const next: VisualThemeConfig = { ...visualTheme, font: opt.value };
-                      setVisualTheme(next);
-                      saveTemplate({ visualTheme: next });
-                    }}
-                    className={`flex-1 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
-                      visualTheme.font === opt.value
-                        ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
-                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Selector de escala */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Escala de Texto</label>
-              <div className="flex gap-2">
-                {(
-                  [
-                    { value: 'compact',  label: 'Compacto'  },
-                    { value: 'normal',   label: 'Normal'    },
-                    { value: 'spacious', label: 'Espacioso' },
-                  ] as { value: VisualThemeConfig['sizeScale']; label: string }[]
-                ).map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => {
-                      const next: VisualThemeConfig = { ...visualTheme, sizeScale: opt.value };
-                      setVisualTheme(next);
-                      saveTemplate({ visualTheme: next });
-                    }}
-                    className={`flex-1 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
-                      visualTheme.sizeScale === opt.value
-                        ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
-                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Selector de grid */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Layout del Grid Semanal</label>
-              <p className="text-[11px] text-slate-400">Define cómo se distribuyen los días de la semana en el PDF.</p>
-              <div className="flex gap-2">
-                {([
-                  { value: '3col', label: '3 columnas', desc: 'Lun-Mar-Mié / Jue-Vie-Sáb' },
-                  { value: '4col', label: '4 columnas', desc: 'Lun-Mar-Mié-Jue / Vie-Sáb + split' },
-                ] as { value: string; label: string; desc: string }[]).map(opt => {
-                  const isActive = opt.value === '4col' ? selectedTemplate.endsWith('_4col') : !selectedTemplate.endsWith('_4col');
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => {
-                        const base = selectedTemplate.replace('_4col', '');
-                        const next = opt.value === '4col' ? `${base}_4col` : base;
-                        handleTemplateChange(next);
-                      }}
-                      className={`flex-1 flex flex-col items-start gap-0.5 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
-                        isActive
-                          ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
-                          : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
-                      }`}
-                    >
-                      <span>{opt.label}</span>
-                      <span className="text-[10px] text-slate-400 font-normal leading-tight">{opt.desc}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Layout de Hojas */}
-            <MenuDesignTemplatesPageLayout
-              value={pageLayout}
-              onChange={(v) => {
-                setPageLayout(v);
-                saveTemplate({ pageLayout: v });
+          <div className="px-6 pb-6">
+            <MenuDesignPanel
+              templateDesign={selectedTemplate as any}
+              pageLayout={pageLayout}
+              visualTheme={visualTheme}
+              onChange={(updates) => {
+                if (updates.visualTheme) {
+                  setVisualTheme(updates.visualTheme);
+                  saveTemplate({ visualTheme: updates.visualTheme });
+                }
+                if (updates.pageLayout) {
+                  setPageLayout(updates.pageLayout);
+                  saveTemplate({ pageLayout: updates.pageLayout });
+                }
+                if (updates.templateDesign) {
+                  handleTemplateChange(updates.templateDesign);
+                }
               }}
             />
-
-            {/* Reset */}
-            <button
-              onClick={() => {
-                setVisualTheme(DEFAULT_VISUAL_THEME);
-                saveTemplate({ visualTheme: DEFAULT_VISUAL_THEME });
-              }}
-              className="text-xs text-slate-400 hover:text-slate-600 underline transition-colors"
-            >
-              Restaurar diseño por defecto
-            </button>
           </div>
         )}
       </div>

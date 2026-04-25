@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Patient, VetCalculation, MacrosRecord, PortionsRecord, PatientEvaluation, GeneratedMenu } from '../../types';
+import { Patient, VetCalculation, MacrosRecord, PortionsRecord, PatientEvaluation, GeneratedMenu, MenuDesignConfig, DEFAULT_VISUAL_THEME } from '../../types';
 import { store } from '../../services/store';
 import { Calculator, Eye, EyeOff, ArrowLeft, Edit2, Pencil, X, Trash2, AlertTriangle, Save, Check } from 'lucide-react';
 
@@ -145,6 +145,14 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
   const [menuPreviewData, setMenuPreviewData] = useState<MenuPlanData | null>(null);
   const [selectedPreviewTemplate, setSelectedPreviewTemplate] = useState<string>(() => store.getMenuTemplate()?.templateDesign ?? 'plantilla_v1');
   const [zoom, setZoom] = useState<number>(1);
+  const [localDesignConfig, setLocalDesignConfig] = useState<MenuDesignConfig>(() => {
+    const t = store.getMenuTemplate();
+    return {
+      templateDesign: (t?.templateDesign ?? 'plantilla_v1') as MenuDesignConfig['templateDesign'],
+      pageLayout: t?.pageLayout ?? 'layout1',
+      visualTheme: t?.visualTheme ?? DEFAULT_VISUAL_THEME,
+    };
+  });
 
   // ✅ Estados de vinculación
   const [formEvaluationId, setFormEvaluationId] = useState<string | null>(() =>
@@ -224,11 +232,21 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       setAiDraftText(menu.content || "");
       setAiRationale(menu.aiRationale || "");
       setMenuPreviewData(menu.menuData || null);
-      const savedDesign = menu.templateId || 'plantilla_v1';
-      const savedTemplate = store.getMenuTemplate();
-      const is4col = savedTemplate?.templateDesign?.endsWith('_4col') ?? false;
-      const base = savedDesign.replace('_4col', '');
-      setSelectedPreviewTemplate(is4col ? `${base}_4col` : base);
+
+      // Load per-menu design config (or derive from templateId if no designConfig saved yet)
+      if (menu.designConfig) {
+        setLocalDesignConfig(menu.designConfig);
+        setSelectedPreviewTemplate(menu.designConfig.templateDesign);
+      } else {
+        const savedDesign = menu.templateId || 'plantilla_v1';
+        setSelectedPreviewTemplate(savedDesign);
+        const t = store.getMenuTemplate();
+        setLocalDesignConfig({
+          templateDesign: savedDesign as MenuDesignConfig['templateDesign'],
+          pageLayout: t?.pageLayout ?? 'layout1',
+          visualTheme: t?.visualTheme ?? DEFAULT_VISUAL_THEME,
+        });
+      }
 
       // ✅ Precarga de vinculación: prioridad a linkedEvaluationId, luego date
       const linkedEvalId = (menu as any).linkedEvaluationId as string | undefined;
@@ -255,7 +273,14 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       setMenuName(`Menú para ${patient.firstName} ${new Date().toLocaleDateString()}`);
       setSelectedTemplateId("base_v1");
       setSelectedReferenceIds([]);
-      setSelectedPreviewTemplate(store.getMenuTemplate()?.templateDesign ?? 'plantilla_v1');
+      const t = store.getMenuTemplate();
+      const newDesign: MenuDesignConfig = {
+        templateDesign: (t?.templateDesign ?? 'plantilla_v1') as MenuDesignConfig['templateDesign'],
+        pageLayout: t?.pageLayout ?? 'layout1',
+        visualTheme: t?.visualTheme ?? DEFAULT_VISUAL_THEME,
+      };
+      setLocalDesignConfig(newDesign);
+      setSelectedPreviewTemplate(newDesign.templateDesign);
 
       const selected = store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id);
       const ev = selected ? store.getEvaluationById(selected) : null;
@@ -313,6 +338,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         recommendationIds: selectedRecommendationIds
       }),
       templateId: selectedPreviewTemplate,
+      designConfig: {
+        ...localDesignConfig,
+        templateDesign: selectedPreviewTemplate as MenuDesignConfig['templateDesign'],
+      },
       menuData: menuPreviewData ? {
         ...menuPreviewData,
         sectionTitles: menuPreviewData.sectionTitles ?? store.getMenuTemplate()?.sectionTitles,
@@ -389,6 +418,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         recommendationIds: selectedRecommendationIds
       }),
       templateId: selectedPreviewTemplate,
+      designConfig: {
+        ...localDesignConfig,
+        templateDesign: selectedPreviewTemplate as MenuDesignConfig['templateDesign'],
+      },
       menuData: menuPreviewData ? {
         ...menuPreviewData,
         sectionTitles: menuPreviewData.sectionTitles ?? store.getMenuTemplate()?.sectionTitles,
@@ -657,7 +690,12 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           zoom={zoom}
           setZoom={setZoom}
           selectedPreviewTemplate={selectedPreviewTemplate}
-          setSelectedPreviewTemplate={setSelectedPreviewTemplate}
+          setSelectedPreviewTemplate={(id) => {
+            setSelectedPreviewTemplate(id);
+            setLocalDesignConfig(prev => ({ ...prev, templateDesign: id as MenuDesignConfig['templateDesign'] }));
+          }}
+          localDesignConfig={localDesignConfig}
+          setLocalDesignConfig={setLocalDesignConfig}
           onDirty={() => setHasUnsavedChanges(true)}
         />
 

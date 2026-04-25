@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Star, Flame, CalendarDays, Flag, TrendingUp, Zap } from 'lucide-react';
-import { GeneratedMenu, TrackingRow } from '../../types';
+import { GeneratedMenu, TrackingRow, PatientPortalMeasurementsConfig } from '../../types';
 import { MeasurementsView } from './MeasurementsView';
 import { HistoryView } from './HistoryView';
 import { PortalPatient, MeasurementEntry, BioEntry } from './PortalShell';
@@ -14,6 +14,7 @@ interface Props {
   measurements?: MeasurementEntry[];
   bioMeasurements?: BioEntry[];
   showMeasurementsDetail?: boolean;
+  measurementsConfig?: PatientPortalMeasurementsConfig | null;
   timezone: string;
 }
 
@@ -140,7 +141,8 @@ const TabBtn: React.FC<{ label: string; active: boolean; onClick: () => void }> 
 
 export const ProgressView: React.FC<Props> = ({
   patient, menus, activeTracking, allTracking,
-  activeMenu, measurements, bioMeasurements, showMeasurementsDetail = true, timezone,
+  activeMenu, measurements, bioMeasurements, showMeasurementsDetail = true,
+  measurementsConfig, timezone,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('medidas');
 
@@ -286,6 +288,7 @@ export const ProgressView: React.FC<Props> = ({
             measurements={measurements ?? []}
             bioMeasurements={bioMeasurements ?? []}
             showDetail={showMeasurementsDetail}
+            measurementsConfig={measurementsConfig}
           />
         )}
         {activeTab === 'historial' && (

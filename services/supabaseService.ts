@@ -13,7 +13,8 @@ import {
   SomatotypeRecord,
   BioimpedanciaRecord,
   MenuReferenceRecord,
-  MenuRecommendationRecord
+  MenuRecommendationRecord,
+  PatientPortalMeasurementsConfig,
 } from '../types';
 
 export const supabaseService = {
@@ -213,12 +214,14 @@ export const supabaseService = {
     accessToken?: string;
     accessCode?: string;
     portalShowMeasurementsDetail?: boolean;
+    portalMeasurementsConfig?: PatientPortalMeasurementsConfig | null;
   }): Promise<Patient> {
     const updateData: any = {};
     if (patch.portalActive                   !== undefined) updateData.portal_active                    = patch.portalActive;
     if (patch.accessToken                    !== undefined) updateData.access_token                     = patch.accessToken;
     if (patch.accessCode                     !== undefined) updateData.access_code                      = patch.accessCode;
     if (patch.portalShowMeasurementsDetail   !== undefined) updateData.portal_show_measurements_detail  = patch.portalShowMeasurementsDetail;
+    if (patch.portalMeasurementsConfig       !== undefined) updateData.portal_measurements_config       = patch.portalMeasurementsConfig;
 
     const { data, error } = await supabase
       .from('patients')
@@ -541,6 +544,7 @@ export const supabaseService = {
       name:                 menu.name        || null,
       content:              menu.content     || null,
       ai_rationale:         menu.aiRationale || null,
+      design_config:        menu.designConfig || null,
     };
     const { data, error } = await supabase
       .from('menus')
@@ -1128,6 +1132,7 @@ export const supabaseService = {
       accessCode:                     dbPatient.access_code                      ?? null,
       portalGoal:                     dbPatient.portal_goal                      ?? null,
       portalShowMeasurementsDetail:   dbPatient.portal_show_measurements_detail  ?? null,
+      portalMeasurementsConfig:       dbPatient.portal_measurements_config        ?? null,
     };
   },
 
@@ -1300,6 +1305,7 @@ export const supabaseService = {
       aiRationale:         menu.ai_rationale,
       menuPreviewData:     menu.menu_preview_data,
       createdAt:           menu.created_at,
+      designConfig:        menu.design_config || null,
     };
   },
 

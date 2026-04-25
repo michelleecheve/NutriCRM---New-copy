@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { UtensilsCrossed, TrendingUp, User, Lock } from "lucide-react";
-import { GeneratedMenu, TrackingRow } from "../../types";
+import { GeneratedMenu, TrackingRow, PatientPortalMeasurementsConfig } from "../../types";
 import { OnboardingView } from "./OnboardingView";
 import { DayMenuView } from "./DayMenuView";
 import { ProgressView } from "./ProgressView";
@@ -109,6 +109,7 @@ interface Props {
   measurements?: MeasurementEntry[];
   bioMeasurements?: BioEntry[];
   showMeasurementsDetail?: boolean;
+  measurementsConfig?: PatientPortalMeasurementsConfig | null;
   onTrackingUpdate: (t: TrackingRow) => void;
   onPatientUpdate?: (updates: Partial<PortalPatient>) => void;
 }
@@ -266,6 +267,7 @@ export const PortalShell: React.FC<Props> = ({
   measurements,
   bioMeasurements,
   showMeasurementsDetail = true,
+  measurementsConfig,
   onTrackingUpdate,
   onPatientUpdate,
 }) => {
@@ -389,6 +391,7 @@ export const PortalShell: React.FC<Props> = ({
               measurements={measurements}
               bioMeasurements={bioMeasurements}
               showMeasurementsDetail={showMeasurementsDetail}
+              measurementsConfig={measurementsConfig}
               timezone={timezone}
             />
           )}
