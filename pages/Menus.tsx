@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Layout, Eye, EyeOff, Trash2, Save, CheckCircle, ChevronDown } from 'lucide-react';
+import { Layout, Eye, EyeOff, Trash2, Save, CheckCircle, ChevronDown, Settings } from 'lucide-react';
 import type { MenuFooterConfig, MenuSectionTitles, VisualThemeConfig, PageLayoutOption } from '../types';
 import { DEFAULT_SECTION_TITLES, DEFAULT_VISUAL_THEME } from '../types';
 import { MenuPlanData } from '../components/menus_components/MenuDesignTemplates';
@@ -733,6 +733,16 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => void }> = ({ onSelectPatient }) => {
+  const [configOpen, setConfigOpen] = useState(() => {
+    const saved = localStorage.getItem('nutriflow_menu_section_config');
+    return saved !== null ? saved === 'true' : false;
+  });
+
+  const toggleConfig = (value: boolean) => {
+    setConfigOpen(value);
+    localStorage.setItem('nutriflow_menu_section_config', String(value));
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div>
@@ -740,51 +750,84 @@ export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => v
         <p className="text-slate-500 mt-1">Administra la plantilla base y las referencias que usa la IA para generar menús.</p>
       </div>
 
-      <MenuWrapper 
-        title="Plantilla Base del Menú" 
-        icon={<Layout className="w-5 h-5 text-emerald-600" />}
-        description="Diseño A4 que se usa al generar e imprimir cualquier menú"
-      >
-        <PlantillaBaseSection hideHeader hideContainer />
-      </MenuWrapper>
+      {/* Configuración de Menús — grupo colapsable */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <button
+          onClick={() => toggleConfig(!configOpen)}
+          className="w-full flex items-start sm:items-center justify-between p-6 hover:bg-slate-50 transition-colors"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 text-left">
+            <div className="bg-emerald-50 p-2 rounded-xl self-start">
+              <Settings className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div className="text-left">
+              <h3 className="font-bold text-slate-900">Configuración de Menús</h3>
+              <p className="text-sm text-slate-500 mt-0.5">Plantilla base, IA, referencias, recomendaciones y portal del paciente</p>
+            </div>
+            <div className={`hidden sm:flex ml-2 p-1.5 rounded-lg transition-colors ${configOpen ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+              {configOpen ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </div>
+          </div>
+          <div className="p-2 hover:bg-slate-100 rounded-lg transition-colors mt-1 sm:mt-0 shrink-0">
+            <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${configOpen ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
 
-      <MenuWrapper 
-        title="Configuración de AI para Menús" 
-        icon={<Sparkles className="w-5 h-5 text-indigo-600" />}
-        description="Personaliza cómo Gemini genera los menús de tus pacientes"
-      >
-        <MenuAIConfigurator hideHeader hideContainer />
-      </MenuWrapper>
+        {configOpen && (
+          <div className="border-t border-slate-200 px-6 py-6 space-y-4 bg-slate-100/70">
+            <MenuWrapper
+              title="Plantilla Base del Menú"
+              icon={<Layout className="w-5 h-5 text-emerald-600" />}
+              description="Diseño A4 que se usa al generar e imprimir cualquier menú"
+              storageKey="plantilla_base"
+            >
+              <PlantillaBaseSection hideHeader hideContainer />
+            </MenuWrapper>
 
-      <MenuWrapper 
-        title="Plantillas de Referencias" 
-        icon={<FileText className="w-5 h-5 text-blue-600" />}
-        description="Ingresa un menú de referencia por kcal para que la IA lo use como base"
-      >
-        <MenuReferences hideHeader hideContainer />
-      </MenuWrapper>
+            <MenuWrapper
+              title="Configuración de AI para Menús"
+              icon={<Sparkles className="w-5 h-5 text-indigo-600" />}
+              description="Personaliza cómo Gemini genera los menús de tus pacientes"
+              storageKey="ai_config"
+            >
+              <MenuAIConfigurator hideHeader hideContainer />
+            </MenuWrapper>
 
-      <MenuWrapper 
-        title="Plantillas de Recomendaciones" 
-        icon={<ClipboardList className="w-5 h-5 text-emerald-600" />}
-        description="Gestiona tus notas predefinidas para la página 2 del menú"
-      >
-        <MenuRecommendations hideHeader hideContainer />
-      </MenuWrapper>
+            <MenuWrapper
+              title="Plantillas de Referencias"
+              icon={<FileText className="w-5 h-5 text-blue-600" />}
+              description="Ingresa un menú de referencia por kcal para que la IA lo use como base"
+              storageKey="referencias"
+            >
+              <MenuReferences hideHeader hideContainer />
+            </MenuWrapper>
 
-      <MenuWrapper
-        title="Portal Digital de Pacientes"
-        icon={<Smartphone className="w-5 h-5 text-emerald-600" />}
-        description="Configura el comportamiento por defecto del portal móvil para tus pacientes"
-      >
-        <MenuPatientPortal />
-      </MenuWrapper>
+            <MenuWrapper
+              title="Plantillas de Recomendaciones"
+              icon={<ClipboardList className="w-5 h-5 text-emerald-600" />}
+              description="Gestiona tus notas predefinidas para la página 2 del menú"
+              storageKey="recomendaciones"
+            >
+              <MenuRecommendations hideHeader hideContainer />
+            </MenuWrapper>
+
+            <MenuWrapper
+              title="Portal Digital de Pacientes"
+              icon={<Smartphone className="w-5 h-5 text-emerald-600" />}
+              description="Configura el comportamiento por defecto del portal móvil para tus pacientes"
+              storageKey="portal_pacientes"
+            >
+              <MenuPatientPortal />
+            </MenuWrapper>
+          </div>
+        )}
+      </div>
 
       <MenuWrapper
         title="Historial de Menús"
         icon={<History className="w-5 h-5 text-blue-600" />}
         description="Visualiza y exporta menús creados anteriormente para tus pacientes"
-        defaultOpen={true}
+        storageKey="historial"
       >
         <MenuHistory onSelectPatient={onSelectPatient} hideHeader hideContainer />
       </MenuWrapper>

@@ -3,6 +3,7 @@ import { Patient } from '../types';
 import { store } from '../services/store';
 import { Search, Plus, User, ChevronRight, Filter, Check, Settings, Trash2, X as CloseIcon, ArrowUpDown, ChevronLeft } from 'lucide-react';
 import { showPlanLimitModal } from '../components/PlanLimitModal';
+import { authStore } from '../services/authStore';
 
 interface DashboardProps {
   onSelectPatient: (patientId: string, tab?: string) => void;
@@ -217,7 +218,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              if (authStore.patientLimitReached(patients.length)) { showPlanLimitModal(); return; }
+              setIsModalOpen(true);
+            }}
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all font-semibold"
           >
             <Plus className="w-5 h-5" />

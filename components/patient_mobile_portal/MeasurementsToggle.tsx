@@ -302,7 +302,7 @@ export const MeasurementsToggle: React.FC<Props> = ({ antro, bio, onChange, defa
 
       {/* Expandable content — 2-column grid */}
       {open && (
-        <div className="p-3 grid grid-cols-2 gap-3">
+        <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Antropometría column */}
           <div className="flex flex-col border border-slate-200 rounded-xl overflow-hidden">
             <p className="text-xs font-bold uppercase tracking-wide px-3 py-2 border-b border-slate-100 flex-shrink-0" style={{ backgroundColor: '#EBF5F0', color: '#2D5A4B' }}>

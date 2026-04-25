@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Appointment, Patient, AppUser } from "../types";
 import { store } from "../services/store";
 import { authStore } from "../services/authStore";
+import { showPlanLimitModal } from "../components/PlanLimitModal";
 import { supabase } from "../services/supabase";
 import {
   Plus,
@@ -486,6 +487,7 @@ export const CalendarPage: React.FC = () => {
   const handleNavigateTo = (date: Date) => setCurrentDate(date);
 
   const handleCreateAppointment = (dateStr?: string) => {
+    if (authStore.appointmentLimitReached(appointments.length)) { showPlanLimitModal(); return; }
     const resolvedDateStr = dateStr ?? todayStr;
     setSelectedAppointment({
       date: resolvedDateStr,

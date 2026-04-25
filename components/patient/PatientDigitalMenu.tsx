@@ -221,6 +221,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
     patient.portalMeasurementsConfig?.bio ?? defaultBio,
   );
   const [savingMeasConfig, setSavingMeasConfig] = useState(false);
+  const [measConfigDirty, setMeasConfigDirty] = useState(false);
 
   // ── Message template state ──
   const [messageTemplate, setMessageTemplate] = useState<string>(() => {
@@ -229,8 +230,9 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
     return localStorage.getItem(MESSAGE_TEMPLATE_KEY) ?? DEFAULT_MESSAGE_TEMPLATE;
   });
   const [copiedMessage, setCopiedMessage] = useState(false);
-  const saveTemplateTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [editingTemplate, setEditingTemplate] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateDirty, setTemplateDirty] = useState(false);
 
   // ── Step progression ──
   const [paso2Saved, setPaso2Saved] = useState<boolean>(() => !!(patient.portalGoal));
@@ -329,16 +331,22 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
     }
   }
 
-  // ── Save per-patient measurements field config ──
-  async function handleMeasFieldsChange(antro: AntroFieldsConfig, bio: BioFieldsConfig) {
+  // ── Update local state only — save is manual ──
+  function handleMeasFieldsChange(antro: AntroFieldsConfig, bio: BioFieldsConfig) {
     setMeasAntro(antro);
     setMeasBio(bio);
+    setMeasConfigDirty(true);
+  }
+
+  // ── Persist to Supabase ──
+  async function handleSaveMeasConfig() {
     setSavingMeasConfig(true);
     try {
       const updated = await supabaseService.updatePatientPortal(patient.id, {
-        portalMeasurementsConfig: { antro, bio },
+        portalMeasurementsConfig: { antro: measAntro, bio: measBio },
       });
       onUpdate({ ...patient, ...updated });
+      setMeasConfigDirty(false);
     } finally {
       setSavingMeasConfig(false);
     }
@@ -346,7 +354,9 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
 
   // ── Reset to global defaults ──
   async function handleResetMeasConfig() {
-    await handleMeasFieldsChange(defaultAntro, defaultBio);
+    setMeasAntro(defaultAntro);
+    setMeasBio(defaultBio);
+    setMeasConfigDirty(true);
   }
 
   // ── Save portal goal ──
@@ -874,9 +884,21 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                   onChange={handleMeasFieldsChange}
                   defaultOpen={false}
                 />
-                {savingMeasConfig && (
-                  <p className="text-xs text-slate-400 animate-pulse">Guardando...</p>
-                )}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSaveMeasConfig}
+                    disabled={savingMeasConfig}
+                    className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors disabled:opacity-50 ${
+                      measConfigDirty
+                        ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    }`}
+                  >
+                    <Save className="w-3 h-3" />
+                    {savingMeasConfig ? 'Guardando...' : measConfigDirty ? 'Hay cambios sin guardar — Guardar' : 'Guardar'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1058,26 +1080,44 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                       const val = e.target.value;
                       setMessageTemplate(val);
                       localStorage.setItem(MESSAGE_TEMPLATE_KEY, val);
-                      if (saveTemplateTimeout.current) clearTimeout(saveTemplateTimeout.current);
-                      saveTemplateTimeout.current = setTimeout(() => {
-                        const userId = authStore.getCurrentUser()?.id;
-                        if (userId) supabaseService.updateProfile(userId, { shareDigitalMenuMessage: val });
-                      }, 800);
+                      setTemplateDirty(true);
                     }}
                     rows={4}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-300"
                   />
-                  <button
-                    onClick={() => {
-                      setMessageTemplate(DEFAULT_MESSAGE_TEMPLATE);
-                      localStorage.removeItem(MESSAGE_TEMPLATE_KEY);
-                      const userId = authStore.getCurrentUser()?.id;
-                      if (userId) supabaseService.updateProfile(userId, { shareDigitalMenuMessage: DEFAULT_MESSAGE_TEMPLATE });
-                    }}
-                    className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-                  >
-                    Restaurar predeterminado
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => {
+                        setMessageTemplate(DEFAULT_MESSAGE_TEMPLATE);
+                        localStorage.removeItem(MESSAGE_TEMPLATE_KEY);
+                        setTemplateDirty(true);
+                      }}
+                      className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      Restaurar predeterminado
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setSavingTemplate(true);
+                        try {
+                          const userId = authStore.getCurrentUser()?.id;
+                          if (userId) await supabaseService.updateProfile(userId, { shareDigitalMenuMessage: messageTemplate });
+                          setTemplateDirty(false);
+                        } finally {
+                          setSavingTemplate(false);
+                        }
+                      }}
+                      disabled={savingTemplate}
+                      className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors disabled:opacity-50 ${
+                        templateDirty
+                          ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      }`}
+                    >
+                      <Save className="w-3 h-3" />
+                      {savingTemplate ? 'Guardando...' : templateDirty ? 'Hay cambios sin guardar — Guardar' : 'Guardar'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

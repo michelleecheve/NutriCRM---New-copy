@@ -11,9 +11,10 @@ export function showPlanLimitModal() {
 }
 
 export const PlanLimitModal: React.FC = () => {
-  const [open, setOpen]       = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [isAILimit, setIsAILimit] = useState(false);
+  const [open, setOpen]             = useState(false);
+  const [loading, setLoading]       = useState(false);
+  const [isAILimit, setIsAILimit]   = useState(false);
+  const [trialError, setTrialError] = useState<string | null>(null);
 
   const hasUsedTrial = authStore.hasUsedTrial();
   const isPro        = authStore.isPro();
@@ -30,8 +31,6 @@ export const PlanLimitModal: React.FC = () => {
   }, []);
 
   if (!open) return null;
-
-  const [trialError, setTrialError] = useState<string | null>(null);
 
   const handleTrial = async () => {
     setLoading(true);

@@ -8,7 +8,7 @@ import { store } from '../../services/store';
 const FOOD_GROUPS = [
   'Carne, Pollo, Cerdo', 'Pescado, Mariscos', 'Queso, Huevo', 'Leche / Yogurt', 'Incaparina',
   'Vegetales', 'Frutas', 'Granos', 'Cereales', 'Pan', 'Tortilla', 'Aguacate / semillas', 'Sal', 'Azucar',
-  'Café / Té', 'Jugos', 'Gaseosas', 'Chucherias / Frituras', 'Comida Rápida', 'Galletas', 'Postres'
+  'Café / Té', 'Jugos', 'Gaseosas', 'Chucherias / Frituras', 'Comida Rápida', 'Galletas', 'Postres', 'Bebidas Alcohólicas'
 ];
 const FREQUENCIES = ['Diario', 'Semanal', 'Mensual', 'Rara vez', 'Nunca'];
 const MEAL_TYPES = ['Desayuno', 'Refacción', 'Almuerzo', 'Cena'];

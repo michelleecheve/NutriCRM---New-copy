@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { getTodayStr } from '../src/utils/dateUtils';
 import { showPlanLimitModal } from '../components/PlanLimitModal';
+import { authStore } from '../services/authStore';
 
 type Tab         = 'ingresos' | 'egresos' | 'resumen';
 type StatusFilter = 'all' | 'Pendiente' | 'Pagado' | 'Vencido';
@@ -230,6 +231,7 @@ export const Payments: React.FC = () => {
 
   // ── Handlers ──────────────────────────────────────────────────────────────────
   const handleOpenCreate = () => {
+    if (authStore.invoiceLimitReached(invoices.length)) { showPlanLimitModal(); return; }
     setCurrentInvoice(activeTab === 'egresos' ? { ...emptyEgreso } : { ...emptyIngreso });
     setIsModalOpen(true);
   };
