@@ -163,9 +163,9 @@ const RECURRENTE_PRODUCT_ID  = 'prod_22uktkdj';
 interface SubscriptionState {
   plan:                       string;
   status:                     string;
-  trial_started_at:           string | null;
-  trial_ends_at:              string | null;
+  current_period_start:       string | null;
   current_period_end:         string | null;
+  cancelled_at:               string | null;
   recurrente_subscription_id: string | null;
 }
 
@@ -307,17 +307,17 @@ class AuthStore {
     if (user.role === 'nutricionista') {
       const { data: sub } = await supabase
         .from('subscriptions')
-        .select('plan, status, trial_started_at, trial_ends_at, current_period_end, recurrente_subscription_id')
+        .select('plan, status, current_period_start, current_period_end, cancelled_at, recurrente_subscription_id')
         .eq('owner_id', user.id)
         .single();
-      this.subscription = sub ?? { plan: 'free', status: 'free', trial_started_at: null, trial_ends_at: null, current_period_end: null, recurrente_subscription_id: null };
+      this.subscription = sub ?? { plan: 'free', status: 'free', current_period_start: null, current_period_end: null, cancelled_at: null, recurrente_subscription_id: null };
 
-      // Auto-expire trial if trial_ends_at has passed
-      if (this.subscription.status === 'trialing' && this.subscription.trial_ends_at) {
-        const expired = new Date(this.subscription.trial_ends_at) < new Date();
+      // Auto-expire cancelled_pending when current_period_end has passed
+      if (this.subscription.status === 'cancelled_pending' && this.subscription.current_period_end) {
+        const expired = new Date(this.subscription.current_period_end) < new Date();
         if (expired) {
           this.subscription = { ...this.subscription, plan: 'free', status: 'free' };
-          supabase.from('subscriptions').update({ plan: 'free', status: 'free', updated_at: new Date().toISOString() }).eq('owner_id', user.id);
+          supabase.from('subscriptions').update({ plan: 'free', status: 'cancelled', updated_at: new Date().toISOString() }).eq('owner_id', user.id);
           supabase.from('profiles').update({ plan: 'free' }).eq('id', user.id);
           supabase.from('ai_rate_limits').update({ max_tokens: 30000 }).eq('owner_id', user.id);
         }
@@ -613,30 +613,15 @@ class AuthStore {
 
   // ── Subscription helpers ──────────────────────────────────────────────────
 
-  /** True si el usuario tiene acceso Pro activo (plan pagado o en trial). Admin siempre es pro. */
+  /** True si el usuario tiene acceso Pro activo. Admin siempre es pro. */
   isPro(): boolean {
     if (!this.currentUser) return false;
     if (this.currentUser.role === 'admin') return true;
     if (!this.subscription) return false;
     const { plan, status } = this.subscription;
-    return plan === 'pro' && (status === 'active' || status === 'trialing');
-  }
-
-  /** True si está en período de prueba. */
-  isOnTrial(): boolean {
-    return this.subscription?.status === 'trialing';
-  }
-
-  /** Días restantes de trial (0 si no aplica o expiró). */
-  trialDaysLeft(): number {
-    if (!this.isOnTrial() || !this.subscription?.trial_ends_at) return 0;
-    const diff = new Date(this.subscription.trial_ends_at).getTime() - Date.now();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  }
-
-  /** True si el usuario ya activó el trial alguna vez (aunque haya expirado/cancelado). */
-  hasUsedTrial(): boolean {
-    return this.subscription !== null && this.subscription.trial_started_at !== null;
+    // cancelled_pending: voluntarily cancelled but still within paid period
+    // past_due: payment failed but Recurrente is still retrying — keep access during retry window
+    return plan === 'pro' && (status === 'active' || status === 'cancelled_pending' || status === 'past_due');
   }
 
   /** Redirige al checkout de Recurrente para suscribirse a Pro. */
@@ -644,9 +629,8 @@ class AuthStore {
     const user = this.currentUser;
     if (!user) return { ok: false, message: 'No hay sesión activa.' };
 
-    // Bloquear si ya hay una suscripción activa pagada (no trialing, ya que desde trial sí se permite suscribirse)
     const existingSub = this.subscription;
-    if (existingSub && existingSub.status === 'active') {
+    if (existingSub && (existingSub.status === 'active' || existingSub.status === 'cancelled_pending')) {
       return { ok: false, message: 'Ya tienes una suscripción Pro activa.' };
     }
 
@@ -704,53 +688,26 @@ class AuthStore {
     return invoiceCount >= 20;
   }
 
-  /** Activa el trial de 14 días para el usuario actual via Edge Function (server-side, no hackeable). */
-  async startTrial(): Promise<{ ok: boolean; message?: string }> {
-    const user = this.currentUser;
-    if (!user || user.role !== 'nutricionista') return { ok: false, message: 'No aplica.' };
-
-    try {
-      const { data, error } = await supabase.functions.invoke('activate-trial');
-      if (error) {
-        console.error('activate-trial error:', error);
-        return { ok: false, message: `Error: ${error.message ?? JSON.stringify(error)}` };
-      }
-      const body = data as { ok: boolean; message?: string; trial_ends_at?: string; trial_started_at?: string };
-      if (!body.ok) return { ok: false, message: body.message ?? 'Error al activar el trial.' };
-
-      this.subscription = {
-        plan:                       'pro',
-        status:                     'trialing',
-        trial_started_at:           body.trial_started_at ?? new Date().toISOString(),
-        trial_ends_at:              body.trial_ends_at ?? null,
-        current_period_end:         null,
-        recurrente_subscription_id: null,
-      };
-      return { ok: true };
-    } catch {
-      return { ok: false, message: 'Error de conexión al activar el trial.' };
-    }
-  }
-
   /** Cancela la suscripción activa via Edge Function (server-side). */
-  async cancelSubscription(): Promise<{ ok: boolean; message?: string }> {
+  async cancelSubscription(): Promise<{ ok: boolean; message?: string; access_until?: string | null }> {
     const user = this.currentUser;
     if (!user || user.role !== 'nutricionista') return { ok: false, message: 'No aplica.' };
 
     try {
       const { data, error } = await supabase.functions.invoke('cancel-subscription');
       if (error) return { ok: false, message: 'Error de conexión al cancelar.' };
-      const body = data as { ok: boolean; message?: string };
+      const body = data as { ok: boolean; message?: string; access_until?: string | null };
       if (!body.ok) return { ok: false, message: body.message ?? 'Error al cancelar.' };
 
+      // Keep plan = 'pro' locally so isPro() stays true until current_period_end
       this.subscription = {
-        plan:                       'free',
-        status:                     'cancelled',
-        trial_ends_at:              null,
-        current_period_end:         null,
-        recurrente_subscription_id: null,
+        ...this.subscription!,
+        status:       'cancelled_pending',
+        cancelled_at: new Date().toISOString(),
       };
-      return { ok: true };
+      localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(this.subscription));
+      this.notifyListeners();
+      return { ok: true, access_until: body.access_until };
     } catch {
       return { ok: false, message: 'Error de conexión al cancelar.' };
     }
@@ -766,10 +723,13 @@ class AuthStore {
     if (!user || user.role !== 'nutricionista') return;
     const { data: sub } = await supabase
       .from('subscriptions')
-      .select('plan, status, trial_started_at, trial_ends_at, current_period_end, recurrente_subscription_id')
+      .select('plan, status, current_period_start, current_period_end, cancelled_at, recurrente_subscription_id')
       .eq('owner_id', user.id)
       .single();
-    this.subscription = sub ?? this.subscription;
+    if (sub) {
+      this.subscription = sub;
+      localStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(this.subscription));
+    }
     this.notifyListeners();
   }
 }

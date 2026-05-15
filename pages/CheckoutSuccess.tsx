@@ -1,13 +1,34 @@
-import React, { useEffect } from 'react';
-import { CheckCircle, ArrowRight, Zap } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CheckCircle, ArrowRight, Zap, Loader2 } from 'lucide-react';
 import { authStore } from '../services/authStore';
 
+type VerifyStatus = 'checking' | 'confirmed' | 'timeout';
+
 export const CheckoutSuccess: React.FC<{ onGoToProfile: () => void }> = ({ onGoToProfile }) => {
+  const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('checking');
+
   useEffect(() => {
-    // Limpiar parámetros de URL que Recurrente agrega (checkout_id, etc.)
     window.history.replaceState({}, '', '/checkout-success');
-    // Recargar suscripción para reflejar el nuevo estado
-    authStore.refreshSubscription();
+
+    let attempts = 0;
+    const MAX_ATTEMPTS = 5; // 5 × 2s = 10s
+
+    const poll = async () => {
+      await authStore.refreshSubscription();
+      const sub = authStore.getSubscription();
+      if (sub?.status === 'active' || sub?.plan === 'pro') {
+        setVerifyStatus('confirmed');
+        return;
+      }
+      attempts++;
+      if (attempts >= MAX_ATTEMPTS) {
+        setVerifyStatus('timeout');
+        return;
+      }
+      setTimeout(poll, 2000);
+    };
+
+    poll();
   }, []);
 
   return (
@@ -17,20 +38,26 @@ export const CheckoutSuccess: React.FC<{ onGoToProfile: () => void }> = ({ onGoT
         {/* Icono */}
         <div className="flex justify-center">
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center">
-            <CheckCircle className="w-10 h-10 text-emerald-500" />
+            {verifyStatus === 'checking'
+              ? <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+              : <CheckCircle className="w-10 h-10 text-emerald-500" />
+            }
           </div>
         </div>
 
         {/* Título */}
         <div className="space-y-2">
-          <h1 className="text-2xl font-black text-slate-800">Pago exitoso</h1>
+          <h1 className="text-2xl font-black text-slate-800">
+            {verifyStatus === 'checking'  ? 'Verificando tu pago...'    : 'Pago exitoso'}
+          </h1>
           <p className="text-slate-500 text-sm leading-relaxed">
-            Tu suscripción <span className="font-bold text-emerald-600">NutriFollow Pro</span> está siendo activada.
-            En unos momentos tu cuenta reflejará el nuevo plan.
+            {verifyStatus === 'checking' && 'Estamos confirmando tu suscripción. Esto toma unos segundos.'}
+            {verifyStatus === 'confirmed' && <>Tu suscripción <span className="font-bold text-emerald-600">NutriFlow Pro</span> está activa. ¡Bienvenida al plan completo!</>}
+            {verifyStatus === 'timeout'  && 'Tu pago fue procesado. Si tu plan no aparece actualizado, recarga la página en unos minutos.'}
           </p>
         </div>
 
-        {/* Beneficios recordatorio */}
+        {/* Beneficios */}
         <div className="bg-emerald-50 rounded-xl p-4 text-left space-y-2">
           <p className="text-xs font-bold text-emerald-700 uppercase tracking-wide flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5" /> Lo que tienes ahora
@@ -42,19 +69,23 @@ export const CheckoutSuccess: React.FC<{ onGoToProfile: () => void }> = ({ onGoT
           </ul>
         </div>
 
-        {/* CTA */}
-        <button
-          type="button"
-          onClick={() => { window.location.href = 'https://www.nutrifollow.app'; }}
-          className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-600/20"
-        >
-          Recargar página
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        {/* CTA — solo visible cuando ya confirmado o timeout */}
+        {verifyStatus !== 'checking' && (
+          <button
+            type="button"
+            onClick={() => { window.location.href = 'https://www.nutrifollow.app'; }}
+            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-600/20"
+          >
+            Entrar a NutriFlow
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        )}
 
-        <p className="text-xs text-slate-400">
-          Si tu plan no aparece actualizado en unos minutos, recarga la página.
-        </p>
+        {verifyStatus === 'timeout' && (
+          <p className="text-xs text-slate-400">
+            Si tu plan no aparece actualizado en unos minutos, recarga la página.
+          </p>
+        )}
       </div>
     </div>
   );

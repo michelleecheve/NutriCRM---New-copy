@@ -1,26 +1,32 @@
 import React, { useState } from 'react';
 import { authStore } from '../../services/authStore';
-import { Zap, CheckCircle, Clock, AlertCircle, CreditCard, Star, ChevronDown, XCircle, RefreshCw } from 'lucide-react';
+import { Zap, CheckCircle, AlertCircle, CreditCard, Star, ChevronDown, XCircle, RefreshCw, Clock } from 'lucide-react';
 
 export const ProfileSubscription: React.FC = () => {
-  const sub          = authStore.getSubscription();
-  const isPro        = authStore.isPro();
-  const isTrialing   = authStore.isOnTrial();
-  const daysLeft     = authStore.trialDaysLeft();
-  const hasUsedTrial = authStore.hasUsedTrial();
+  const sub   = authStore.getSubscription();
+  const isPro = authStore.isPro();
 
-  const [isOpen, setIsOpen]           = useState(isTrialing || !isPro);
-  const [isLoading, setIsLoading]     = useState(false);
-  const [trialMsg, setTrialMsg]       = useState<string | null>(null);
+  const [isOpen, setIsOpen]                   = useState(!isPro);
+  const [isLoading, setIsLoading]             = useState(false);
+  const [msg, setMsg]                         = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showCardModal, setShowCardModal]         = useState(false);
+
+  const formatDate = (iso: string | null) => {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('es-GT', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
 
   const statusLabel = () => {
-    if (!sub || sub.status === 'free') return { text: 'Plan Gratuito', color: 'text-slate-500', bg: 'bg-slate-100' };
-    if (sub.status === 'trialing')     return { text: `Trial · ${daysLeft} días restantes`, color: 'text-amber-700', bg: 'bg-amber-100' };
-    if (sub.status === 'active')       return { text: 'Pro Activo', color: 'text-emerald-700', bg: 'bg-emerald-100' };
-    if (sub.status === 'past_due')     return { text: 'Pago pendiente', color: 'text-red-700', bg: 'bg-red-100' };
-    if (sub.status === 'paused')       return { text: 'Pausado', color: 'text-orange-700', bg: 'bg-orange-100' };
-    if (sub.status === 'cancelled')    return { text: 'Cancelado', color: 'text-slate-500', bg: 'bg-slate-100' };
+    if (!sub || sub.status === 'free')     return { text: 'Plan Básico',    color: 'text-slate-500',   bg: 'bg-slate-100'   };
+    if (sub.status === 'active')           return { text: 'Pro Activo',     color: 'text-emerald-700', bg: 'bg-emerald-100' };
+    if (sub.status === 'cancelled_pending') return {
+      text: `Pro · Cancela el ${formatDate(sub.current_period_end)}`,
+      color: 'text-amber-700', bg: 'bg-amber-100',
+    };
+    if (sub.status === 'past_due')         return { text: 'Pago pendiente', color: 'text-red-700',     bg: 'bg-red-100'     };
+    if (sub.status === 'paused')           return { text: 'Pausado',        color: 'text-orange-700',  bg: 'bg-orange-100'  };
+    if (sub.status === 'cancelled')        return { text: 'Cancelado',      color: 'text-slate-500',   bg: 'bg-slate-100'   };
     return { text: sub.status, color: 'text-slate-500', bg: 'bg-slate-100' };
   };
 
@@ -28,34 +34,28 @@ export const ProfileSubscription: React.FC = () => {
 
   const handleUpgrade = async () => {
     setIsLoading(true);
-    setTrialMsg(null);
-    if (!hasUsedTrial && sub?.status !== 'past_due') {
-      // First time: activate internal trial (no payment required)
-      const result = await authStore.startTrial();
-      if (!result.ok) setTrialMsg(result.message ?? 'Error al activar el trial. Intenta de nuevo.');
-    } else {
-      // Already used trial or past_due: go to Recurrente checkout
-      const result = await authStore.startCheckout();
-      if (!result.ok) setTrialMsg(result.message ?? 'Error al crear el checkout. Intenta de nuevo.');
-    }
+    setMsg(null);
+    const result = await authStore.startCheckout();
+    if (!result.ok) setMsg(result.message ?? 'Error al crear el checkout. Intenta de nuevo.');
     setIsLoading(false);
   };
 
   const handleCancel = async () => {
     setIsLoading(true);
-    setTrialMsg(null);
+    setMsg(null);
     const result = await authStore.cancelSubscription();
     if (result.ok) {
-      setTrialMsg('Suscripción cancelada. Tu cuenta ha regresado al plan gratuito.');
+      setMsg(`Suscripción cancelada. Tu acceso Pro continúa hasta el ${formatDate(result.access_until ?? null)}.`);
       setShowCancelConfirm(false);
     } else {
-      setTrialMsg(result.message ?? 'Error al cancelar.');
+      setMsg(result.message ?? 'Error al cancelar.');
     }
     setIsLoading(false);
   };
 
-  const isActiveProOrTrial = isPro && (sub?.status === 'active' || sub?.status === 'trialing');
-  const hasPaidSubscription = sub?.status === 'active' && sub?.recurrente_subscription_id;
+  const isCancelledPending = sub?.status === 'cancelled_pending';
+  const showCancelButton   = (sub?.status === 'active' || sub?.status === 'past_due') && !isCancelledPending && !showCancelConfirm;
+  const showCardButton     = !!sub?.recurrente_subscription_id && (sub?.status === 'active' || isCancelledPending);
 
   return (
     <div className="space-y-4">
@@ -79,10 +79,10 @@ export const ProfileSubscription: React.FC = () => {
 
           {/* Plan comparison */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Free */}
+            {/* Básico */}
             <div className={`rounded-xl border-2 p-4 space-y-3 ${!isPro ? 'border-slate-300 bg-slate-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-700">Gratuito</span>
+                <span className="font-bold text-slate-700">Básico</span>
                 {!isPro && <span className="text-xs bg-slate-200 text-slate-600 font-bold px-2 py-0.5 rounded-full">Plan actual</span>}
               </div>
               <p className="text-2xl font-black text-slate-800">$0 <span className="text-sm font-normal text-slate-400">/mes</span></p>
@@ -109,10 +109,30 @@ export const ProfileSubscription: React.FC = () => {
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> Citas ilimitadas</li>
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> Facturas ilimitadas</li>
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> IA: 200,000 tokens/mes</li>
-                <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> 14 días de prueba gratis</li>
               </ul>
             </div>
           </div>
+
+          {/* Subscription period info — only when Pro or cancelled_pending */}
+          {isPro && (sub?.current_period_start || sub?.current_period_end) && (
+            <div className="grid grid-cols-3 gap-3 bg-slate-50 rounded-xl px-4 py-3 text-sm">
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Inicio</p>
+                <p className="font-semibold text-slate-700">{formatDate(sub?.current_period_start ?? null) || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">{isCancelledPending ? 'Acceso hasta' : 'Próximo cobro'}</p>
+                <p className="font-semibold text-slate-700">{formatDate(sub?.current_period_end ?? null) || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Renovación</p>
+                {isCancelledPending
+                  ? <p className="font-semibold text-amber-600">Cancelada</p>
+                  : <p className="font-semibold text-emerald-600">Activa ✓</p>
+                }
+              </div>
+            </div>
+          )}
 
           {/* past_due warning */}
           {sub?.status === 'past_due' && (
@@ -125,25 +145,46 @@ export const ProfileSubscription: React.FC = () => {
             </div>
           )}
 
-          {/* Trial countdown */}
-          {isTrialing && (
+          {/* cancelled_pending info */}
+          {isCancelledPending && sub?.current_period_end && (
             <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
               <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-bold text-amber-700">Cuenta en Trial Activo · {daysLeft} días restantes</p>
-                <p className="text-xs text-amber-600 mt-0.5">¿Te está gustando NutriFollow? Suscríbete a Pro y mantén todos tus beneficios sin interrupciones.</p>
+                <p className="text-sm font-bold text-amber-700">Suscripción cancelada — acceso activo</p>
+                <p className="text-xs text-amber-600 mt-0.5">
+                  Tu acceso Pro continuará hasta el <strong>{formatDate(sub.current_period_end)}</strong>. Después pasarás al Plan Básico automáticamente. Tus datos nunca se eliminan.
+                </p>
               </div>
             </div>
           )}
 
-          {/* Change payment method info (only for active paid subscriptions) */}
-          {hasPaidSubscription && (
-            <div className="flex items-start gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
-              <RefreshCw className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-bold text-slate-600">¿Cambiar método de pago?</p>
-                <p className="text-xs text-slate-500">Cancela tu suscripción actual y vuelve a suscribirte. Tus datos no se eliminan.</p>
-              </div>
+          {/* Cambiar tarjeta */}
+          {showCardButton && !showCardModal && (
+            <button
+              type="button"
+              onClick={() => setShowCardModal(true)}
+              className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Cambiar tarjeta de pago
+            </button>
+          )}
+
+          {showCardModal && (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-bold text-slate-700">¿Cómo cambiar tu tarjeta?</p>
+              <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside">
+                <li>Cancela tu suscripción actual (seguirás con acceso Pro hasta el {formatDate(sub?.current_period_end ?? null)}).</li>
+                <li>Cuando expire, vuelve a suscribirte aquí con la nueva tarjeta.</li>
+              </ol>
+              <p className="text-xs text-slate-400">Tus datos y pacientes nunca se eliminan.</p>
+              <button
+                type="button"
+                onClick={() => setShowCardModal(false)}
+                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                Cerrar
+              </button>
             </div>
           )}
 
@@ -151,7 +192,9 @@ export const ProfileSubscription: React.FC = () => {
           {showCancelConfirm && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
               <p className="text-sm font-bold text-red-700">¿Confirmar cancelación?</p>
-              <p className="text-xs text-red-600">Tu acceso Pro terminará inmediatamente. Tus datos no se eliminarán.</p>
+              <p className="text-xs text-red-600">
+                Tu acceso Pro continuará hasta el <strong>{formatDate(sub?.current_period_end ?? null)}</strong>. Después pasarás al Plan Básico automáticamente. Tus datos no se eliminarán.
+              </p>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -175,7 +218,7 @@ export const ProfileSubscription: React.FC = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
-            {(!isPro || isTrialing || sub?.status === 'past_due') && (
+            {!isPro && (
               <button
                 type="button"
                 onClick={handleUpgrade}
@@ -183,18 +226,11 @@ export const ProfileSubscription: React.FC = () => {
                 className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-600/20 text-sm disabled:opacity-50"
               >
                 <CreditCard className="w-4 h-4" />
-                {isLoading
-                  ? (sub?.status === 'past_due' || hasUsedTrial ? 'Redirigiendo...' : 'Activando...')
-                  : sub?.status === 'past_due'
-                    ? 'Nueva suscripción'
-                    : !hasUsedTrial
-                      ? 'Prueba Gratis 14 Días'
-                      : 'Suscribirse a Pro'
-                }
+                {isLoading ? 'Redirigiendo...' : 'Suscribirse a Pro'}
               </button>
             )}
 
-            {hasPaidSubscription && !showCancelConfirm && (
+            {showCancelButton && (
               <button
                 type="button"
                 onClick={() => setShowCancelConfirm(true)}
@@ -207,9 +243,9 @@ export const ProfileSubscription: React.FC = () => {
             )}
           </div>
 
-          {trialMsg && (
-            <p className={`text-sm font-medium px-1 ${trialMsg.includes('activado') || trialMsg.includes('cancelada') ? 'text-emerald-600' : 'text-red-600'}`}>
-              {trialMsg}
+          {msg && (
+            <p className={`text-sm font-medium px-1 ${msg.includes('cancelada') ? 'text-amber-600' : 'text-red-600'}`}>
+              {msg}
             </p>
           )}
         </div>

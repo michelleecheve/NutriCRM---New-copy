@@ -3,18 +3,129 @@
 // Updates subscriptions table and profiles.plan on payment events.
 //
 // Deploy: supabase functions deploy recurrente-webhook
-// Secrets: supabase secrets set RECURRENTE_SECRET_KEY=sk_live_xxx
-//          (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are auto-injected)
+// Secrets: RECURRENTE_SECRET_KEY, RESEND_API_KEY, RESEND_FROM_EMAIL (optional)
+//          SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are auto-injected
 
 import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+// ─── Email helpers ────────────────────────────────────────────────────────────
+
+async function sendEmail(opts: { to: string; subject: string; html: string }): Promise<void> {
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  if (!apiKey) { console.warn('RESEND_API_KEY not set — email skipped'); return; }
+  const from = Deno.env.get('RESEND_FROM_EMAIL') ?? 'onboarding@resend.dev';
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ from: `NutriFlow <${from}>`, to: [opts.to], subject: opts.subject, html: opts.html }),
+    });
+    if (!res.ok) console.error('Resend error:', res.status, await res.text());
+    else console.log(`Email sent → ${opts.to} | ${opts.subject}`);
+  } catch (e) { console.error('Email send failed:', e); }
+}
+
+function layout(content: string): string {
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 0;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+<tr><td style="background:#059669;padding:28px 40px;"><p style="margin:0;color:#fff;font-size:22px;font-weight:700;">NutriFlow</p></td></tr>
+<tr><td style="padding:36px 40px;color:#1e293b;font-size:15px;line-height:1.6;">${content}</td></tr>
+<tr><td style="background:#f1f5f9;padding:20px 40px;text-align:center;"><p style="margin:0;color:#94a3b8;font-size:12px;">NutriFlow · La herramienta de los nutricionistas modernos</p></td></tr>
+</table></td></tr></table></body></html>`;
+}
+
+const APP_URL = 'https://www.nutrifollow.app';
+const btn = (text: string, href: string) =>
+  `<div style="text-align:center;margin:32px 0;"><a href="${href}" style="display:inline-block;background:#059669;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;">${text} →</a></div>`;
+
+function emailWelcomePro(name: string, nextBilling: string): string {
+  return layout(`
+    <h1 style="margin:0 0 8px;font-size:22px;color:#059669;">¡Bienvenida a NutriFlow Pro! 🎉</h1>
+    <p>Hola <strong>${name}</strong>,</p>
+    <p>Tu suscripción Pro está activa. A partir de ahora tienes acceso completo:</p>
+    <table cellpadding="0" cellspacing="0" style="margin:20px 0;">
+      <tr><td style="padding:6px 0;"><span style="color:#059669;font-weight:700;margin-right:8px;">✓</span>Pacientes ilimitados</td></tr>
+      <tr><td style="padding:6px 0;"><span style="color:#059669;font-weight:700;margin-right:8px;">✓</span>Citas y facturas ilimitadas</td></tr>
+      <tr><td style="padding:6px 0;"><span style="color:#059669;font-weight:700;margin-right:8px;">✓</span>200,000 tokens de IA por mes</td></tr>
+    </table>
+    <p style="background:#f0fdf4;border-left:3px solid #059669;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
+      📅 Tu próximo cobro es el <strong>${nextBilling}</strong>.
+    </p>
+    ${btn('Ir a NutriFlow', APP_URL)}
+    <p style="color:#64748b;font-size:13px;">Si tienes alguna pregunta, responde este correo.</p>
+  `);
+}
+
+function emailPastDue(name: string): string {
+  return layout(`
+    <h1 style="margin:0 0 8px;font-size:22px;color:#dc2626;">Problema con tu pago</h1>
+    <p>Hola <strong>${name}</strong>,</p>
+    <p>No pudimos procesar el cobro de tu suscripción NutriFlow Pro. Intentaremos de nuevo en los próximos días.</p>
+    <p style="background:#fef2f2;border-left:3px solid #dc2626;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
+      ⚠️ Si el cobro sigue fallando, tu suscripción se cancelará automáticamente.
+    </p>
+    <p><strong>¿Qué puedes hacer?</strong></p>
+    <ol style="padding-left:20px;color:#475569;">
+      <li style="margin-bottom:8px;">Ingresa a NutriFlow → Perfil → Suscripción.</li>
+      <li style="margin-bottom:8px;">Cancela tu suscripción actual.</li>
+      <li style="margin-bottom:8px;">Vuelve a suscribirte con un método de pago válido.</li>
+    </ol>
+    ${btn('Ir a mi perfil', `${APP_URL}/profile`)}
+    <p style="color:#64748b;font-size:13px;">Tus datos y pacientes están seguros.</p>
+  `);
+}
+
+function emailDowngradedByFailure(name: string): string {
+  return layout(`
+    <h1 style="margin:0 0 8px;font-size:22px;color:#dc2626;">Tu suscripción Pro ha sido cancelada</h1>
+    <p>Hola <strong>${name}</strong>,</p>
+    <p>Después de varios intentos de cobro sin éxito, tu suscripción NutriFlow Pro fue cancelada y tu cuenta ha regresado al Plan Básico.</p>
+    <p style="background:#fef2f2;border-left:3px solid #dc2626;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
+      Tu historial, pacientes y datos están completamente seguros.
+    </p>
+    <p>Puedes volver a suscribirte en cualquier momento desde tu perfil con un método de pago válido.</p>
+    ${btn('Volver a suscribirme', `${APP_URL}/profile`)}
+  `);
+}
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
+function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('es-GT', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function extractPeriodEnd(payload: Record<string, unknown>, subObj?: Record<string, unknown>): string {
+  const candidates = [
+    subObj?.current_period_end,
+    subObj?.billing_cycle_end,
+    subObj?.next_billing_date,
+    payload.current_period_end,
+    payload.billing_cycle_end,
+    payload.next_billing_date,
+  ];
+  for (const val of candidates) {
+    if (typeof val === 'string' && val) return val;
+    if (typeof val === 'number' && val > 0) return new Date(val * 1000).toISOString();
+  }
+  const fallback = new Date();
+  fallback.setDate(fallback.getDate() + 30);
+  return fallback.toISOString();
+}
+
+// ─── Supabase client ──────────────────────────────────────────────────────────
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 );
 
-// whsec_ prefix is Svix format — strip it and base64-decode to get raw key bytes
+// ─── Svix signature verification ─────────────────────────────────────────────
+
 const WEBHOOK_SECRET = Deno.env.get('RECURRENTE_SECRET_KEY')!;
 
 async function verifySvix(body: string, svixId: string, svixTimestamp: string, svixSignature: string): Promise<boolean> {
@@ -24,7 +135,6 @@ async function verifySvix(body: string, svixId: string, svixTimestamp: string, s
     const key       = await crypto.subtle.importKey('raw', rawSecret, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
     const sigBytes  = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(toSign));
     const computed  = btoa(String.fromCharCode(...new Uint8Array(sigBytes)));
-    // svix-signature can contain multiple "v1,<sig>" entries separated by spaces
     return svixSignature.split(' ').some(s => s.replace('v1,', '') === computed);
   } catch (e) {
     console.error('Signature verification error:', e);
@@ -32,16 +142,15 @@ async function verifySvix(body: string, svixId: string, svixTimestamp: string, s
   }
 }
 
+// ─── Handler ──────────────────────────────────────────────────────────────────
+
 serve(async (req: Request) => {
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
+  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
   const svixId        = req.headers.get('svix-id')        ?? '';
   const svixTimestamp = req.headers.get('svix-timestamp')  ?? '';
   const svixSignature = req.headers.get('svix-signature')  ?? '';
 
-  // Read raw body for signature verification
   const body = await req.text();
 
   const valid = await verifySvix(body, svixId, svixTimestamp, svixSignature);
@@ -51,165 +160,132 @@ serve(async (req: Request) => {
   }
 
   let payload: Record<string, unknown>;
-  try {
-    payload = JSON.parse(body);
-  } catch {
-    return new Response('Invalid JSON', { status: 400 });
-  }
+  try { payload = JSON.parse(body); }
+  catch { return new Response('Invalid JSON', { status: 400 }); }
 
-  // Recurrente sends event_type at the root (not "type")
   const eventType = payload.event_type as string;
-  // Recurrente event ID is at payload.id (e.g. "se_8qhwyjaw")
-  const eventId   = payload.id as string;
+  const eventId   = payload.id         as string;
 
   if (!eventType) {
     console.error('Missing event_type in payload', JSON.stringify(payload));
     return new Response('Missing event_type', { status: 400 });
   }
 
-  // Extract owner info — structure differs per event type:
-  //   setup_intent.succeeded → customer email at payload.customer.email
-  //                          → owner_id at payload.checkout.metadata.owner_id
-  //                          → subscription id at payload.subscription.id
-  //   subscription.create   → customer email at payload.customer_email (root)
-  //                          → no metadata owner_id, resolve via email
-  //                          → subscription id = payload.id (root)
+  const checkout = payload.checkout    as Record<string, unknown> | undefined;
+  const metadata = checkout?.metadata  as Record<string, unknown> | undefined;
+  const customer = payload.customer    as Record<string, unknown> | undefined;
+  const subObj   = payload.subscription as Record<string, unknown> | undefined;
 
-  const checkout  = payload.checkout   as Record<string, unknown> | undefined;
-  const metadata  = checkout?.metadata as Record<string, unknown> | undefined;
-  const customer  = payload.customer   as Record<string, unknown> | undefined;
-  const subObj    = payload.subscription as Record<string, unknown> | undefined;
-
-  // Subscription ID: explicit object first, else root id (subscription.create)
   const recurrenteSubId = (
     subObj?.id as string | undefined
     ?? (eventType === 'subscription.create' ? eventId : undefined)
   );
 
   const metadataOwnerId = metadata?.owner_id as string | undefined;
+  const customerEmail   = (payload.customer_email as string | undefined) ?? (customer?.email as string | undefined);
 
-  // Customer email: try both locations
-  const customerEmail = (
-    payload.customer_email as string | undefined
-    ?? customer?.email    as string | undefined
-  );
-
-  // Resolve owner_id: prefer metadata, fallback to email lookup
   let ownerId: string | null = metadataOwnerId ?? null;
-
-  if (!ownerId && customerEmail && customerEmail.includes('@')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', customerEmail)
-      .single();
+  if (!ownerId && customerEmail?.includes('@')) {
+    const { data: profile } = await supabase.from('profiles').select('id').eq('email', customerEmail).single();
     ownerId = profile?.id ?? null;
   }
 
   if (!ownerId) {
     console.error('Could not resolve owner_id for event', eventType, eventId);
-    // Return 200 so Recurrente doesn't keep retrying for unresolvable events
     return new Response('Owner not found — ignored', { status: 200 });
   }
 
-  // Deduplicate: skip if this exact event was already processed
+  // Deduplicate
   if (eventId) {
-    const { data: existing } = await supabase
-      .from('subscription_events')
-      .select('id')
-      .eq('recurrente_id', eventId)
-      .single();
-
-    if (existing) {
-      return new Response('Duplicate event — ignored', { status: 200 });
-    }
+    const { data: existing } = await supabase.from('subscription_events').select('id').eq('recurrente_id', eventId).single();
+    if (existing) return new Response('Duplicate event — ignored', { status: 200 });
   }
 
-  // Log the event (append-only)
   await supabase.from('subscription_events').insert({
-    owner_id:      ownerId,
-    event_type:    eventType,
-    recurrente_id: eventId ?? null,
-    payload,
+    owner_id: ownerId, event_type: eventType, recurrente_id: eventId ?? null, payload,
   });
 
-  // Handle each event type
   switch (eventType) {
 
-    // setup_intent.succeeded = payment method confirmed, subscription just created
     case 'setup_intent.succeeded':
     case 'subscription.create': {
+      const periodEnd = extractPeriodEnd(payload, subObj);
       await supabase.from('subscriptions').upsert({
-        owner_id:                   ownerId,
-        plan:                       'pro',
-        status:                     'active',
+        owner_id: ownerId, plan: 'pro', status: 'active',
         recurrente_subscription_id: recurrenteSubId ?? null,
-        updated_at:                 new Date().toISOString(),
+        current_period_start: new Date().toISOString(),
+        current_period_end:   periodEnd,
+        updated_at:           new Date().toISOString(),
       }, { onConflict: 'owner_id' });
-
-      await supabase
-        .from('profiles')
-        .update({ plan: 'pro' })
-        .eq('id', ownerId);
-
-      await supabase
-        .from('ai_rate_limits')
-        .update({ max_tokens: 200000 })
-        .eq('owner_id', ownerId);
-
+      await supabase.from('profiles').update({ plan: 'pro' }).eq('id', ownerId);
+      await supabase.from('ai_rate_limits').update({ max_tokens: 200000 }).eq('owner_id', ownerId);
       console.log(`Activated Pro for owner ${ownerId} via ${eventType}`);
+
+      const { data: prof } = await supabase.from('profiles').select('name, email').eq('id', ownerId).single();
+      const toEmail = prof?.email ?? customerEmail;
+      if (toEmail) await sendEmail({
+        to: toEmail,
+        subject: '¡Bienvenida a NutriFlow Pro!',
+        html: emailWelcomePro(prof?.name ?? 'Nutricionista', fmtDate(periodEnd)),
+      });
       break;
     }
 
     case 'subscription.cancel': {
+      const { data: currentSub } = await supabase.from('subscriptions').select('status').eq('owner_id', ownerId).single();
+
+      if (currentSub?.status === 'cancelled_pending') {
+        console.log(`subscription.cancel for voluntarily-cancelled user ${ownerId} — no immediate downgrade`);
+        break;
+      }
+
+      // Payment-failure cancellation → downgrade immediately
       await supabase.from('subscriptions').upsert({
-        owner_id:   ownerId,
-        plan:       'free',
-        status:     'cancelled',
-        updated_at: new Date().toISOString(),
+        owner_id: ownerId, plan: 'free', status: 'cancelled', updated_at: new Date().toISOString(),
       }, { onConflict: 'owner_id' });
+      await supabase.from('profiles').update({ plan: 'free' }).eq('id', ownerId);
+      await supabase.from('ai_rate_limits').update({ max_tokens: 30000 }).eq('owner_id', ownerId);
+      console.log(`subscription.cancel: payment-failure downgrade for owner ${ownerId}`);
 
-      await supabase
-        .from('profiles')
-        .update({ plan: 'free' })
-        .eq('id', ownerId);
+      const { data: profDown } = await supabase.from('profiles').select('name, email').eq('id', ownerId).single();
+      if (profDown?.email) await sendEmail({
+        to: profDown.email,
+        subject: 'Tu suscripción Pro ha sido cancelada',
+        html: emailDowngradedByFailure(profDown.name ?? 'Nutricionista'),
+      });
+      break;
+    }
 
-      await supabase
-        .from('ai_rate_limits')
-        .update({ max_tokens: 30000 })
-        .eq('owner_id', ownerId);
-
+    case 'subscription.renew':
+    case 'subscription.renewed': {
+      const newPeriodEnd = extractPeriodEnd(payload, subObj);
+      await supabase.from('subscriptions').update({
+        status: 'active', current_period_end: newPeriodEnd, updated_at: new Date().toISOString(),
+      }).eq('owner_id', ownerId);
+      console.log(`Renewed subscription for owner ${ownerId}, period ends ${newPeriodEnd}`);
       break;
     }
 
     case 'subscription.past_due': {
       await supabase.from('subscriptions').upsert({
-        owner_id:   ownerId,
-        plan:       'pro',
-        status:     'past_due',
-        updated_at: new Date().toISOString(),
+        owner_id: ownerId, plan: 'pro', status: 'past_due', updated_at: new Date().toISOString(),
       }, { onConflict: 'owner_id' });
+
+      const { data: profDue } = await supabase.from('profiles').select('name, email').eq('id', ownerId).single();
+      if (profDue?.email) await sendEmail({
+        to: profDue.email,
+        subject: 'Problema con tu pago en NutriFlow',
+        html: emailPastDue(profDue.name ?? 'Nutricionista'),
+      });
       break;
     }
 
     case 'subscription.paused': {
       await supabase.from('subscriptions').upsert({
-        owner_id:   ownerId,
-        plan:       'free',
-        status:     'paused',
-        updated_at: new Date().toISOString(),
+        owner_id: ownerId, plan: 'free', status: 'paused', updated_at: new Date().toISOString(),
       }, { onConflict: 'owner_id' });
-
-      await supabase
-        .from('profiles')
-        .update({ plan: 'free' })
-        .eq('id', ownerId);
-
-      await supabase
-        .from('ai_rate_limits')
-        .update({ max_tokens: 30000 })
-        .eq('owner_id', ownerId);
-
+      await supabase.from('profiles').update({ plan: 'free' }).eq('id', ownerId);
+      await supabase.from('ai_rate_limits').update({ max_tokens: 30000 }).eq('owner_id', ownerId);
       break;
     }
 

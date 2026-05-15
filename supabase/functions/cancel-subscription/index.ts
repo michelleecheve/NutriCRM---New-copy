@@ -9,6 +9,48 @@
 import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// ─── Email helpers ─────────────────────────────────────────────────────────────
+
+async function sendEmail(opts: { to: string; subject: string; html: string }): Promise<void> {
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  if (!apiKey) { console.warn('RESEND_API_KEY not set — email skipped'); return; }
+  const from = Deno.env.get('RESEND_FROM_EMAIL') ?? 'onboarding@resend.dev';
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ from: `NutriFlow <${from}>`, to: [opts.to], subject: opts.subject, html: opts.html }),
+    });
+    if (!res.ok) console.error('Resend error:', res.status, await res.text());
+    else console.log(`Email sent → ${opts.to} | ${opts.subject}`);
+  } catch (e) { console.error('Email send failed:', e); }
+}
+
+function emailCancellationConfirmed(name: string, accessUntil: string): string {
+  const APP_URL = 'https://www.nutrifollow.app';
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 0;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+<tr><td style="background:#059669;padding:28px 40px;"><p style="margin:0;color:#fff;font-size:22px;font-weight:700;">NutriFlow</p></td></tr>
+<tr><td style="padding:36px 40px;color:#1e293b;font-size:15px;line-height:1.6;">
+  <h1 style="margin:0 0 8px;font-size:22px;color:#d97706;">Suscripción cancelada</h1>
+  <p>Hola <strong>${name}</strong>,</p>
+  <p>Confirmamos que tu suscripción NutriFlow Pro ha sido cancelada.</p>
+  <p style="background:#fffbeb;border-left:3px solid #d97706;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
+    📅 Tu acceso Pro continuará activo hasta el <strong>${accessUntil}</strong>. Después pasarás al Plan Básico automáticamente.
+  </p>
+  <p>Si cambias de opinión, puedes volver a suscribirte en cualquier momento.</p>
+  <div style="text-align:center;margin:32px 0;">
+    <a href="${APP_URL}/profile" style="display:inline-block;background:#059669;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;">Volver a suscribirme →</a>
+  </div>
+  <p style="color:#64748b;font-size:13px;">Tus datos y pacientes nunca se eliminan, independientemente de tu plan.</p>
+</td></tr>
+<tr><td style="background:#f1f5f9;padding:20px 40px;text-align:center;"><p style="margin:0;color:#94a3b8;font-size:12px;">NutriFlow · La herramienta de los nutricionistas modernos</p></td></tr>
+</table></td></tr></table></body></html>`;
+}
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info',
@@ -48,11 +90,11 @@ serve(async (req: Request) => {
 
   const { data: sub } = await supabase
     .from('subscriptions')
-    .select('status, recurrente_subscription_id')
+    .select('status, recurrente_subscription_id, current_period_end')
     .eq('owner_id', user.id)
     .single();
 
-  if (!sub || sub.status === 'free' || sub.status === 'cancelled') {
+  if (!sub || sub.status === 'free' || sub.status === 'cancelled' || sub.status === 'cancelled_pending') {
     return json({ ok: false, message: 'No hay suscripción activa para cancelar.' }, 200);
   }
 
@@ -75,18 +117,30 @@ serve(async (req: Request) => {
     }
   }
 
-  // Update DB regardless (covers trial cancellations that have no recurrente_subscription_id)
+  // Grace period: keep plan = 'pro' and access until current_period_end.
+  // The webhook (subscription.cancel) will arrive later — it will see 'cancelled_pending'
+  // and skip the immediate downgrade. authStore handles expiry when current_period_end passes.
   await supabase
     .from('subscriptions')
-    .update({ plan: 'free', status: 'cancelled', updated_at: new Date().toISOString() })
+    .update({
+      status:       'cancelled_pending',
+      cancelled_at: new Date().toISOString(),
+      updated_at:   new Date().toISOString(),
+    })
     .eq('owner_id', user.id);
 
-  await supabase
-    .from('profiles')
-    .update({ plan: 'free' })
-    .eq('id', user.id);
+  // Cancellation confirmation email
+  const { data: prof } = await supabase.from('profiles').select('name').eq('id', user.id).single();
+  const accessUntilFmt = sub.current_period_end
+    ? new Date(sub.current_period_end).toLocaleDateString('es-GT', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+  await sendEmail({
+    to:      user.email!,
+    subject: 'Suscripción cancelada — tu acceso continúa activo',
+    html:    emailCancellationConfirmed(prof?.name ?? 'Nutricionista', accessUntilFmt),
+  });
 
-  return json({ ok: true }, 200);
+  return json({ ok: true, access_until: sub.current_period_end ?? null }, 200);
 });
 
 function json(body: unknown, status: number) {

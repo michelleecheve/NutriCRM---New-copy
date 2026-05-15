@@ -131,7 +131,7 @@ Deno.serve(async (req: Request) => {
       .eq('owner_id', owner_id)
       .maybeSingle();
 
-    const isPro = subscription?.plan === 'pro' && ['active', 'trialing'].includes(subscription?.status ?? '');
+    const isPro = subscription?.plan === 'pro' && ['active', 'cancelled_pending', 'past_due'].includes(subscription?.status ?? '');
     const maxTokens = isPro ? PRO_MAX_TOKENS : FREE_MAX_TOKENS;
 
     const currentTokens = rateLimit.tokens ?? 0;

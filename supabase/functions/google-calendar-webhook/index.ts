@@ -158,7 +158,7 @@ serve(async (req) => {
     .eq('owner_id', tokenRow.owner_id)
     .single();
 
-  const isPro = sub?.plan === 'pro' && (sub?.status === 'active' || sub?.status === 'trialing');
+  const isPro = sub?.plan === 'pro' && (sub?.status === 'active' || sub?.status === 'cancelled_pending' || sub?.status === 'past_due');
 
   let currentAppointmentCount = 0;
   if (!isPro) {
