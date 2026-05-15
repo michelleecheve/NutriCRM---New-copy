@@ -612,7 +612,7 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
       showMeasurementsDetail: patientRow?.portal_show_measurements_detail
         ?? (nutriPortalConfig?.measurementsDetailDefault ?? true),
       measurementsConfig: measConfig,
-      portalPinActive: patientRow?.portal_pin_active ?? true,
+      portalPinActive: patientRow?.portal_pin_active ?? (nutriPortalConfig?.pinActiveDefault ?? true),
     },
     menus,
     activeTracking,

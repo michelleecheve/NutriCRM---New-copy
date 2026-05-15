@@ -1135,7 +1135,7 @@ export const supabaseService = {
       portalGoal:                     dbPatient.portal_goal                      ?? null,
       portalShowMeasurementsDetail:   dbPatient.portal_show_measurements_detail  ?? null,
       portalMeasurementsConfig:       dbPatient.portal_measurements_config        ?? null,
-      portalPinActive:                dbPatient.portal_pin_active                 ?? true,
+      portalPinActive:                dbPatient.portal_pin_active                 ?? null,
     };
   },
 

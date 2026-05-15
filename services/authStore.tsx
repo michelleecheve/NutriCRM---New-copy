@@ -598,6 +598,15 @@ class AuthStore {
     window.dispatchEvent(new CustomEvent('nutriflow-profile-updated'));
   }
 
+  patchCurrentUserPortalConfig(portalConfig: Record<string, any>): void {
+    if (!this.currentUser) return;
+    this.currentUser = {
+      ...this.currentUser,
+      profile: { ...this.currentUser.profile, portalConfig },
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
+  }
+
   getUserProfile(): UserProfile {
     return this.currentUser?.profile ?? ({} as UserProfile);
   }

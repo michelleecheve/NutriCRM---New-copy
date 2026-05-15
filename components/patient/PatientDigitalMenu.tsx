@@ -310,6 +310,8 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       if (activate) {
         if (!patient.accessToken) patch.accessToken = generateUUID();
         if (!patient.accessCode) patch.accessCode = generatePin();
+        if (patient.portalPinActive === null || patient.portalPinActive === undefined)
+          patch.portalPinActive = pinActiveNutriDefault;
       }
       const updated = await supabaseService.updatePatientPortal(
         patient.id,
@@ -929,7 +931,15 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
 
           {/* ── Paso 3: Compartir link + PIN ── */}
           <div className="relative bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-            {!paso2Saved && <StepLockOverlay message="Guarda el Paso 2 para continuar" />}
+            {(!paso1Saved || !paso2Saved) && (
+              <StepLockOverlay
+                message={
+                  !paso1Saved
+                    ? "Guarda el Paso 1 para continuar"
+                    : "Guarda el Paso 2 para continuar"
+                }
+              />
+            )}
             <p className="text-sm font-semibold text-slate-700">
               Paso 3. Compartir Link del Portal y Pin de acceso a paciente
             </p>

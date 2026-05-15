@@ -33,9 +33,9 @@ export const MenuPatientPortal: React.FC = () => {
     setSaving(true);
     setSaved(false);
     try {
-      await supabaseService.updateProfile(userId, {
-        portalConfig: { ...portalConfig, ...patch },
-      });
+      const merged = { ...portalConfig, ...patch };
+      await supabaseService.updateProfile(userId, { portalConfig: merged });
+      authStore.patchCurrentUserPortalConfig(merged);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } finally {
