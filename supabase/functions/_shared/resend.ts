@@ -1,4 +1,4 @@
-// Shared Resend email helper for NutriFlow edge functions.
+// Shared Resend email helper for NutriFollow edge functions.
 // Set RESEND_API_KEY in Supabase secrets.
 // Set RESEND_FROM_EMAIL once your domain is verified in Resend (e.g. hola@nutrifollow.app).
 // Until then, leave unset and emails go out from onboarding@resend.dev.
@@ -25,7 +25,7 @@ export async function sendEmail(opts: {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: `NutriFlow <${fromEmail}>`,
+        from: `NutriFollow <${fromEmail}>`,
         to:   [opts.to],
         subject: opts.subject,
         html:    opts.html,
@@ -54,7 +54,7 @@ function layout(content: string): string {
     <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
       <!-- Header -->
       <tr><td style="background:#059669;padding:28px 40px;">
-        <p style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">NutriFlow</p>
+        <p style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">NutriFollow</p>
       </td></tr>
       <!-- Body -->
       <tr><td style="padding:36px 40px;color:#1e293b;font-size:15px;line-height:1.6;">
@@ -62,7 +62,7 @@ function layout(content: string): string {
       </td></tr>
       <!-- Footer -->
       <tr><td style="background:#f1f5f9;padding:20px 40px;text-align:center;">
-        <p style="margin:0;color:#94a3b8;font-size:12px;">NutriFlow · La herramienta de los nutricionistas modernos</p>
+        <p style="margin:0;color:#94a3b8;font-size:12px;">NutriFollow · La herramienta de los nutricionistas modernos</p>
       </td></tr>
     </table>
   </td></tr>
@@ -80,9 +80,9 @@ const APP_URL = 'https://www.nutrifollow.app';
 
 export function emailWelcomePro(name: string, nextBilling: string): string {
   return layout(`
-    <h1 style="margin:0 0 8px;font-size:22px;color:#059669;">¡Bienvenida a NutriFlow Pro! 🎉</h1>
+    <h1 style="margin:0 0 8px;font-size:22px;color:#059669;">¡Bienvenida a NutriFollow Pro! 🎉</h1>
     <p>Hola <strong>${name}</strong>,</p>
-    <p>Tu suscripción Pro está activa. A partir de ahora tienes acceso completo a todo lo que NutriFlow ofrece:</p>
+    <p>Tu suscripción Pro está activa. A partir de ahora tienes acceso completo a todo lo que NutriFollow ofrece:</p>
     <table cellpadding="0" cellspacing="0" style="margin:20px 0;">
       <tr><td style="padding:6px 0;"><span style="color:#059669;font-weight:700;margin-right:8px;">✓</span>Pacientes ilimitados</td></tr>
       <tr><td style="padding:6px 0;"><span style="color:#059669;font-weight:700;margin-right:8px;">✓</span>Citas y facturas ilimitadas</td></tr>
@@ -91,7 +91,7 @@ export function emailWelcomePro(name: string, nextBilling: string): string {
     <p style="background:#f0fdf4;border-left:3px solid #059669;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
       📅 Tu próximo cobro es el <strong>${nextBilling}</strong>.
     </p>
-    ${btn('Ir a NutriFlow', APP_URL)}
+    ${btn('Ir a NutriFollow', APP_URL)}
     <p style="color:#64748b;font-size:13px;">Si tienes alguna pregunta, responde este correo y te ayudamos.</p>
   `);
 }
@@ -100,13 +100,13 @@ export function emailPastDue(name: string): string {
   return layout(`
     <h1 style="margin:0 0 8px;font-size:22px;color:#dc2626;">Problema con tu pago</h1>
     <p>Hola <strong>${name}</strong>,</p>
-    <p>No pudimos procesar el cobro de tu suscripción NutriFlow Pro. Intentaremos de nuevo en los próximos días.</p>
+    <p>No pudimos procesar el cobro de tu suscripción NutriFollow Pro. Intentaremos de nuevo en los próximos días.</p>
     <p style="background:#fef2f2;border-left:3px solid #dc2626;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
       ⚠️ Si el cobro sigue fallando, tu suscripción se cancelará automáticamente.
     </p>
     <p><strong>¿Qué puedes hacer?</strong></p>
     <ol style="padding-left:20px;color:#475569;">
-      <li style="margin-bottom:8px;">Ingresa a NutriFlow → Perfil → Suscripción.</li>
+      <li style="margin-bottom:8px;">Ingresa a NutriFollow → Perfil → Suscripción.</li>
       <li style="margin-bottom:8px;">Cancela tu suscripción actual.</li>
       <li style="margin-bottom:8px;">Vuelve a suscribirte con un método de pago válido.</li>
     </ol>
@@ -119,7 +119,7 @@ export function emailCancellationConfirmed(name: string, accessUntil: string): s
   return layout(`
     <h1 style="margin:0 0 8px;font-size:22px;color:#d97706;">Suscripción cancelada</h1>
     <p>Hola <strong>${name}</strong>,</p>
-    <p>Confirmamos que tu suscripción NutriFlow Pro ha sido cancelada.</p>
+    <p>Confirmamos que tu suscripción NutriFollow Pro ha sido cancelada.</p>
     <p style="background:#fffbeb;border-left:3px solid #d97706;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
       📅 Tu acceso Pro continuará activo hasta el <strong>${accessUntil}</strong>. Después pasarás al Plan Básico automáticamente.
     </p>
@@ -133,7 +133,7 @@ export function emailDowngradedByFailure(name: string): string {
   return layout(`
     <h1 style="margin:0 0 8px;font-size:22px;color:#dc2626;">Tu suscripción Pro ha sido cancelada</h1>
     <p>Hola <strong>${name}</strong>,</p>
-    <p>Después de varios intentos de cobro sin éxito, tu suscripción NutriFlow Pro fue cancelada y tu cuenta ha regresado al Plan Básico.</p>
+    <p>Después de varios intentos de cobro sin éxito, tu suscripción NutriFollow Pro fue cancelada y tu cuenta ha regresado al Plan Básico.</p>
     <p style="background:#fef2f2;border-left:3px solid #dc2626;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
       Tu historial, pacientes y datos están completamente seguros.
     </p>

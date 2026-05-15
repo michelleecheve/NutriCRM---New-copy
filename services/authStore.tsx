@@ -658,7 +658,7 @@ class AuthStore {
       });
       if (!res.ok) return { ok: false, message: 'Error al crear el checkout.' };
       const { checkout_url } = await res.json();
-      if (checkout_url) { window.location.href = checkout_url; return { ok: true }; }
+      if (checkout_url) { window.location.href = `${checkout_url}?lang=es`; return { ok: true }; }
       return { ok: false, message: 'No se recibió URL de pago.' };
     } catch {
       return { ok: false, message: 'Error de conexión.' };

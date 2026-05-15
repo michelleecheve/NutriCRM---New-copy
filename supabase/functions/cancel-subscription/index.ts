@@ -19,7 +19,7 @@ async function sendEmail(opts: { to: string; subject: string; html: string }): P
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ from: `NutriFlow <${from}>`, to: [opts.to], subject: opts.subject, html: opts.html }),
+      body: JSON.stringify({ from: `NutriFollow <${from}>`, to: [opts.to], subject: opts.subject, html: opts.html }),
     });
     if (!res.ok) console.error('Resend error:', res.status, await res.text());
     else console.log(`Email sent → ${opts.to} | ${opts.subject}`);
@@ -33,11 +33,11 @@ function emailCancellationConfirmed(name: string, accessUntil: string): string {
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 0;">
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-<tr><td style="background:#059669;padding:28px 40px;"><p style="margin:0;color:#fff;font-size:22px;font-weight:700;">NutriFlow</p></td></tr>
+<tr><td style="background:#059669;padding:28px 40px;"><p style="margin:0;color:#fff;font-size:22px;font-weight:700;">NutriFollow</p></td></tr>
 <tr><td style="padding:36px 40px;color:#1e293b;font-size:15px;line-height:1.6;">
   <h1 style="margin:0 0 8px;font-size:22px;color:#d97706;">Suscripción cancelada</h1>
   <p>Hola <strong>${name}</strong>,</p>
-  <p>Confirmamos que tu suscripción NutriFlow Pro ha sido cancelada.</p>
+  <p>Confirmamos que tu suscripción NutriFollow Pro ha sido cancelada.</p>
   <p style="background:#fffbeb;border-left:3px solid #d97706;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
     📅 Tu acceso Pro continuará activo hasta el <strong>${accessUntil}</strong>. Después pasarás al Plan Básico automáticamente.
   </p>
@@ -47,7 +47,7 @@ function emailCancellationConfirmed(name: string, accessUntil: string): string {
   </div>
   <p style="color:#64748b;font-size:13px;">Tus datos y pacientes nunca se eliminan, independientemente de tu plan.</p>
 </td></tr>
-<tr><td style="background:#f1f5f9;padding:20px 40px;text-align:center;"><p style="margin:0;color:#94a3b8;font-size:12px;">NutriFlow · La herramienta de los nutricionistas modernos</p></td></tr>
+<tr><td style="background:#f1f5f9;padding:20px 40px;text-align:center;"><p style="margin:0;color:#94a3b8;font-size:12px;">NutriFollow · La herramienta de los nutricionistas modernos</p></td></tr>
 </table></td></tr></table></body></html>`;
 }
 
