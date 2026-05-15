@@ -11,6 +11,7 @@ interface PortalSession {
   firstName: string;
   lastName: string;
   accessCode: string;
+  pinActive: boolean;
   validatedAt: number;
 }
 
@@ -101,6 +102,7 @@ const AccessGate: React.FC<AccessGateProps> = ({ token, onSuccess }) => {
         firstName: data.first_name,
         lastName: data.last_name,
         accessCode: pin,
+        pinActive: true,
         validatedAt: Date.now(),
       };
       saveSession(session);
@@ -383,6 +385,7 @@ interface PortalData {
     portalGoal?: string;
     showMeasurementsDetail: boolean;
     measurementsConfig: PatientPortalMeasurementsConfig | null;
+    portalPinActive: boolean;
   };
   menus: GeneratedMenu[];
   activeTracking: TrackingRow | null;
@@ -432,7 +435,7 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
   // 1. Get patient owner_id + portal_goal + measurements visibility
   const { data: patientRow } = await supabase
     .from('patients')
-    .select('owner_id, portal_goal, portal_show_measurements_detail, portal_measurements_config')
+    .select('owner_id, portal_goal, portal_show_measurements_detail, portal_measurements_config, portal_pin_active')
     .eq('id', patientId)
     .maybeSingle();
 
@@ -609,6 +612,7 @@ async function loadPortalData(patientId: string): Promise<PortalData> {
       showMeasurementsDetail: patientRow?.portal_show_measurements_detail
         ?? (nutriPortalConfig?.measurementsDetailDefault ?? true),
       measurementsConfig: measConfig,
+      portalPinActive: patientRow?.portal_pin_active ?? true,
     },
     menus,
     activeTracking,
@@ -636,9 +640,13 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session: initialSe
       .catch(() => setState('error'));
   }, [session.patientId]);
 
-  function handlePatientUpdate(updates: Partial<{ id: string; firstName: string; lastName: string; accessCode?: string; portalGoal?: string }>) {
+  function handlePatientUpdate(updates: Partial<{ id: string; firstName: string; lastName: string; accessCode?: string; portalGoal?: string; portalPinActive?: boolean }>) {
     if (updates.accessCode !== undefined) {
       setSession(prev => ({ ...prev, accessCode: updates.accessCode! }));
+    }
+    if (updates.portalPinActive !== undefined) {
+      setSession(prev => ({ ...prev, pinActive: updates.portalPinActive! }));
+      setPortalData(prev => prev ? { ...prev, patient: { ...prev.patient, portalPinActive: updates.portalPinActive! } } : prev);
     }
     if (updates.portalGoal !== undefined && portalData) {
       setPortalData(prev => prev ? { ...prev, patient: { ...prev.patient, portalGoal: updates.portalGoal } } : prev);
@@ -671,11 +679,12 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session: initialSe
     <PortalShell
       token={session.token}
       patient={{
-        id:         session.patientId,
-        firstName:  session.firstName,
-        lastName:   session.lastName,
-        accessCode: session.accessCode,
-        portalGoal: portalData.patient.portalGoal,
+        id:             session.patientId,
+        firstName:      session.firstName,
+        lastName:       session.lastName,
+        accessCode:     session.accessCode,
+        portalGoal:     portalData.patient.portalGoal,
+        portalPinActive: portalData.patient.portalPinActive,
       }}
       menus={portalData.menus}
       activeTracking={activeTracking}
@@ -697,7 +706,7 @@ interface Props {
   token: string;
 }
 
-type PageState = 'checking' | 'gate' | 'portal' | 'invalid';
+type PageState = 'checking' | 'gate' | 'portal' | 'invalid' | 'disabled';
 
 export const PublicPatient: React.FC<Props> = ({ token }) => {
   const [state, setState] = useState<PageState>('checking');
@@ -720,11 +729,28 @@ export const PublicPatient: React.FC<Props> = ({ token }) => {
       try {
         const { data } = await supabase
           .from('patients')
-          .select('id, portal_active')
+          .select('id, first_name, last_name, portal_active, portal_pin_active')
           .eq('access_token', token)
           .maybeSingle();
-        if (!data) setState('invalid');
-        else setState('gate');
+        if (!data) { setState('invalid'); return; }
+        if (!data.portal_active) { setState('disabled'); return; }
+        if (data.portal_pin_active === false) {
+          // Bypass PIN — create session directly
+          const session: PortalSession = {
+            token,
+            patientId: data.id,
+            firstName: data.first_name,
+            lastName: data.last_name,
+            accessCode: '',
+            pinActive: false,
+            validatedAt: Date.now(),
+          };
+          saveSession(session);
+          setSession(session);
+          setState('portal');
+        } else {
+          setState('gate');
+        }
       } catch {
         setState('invalid');
       }
@@ -738,6 +764,7 @@ export const PublicPatient: React.FC<Props> = ({ token }) => {
 
   if (state === 'checking') return <LoadingScreen />;
   if (state === 'invalid')  return <InvalidTokenScreen />;
+  if (state === 'disabled') return <PortalDisabledScreen />;
   if (state === 'portal' && session) return <PortalLoader session={session} />;
   return <AccessGate token={token} onSuccess={handleAccessGranted} />;
 };

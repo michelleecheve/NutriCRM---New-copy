@@ -11,6 +11,9 @@ export const MenuPatientPortal: React.FC = () => {
   const user = authStore.getCurrentUser();
   const portalConfig = user?.profile?.portalConfig ?? {};
 
+  const [pinActiveDefault, setPinActiveDefault] = useState(
+    portalConfig.pinActiveDefault ?? true,
+  );
   const [measurementsDetailDefault, setMeasurementsDetailDefault] = useState(
     portalConfig.measurementsDetailDefault ?? true,
   );
@@ -40,6 +43,12 @@ export const MenuPatientPortal: React.FC = () => {
     }
   }
 
+  async function handleTogglePinDefault() {
+    const next = !pinActiveDefault;
+    setPinActiveDefault(next);
+    await persist({ pinActiveDefault: next });
+  }
+
   async function handleToggleDetail() {
     const next = !measurementsDetailDefault;
     setMeasurementsDetailDefault(next);
@@ -54,7 +63,44 @@ export const MenuPatientPortal: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      {/* Master toggle */}
+      {/* PIN default toggle */}
+      <div className="flex items-center justify-between gap-4 p-4 rounded-xl">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-700">
+            Requerir PIN al acceder (default para nuevos pacientes)
+          </p>
+          <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+            {pinActiveDefault
+              ? 'Los nuevos pacientes deberán ingresar su PIN de 4 dígitos al abrir el portal.'
+              : 'Los nuevos pacientes accederán directamente con el link, sin PIN.'}
+          </p>
+          <p className="text-xs text-slate-400 mt-1.5">
+            Solo afecta pacientes nuevos. Los ya configurados mantienen su valor individual.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {saved && (
+            <span className="text-xs text-emerald-600 font-medium">Guardado</span>
+          )}
+          <button
+            onClick={handleTogglePinDefault}
+            disabled={saving}
+            className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+              pinActiveDefault ? 'bg-emerald-500' : 'bg-slate-300'
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                pinActiveDefault ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      <hr className="border-slate-200" />
+
+      {/* Master toggle - measurements */}
       <div className="flex items-center justify-between gap-4 p-4 rounded-xl">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-700">

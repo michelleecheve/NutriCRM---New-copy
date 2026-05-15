@@ -307,6 +307,7 @@ export interface Patient {
   portalGoal?: string | null;
   portalShowMeasurementsDetail?: boolean | null;
   portalMeasurementsConfig?: PatientPortalMeasurementsConfig | null;
+  portalPinActive?: boolean | null;
 }
 
 export interface Invoice {
@@ -469,6 +470,7 @@ export interface PortalConfig {
   measurementsDetailDefault?: boolean;
   antroFieldsDefault?: AntroFieldsConfig;
   bioFieldsDefault?: BioFieldsConfig;
+  pinActiveDefault?: boolean;
 }
 
 export interface MenuReferenceRecord {

@@ -215,6 +215,7 @@ export const supabaseService = {
     accessCode?: string;
     portalShowMeasurementsDetail?: boolean;
     portalMeasurementsConfig?: PatientPortalMeasurementsConfig | null;
+    portalPinActive?: boolean;
   }): Promise<Patient> {
     const updateData: any = {};
     if (patch.portalActive                   !== undefined) updateData.portal_active                    = patch.portalActive;
@@ -222,6 +223,7 @@ export const supabaseService = {
     if (patch.accessCode                     !== undefined) updateData.access_code                      = patch.accessCode;
     if (patch.portalShowMeasurementsDetail   !== undefined) updateData.portal_show_measurements_detail  = patch.portalShowMeasurementsDetail;
     if (patch.portalMeasurementsConfig       !== undefined) updateData.portal_measurements_config       = patch.portalMeasurementsConfig;
+    if (patch.portalPinActive                !== undefined) updateData.portal_pin_active                = patch.portalPinActive;
 
     const { data, error } = await supabase
       .from('patients')
@@ -1133,6 +1135,7 @@ export const supabaseService = {
       portalGoal:                     dbPatient.portal_goal                      ?? null,
       portalShowMeasurementsDetail:   dbPatient.portal_show_measurements_detail  ?? null,
       portalMeasurementsConfig:       dbPatient.portal_measurements_config        ?? null,
+      portalPinActive:                dbPatient.portal_pin_active                 ?? true,
     };
   },
 

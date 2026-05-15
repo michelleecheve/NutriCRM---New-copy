@@ -203,8 +203,15 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   const [savingGoal, setSavingGoal] = useState(false);
   const [savedGoal, setSavedGoal] = useState(false);
 
-  // ── Measurements detail visibility ──
+  // ── PIN active per patient ──
   const nutriPortalConfig = authStore.getCurrentUser()?.profile?.portalConfig;
+  const pinActiveNutriDefault = nutriPortalConfig?.pinActiveDefault ?? true;
+  const [pinActive, setPinActive] = useState(
+    patient.portalPinActive ?? pinActiveNutriDefault,
+  );
+  const [savingPinActive, setSavingPinActive] = useState(false);
+
+  // ── Measurements detail visibility ──
   const nutriDefault = nutriPortalConfig?.measurementsDetailDefault ?? true;
   const [showMeasurementsDetail, setShowMeasurementsDetail] = useState(
     patient.portalShowMeasurementsDetail ?? nutriDefault,
@@ -311,6 +318,23 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       onUpdate({ ...patient, ...updated });
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ── Toggle PIN active ──
+  async function handleTogglePinActive() {
+    const next = !pinActive;
+    setPinActive(next);
+    setSavingPinActive(true);
+    try {
+      const updated = await supabaseService.updatePatientPortal(patient.id, {
+        portalPinActive: next,
+      });
+      onUpdate({ ...patient, ...updated });
+    } catch {
+      setPinActive(!next);
+    } finally {
+      setSavingPinActive(false);
     }
   }
 
@@ -952,21 +976,41 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                   <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
                     Pin de acceso
                   </label>
-                  <button
-                    onClick={() => setPinLocked((v) => !v)}
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold transition-all ${
-                      pinLocked
-                        ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                        : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                    }`}
-                    title={pinLocked ? "Desbloquear para editar" : "Bloquear PIN"}
-                  >
-                    {pinLocked ? (
-                      <><Lock className="w-3 h-3" /> Desbloquear</>
-                    ) : (
-                      <><Unlock className="w-3 h-3" /> Bloquear</>
-                    )}
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-slate-400">
+                      {pinActive ? "Requerido" : "Desactivado"}
+                    </span>
+                    <button
+                      onClick={handleTogglePinActive}
+                      disabled={savingPinActive}
+                      className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
+                        pinActive ? "bg-emerald-500" : "bg-slate-300"
+                      }`}
+                      title={pinActive ? "Desactivar PIN" : "Activar PIN"}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
+                          pinActive ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                    <div className="w-px h-3.5 bg-slate-200" />
+                    <button
+                      onClick={() => setPinLocked((v) => !v)}
+                      className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold transition-all ${
+                        pinLocked
+                          ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                          : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                      }`}
+                      title={pinLocked ? "Desbloquear para editar" : "Bloquear PIN"}
+                    >
+                      {pinLocked ? (
+                        <><Lock className="w-3 h-3" /> Desbloquear</>
+                      ) : (
+                        <><Unlock className="w-3 h-3" /> Bloquear</>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <input

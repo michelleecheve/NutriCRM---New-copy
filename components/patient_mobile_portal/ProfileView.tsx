@@ -9,6 +9,8 @@ import {
   X,
   Clock,
   KeyRound,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 import { TrackingRow } from "../../types";
 import { PortalPatient, PortalNutritionist } from "./PortalShell";
@@ -20,6 +22,7 @@ interface Props {
   nutritionist: PortalNutritionist;
   activeTracking: TrackingRow | null;
   onAccessCodeUpdate?: (newCode: string) => void;
+  onPinActiveUpdate?: (active: boolean) => void;
 }
 
 function sessionKey(token: string): string {
@@ -102,6 +105,7 @@ export const ProfileView: React.FC<Props> = ({
   nutritionist,
   activeTracking,
   onAccessCodeUpdate,
+  onPinActiveUpdate,
 }) => {
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -115,6 +119,10 @@ export const ProfileView: React.FC<Props> = ({
   const [pinInput, setPinInput] = useState(patient.accessCode ?? "");
   const [savingPin, setSavingPin] = useState(false);
   const [pinError, setPinError] = useState("");
+
+  // ── PIN active toggle ──
+  const [pinActive, setPinActive] = useState(patient.portalPinActive ?? true);
+  const [savingPinActive, setSavingPinActive] = useState(false);
 
   // ── Timezone ──
   const [timezone, setTimezone] = useState<string>(() => {
@@ -190,6 +198,23 @@ export const ProfileView: React.FC<Props> = ({
     setEditingPin(false);
   }
 
+  async function handleTogglePinActive() {
+    const next = !pinActive;
+    setPinActive(next);
+    setSavingPinActive(true);
+    try {
+      await supabase
+        .from("patients")
+        .update({ portal_pin_active: next })
+        .eq("id", patient.id);
+      onPinActiveUpdate?.(next);
+    } catch {
+      setPinActive(!next);
+    } finally {
+      setSavingPinActive(false);
+    }
+  }
+
   function handleSaveTz(value: string) {
     setTimezone(value);
     localStorage.setItem(tzKey(token), value);
@@ -240,7 +265,7 @@ export const ProfileView: React.FC<Props> = ({
             </p>
 
             {/* Access code */}
-            {patient.accessCode && !editingPin && (
+            {patient.accessCode && pinActive && !editingPin && (
               <div
                 className="mt-4 inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl"
                 style={{ backgroundColor: "rgba(255,255,255,0.07)" }}
@@ -674,6 +699,40 @@ export const ProfileView: React.FC<Props> = ({
               ))}
             </select>
           </div>
+
+          {/* PIN toggle */}
+          <div className="mt-4 pt-4" style={{ borderTop: "1px solid #E8EEF0" }}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-start gap-2 min-w-0">
+                {pinActive ? (
+                  <ShieldCheck className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: "#0EA5E9" }} />
+                ) : (
+                  <ShieldOff className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: "#9CA3AF" }} />
+                )}
+                <div className="min-w-0">
+                  <p className="font-semibold" style={{ color: "#1A2E25", fontSize: "13px" }}>
+                    Requerir PIN al iniciar sesión
+                  </p>
+                  <p className="mt-0.5" style={{ color: "#9CA3AF", fontSize: "11px" }}>
+                    {pinActive
+                      ? "Se pedirá tu código de acceso cada vez que cierres sesión."
+                      : "Acceso directo con el link, sin necesidad de PIN."}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleTogglePinActive}
+                disabled={savingPinActive}
+                className="flex-shrink-0 relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50"
+                style={{ backgroundColor: pinActive ? "#0EA5E9" : "#D1D5DB" }}
+              >
+                <span
+                  className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
+                  style={{ transform: pinActive ? "translateX(20px)" : "translateX(0)" }}
+                />
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* ── Tip: Agregar a pantalla de inicio ── */}
@@ -816,7 +875,9 @@ export const ProfileView: React.FC<Props> = ({
                 className="text-xs text-center mb-4"
                 style={{ color: "#9CA3AF" }}
               >
-                Necesitarás tu PIN de 4 dígitos para volver a entrar.
+                {pinActive
+                  ? "Necesitarás tu PIN de 4 dígitos para volver a entrar."
+                  : "Podrás volver a entrar directamente con tu link."}
               </p>
               <div className="flex gap-2">
                 <button
