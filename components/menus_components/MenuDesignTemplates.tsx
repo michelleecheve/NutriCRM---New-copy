@@ -737,6 +737,7 @@ const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => {
                 fontSize: `${8.5 * ts.fontSizeMultiplier}px`,
                 color: "#334155",
                 fontWeight: 600,
+                whiteSpace: "pre-line",
               }}
             >
               {domingo.note}
@@ -769,6 +770,7 @@ const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => {
                 color: ts.colors.primary,
                 fontWeight: 800,
                 wordBreak: "break-word",
+                whiteSpace: "pre-line",
               }}
             >
               💧 {domingo.hydration}
@@ -1013,6 +1015,7 @@ const RecommendationsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
     fontSize: `${9 * ts.fontSizeMultiplier}px`,
     color: "#64748b",
     lineHeight: "1.3",
+    whiteSpace: "pre-line",
   };
 
   // Default values if recommendations are missing
@@ -1243,7 +1246,7 @@ const SplitCell: React.FC<{
           {noteLabel || "NOTAS"}
         </div>
         <div style={{ padding: "6px 8px" }}>
-          <div style={{ color: "#334155", fontSize: `${7.5 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3" }}>
+          <div style={{ color: "#334155", fontSize: `${7.5 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3", whiteSpace: "pre-line" }}>
             {note}
           </div>
         </div>
@@ -1254,7 +1257,7 @@ const SplitCell: React.FC<{
           <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600, marginBottom: "3px" }}>
             META HIDRATACIÓN
           </div>
-          <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800 }}>
+          <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, whiteSpace: "pre-line" }}>
             💧 {hydration}
           </div>
         </div>
@@ -1294,13 +1297,13 @@ const MenuOnlyPage: React.FC<{
                 <div style={{ flex: 1, minWidth: 0, border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden" }}>
                   <div style={{ backgroundColor: ts.colors.secondary, color: "#fff", textAlign: "center", padding: "5px 4px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px" }}>DOMINGO</div>
                   <div style={{ padding: "6px 8px" }}>
-                    <div style={{ color: "#334155", fontSize: `${7.5 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3" }}>{domingo.note}</div>
+                    <div style={{ color: "#334155", fontSize: `${7.5 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3", whiteSpace: "pre-line" }}>{domingo.note}</div>
                   </div>
                 </div>
                 <div style={{ flex: 1, minWidth: 0, border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden", display: "flex", alignItems: "center" }}>
                   <div style={{ padding: "12px 14px" }}>
                     <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600, marginBottom: "3px" }}>META HIDRATACIÓN</div>
-                    <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800 }}>💧 {domingo.hydration}</div>
+                    <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, whiteSpace: "pre-line" }}>💧 {domingo.hydration}</div>
                   </div>
                 </div>
               </div>
@@ -1379,11 +1382,11 @@ const MenuOnlyPage: React.FC<{
             <tr>
               <td style={{ backgroundColor: ts.colors.secondary, color: "#fff", padding: "10px 14px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px", whiteSpace: "nowrap", verticalAlign: "middle", width: "1%" }}>NOTAS</td>
               <td style={{ padding: "8px 14px", verticalAlign: "middle" }}>
-                <div style={{ fontSize: `${8.5 * ts.fontSizeMultiplier}px`, color: "#334155", fontWeight: 600 }}>{noteText}</div>
+                <div style={{ fontSize: `${8.5 * ts.fontSizeMultiplier}px`, color: "#334155", fontWeight: 600, whiteSpace: "pre-line" }}>{noteText}</div>
               </td>
               <td style={{ padding: "8px 14px", textAlign: "right", verticalAlign: "middle", borderLeft: "1px solid #f1f5f9", width: "50%" }}>
                 <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600, marginBottom: "3px" }}>META HIDRATACIÓN</div>
-                <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, wordBreak: "break-word" }}>💧 {hydrationText}</div>
+                <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, wordBreak: "break-word", whiteSpace: "pre-line" }}>💧 {hydrationText}</div>
               </td>
             </tr>
           </tbody>
@@ -1464,6 +1467,7 @@ const PortionsAndRecsPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
     fontSize: `${8 * ts.fontSizeMultiplier}px`,
     color: "#64748b",
     lineHeight: "1.3",
+    whiteSpace: "pre-line",
   };
 
   const renderRecItem = (text: string, i: number, style: "check" | "dot" | "green") => (
@@ -1625,7 +1629,7 @@ export const MenuTemplateV1: React.FC<{
                     DOMINGO
                   </div>
                   <div style={{ padding: "6px 8px" }}>
-                    <div style={{ color: "#334155", fontSize: `${7.5 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3" }}>
+                    <div style={{ color: "#334155", fontSize: `${7.5 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3", whiteSpace: "pre-line" }}>
                       {domingo.note}
                     </div>
                   </div>
@@ -1635,7 +1639,7 @@ export const MenuTemplateV1: React.FC<{
                     <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600, marginBottom: "3px" }}>
                       META HIDRATACIÓN
                     </div>
-                    <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800 }}>
+                    <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, whiteSpace: "pre-line" }}>
                       💧 {domingo.hydration}
                     </div>
                   </div>
@@ -1904,12 +1908,13 @@ export const MenuTemplateV2: React.FC<{
                   >
                     NOTAS
                   </td>
-                  <td style={{ padding: "8px 14px", verticalAlign: "middle" }}>
+                  <td style={{ padding: "8px 14px", verticalAlign: "middle", width: "50%" }}>
                     <div
                       style={{
                         fontSize: `${8.5 * ts.fontSizeMultiplier}px`,
                         color: "#334155",
                         fontWeight: 600,
+                        whiteSpace: "pre-line",
                       }}
                     >
                       {noteText}
@@ -1921,8 +1926,7 @@ export const MenuTemplateV2: React.FC<{
                       textAlign: "right",
                       verticalAlign: "middle",
                       borderLeft: "1px solid #f1f5f9",
-                      whiteSpace: "nowrap",
-                      width: "1%",
+                      width: "50%",
                     }}
                   >
                     <div
@@ -1941,6 +1945,7 @@ export const MenuTemplateV2: React.FC<{
                         fontSize: `${9 * ts.fontSizeMultiplier}px`,
                         color: ts.colors.primary,
                         fontWeight: 800,
+                        whiteSpace: "pre-line",
                       }}
                     >
                       💧 {hydrationText}
