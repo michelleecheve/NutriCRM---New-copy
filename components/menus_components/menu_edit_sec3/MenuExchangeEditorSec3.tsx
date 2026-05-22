@@ -174,7 +174,7 @@ export const MenuExchangeEditorSec3: React.FC<Props> = ({ menuPreviewData, setMe
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+      <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <button
           onClick={() => setOpen(v => !v)}
           className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-slate-900 transition-colors"
@@ -186,7 +186,7 @@ export const MenuExchangeEditorSec3: React.FC<Props> = ({ menuPreviewData, setMe
 
         <button
           onClick={addColumn}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border bg-white text-slate-500 border-slate-200 hover:text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border bg-white text-slate-500 border-slate-200 hover:text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 transition-all self-start sm:self-auto"
         >
           <Plus className="w-3 h-3" />
           Agregar opción

@@ -47,7 +47,7 @@ export const MenuEditSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewD
   return (
     <div className="space-y-3">
       {/* Tab switch */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Tipo de menú:</span>
         <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
           <button
@@ -58,7 +58,7 @@ export const MenuEditSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewD
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            <Calendar className="w-3 h-3" />
+            <Calendar className="w-3 h-3 hidden sm:block" />
             Menú Semanal
           </button>
           <button
@@ -69,7 +69,7 @@ export const MenuEditSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewD
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            <ArrowUpDown className="w-3 h-3" />
+            <ArrowUpDown className="w-3 h-3 hidden sm:block" />
             Intercambio de Alimentos
           </button>
         </div>

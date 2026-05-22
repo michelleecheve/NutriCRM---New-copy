@@ -3,7 +3,7 @@ import {
   Sparkles, Eye, EyeOff, Layout,
   X,
   Table as TableIcon, FileText, Copy, Check,
-  Lock, Unlock, Bookmark, Shuffle, Sliders, Palette
+  Lock, Unlock, Bookmark, Shuffle, Sliders, Palette, Pin
 } from 'lucide-react';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, MenuTemplateDesign, MenuRecommendationData, MenuDesignConfig, DEFAULT_VISUAL_THEME } from '../../types';
 import { MenuDesignPanel } from '../menus_components/MenuDesignPanel';
@@ -170,6 +170,10 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
 
   const toolbarRef = useRef<MenuEditorToolbarHandle>(null);
   const [designModalOpen, setDesignModalOpen] = useState(false);
+  const [isBannerPinned, setIsBannerPinned] = useState(() => {
+    try { return localStorage.getItem('nutriflow_banner_pinned') !== 'false'; }
+    catch { return true; }
+  });
 
   // ─── Wrapper for setMenuPreviewData that marks dirty ─────────────────────
   const handleSetMenuPreviewData = (data: MenuPlanData | null) => {
@@ -1112,10 +1116,10 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   };
 
   return (
-    <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+    <section className="bg-white rounded-3xl border border-slate-200 shadow-sm">
       <div
         onClick={() => setIsVisible(!isVisible)}
-        className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors"
+        className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors rounded-t-3xl overflow-hidden"
       >
         <div className="flex items-center gap-3">
           <div className="bg-indigo-100 p-2 rounded-xl">
@@ -1273,28 +1277,45 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
           {menuPreviewData && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-              {/* ── Edit mode toggle ── */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl w-full sm:w-fit">
+              {/* ── Edit mode toggle — sticky so it stays visible when scrolling ── */}
+              <div className={`${isBannerPinned ? 'sticky top-0 z-20' : ''} bg-white/95 backdrop-blur-sm -mx-8 px-8 py-2.5 border-b border-slate-100 shadow-sm flex items-center gap-2 flex-wrap`}>
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl w-full sm:w-fit">
+                    <button
+                      onClick={() => setEditMode('tabla')}
+                      className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        editMode === 'tabla'
+                          ? 'bg-white text-indigo-600 shadow-sm'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      ✏️ Editar en Tabla
+                    </button>
+                    <button
+                      onClick={() => setEditMode('preview')}
+                      className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        editMode === 'preview'
+                          ? 'bg-white text-indigo-600 shadow-sm'
+                          : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      👁 Vista Previa
+                    </button>
+                  </div>
                   <button
-                    onClick={() => setEditMode('tabla')}
-                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                      editMode === 'tabla'
-                        ? 'bg-white text-indigo-600 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-700'
+                    onClick={() => {
+                      const next = !isBannerPinned;
+                      setIsBannerPinned(next);
+                      try { localStorage.setItem('nutriflow_banner_pinned', String(next)); } catch {}
+                    }}
+                    title={isBannerPinned ? 'Desanclar barra (scroll normal)' : 'Anclar barra (sticky)'}
+                    className={`p-1.5 rounded-lg transition-all ${
+                      isBannerPinned
+                        ? 'text-indigo-500 bg-indigo-50 hover:bg-indigo-100'
+                        : 'text-slate-300 hover:text-slate-500 hover:bg-slate-100'
                     }`}
                   >
-                    ✏️ Editar en Tabla
-                  </button>
-                  <button
-                    onClick={() => setEditMode('preview')}
-                    className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                      editMode === 'preview'
-                        ? 'bg-white text-indigo-600 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    👁 Vista Previa
+                    <Pin className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 {editMode === 'preview' && (
