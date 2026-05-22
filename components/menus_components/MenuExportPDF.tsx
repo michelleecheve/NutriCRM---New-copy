@@ -16,12 +16,14 @@ interface MenuExportPDFProps {
 const PAGE_LABELS: Record<string, string> = {
   'menu-page-1': 'Menú principal',
   'menu-page-2': 'Menú pág. 2',
+  'menu-exchange-page': 'Intercambio de alimentos',
   'recommendations-page': 'Recomendaciones',
   'portions-recs-page': 'Porciones y recomendaciones',
   'portions-page': 'Porciones',
+  'eating-out-page': 'Recomendaciones al comer fuera',
 };
 
-const KNOWN_IDS = ['menu-page-1', 'menu-page-2', 'recommendations-page', 'portions-recs-page', 'portions-page'];
+const KNOWN_IDS = ['menu-page-1', 'menu-page-2', 'menu-exchange-page', 'recommendations-page', 'portions-recs-page', 'portions-page', 'eating-out-page'];
 
 const BASE_OPT = {
   margin: 0,

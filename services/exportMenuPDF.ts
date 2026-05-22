@@ -30,7 +30,7 @@ export async function exportMenuPDF(menu: GeneratedMenu, filename: string): Prom
 
     // Collect A4 pages — same strategy as MenuExportPDF
     const allPages: HTMLElement[] = [];
-    const knownIds = ['menu-page-1', 'menu-page-2', 'recommendations-page'];
+    const knownIds = ['menu-page-1', 'menu-page-2', 'menu-exchange-page', 'recommendations-page', 'portions-recs-page', 'portions-page', 'eating-out-page'];
     knownIds.forEach((pid) => {
       const el = container.querySelector(`#${pid}`) as HTMLElement | null;
       if (el) allPages.push(el);
@@ -104,7 +104,7 @@ export async function exportMenuPDFAsBlob(menu: GeneratedMenu): Promise<Blob> {
     });
 
     const allPages: HTMLElement[] = [];
-    const knownIds = ['menu-page-1', 'menu-page-2', 'recommendations-page'];
+    const knownIds = ['menu-page-1', 'menu-page-2', 'menu-exchange-page', 'recommendations-page', 'portions-recs-page', 'portions-page', 'eating-out-page'];
     knownIds.forEach((pid) => {
       const el = container.querySelector(`#${pid}`) as HTMLElement | null;
       if (el) allPages.push(el);

@@ -6,6 +6,7 @@ import { MenuTableHeaderSec3 } from './MenuTableHeaderSec3';
 import { MenuTablePortionsSec3 } from './MenuTablePortionsSec3';
 import { MenuWeeklyTableEditorSec3 } from './MenuWeeklyTableEditorSec3';
 import { MenuPage2Sec3 } from './MenuPage2Sec3';
+import { MenuPage3Sec3 } from './MenuPage3Sec3';
 import { MenuExchangeEditorSec3 } from './MenuExchangeEditorSec3';
 
 const DEFAULT_MEAL_ORDER = ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
@@ -96,6 +97,10 @@ export const MenuEditSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewD
             menuPreviewData={menuPreviewData}
             setMenuPreviewData={setMenuPreviewData}
           />
+          <MenuPage3Sec3
+            menuPreviewData={menuPreviewData}
+            setMenuPreviewData={setMenuPreviewData}
+          />
         </>
       ) : (
         <>
@@ -113,6 +118,10 @@ export const MenuEditSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewD
             setMenuPreviewData={setMenuPreviewData}
           />
           <MenuPage2Sec3
+            menuPreviewData={menuPreviewData}
+            setMenuPreviewData={setMenuPreviewData}
+          />
+          <MenuPage3Sec3
             menuPreviewData={menuPreviewData}
             setMenuPreviewData={setMenuPreviewData}
           />

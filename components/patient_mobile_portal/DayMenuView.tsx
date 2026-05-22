@@ -205,6 +205,7 @@ export const DayMenuView: React.FC<Props> = ({
   const savingRef = useRef<Record<string, boolean>>({});
   const [savingKeys, setSavingKeys] = useState<Set<string>>(new Set());
   const [showRecs, setShowRecs] = useState(false);
+  const [showEatingOut, setShowEatingOut] = useState(false);
   const [showPortions, setShowPortions] = useState(false);
 
   useEffect(() => {
@@ -746,6 +747,230 @@ export const DayMenuView: React.FC<Props> = ({
           )}
         </div>
 
+        {/* ─── Tabla de Porciones ─────────────────────────────────────────── */}
+        {(() => {
+          const portions = menu.menuData?.portions;
+          const weeklyMenu = menu.menuData?.weeklyMenu;
+          if (!portions?.byMeal || !weeklyMenu) return null;
+
+          const mealOrder: string[] = weeklyMenu.lunes?.mealsOrder || ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
+          const mealRows = mealOrder.filter(k => portions.byMeal[k]);
+
+          const GROUPS: { key: string; short: string; label: string; color: string; border: string }[] = [
+            { key: 'lacteos',   short: 'Lác',  label: 'Lácteos',   color: '#0EA5E9', border: '#BAE6FD' },
+            { key: 'vegetales', short: 'Veg',  label: 'Vegetales', color: '#22C55E', border: '#BBF7D0' },
+            { key: 'frutas',    short: 'Fru',  label: 'Frutas',    color: '#F97316', border: '#FED7AA' },
+            { key: 'cereales',  short: 'Cer',  label: 'Cereales',  color: '#EAB308', border: '#FEF08A' },
+            { key: 'carnes',    short: 'Car',  label: 'Carnes',    color: '#EF4444', border: '#FECACA' },
+            { key: 'grasas',    short: 'Gra',  label: 'Grasas',    color: '#A855F7', border: '#E9D5FF' },
+          ];
+
+          const totals: Record<string, number> = {
+            lacteos: portions.lacteos ?? 0,
+            vegetales: portions.vegetales ?? 0,
+            frutas: portions.frutas ?? 0,
+            cereales: portions.cereales ?? 0,
+            carnes: portions.carnes ?? 0,
+            grasas: portions.grasas ?? 0,
+          };
+
+          return (
+            <div style={{ padding: '0 16px 36px' }}>
+              {/* Accordion header */}
+              <button
+                onClick={() => setShowPortions(p => !p)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '16px 20px',
+                  borderRadius: '18px',
+                  background: showPortions
+                    ? 'linear-gradient(135deg, #1A2E25 0%, #2D5A4B 100%)'
+                    : 'white',
+                  border: 'none',
+                  boxShadow: showPortions
+                    ? '0 6px 20px rgba(45,90,75,0.30)'
+                    : '0 2px 8px rgba(0,0,0,0.05)',
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease',
+                  marginBottom: showPortions ? '14px' : 0,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    backgroundColor: showPortions ? 'rgba(255,255,255,0.15)' : '#ECFDF5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <LayoutGrid size={20} color={showPortions ? 'white' : '#2D5A4B'} strokeWidth={1.8} />
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <p style={{
+                      fontSize: '14px',
+                      fontWeight: 800,
+                      color: showPortions ? 'white' : '#111827',
+                      margin: 0,
+                      lineHeight: 1.2,
+                    }}>Tabla de Porciones</p>
+                    <p style={{
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      color: showPortions ? 'rgba(255,255,255,0.6)' : '#9CA3AF',
+                      margin: 0,
+                      marginTop: '3px',
+                    }}>Guía para contar porciones por tiempo de comida</p>
+                  </div>
+                </div>
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '8px',
+                  backgroundColor: showPortions ? 'rgba(255,255,255,0.15)' : '#F3F4F6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'transform 0.25s ease',
+                  transform: showPortions ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}>
+                  <ChevronDown size={15} color={showPortions ? 'white' : '#6B7280'} />
+                </div>
+              </button>
+
+              {/* Expanded table */}
+              {showPortions && (
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '16px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  overflow: 'hidden',
+                }}>
+                  {/* Color legend row */}
+                  <div style={{
+                    padding: '12px 16px 10px',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                    backgroundColor: '#1A2E25',
+                  }}>
+                    {GROUPS.map(g => (
+                      <div key={g.key} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '3px 10px',
+                        borderRadius: '999px',
+                        border: `1.5px solid ${g.border}`,
+                        backgroundColor: 'rgba(255,255,255,0.08)',
+                      }}>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: g.border }}>{g.label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Scrollable table */}
+                  <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }}>
+                    <table style={{ width: '100%', minWidth: '580px', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr>
+                          <th style={{
+                            padding: '12px 16px',
+                            textAlign: 'left',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            color: 'rgba(255,255,255,0.7)',
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap',
+                            minWidth: '110px',
+                            backgroundColor: '#1A2E25',
+                          }}>Tiempo</th>
+                          {GROUPS.map(g => (
+                            <th key={g.key} style={{
+                              padding: '12px 16px',
+                              textAlign: 'center',
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              color: g.border,
+                              letterSpacing: '0.04em',
+                              whiteSpace: 'nowrap',
+                              minWidth: '72px',
+                              backgroundColor: '#1A2E25',
+                            }}>{g.short}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mealRows.map((mealKey, i) => {
+                          const row = portions.byMeal[mealKey];
+                          const labelFromMenu = (weeklyMenu.lunes as any)?.[mealKey]?.label;
+                          const FALLBACK: Record<string, string> = {
+                            desayuno: 'Desayuno', refaccion1: 'Refacción', almuerzo: 'Almuerzo',
+                            refaccion2: 'Merienda', cena: 'Cena',
+                          };
+                          const label = labelFromMenu || FALLBACK[mealKey] || mealKey;
+                          const isEven = i % 2 === 0;
+                          return (
+                            <tr key={mealKey} style={{ backgroundColor: isEven ? 'white' : '#F8FAFC' }}>
+                              <td style={{
+                                padding: '12px 16px',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                color: '#1F2937',
+                                borderBottom: '1px solid #F1F5F9',
+                                whiteSpace: 'nowrap',
+                              }}>{label}</td>
+                              {GROUPS.map(g => {
+                                const val = row[g.key] ?? 0;
+                                return (
+                                  <td key={g.key} style={{
+                                    padding: '12px 16px',
+                                    textAlign: 'center',
+                                    fontSize: '13px',
+                                    fontWeight: 800,
+                                    color: val > 0 ? g.color : '#D1D5DB',
+                                    borderBottom: '1px solid #F1F5F9',
+                                  }}>{val > 0 ? val : '—'}</td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                        {/* Totals row */}
+                        <tr style={{ backgroundColor: '#F0FDF4', borderTop: '2px solid #A7F3D0' }}>
+                          <td style={{
+                            padding: '12px 16px',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            color: '#2D5A4B',
+                            letterSpacing: '0.04em',
+                            textTransform: 'uppercase',
+                          }}>Total</td>
+                          {GROUPS.map(g => (
+                            <td key={g.key} style={{
+                              padding: '12px 16px',
+                              textAlign: 'center',
+                              fontSize: '13px',
+                              fontWeight: 900,
+                              color: g.color,
+                            }}>{totals[g.key]}</td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* ─── Recomendaciones y Hábitos ──────────────────────────────────── */}
         {(() => {
           const recs = menu.menuData?.recommendations;
@@ -937,38 +1162,19 @@ export const DayMenuView: React.FC<Props> = ({
           );
         })()}
 
-        {/* ─── Tabla de Porciones ─────────────────────────────────────────── */}
+        {/* ─── Comer fuera de casa ────────────────────────────────────────── */}
         {(() => {
-          const portions = menu.menuData?.portions;
-          const weeklyMenu = menu.menuData?.weeklyMenu;
-          if (!portions?.byMeal || !weeklyMenu) return null;
-
-          const mealOrder: string[] = weeklyMenu.lunes?.mealsOrder || ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
-          const mealRows = mealOrder.filter(k => portions.byMeal[k]);
-
-          const GROUPS: { key: string; short: string; label: string; color: string; border: string }[] = [
-            { key: 'lacteos',   short: 'Lác',  label: 'Lácteos',   color: '#0EA5E9', border: '#BAE6FD' },
-            { key: 'vegetales', short: 'Veg',  label: 'Vegetales', color: '#22C55E', border: '#BBF7D0' },
-            { key: 'frutas',    short: 'Fru',  label: 'Frutas',    color: '#F97316', border: '#FED7AA' },
-            { key: 'cereales',  short: 'Cer',  label: 'Cereales',  color: '#EAB308', border: '#FEF08A' },
-            { key: 'carnes',    short: 'Car',  label: 'Carnes',    color: '#EF4444', border: '#FECACA' },
-            { key: 'grasas',    short: 'Gra',  label: 'Grasas',    color: '#A855F7', border: '#E9D5FF' },
-          ];
-
-          const totals: Record<string, number> = {
-            lacteos: portions.lacteos ?? 0,
-            vegetales: portions.vegetales ?? 0,
-            frutas: portions.frutas ?? 0,
-            cereales: portions.cereales ?? 0,
-            carnes: portions.carnes ?? 0,
-            grasas: portions.grasas ?? 0,
-          };
+          const eatingOut = menu.menuData?.eatingOutPage;
+          if (!eatingOut?.visible) return null;
+          const hasFreeText = eatingOut.freeText?.trim().length > 0;
+          const hasTable = (eatingOut.columns?.length ?? 0) > 0 && (eatingOut.rows?.length ?? 0) > 0;
+          if (!hasFreeText && !hasTable) return null;
 
           return (
             <div style={{ padding: '0 16px 36px' }}>
               {/* Accordion header */}
               <button
-                onClick={() => setShowPortions(p => !p)}
+                onClick={() => setShowEatingOut(v => !v)}
                 style={{
                   width: '100%',
                   display: 'flex',
@@ -976,16 +1182,16 @@ export const DayMenuView: React.FC<Props> = ({
                   justifyContent: 'space-between',
                   padding: '16px 20px',
                   borderRadius: '18px',
-                  background: showPortions
+                  background: showEatingOut
                     ? 'linear-gradient(135deg, #1A2E25 0%, #2D5A4B 100%)'
                     : 'white',
                   border: 'none',
-                  boxShadow: showPortions
+                  boxShadow: showEatingOut
                     ? '0 6px 20px rgba(45,90,75,0.30)'
                     : '0 2px 8px rgba(0,0,0,0.05)',
                   cursor: 'pointer',
                   transition: 'all 0.25s ease',
-                  marginBottom: showPortions ? '14px' : 0,
+                  marginBottom: showEatingOut ? '14px' : 0,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -993,172 +1199,134 @@ export const DayMenuView: React.FC<Props> = ({
                     width: '40px',
                     height: '40px',
                     borderRadius: '12px',
-                    backgroundColor: showPortions ? 'rgba(255,255,255,0.15)' : '#ECFDF5',
+                    backgroundColor: showEatingOut ? 'rgba(255,255,255,0.15)' : '#ECFDF5',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
                   }}>
-                    <LayoutGrid size={20} color={showPortions ? 'white' : '#2D5A4B'} strokeWidth={1.8} />
+                    <UtensilsCrossed size={20} color={showEatingOut ? 'white' : '#2D5A4B'} strokeWidth={1.8} />
                   </div>
                   <div style={{ textAlign: 'left' }}>
                     <p style={{
                       fontSize: '14px',
                       fontWeight: 800,
-                      color: showPortions ? 'white' : '#111827',
+                      color: showEatingOut ? 'white' : '#111827',
                       margin: 0,
                       lineHeight: 1.2,
-                    }}>Tabla de Porciones</p>
+                    }}>{eatingOut.title || 'RECOMENDACIONES AL COMER FUERA'}</p>
                     <p style={{
                       fontSize: '11px',
                       fontWeight: 500,
-                      color: showPortions ? 'rgba(255,255,255,0.6)' : '#9CA3AF',
+                      color: showEatingOut ? 'rgba(255,255,255,0.6)' : '#9CA3AF',
                       margin: 0,
                       marginTop: '3px',
-                    }}>Guía para contar porciones por tiempo de comida</p>
+                    }}>Guía para elegir bien al salir</p>
                   </div>
                 </div>
                 <div style={{
                   width: '28px',
                   height: '28px',
                   borderRadius: '8px',
-                  backgroundColor: showPortions ? 'rgba(255,255,255,0.15)' : '#F3F4F6',
+                  backgroundColor: showEatingOut ? 'rgba(255,255,255,0.15)' : '#F3F4F6',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
                   transition: 'transform 0.25s ease',
-                  transform: showPortions ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transform: showEatingOut ? 'rotate(180deg)' : 'rotate(0deg)',
                 }}>
-                  <ChevronDown size={15} color={showPortions ? 'white' : '#6B7280'} />
+                  <ChevronDown size={15} color={showEatingOut ? 'white' : '#6B7280'} />
                 </div>
               </button>
 
-              {/* Expanded table */}
-              {showPortions && (
-                <div style={{
-                  backgroundColor: 'white',
-                  borderRadius: '16px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
-                  overflow: 'hidden',
-                }}>
-                  {/* Color legend row */}
-                  <div style={{
-                    padding: '12px 16px 10px',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '6px',
-                    backgroundColor: '#1A2E25',
-                  }}>
-                    {GROUPS.map(g => (
-                      <div key={g.key} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '3px 10px',
-                        borderRadius: '999px',
-                        border: `1.5px solid ${g.border}`,
-                        backgroundColor: 'rgba(255,255,255,0.08)',
-                      }}>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: g.border }}>{g.label}</span>
-                      </div>
-                    ))}
-                  </div>
+              {/* Expanded content */}
+              {showEatingOut && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {/* Free text */}
+                  {hasFreeText && (
+                    <div style={{
+                      borderRadius: '16px',
+                      backgroundColor: 'white',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                      padding: '16px',
+                    }}>
+                      <p style={{
+                        fontSize: '13px',
+                        color: '#374151',
+                        lineHeight: 1.7,
+                        margin: 0,
+                        whiteSpace: 'pre-line',
+                      }}>{eatingOut.freeText}</p>
+                    </div>
+                  )}
 
-                  {/* Scrollable table */}
-                  <div style={{ overflowX: 'auto', paddingBottom: '4px' }}>
-                    <table style={{ width: '100%', minWidth: '420px', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr>
-                          <th style={{
-                            padding: '10px 14px',
-                            textAlign: 'left',
-                            fontSize: '10px',
-                            fontWeight: 700,
-                            color: 'rgba(255,255,255,0.7)',
-                            letterSpacing: '0.06em',
-                            textTransform: 'uppercase',
-                            whiteSpace: 'nowrap',
-                            minWidth: '90px',
-                            backgroundColor: '#1A2E25',
-                          }}>Tiempo</th>
-                          {GROUPS.map(g => (
-                            <th key={g.key} style={{
-                              padding: '10px 8px',
-                              textAlign: 'center',
-                              fontSize: '10px',
-                              fontWeight: 700,
-                              color: g.border,
-                              letterSpacing: '0.04em',
-                              whiteSpace: 'nowrap',
-                              backgroundColor: '#1A2E25',
-                            }}>{g.short}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {mealRows.map((mealKey, i) => {
-                          const row = portions.byMeal[mealKey];
-                          const labelFromMenu = (weeklyMenu.lunes as any)?.[mealKey]?.label;
-                          const FALLBACK: Record<string, string> = {
-                            desayuno: 'Desayuno', refaccion1: 'Refacción', almuerzo: 'Almuerzo',
-                            refaccion2: 'Merienda', cena: 'Cena',
-                          };
-                          const label = labelFromMenu || FALLBACK[mealKey] || mealKey;
-                          const isEven = i % 2 === 0;
-                          return (
-                            <tr key={mealKey} style={{ backgroundColor: isEven ? 'white' : '#F8FAFC' }}>
-                              <td style={{
-                                padding: '10px 14px',
-                                fontSize: '12px',
-                                fontWeight: 700,
-                                color: '#1F2937',
-                                borderBottom: '1px solid #F1F5F9',
-                                whiteSpace: 'nowrap',
-                              }}>{label}</td>
-                              {GROUPS.map(g => {
-                                const val = row[g.key] ?? 0;
-                                return (
-                                  <td key={g.key} style={{
-                                    padding: '10px 8px',
-                                    textAlign: 'center',
-                                    fontSize: '13px',
-                                    fontWeight: 800,
-                                    color: val > 0 ? g.color : '#D1D5DB',
-                                    borderBottom: '1px solid #F1F5F9',
-                                  }}>{val > 0 ? val : '—'}</td>
-                                );
-                              })}
+                  {/* Table with horizontal scroll */}
+                  {hasTable && (
+                    <div style={{
+                      borderRadius: '16px',
+                      backgroundColor: 'white',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '6px' }}>
+                        <table style={{
+                          width: '100%',
+                          borderCollapse: 'collapse',
+                          minWidth: `${eatingOut.columns.length * 210}px`,
+                        }}>
+                          <thead>
+                            <tr>
+                              {eatingOut.columns.map((col, ci) => (
+                                <th key={col.id} style={{
+                                  padding: '12px 18px',
+                                  backgroundColor: ci === 0 ? '#1F2937' : '#C2540A',
+                                  color: 'white',
+                                  fontWeight: 800,
+                                  fontSize: '11px',
+                                  textAlign: 'left',
+                                  letterSpacing: '0.05em',
+                                  textTransform: 'uppercase',
+                                  whiteSpace: 'nowrap',
+                                  minWidth: ci === 0 ? '140px' : '190px',
+                                  borderRight: ci < eatingOut.columns.length - 1 ? '1px solid rgba(255,255,255,0.15)' : undefined,
+                                }}>
+                                  {col.label}
+                                </th>
+                              ))}
                             </tr>
-                          );
-                        })}
-                        {/* Totals row */}
-                        <tr style={{ backgroundColor: '#F0FDF4', borderTop: '2px solid #A7F3D0' }}>
-                          <td style={{
-                            padding: '10px 14px',
-                            fontSize: '11px',
-                            fontWeight: 800,
-                            color: '#2D5A4B',
-                            letterSpacing: '0.04em',
-                            textTransform: 'uppercase',
-                          }}>Total</td>
-                          {GROUPS.map(g => (
-                            <td key={g.key} style={{
-                              padding: '10px 8px',
-                              textAlign: 'center',
-                              fontSize: '13px',
-                              fontWeight: 900,
-                              color: g.color,
-                            }}>{totals[g.key]}</td>
-                          ))}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                          </thead>
+                          <tbody>
+                            {eatingOut.rows.map((row, ri) => (
+                              <tr key={ri} style={{ backgroundColor: ri % 2 === 0 ? 'white' : '#FFF7ED' }}>
+                                {eatingOut.columns.map((col, ci) => (
+                                  <td key={col.id} style={{
+                                    padding: '12px 18px',
+                                    borderBottom: '1px solid #F3F4F6',
+                                    borderRight: ci < eatingOut.columns.length - 1 ? '1px solid #F3F4F6' : undefined,
+                                    verticalAlign: 'middle',
+                                    fontSize: '13px',
+                                    color: ci === 0 ? '#C2540A' : '#374151',
+                                    fontWeight: ci === 0 ? 700 : 400,
+                                    lineHeight: 1.5,
+                                    whiteSpace: 'pre-line',
+                                  }}>
+                                    {row[col.id] || ''}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           );
         })()}
+
         </div>
       )}
 
