@@ -138,6 +138,21 @@ function calcStreak(trackingData: Record<string, any>, startDate: string | null)
 }
 
 function getDayData(menu: GeneratedMenu, dayKey: string): any {
+  // Exchange menu: same reference day repeated for every day of the week
+  if (menu.menuData?.menuType === 'intercambio') {
+    const exchange = menu.menuData?.exchangeMenu;
+    if (!exchange?.meals?.length) return null;
+    const dayObj: any = { mealsOrder: exchange.meals.map((m: any) => m.id) };
+    exchange.meals.forEach((m: any) => {
+      const examplesText = (m.examples as string[])
+        .filter(Boolean)
+        .map((ex, i) => `Opción ${i + 1}:\n${ex}`)
+        .join('\n\n');
+      dayObj[m.id] = { label: m.label, title: examplesText };
+    });
+    return dayObj;
+  }
+
   const wm = menu.menuData?.weeklyMenu;
   if (!wm) return null;
   if (dayKey === 'domingo') {

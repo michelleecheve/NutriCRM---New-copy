@@ -592,6 +592,141 @@ export const generateStructuredMenu = async (
   }
 };
 
+// ─── Menú de Intercambio de Alimentos ────────────────────────────────────────
+
+export const generateExchangeMenu = async (
+  patient:       Patient,
+  vetData:       any,
+  portions:      any,
+  references:    { title: string; data: MenuReferenceData }[],
+  nutritionist:  any,
+  linkedDate?:   string,
+  numExamples:   number = 2,
+  bioimpedance?: any
+): Promise<{ plan: MenuPlanData; rationale: string }> => {
+
+  const aiConfig = store.getUserProfile()?.menuAIConfig || {
+    prompt:              DEFAULT_MENU_PROMPT_SUFFIX,
+    ideas:               { desayuno: [], refaccion: [], almuerzo: [], merienda: [], cena: [] },
+    fields:              DEFAULT_PATIENT_FIELDS,
+    recommendationIdeas: { preparacion: [], restricciones: [], habitos: [], organizacion: [] },
+  };
+
+  const foodIdeasCtx = buildFoodIdeasContext(aiConfig.ideas);
+  const recIdeasCtx  = buildRecommendationIdeasContext(
+    aiConfig.recommendationIdeas || { preparacion: [], restricciones: [], habitos: [], organizacion: [] }
+  );
+  const promptSuffix = (aiConfig.prompt || DEFAULT_MENU_PROMPT_SUFFIX)
+    .replace('{foodIdeas}', foodIdeasCtx)
+    .replace('{recommendationIdeas}', recIdeasCtx);
+
+  const refContext   = buildRefContext(references);
+  const patientCtx   = buildPatientContext(patient, vetData, portions, aiConfig.fields, linkedDate);
+  const mealStructure = extractMealStructure(portions, vetData);
+
+  if (!mealStructure.length) {
+    throw new Error("Para generar con IA, primero define la tabla de porciones por tiempo de comida.");
+  }
+
+  let bioCtx = "";
+  if (bioimpedance && aiConfig.fields.bioimpedancia) {
+    bioCtx = `Bioimpedancia: ${bioimpedance.weight}kg | Grasa ${bioimpedance.fat_pct}% | Músculo ${bioimpedance.muscle_pct}% | Visc ${bioimpedance.visceral_fat} | Metab ${bioimpedance.basal_metabolism}kcal | Edad Met ${bioimpedance.metabolic_age} | Agua ${bioimpedance.body_water}% | Ósea ${bioimpedance.bone_mass}kg`;
+  }
+
+  const portionSummary = buildPortionSummary(mealStructure);
+  const kcal = vetData.kcalToWork || 0;
+
+  const mealExamplesTemplate = mealStructure
+    .map(m => `      {"id": "${m.id}", "examples": ["...", "..."]}`)
+    .join(',\n');
+
+  const prompt = `Eres nutricionista experta. Genera un menú de intercambio de alimentos.
+
+PACIENTE:
+${patientCtx}
+${bioCtx}
+Kcal: ${kcal}
+
+METAS NUTRICIONALES POR TIEMPO DE COMIDA:
+${portionSummary}
+
+TAREA: Para cada tiempo de comida genera exactamente ${numExamples} opciones diferentes de comida que cumplan las porciones. Cada opción es una alternativa que el paciente puede elegir ese día.
+
+CÓMO ESCRIBIR EL CAMPO "examples":
+- Cada elemento del array es una opción completa de comida para ese tiempo.
+- Escribe alimentos reales con medidas caseras, una línea por grupo activo.
+- CORRECTO: "2 huevos revueltos con chile\\n1 vaso de leche descremada\\n2 tortillas de maíz"
+- INCORRECTO: "2 CARNES\\n1 LÁCTEO\\n2 CEREALES" — nunca escribas el nombre del grupo.
+- Las opciones deben ser variadas entre sí (distintos alimentos para que el paciente tenga elección real).
+
+REFERENCIAS DE COMIDAS — USA COMO BASE PRINCIPAL:
+${refContext}
+
+JSON:
+{
+  "exchangeMenu": [
+${mealExamplesTemplate}
+  ],
+  "note": "Indicación o consejo general del plan",
+  "hydration": "${kcal > 0 ? '2.5L Agua/Día' : '2L Agua/Día'}",
+  "patient": {"name":"...","age":0,"weight":0,"height":0,"fatPct":0},
+  "kcal": ${kcal},
+  "recommendations": {"preparacion":[],"restricciones":[],"habitos":[],"organizacion":[]},
+  "rationale": "..."
+}
+
+Solo JSON. Sin markdown. ${promptSuffix}`;
+
+  const resp   = await aiService.invokeGemini(prompt, 'menu', MENU_SYSTEM_INSTRUCTION);
+  const parsed = parseGeminiJson(resp.output);
+
+  const rawExchange = toArray(parsed.exchangeMenu);
+
+  const mealLabels: Record<string, string> = {};
+  mealStructure.forEach(m => { mealLabels[m.id] = m.label; });
+
+  const exchangeMeals = rawExchange.map((entry: any) => ({
+    id:       entry.id,
+    label:    mealLabels[entry.id] || entry.id,
+    examples: toArray<string>(entry.examples).map((ex: string) => cleanTitle(ex)),
+  }));
+
+  const measurement = linkedDate
+    ? patient.measurements?.find(m => m.date === linkedDate)
+    : patient.measurements?.[0];
+
+  const plan: MenuPlanData = {
+    patient: parsed.patient || {
+      name:   `${patient.firstName} ${patient.lastName}`,
+      age:    vetData.age || measurement?.age || 0,
+      weight: measurement?.weight || 0,
+      height: measurement?.height || 0,
+      fatPct: measurement?.bodyFat || 0,
+    },
+    kcal:    parsed.kcal || kcal,
+    portions,
+    weeklyMenu: {
+      lunes:     { desayuno: { title: '' }, refaccion1: { title: '' }, almuerzo: { title: '' }, refaccion2: { title: '' }, cena: { title: '' } },
+      martes:    { desayuno: { title: '' }, refaccion1: { title: '' }, almuerzo: { title: '' }, refaccion2: { title: '' }, cena: { title: '' } },
+      miercoles: { desayuno: { title: '' }, refaccion1: { title: '' }, almuerzo: { title: '' }, refaccion2: { title: '' }, cena: { title: '' } },
+      jueves:    { desayuno: { title: '' }, refaccion1: { title: '' }, almuerzo: { title: '' }, refaccion2: { title: '' }, cena: { title: '' } },
+      viernes:   { desayuno: { title: '' }, refaccion1: { title: '' }, almuerzo: { title: '' }, refaccion2: { title: '' }, cena: { title: '' } },
+      sabado:    { desayuno: { title: '' }, refaccion1: { title: '' }, almuerzo: { title: '' }, refaccion2: { title: '' }, cena: { title: '' } },
+      domingo:   { note: '', hydration: '' },
+    },
+    menuType:    'intercambio',
+    exchangeMenu: {
+      meals:    exchangeMeals,
+      note:     parsed.note || '',
+      hydration: parsed.hydration || '2.5L Agua/Día',
+    },
+    nutritionist,
+    recommendations: parsed.recommendations,
+  };
+
+  return { plan, rationale: parsed.rationale || '' };
+};
+
 // ─── Build full 7-day reference text (all days, not just 3) ──────────────────
 
 const ALL_DAYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];

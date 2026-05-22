@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { MenuTemplateV1, MenuTemplateV2, MenuPlanData } from './MenuDesignTemplates';
-import { Layout, Pencil } from 'lucide-react';
+import { MenuTemplateV1, MenuTemplateV2, MenuTemplateExchange, MenuPlanData } from './MenuDesignTemplates';
+import { Pencil } from 'lucide-react';
 import { store } from '../../services/store';
 import { MenuDesignOverrideContext } from './MenuDesignContext';
 import type { VisualThemeConfig, PageLayoutOption } from '../../types';
@@ -207,9 +207,17 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
     const is4col = currentTemplate.endsWith('_4col');
     const gridLayout = is4col ? '4col' : '3col';
     const pageLayout = pageLayoutProp ?? (store.getMenuTemplate()?.pageLayout) ?? 'layout1';
-    const template = currentTemplate.startsWith('plantilla_v2')
-      ? <MenuTemplateV2 data={data} gridLayout={gridLayout} pageLayout={pageLayout} />
-      : <MenuTemplateV1 data={data} gridLayout={gridLayout} pageLayout={pageLayout} />;
+
+    let template: React.ReactElement;
+    if (data.menuType === 'intercambio') {
+      template = <MenuTemplateExchange data={data} pageLayout={pageLayout} />;
+    } else if (data.weeklyMenu?.domingoMode === 'completo') {
+      // Auto-determine V2 from domingoMode — no manual selector needed
+      template = <MenuTemplateV2 data={data} gridLayout={gridLayout} pageLayout={pageLayout} />;
+    } else {
+      template = <MenuTemplateV1 data={data} gridLayout={gridLayout} pageLayout={pageLayout} />;
+    }
+
     return (
       <MenuDesignOverrideContext.Provider value={visualTheme ? { visualTheme } : null}>
         {template}
@@ -233,32 +241,7 @@ export const MenuPreview: React.FC<MenuPreviewProps> = ({
         <div className="flex items-center gap-3 flex-wrap">
           <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Vista Previa</h3>
 
-          {!hideTemplateSelector && (
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-              <button
-                onClick={() => updateTemplate(currentTemplate.endsWith('_4col') ? 'plantilla_v1_4col' : 'plantilla_v1')}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5 ${
-                  currentTemplate.startsWith('plantilla_v1')
-                    ? 'bg-white text-emerald-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <Layout className="w-3 h-3" />
-                Plantilla V1
-              </button>
-              <button
-                onClick={() => updateTemplate(currentTemplate.endsWith('_4col') ? 'plantilla_v2_4col' : 'plantilla_v2')}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1.5 ${
-                  currentTemplate.startsWith('plantilla_v2')
-                    ? 'bg-white text-emerald-600 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <Layout className="w-3 h-3" />
-                Plantilla V2
-              </button>
-            </div>
-          )}
+          {/* V1/V2 selector removed — auto-determined from domingoMode in the editor */}
 
           {/* Edit mode toggle — desktop only */}
           {hasEditCallbacks && (

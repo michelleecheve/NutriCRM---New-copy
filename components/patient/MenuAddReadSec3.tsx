@@ -14,7 +14,7 @@ import { MenuExportPDF } from '../menus_components/MenuExportPDF';
 import { MenuEditorToolbar, MenuEditorToolbarHandle } from '../menus_components/MenuEditorToolbar';
 import { MenuPreview } from '../menus_components/MenuPreview';
 import { MenuEditSec3 } from '../menus_components/menu_edit_sec3/MenuEditSec3';
-import { generateStructuredMenu, generateMixFromReferences, adaptPortionsFromMenu, regenerateSingleDay, regenerateMealSlot } from '../../services/geminiService';
+import { generateStructuredMenu, generateMixFromReferences, generateExchangeMenu, adaptPortionsFromMenu, regenerateSingleDay, regenerateMealSlot } from '../../services/geminiService';
 import { MenuAIActionsPanel } from '../menus_components/MenuAIActionsPanel';
 import { store } from '../../services/store';
 import { authStore } from '../../services/authStore';
@@ -379,18 +379,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         templateDesign = template.templateDesign as MenuTemplateDesign;
       }
 
-      const result = await generateStructuredMenu(
-        patient,
-        vetData,
-        menuPreviewData?.portions || portions,
-        refs,
-        nutritionistData,
-        evaluationId || undefined,
-        templateDesign,
-        scope,
-        bioData
-      );
-
       // ✅ Override patient info with vetData to ensure consistency
       let fat = 0;
       if (evaluationId) {
@@ -402,6 +390,48 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
           if (meas) fat = meas.bodyFat || 0;
         }
       }
+
+      // ✅ Si el menú activo es de intercambio, usar generador específico
+      if (menuPreviewData?.menuType === 'intercambio') {
+        const result = await generateExchangeMenu(
+          patient,
+          vetData,
+          menuPreviewData?.portions || portions,
+          refs,
+          nutritionistData,
+          evaluationId || undefined,
+          2,
+          bioData
+        );
+        const finalPlan: MenuPlanData = {
+          ...result.plan,
+          patient: {
+            name: `${patient.firstName} ${patient.lastName}`,
+            age: vetData.age || patient.clinical?.age || 0,
+            weight: vetData.weight || 0,
+            height: vetData.height || 0,
+            fatPct: fat,
+          },
+          kcal: vetData.kcalToWork || result.plan.kcal,
+        };
+        handleSetMenuPreviewData(withTemplateTitles(finalPlan));
+        setAiRationale(result.rationale);
+        setAiDraftText('Menú de intercambio generado por IA');
+        setEditTablaKey(k => k + 1);
+        return;
+      }
+
+      const result = await generateStructuredMenu(
+        patient,
+        vetData,
+        menuPreviewData?.portions || portions,
+        refs,
+        nutritionistData,
+        evaluationId || undefined,
+        templateDesign,
+        scope,
+        bioData
+      );
 
       const finalPlan: MenuPlanData = {
         ...result.plan,
@@ -1295,7 +1325,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                     elementId="menu-print-area"
                     selectedTemplate={selectedPreviewTemplate}
                     onTemplateChange={handleTemplateChange}
-                    defaultEditMode={true}
+                    defaultEditMode={false}
                     visualTheme={localDesignConfig.visualTheme}
                     pageLayout={localDesignConfig.pageLayout}
                     onEditPatientInfo={() => toolbarRef.current?.openPatientInfo()}
