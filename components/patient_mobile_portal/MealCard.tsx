@@ -101,9 +101,12 @@ export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving, readOn
           </div>
           {meal.title && (
             <div className="text-sm leading-snug mt-0.5" style={{ color: '#6B7280' }}>
-              {meal.title.split('\n').map((line, i) => (
-                <p key={i} style={{ margin: 0 }}>{line}</p>
-              ))}
+              {meal.title.split('\n').map((line, i) => {
+                if (line === '') return <div key={i} style={{ height: '6px' }} />;
+                if (line.startsWith('**') && line.endsWith('**') && line.length > 4)
+                  return <p key={i} style={{ margin: 0, fontWeight: 700, color: '#374151' }}>{line.slice(2, -2)}</p>;
+                return <p key={i} style={{ margin: 0 }}>{line}</p>;
+              })}
             </div>
           )}
         </div>

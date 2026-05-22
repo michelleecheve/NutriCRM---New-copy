@@ -142,12 +142,16 @@ function getDayData(menu: GeneratedMenu, dayKey: string): any {
   if (menu.menuData?.menuType === 'intercambio') {
     const exchange = menu.menuData?.exchangeMenu;
     if (!exchange?.meals?.length) return null;
+    const colLabels: string[] | undefined = (exchange as any).columnLabels;
     const dayObj: any = { mealsOrder: exchange.meals.map((m: any) => m.id) };
     exchange.meals.forEach((m: any) => {
       const examplesText = (m.examples as string[])
         .filter(Boolean)
-        .map((ex, i) => `Opción ${i + 1}:\n${ex}`)
-        .join('\n\n');
+        .map((ex: string, i: number) => {
+          const label = colLabels?.[i] || `Opción ${i + 1}`;
+          return (i > 0 ? '\n' : '') + `**${label}**\n${ex}`;
+        })
+        .join('\n');
       dayObj[m.id] = { label: m.label, title: examplesText };
     });
     return dayObj;

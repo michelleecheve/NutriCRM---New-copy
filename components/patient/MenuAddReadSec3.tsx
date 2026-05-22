@@ -405,6 +405,10 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         );
         const finalPlan: MenuPlanData = {
           ...result.plan,
+          // Preserve the user's portions table and weeklyMenu structure (meal order)
+          // so MenuTablePortionsSec3 re-initializes with the correct data after remount.
+          portions: menuPreviewData.portions,
+          weeklyMenu: menuPreviewData.weeklyMenu,
           patient: {
             name: `${patient.firstName} ${patient.lastName}`,
             age: vetData.age || patient.clinical?.age || 0,
