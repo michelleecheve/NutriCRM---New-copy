@@ -45,7 +45,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   const isInPeriod = (dateString: string) =>
     !!dateString && dateString >= dateRange.start && dateString <= dateRange.end;
 
-  const totalPatients = patients.length;
+  const totalPatients = patients.filter(p => isInPeriod(p.registeredAt)).length;
 
   const totalIncome = invoices
     .filter(inv => inv.status === 'Pagado' && isInPeriod(inv.date))
@@ -219,29 +219,19 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
         </div>
       </div>
 
-      {/* KPI Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* KPI Grid — mobile/tablet only */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:hidden gap-3">
         <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-indigo-200 transition-all">
           <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors shrink-0">
             <Users className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-slate-400 text-xs font-medium block">Total Pacientes</span>
+            <span className="text-slate-400 text-xs font-medium block">Pacientes Nuevos</span>
             <span className="text-2xl font-bold text-slate-900">{totalPatients}</span>
           </div>
         </div>
 
-        <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-emerald-200 transition-all">
-          <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
-            <CreditCard className="w-4 h-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className="text-slate-400 text-xs font-medium block">Ingresos</span>
-            <span className="text-2xl font-bold text-slate-900">{currency}{totalIncome.toLocaleString()}</span>
-          </div>
-        </div>
-
-        <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-blue-200 transition-all">
+<div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-blue-200 transition-all">
           <div className="bg-blue-100 p-2 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
             <Calendar className="w-4 h-4" />
           </div>
@@ -251,7 +241,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 px-4 py-3 rounded-xl border border-amber-100 shadow-sm flex items-center gap-3">
+        <div className="hidden md:flex bg-gradient-to-br from-amber-50 to-orange-50 px-4 py-3 rounded-xl border border-amber-100 shadow-sm items-center gap-3">
           <div className="bg-white p-2 rounded-lg text-amber-500 shadow-sm shrink-0">
             <ChefHat className="w-4 h-4" />
           </div>
@@ -270,6 +260,41 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
 
         {/* Left column */}
         <div className="lg:col-span-2 space-y-3">
+
+          {/* KPIs — desktop only */}
+          <div className="hidden lg:grid grid-cols-3 gap-3">
+            <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-indigo-200 transition-all">
+              <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors shrink-0">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-slate-400 text-xs font-medium block">Pacientes Nuevos</span>
+                <span className="text-2xl font-bold text-slate-900">{totalPatients}</span>
+              </div>
+            </div>
+            <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-blue-200 transition-all">
+              <div className="bg-blue-100 p-2 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
+                <Calendar className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-slate-400 text-xs font-medium block">Citas Agendadas</span>
+                <span className="text-2xl font-bold text-slate-900">{appointmentsCount}</span>
+              </div>
+            </div>
+            <div className="bg-gradient-to-br from-amber-50 to-orange-50 px-4 py-3 rounded-xl border border-amber-100 shadow-sm flex items-center gap-3">
+              <div className="bg-white p-2 rounded-lg text-amber-500 shadow-sm shrink-0">
+                <ChefHat className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-amber-800/70 text-xs font-bold block">Menús Pendientes</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-amber-900">{pendingMenusCount}</span>
+                  {pendingMenusCount > 0 && <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-slate-800 text-sm">Comportamiento de Ingresos</h3>
@@ -336,7 +361,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
 
         {/* Right column */}
         <div className="hidden md:block lg:col-span-1">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col" style={{ maxHeight: 'calc(180px + 220px + 0.75rem + 8px + 48px)' }}>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
             <div className="p-3 bg-slate-900 text-white">
               <div className="flex justify-between items-center">
                 <h3 className="font-bold text-sm">Agenda de Hoy</h3>

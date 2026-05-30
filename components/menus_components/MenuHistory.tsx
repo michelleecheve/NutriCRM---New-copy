@@ -8,6 +8,7 @@ import { MenuExportPDF } from './MenuExportPDF';
 interface HistoryEntry {
   patient: Patient;
   menu: GeneratedMenu;
+  evaluationDate?: string;
 }
 
 interface MenuHistoryProps {
@@ -17,6 +18,8 @@ interface MenuHistoryProps {
   onAddAsReference?: (menu: GeneratedMenu, patient: Patient) => Promise<void>;
   onAddAsRecommendation?: (menu: GeneratedMenu, patient: Patient, name: string) => Promise<void>;
 }
+
+const parseLocalDate = (dateStr: string) => new Date(dateStr + 'T00:00:00');
 
 export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideHeader, hideContainer, onAddAsReference, onAddAsRecommendation }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,13 +49,14 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
       const rootMenus = patient.menus || [];
       
       rootMenus.forEach(menu => {
-        entries.push({ patient, menu });
+        const evaluation = menu.linkedEvaluationId ? store.getEvaluationById(menu.linkedEvaluationId) : undefined;
+        entries.push({ patient, menu, evaluationDate: evaluation?.date });
       });
     });
 
-    // Sort by date descending
-    return entries.sort((a, b) => 
-      new Date(b.menu.date).getTime() - new Date(a.menu.date).getTime()
+    // Sort by evaluation date descending
+    return entries.sort((a, b) =>
+      parseLocalDate(b.evaluationDate || b.menu.date).getTime() - parseLocalDate(a.evaluationDate || a.menu.date).getTime()
     );
   }, [patients]);
 
@@ -61,7 +65,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
     const term = searchTerm.toLowerCase();
     return historyEntries.filter(entry => {
       const kcal = String(entry.menu.menuPreviewData?.kcal ?? entry.menu.kcalToWork ?? '');
-      const date = new Date(entry.menu.date).toLocaleDateString();
+      const date = parseLocalDate(entry.evaluationDate || entry.menu.date).toLocaleDateString();
       return (
         entry.patient.firstName.toLowerCase().includes(term) ||
         entry.patient.lastName.toLowerCase().includes(term) ||
@@ -186,7 +190,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-slate-600">
                       <Calendar className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm">{new Date(entry.menu.date).toLocaleDateString()}</span>
+                      <span className="text-sm">{parseLocalDate(entry.evaluationDate || entry.menu.date).toLocaleDateString()}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -335,7 +339,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg sm:text-xl font-bold text-slate-900">Vista Previa del Menú</h3>
-                  <p className="text-sm text-slate-500">Paciente: {selectedEntry.patient.firstName} {selectedEntry.patient.lastName} · {new Date(selectedEntry.menu.date).toLocaleDateString()}</p>
+                  <p className="text-sm text-slate-500">Paciente: {selectedEntry.patient.firstName} {selectedEntry.patient.lastName} · {parseLocalDate(selectedEntry.evaluationDate || selectedEntry.menu.date).toLocaleDateString()}</p>
                   {/* PDF button — visible only on mobile, below patient name */}
                   <div className="mt-2 sm:hidden">
                     <MenuExportPDF

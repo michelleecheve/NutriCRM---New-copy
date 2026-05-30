@@ -201,6 +201,7 @@ class Store {
           address:           profile.address            || '',
           menuAIConfig:      profile.menu_ai_config,
           labAIPrompt:       profile.lab_ai_prompt      || '',
+          currency:          profile.currency           || '$',
         };
 
         // ✅ Enforce only the three requested statuses as per user request
