@@ -17,11 +17,12 @@ interface MenuHistoryProps {
   hideContainer?: boolean;
   onAddAsReference?: (menu: GeneratedMenu, patient: Patient) => Promise<void>;
   onAddAsRecommendation?: (menu: GeneratedMenu, patient: Patient, name: string) => Promise<void>;
+  filterType?: 'semanal' | 'intercambio';
 }
 
 const parseLocalDate = (dateStr: string) => new Date(dateStr + 'T00:00:00');
 
-export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideHeader, hideContainer, onAddAsReference, onAddAsRecommendation }) => {
+export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideHeader, hideContainer, onAddAsReference, onAddAsRecommendation, filterType }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
   const [refStatus, setRefStatus] = useState<Record<string, 'loading' | 'success' | 'error' | 'nodata'>>({});
@@ -61,10 +62,19 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
   }, [patients]);
 
   const filteredEntries = useMemo(() => {
-    if (!searchTerm.trim()) return historyEntries;
+    let entries = historyEntries;
+
+    if (filterType) {
+      entries = entries.filter(entry => {
+        const menuType = entry.menu.menuData?.menuType ?? 'semanal';
+        return filterType === 'intercambio' ? menuType === 'intercambio' : menuType !== 'intercambio';
+      });
+    }
+
+    if (!searchTerm.trim()) return entries;
     const term = searchTerm.toLowerCase();
-    return historyEntries.filter(entry => {
-      const kcal = String(entry.menu.menuPreviewData?.kcal ?? entry.menu.kcalToWork ?? '');
+    return entries.filter(entry => {
+      const kcal = String(entry.menu.menuData?.kcal ?? entry.menu.kcalToWork ?? '');
       const date = parseLocalDate(entry.evaluationDate || entry.menu.date).toLocaleDateString();
       return (
         entry.patient.firstName.toLowerCase().includes(term) ||
@@ -74,7 +84,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
         date.includes(term)
       );
     });
-  }, [historyEntries, searchTerm]);
+  }, [historyEntries, searchTerm, filterType]);
 
   const handleOpenMenu = (entry: HistoryEntry) => {
     setSelectedEntry(entry);
@@ -173,6 +183,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
             <tr className="bg-slate-50/50">
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Paciente</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Fecha</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Tipo</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Kcal</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 text-right">Acciones</th>
             </tr>
@@ -194,10 +205,15 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                     </div>
                   </td>
                   <td className="px-6 py-4">
+                    <span className="text-sm text-slate-600">
+                      {entry.menu.menuData?.menuType === 'intercambio' ? 'Intercambio' : 'Semanal'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-slate-600">
                       <Flame className="w-4 h-4 text-orange-400" />
                       <span className="text-sm font-medium">
-                        {entry.menu.menuPreviewData?.kcal ?? entry.menu.kcalToWork ?? 'N/A'} kcal
+                        {entry.menu.menuData?.kcal ?? entry.menu.kcalToWork ?? 'N/A'} kcal
                       </span>
                     </div>
                   </td>
@@ -264,7 +280,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="px-6 py-12 text-center">
+                <td colSpan={5} className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center gap-2 text-slate-400">
                     <FileText className="w-8 h-8 opacity-20" />
                     <p className="text-sm">No se encontraron registros en el historial</p>

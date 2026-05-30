@@ -1,6 +1,8 @@
+import { ExchangeMeal, ExchangeMenuData } from '../menudesigntemplates_components/menuTemplateTypes';
+
 // ─── Core Types ────────────────────────────────────────────────────────────────
 
-export type ReferenceType = "SEMANAL";
+export type ReferenceType = "SEMANAL" | "INTERCAMBIO";
 
 export interface MealPortions {
   lacteos:   number;
@@ -88,19 +90,20 @@ export function emptyDayMenuFromSlots(slots: MealSlot[]): DayMenu {
 // ─── Main Data Type ────────────────────────────────────────────────────────────
 
 export interface MenuReferenceData {
-  kcal:         number;
-  type:         ReferenceType;
-  meals:        MealSlot[];        // ordered array — defines table rows
-  weeklyMenu:   Record<WeekDayKey, DayMenu> & {
+  kcal:            number;
+  type:            ReferenceType;
+  meals:           MealSlot[];        // ordered array — defines table rows
+  weeklyMenu:      Record<WeekDayKey, DayMenu> & {
     domingo: { note: string };
     domingoV2?: DayMenu;
   };
-  hydration:    string;
-  patientName?: string;
-  age?:         number;
-  weightKg?:    number;
-  heightCm?:    number;
-  fatPct?:      number;
+  hydration:       string;
+  patientName?:    string;
+  evaluationDate?: string;
+  age?:            number;
+  weightKg?:       number;
+  heightCm?:       number;
+  fatPct?:         number;
 }
 
 export function emptyReferenceData(): MenuReferenceData {
@@ -112,10 +115,43 @@ export function emptyReferenceData(): MenuReferenceData {
   return { kcal: 0, type: 'SEMANAL', meals, weeklyMenu, hydration: '2.5L Agua/Día' };
 }
 
+// ─── Exchange Reference Data (INTERCAMBIO type) ────────────────────────────────
+
+export interface ExchangeReferenceData {
+  kcal:            number;
+  type:            "INTERCAMBIO";
+  name?:           string;
+  portions?:       MealSlot[];
+  exchangeMenu:    ExchangeMenuData;
+  patientName?:    string;
+  evaluationDate?: string;
+}
+
+export function emptyExchangeReferenceData(): ExchangeReferenceData {
+  return {
+    kcal: 0,
+    type: "INTERCAMBIO",
+    name: '',
+    portions: defaultMealSlots(),
+    exchangeMenu: {
+      meals: [
+        { id: 'exch_desayuno',   label: 'Desayuno',    examples: ['', ''] },
+        { id: 'exch_refaccion1', label: 'Refacción 1', examples: ['', ''] },
+        { id: 'exch_almuerzo',   label: 'Almuerzo',    examples: ['', ''] },
+        { id: 'exch_refaccion2', label: 'Refacción 2', examples: ['', ''] },
+        { id: 'exch_cena',       label: 'Cena',        examples: ['', ''] },
+      ],
+      columnLabels: ['Opción 1', 'Opción 2'],
+      note: '',
+      hydration: '',
+    },
+  };
+}
+
 // ─── Record wrapper ────────────────────────────────────────────────────────────
 
 export interface MenuReferenceRecord {
   id:        string;
   createdAt: string;
-  data:      MenuReferenceData;
+  data:      MenuReferenceData | ExchangeReferenceData;
 }

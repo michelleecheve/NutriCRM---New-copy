@@ -494,6 +494,7 @@ export interface MenuRecommendationRecord {
   id: string;
   ownerId: string;
   name: string;
+  type?: string;
   data: MenuRecommendationData;
   createdAt: string;
 }

@@ -9,6 +9,8 @@ import { MenuHistory } from "./MenuHistory";
 import {
   MenuReferenceRecord,
   MenuReferenceData,
+  ExchangeReferenceData,
+  emptyExchangeReferenceData,
   MealPortions,
   MealSlot,
   MealLabel,
@@ -19,8 +21,10 @@ import {
   calcPortionsTotal,
   emptyReferenceData,
   newMealSlot,
+  defaultMealSlots,
   emptyMealPortions,
 } from "./Menu_References_Components/MenuReferencesStorage";
+import { ExchangeMeal } from "./menudesigntemplates_components/menuTemplateTypes";
 import { MenuReferenceDataToMenuPlanData } from "./Menu_References_Components/MenuReferenceParsertoMenuData";
 import { store } from "../../services/store";
 import { GeneratedMenu, Patient } from "../../types";
@@ -76,7 +80,6 @@ const PortionsTable: React.FC<{
         <tbody>
           {meals.map((slot, i) => (
             <tr key={slot.id} className={i % 2 === 0 ? "bg-white" : "bg-slate-50/50"}>
-              {/* Label dropdown */}
               <td className="px-3 py-2">
                 {readOnly ? (
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-xs font-bold ${LABEL_COLORS[slot.label]}`}>
@@ -95,7 +98,6 @@ const PortionsTable: React.FC<{
                 )}
               </td>
 
-              {/* Portion inputs */}
               {PORTION_GROUPS.map(g => (
                 <td key={g.key} className="px-3 py-2 text-center">
                   {readOnly ? (
@@ -115,7 +117,6 @@ const PortionsTable: React.FC<{
                 </td>
               ))}
 
-              {/* Remove button */}
               {!readOnly && (
                 <td className="px-2 py-2 text-center">
                   <button
@@ -131,7 +132,6 @@ const PortionsTable: React.FC<{
             </tr>
           ))}
 
-          {/* Totals row */}
           <tr className="bg-emerald-50 border-t-2 border-emerald-200">
             <td className="px-4 py-2.5 font-extrabold text-emerald-700 text-xs uppercase">
               Total
@@ -146,7 +146,6 @@ const PortionsTable: React.FC<{
         </tbody>
       </table>
 
-      {/* Add slot button */}
       {!readOnly && (
         <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/50">
           <button
@@ -176,8 +175,8 @@ const WeeklyMenuEditor: React.FC<{
   type TabKey = typeof ALL_TABS[number];
   const [activeTab, setActiveTab] = useState<TabKey>("lunes");
 
-  const TAB_LABELS: Record<TabKey, string> = { 
-    ...WEEKDAY_LABELS, 
+  const TAB_LABELS: Record<TabKey, string> = {
+    ...WEEKDAY_LABELS,
     domingo: "Dom V1",
     domingoV2: "Dom V2"
   };
@@ -185,7 +184,6 @@ const WeeklyMenuEditor: React.FC<{
 
   return (
     <div className="space-y-4">
-      {/* Tab bar */}
       <div className="flex items-center gap-2">
         <button
           onClick={() => setActiveTab(ALL_TABS[Math.max(0, currentIndex - 1)])}
@@ -220,7 +218,6 @@ const WeeklyMenuEditor: React.FC<{
         </button>
       </div>
 
-      {/* Tab content */}
       <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 space-y-4 animate-in fade-in duration-200">
         {activeTab === "domingo" ? (
           <div className="space-y-4">
@@ -298,7 +295,6 @@ function parseYamlToReferenceData(yaml: string): MenuReferenceData {
   const kcal = parseInt(get('KCAL')) || 0;
   const type = (get('TYPE') as any) || 'SEMANAL';
 
-  // Map old YAML slot keys → new slot IDs
   const SLOT_MAP: Record<string, { id: string; label: MealLabel }> = {
     desayuno:  { id: 'slot_desayuno',   label: 'Desayuno'  },
     refManana: { id: 'slot_refaccion1', label: 'Refacción' },
@@ -307,7 +303,6 @@ function parseYamlToReferenceData(yaml: string): MenuReferenceData {
     cena:      { id: 'slot_cena',       label: 'Cena'      },
   };
 
-  // ── Parse PORCIONES_POR_TIEMPO block ──
   const porcSection = yaml.match(/PORCIONES_POR_TIEMPO:([\s\S]*?)(?=\nWEEKLY_MENU:|\nNOTAS:)/)?.[1] ?? '';
   const meals: MealSlot[] = Object.entries(SLOT_MAP).map(([yamlKey, { id, label }]) => {
     const blockRe = new RegExp(`${yamlKey}:\\s*\\n((?:  [^\\n]+\\n?)*)`, 'g');
@@ -325,7 +320,6 @@ function parseYamlToReferenceData(yaml: string): MenuReferenceData {
     };
   });
 
-  // ── Parse WEEKLY_MENU block ──
   const weeklySection = yaml.match(/WEEKLY_MENU:([\s\S]*?)(?=\nNOTAS:|\s*$)/)?.[1] ?? '';
   const weekDays: (WeekDayKey | 'domingoV2')[] = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingoV2'];
   const weeklyMenu: any = { domingo: { note: '' } };
@@ -336,7 +330,6 @@ function parseYamlToReferenceData(yaml: string): MenuReferenceData {
     const dayMenu: Record<string, string> = {};
 
     Object.entries(SLOT_MAP).forEach(([yamlKey, { id }]) => {
-      // Match "  yamlKey: |\n    line1\n    line2\n" until next key or end
       const mealRe = new RegExp(`  ${yamlKey}:\\s*\\|\\n((?:    [^\\n]*\\n?)*)`, 'g');
       const mealMatch = mealRe.exec(dayBlock);
       if (mealMatch) {
@@ -352,7 +345,6 @@ function parseYamlToReferenceData(yaml: string): MenuReferenceData {
     weeklyMenu[day] = dayMenu;
   });
 
-  // Domingo note
   const domBlockRe = /^domingo:\n((?:  [^\n]*\n?)*)/m;
   const domBlock = domBlockRe.exec(weeklySection)?.[1] ?? '';
   const noteMatch = /  note:\s*\|\n((?:    [^\n]*\n?)*)/.exec(domBlock);
@@ -363,7 +355,6 @@ function parseYamlToReferenceData(yaml: string): MenuReferenceData {
       .join('\n');
   }
 
-  // Hydration
   const hydroMatch = /hydration:\s*\|\n((?:    [^\n]*\n?)*)/.exec(domBlock);
   const hydration = hydroMatch
     ? hydroMatch[1].split('\n').map(l => l.replace(/^    /, '').trimEnd()).join('').trim()
@@ -372,29 +363,322 @@ function parseYamlToReferenceData(yaml: string): MenuReferenceData {
   return { kcal, type, meals, weeklyMenu, hydration };
 }
 
+// ─── Exchange Reference Editor ─────────────────────────────────────────────────
+
+const ExchangeRefEditor: React.FC<{
+  initialData: ExchangeReferenceData;
+  readOnly?:   boolean;
+  editingId:   string | null;
+  onSave:      (data: ExchangeReferenceData) => Promise<void>;
+}> = ({ initialData, readOnly, editingId, onSave }) => {
+  const [name, setName]           = useState(initialData.name || '');
+  const [portions, setPortions]   = useState<MealSlot[]>(initialData.portions || defaultMealSlots());
+  const [meals, setMeals]         = useState<ExchangeMeal[]>(initialData.exchangeMenu.meals || []);
+  const [columnLabels, setColumnLabels] = useState<string[]>(
+    initialData.exchangeMenu.columnLabels?.length
+      ? initialData.exchangeMenu.columnLabels
+      : ['Opción 1', 'Opción 2']
+  );
+  const [note, setNote]           = useState(initialData.exchangeMenu.note || '');
+  const [hydration, setHydration] = useState(initialData.exchangeMenu.hydration || '');
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving]   = useState(false);
+
+  // ── Portions handlers ─────────────────────────────────────────────────────
+  const handleAddPortionSlot = () => {
+    setPortions(prev => [...prev, newMealSlot('Refacción')]);
+  };
+
+  const handleRemovePortionSlot = (slotId: string) => {
+    setPortions(prev => prev.filter(s => s.id !== slotId));
+  };
+
+  const handleChangePortionLabel = (slotId: string, label: MealLabel) => {
+    setPortions(prev => prev.map(s => s.id === slotId ? { ...s, label } : s));
+  };
+
+  const handleChangePortions = (slotId: string, group: keyof MealPortions, value: number) => {
+    setPortions(prev => prev.map(s =>
+      s.id === slotId ? { ...s, portions: { ...s.portions, [group]: value } } : s
+    ));
+  };
+
+  const numCols = columnLabels.length;
+
+  const getCell = (mealId: string, colIdx: number) =>
+    (meals.find(m => m.id === mealId)?.examples || [])[colIdx] || '';
+
+  const updateCell = (mealId: string, colIdx: number, value: string) => {
+    setMeals(prev => prev.map(m =>
+      m.id === mealId
+        ? { ...m, examples: m.examples.map((e, i) => i === colIdx ? value : e) }
+        : m
+    ));
+  };
+
+  const updateMealLabel = (id: string, label: string) => {
+    setMeals(prev => prev.map(m => m.id === id ? { ...m, label } : m));
+  };
+
+  const addMeal = () => {
+    const id = `exch_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
+    setMeals(prev => [...prev, { id, label: 'Nuevo tiempo', examples: Array(numCols).fill('') }]);
+  };
+
+  const removeMeal = (id: string) => {
+    if (meals.length <= 1) return;
+    setMeals(prev => prev.filter(m => m.id !== id));
+  };
+
+  const addColumn = () => {
+    setColumnLabels(prev => [...prev, `Opción ${prev.length + 1}`]);
+    setMeals(prev => prev.map(m => ({ ...m, examples: [...m.examples, ''] })));
+  };
+
+  const removeColumn = (colIdx: number) => {
+    if (numCols <= 1) return;
+    setColumnLabels(prev => prev.filter((_, i) => i !== colIdx));
+    setMeals(prev => prev.map(m => ({ ...m, examples: m.examples.filter((_, i) => i !== colIdx) })));
+  };
+
+  const updateColumnLabel = (idx: number, label: string) => {
+    setColumnLabels(prev => prev.map((l, i) => i === idx ? label : l));
+  };
+
+  const handleSave = async () => {
+    setSaveError('');
+    if (!name.trim()) { setSaveError('Ingresa un nombre para la plantilla.'); return; }
+    if (meals.length === 0) { setSaveError('Agrega al menos un tiempo de comida en la tabla de intercambio.'); return; }
+    setIsSaving(true);
+    try {
+      await onSave({
+        kcal: 0,
+        type: 'INTERCAMBIO',
+        name: name.trim(),
+        portions,
+        exchangeMenu: { meals, columnLabels, note, hydration },
+      });
+    } catch {
+      setSaveError('Error al guardar la plantilla.');
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-8">
+      {/* Action bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        {!readOnly && (
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold px-5 py-2 rounded-xl text-sm transition-colors"
+          >
+            <Save className="w-4 h-4" />
+            {isSaving ? 'Guardando...' : (editingId ? 'Actualizar plantilla' : 'Guardar plantilla')}
+          </button>
+        )}
+        {saveError && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">⚠️ {saveError}</p>
+        )}
+        {readOnly && (
+          <span className="text-xs font-bold text-slate-400 uppercase bg-slate-100 px-3 py-1.5 rounded-lg">Solo lectura</span>
+        )}
+      </div>
+
+      {/* 1. Nombre */}
+      <div className="space-y-4">
+        <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">1. Nombre de la Plantilla</h4>
+        <input
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          readOnly={readOnly}
+          placeholder="Ej: Intercambio 1800 kcal — Pérdida de peso"
+          className="w-full max-w-xl bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+        />
+      </div>
+
+      {/* 2. Porciones */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">2. Porciones por Tiempo de Comida</h4>
+          {!readOnly && (
+            <span className="text-[10px] text-slate-400 font-medium">
+              Usa el dropdown de cada fila para cambiar la etiqueta
+            </span>
+          )}
+        </div>
+        <PortionsTable
+          meals={portions}
+          readOnly={readOnly}
+          onChangePortions={handleChangePortions}
+          onChangeLabel={handleChangePortionLabel}
+          onAddSlot={handleAddPortionSlot}
+          onRemoveSlot={handleRemovePortionSlot}
+        />
+      </div>
+
+      {/* 3. Tabla de Intercambio */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">3. Tabla de Intercambio</h4>
+          {!readOnly && (
+            <button
+              onClick={addColumn}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border bg-white text-slate-500 border-slate-200 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50 transition-all"
+            >
+              <Plus className="w-3 h-3" /> Agregar opción
+            </button>
+          )}
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-slate-200">
+          <table className="border-collapse" style={{ minWidth: 400, width: '100%' }}>
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="px-4 py-3 text-left text-[10px] font-black text-slate-500 uppercase tracking-wider w-36">
+                  Tiempo
+                </th>
+                {columnLabels.map((label, i) => (
+                  <th key={i} className="px-2 py-3 text-[10px] font-black text-slate-600 uppercase" style={{ minWidth: 180 }}>
+                    <div className="flex items-center justify-between gap-1">
+                      {readOnly ? (
+                        <span className="tracking-wider">{label}</span>
+                      ) : (
+                        <input
+                          value={label}
+                          onChange={e => updateColumnLabel(i, e.target.value)}
+                          className="text-[10px] font-black text-slate-600 uppercase tracking-wider bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-400 outline-none transition-colors min-w-0 flex-1"
+                        />
+                      )}
+                      {!readOnly && numCols > 1 && (
+                        <button
+                          onClick={() => removeColumn(i)}
+                          className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-all shrink-0"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </th>
+                ))}
+                {!readOnly && <th className="w-8" />}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {meals.map(meal => (
+                <tr key={meal.id} className="hover:bg-slate-50/40 transition-colors">
+                  <td className="px-3 py-2 align-top">
+                    {readOnly ? (
+                      <span className="text-xs font-black text-slate-600 uppercase">{meal.label}</span>
+                    ) : (
+                      <input
+                        value={meal.label}
+                        onChange={e => updateMealLabel(meal.id, e.target.value)}
+                        className="text-xs font-black text-slate-600 uppercase w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-400 outline-none transition-colors"
+                      />
+                    )}
+                  </td>
+                  {columnLabels.map((_, j) => (
+                    <td key={j} className="px-1.5 py-1.5 align-top">
+                      <textarea
+                        value={getCell(meal.id, j)}
+                        onChange={e => updateCell(meal.id, j, e.target.value)}
+                        readOnly={readOnly}
+                        rows={3}
+                        placeholder="Ej: 2 huevos, 1 tortilla..."
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all resize-none leading-relaxed"
+                      />
+                    </td>
+                  ))}
+                  {!readOnly && (
+                    <td className="px-2 py-2 align-middle text-center">
+                      <button
+                        onClick={() => removeMeal(meal.id)}
+                        disabled={meals.length <= 1}
+                        className="p-1.5 text-slate-300 hover:text-red-500 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {!readOnly && (
+          <button
+            onClick={addMeal}
+            className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" /> Agregar tiempo de comida
+          </button>
+        )}
+      </div>
+
+      {/* 4. Nota e Hidratación */}
+      <div className="space-y-4">
+        <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">4. Nota e Hidratación</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-500 uppercase">Nota / Indicaciones</label>
+            <textarea
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              readOnly={readOnly}
+              rows={3}
+              placeholder="Indicaciones generales del plan de intercambio..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all resize-none"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-sky-500 uppercase">Meta Hidratación</label>
+            <textarea
+              value={hydration}
+              onChange={e => setHydration(e.target.value)}
+              readOnly={readOnly}
+              rows={3}
+              placeholder="Ej: 2.5L de agua al día"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:ring-sky-500/20 outline-none transition-all resize-none"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 type Mode = "LIST" | "EDITOR";
+type RefTab = "SEMANAL" | "INTERCAMBIO";
 
 export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: boolean }> = ({ hideHeader, hideContainer }) => {
-  // const store = useStore();
   const items = store.menuReferences;
-  
-  const [mode, setMode]               = useState<Mode>("LIST");
-  const [viewing, setViewing]         = useState<MenuReferenceRecord | null>(null);
-  const [editingId, setEditingId]     = useState<string | null>(null);
-  const [formData, setFormData]       = useState<MenuReferenceData>(emptyReferenceData());
-  const [previewPlan, setPreviewPlan] = useState<MenuPlanData | null>(null);
-  const [saveError, setSaveError]     = useState("");
-  const [showImport, setShowImport]   = useState(false);
-  const [yamlText, setYamlText]       = useState("");
-  const [importError, setImportError] = useState("");
-  const [importOk, setImportOk]       = useState(false);
+
+  const [activeRefTab, setActiveRefTab]   = useState<RefTab>("SEMANAL");
+  const [mode, setMode]                   = useState<Mode>("LIST");
+  const [viewing, setViewing]             = useState<MenuReferenceRecord | null>(null);
+  const [editingId, setEditingId]         = useState<string | null>(null);
+  const [formData, setFormData]           = useState<MenuReferenceData>(emptyReferenceData());
+  const [exchangeFormData, setExchangeFormData] = useState<ExchangeReferenceData>(emptyExchangeReferenceData());
+  const [previewPlan, setPreviewPlan]     = useState<MenuPlanData | null>(null);
+  const [saveError, setSaveError]         = useState("");
+  const [showImport, setShowImport]       = useState(false);
+  const [yamlText, setYamlText]           = useState("");
+  const [importError, setImportError]     = useState("");
+  const [importOk, setImportOk]           = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState("");
+  const [deleteError, setDeleteError]     = useState("");
   const [isImportFromMenuOpen, setIsImportFromMenuOpen] = useState(false);
-  const [page, setPage] = useState(1);
+  const [isImportExchangeFromMenuOpen, setIsImportExchangeFromMenuOpen] = useState(false);
+  const [page, setPage]                   = useState(1);
   const PAGE_SIZE = 10;
+
+  const isExchange = (r: MenuReferenceRecord) => (r.data as any)?.type === "INTERCAMBIO";
 
   const mapToMealLabel = (raw: string): MealLabel => {
     const lower = (raw || '').toLowerCase();
@@ -438,21 +722,58 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
     }
 
     const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ');
+    const evaluationDate = menu.linkedEvaluationId
+      ? store.getEvaluationById(menu.linkedEvaluationId)?.date
+      : undefined;
 
     const refData: MenuReferenceData = {
-      kcal:        (plan as any).kcal || menu.kcalToWork || 0,
-      type:        'SEMANAL',
+      kcal:           (plan as any).kcal || menu.kcalToWork || 0,
+      type:           'SEMANAL',
       meals,
-      weeklyMenu:  refWeeklyMenu,
-      hydration:   (plan.weeklyMenu as any)?.domingo?.hydration || '2.5L Agua/Día',
-      patientName: patientName || undefined,
-      age:         menu.age         ?? (plan as any)?.patient?.age      ?? undefined,
-      weightKg:    menu.weightKg    ?? (plan as any)?.patient?.weight   ?? undefined,
-      heightCm:    menu.heightCm    ?? (plan as any)?.patient?.height   ?? undefined,
-      fatPct:      (plan as any)?.patient?.fatPct ?? undefined,
+      weeklyMenu:     refWeeklyMenu,
+      hydration:      (plan.weeklyMenu as any)?.domingo?.hydration || '2.5L Agua/Día',
+      patientName:    patientName || undefined,
+      evaluationDate: evaluationDate || undefined,
+      age:            menu.age         ?? (plan as any)?.patient?.age      ?? undefined,
+      weightKg:       menu.weightKg    ?? (plan as any)?.patient?.weight   ?? undefined,
+      heightCm:       menu.heightCm    ?? (plan as any)?.patient?.height   ?? undefined,
+      fatPct:         (plan as any)?.patient?.fatPct ?? undefined,
     };
 
     await store.saveMenuReference({ data: refData, kcal: refData.kcal, type: refData.type });
+  };
+
+  const handleAddExchangeAsReference = async (menu: GeneratedMenu, patient: Patient): Promise<void> => {
+    const plan = menu.menuData as MenuPlanData;
+    if (!plan) throw new Error('No menuData');
+    if (!plan.exchangeMenu) throw new Error('No exchange menu data');
+
+    const lunesData = (plan.weeklyMenu as any)?.lunes;
+    const mealsOrder: string[] = lunesData?.mealsOrder || Object.keys((plan.portions as any)?.byMeal || {});
+
+    const portions: MealSlot[] = mealsOrder.map((slotId: string) => {
+      const mealInfo = lunesData?.[slotId];
+      const rawLabel = mealInfo?.label || slotId;
+      const mealPortions = (plan.portions as any)?.byMeal?.[slotId] || emptyMealPortions();
+      return { id: slotId, label: mapToMealLabel(rawLabel), portions: mealPortions };
+    });
+
+    const patientName = [patient.firstName, patient.lastName].filter(Boolean).join(' ');
+    const evaluationDate = menu.linkedEvaluationId
+      ? store.getEvaluationById(menu.linkedEvaluationId)?.date
+      : undefined;
+
+    const refData: ExchangeReferenceData = {
+      kcal:           (plan as any).kcal || menu.kcalToWork || 0,
+      type:           'INTERCAMBIO',
+      name:           menu.name || (patientName ? `Intercambio - ${patientName}` : 'Intercambio'),
+      portions:       portions.length > 0 ? portions : defaultMealSlots(),
+      exchangeMenu:   plan.exchangeMenu,
+      patientName:    patientName || undefined,
+      evaluationDate: evaluationDate || undefined,
+    };
+
+    await store.saveMenuReference({ data: refData as any, kcal: 0, type: 'INTERCAMBIO' });
   };
 
   const handleImport = async () => {
@@ -461,11 +782,7 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
     try {
       const data = parseYamlToReferenceData(yamlText);
       if (!data.kcal) throw new Error("No se encontró KCAL válido en el YAML.");
-      await store.saveMenuReference({
-        data: data,
-        kcal: data.kcal,
-        type: data.type,
-      });
+      await store.saveMenuReference({ data: data, kcal: data.kcal, type: data.type });
       setImportOk(true);
       setYamlText("");
       setTimeout(() => { setShowImport(false); setImportOk(false); }, 1500);
@@ -475,60 +792,87 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
   };
 
   const isReadOnly = !!viewing;
-  const sortedItems = [...items].sort((a, b) => {
-    if (a.data.kcal !== b.data.kcal) return a.data.kcal - b.data.kcal;
-    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-  });
-  const totalPages = Math.max(1, Math.ceil(sortedItems.length / PAGE_SIZE));
+
+  // Filter by active tab
+  const sortedItems = [...items]
+    .filter(r => activeRefTab === "INTERCAMBIO" ? isExchange(r) : !isExchange(r))
+    .sort((a, b) => {
+      if ((a.data as any).kcal !== (b.data as any).kcal) return (a.data as any).kcal - (b.data as any).kcal;
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+  const totalPages  = Math.max(1, Math.ceil(sortedItems.length / PAGE_SIZE));
   const clampedPage = Math.min(page, totalPages);
-  const pageItems = sortedItems.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
+  const pageItems   = sortedItems.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
 
   // ── Navigation ──────────────────────────────────────────────────────────────
+
+  const switchTab = (tab: RefTab) => {
+    setActiveRefTab(tab);
+    setMode("LIST");
+    setViewing(null);
+    setEditingId(null);
+    setPreviewPlan(null);
+    setSaveError("");
+    setPage(1);
+  };
+
   const openNew = () => {
     setViewing(null);
     setEditingId(null);
-    setFormData(emptyReferenceData());
     setPreviewPlan(null);
     setSaveError("");
+    if (activeRefTab === "INTERCAMBIO") {
+      setExchangeFormData(emptyExchangeReferenceData());
+    } else {
+      setFormData(emptyReferenceData());
+    }
     setMode("EDITOR");
   };
 
   const openView = (record: MenuReferenceRecord) => {
     setViewing(record);
-    setFormData(record.data);
-    try { setPreviewPlan(MenuReferenceDataToMenuPlanData(record.data)); }
-    catch { setPreviewPlan(null); }
+    setPreviewPlan(null);
     setSaveError("");
+    if (isExchange(record)) {
+      setExchangeFormData(record.data as ExchangeReferenceData);
+    } else {
+      setFormData(record.data as MenuReferenceData);
+      try { setPreviewPlan(MenuReferenceDataToMenuPlanData(record.data as MenuReferenceData)); }
+      catch { setPreviewPlan(null); }
+    }
     setMode("EDITOR");
   };
 
   const openEdit = (record: MenuReferenceRecord) => {
     setViewing(null);
-    setFormData(record.data);
     setPreviewPlan(null);
     setSaveError("");
-    setMode("EDITOR");
-    // Store the id so save does update instead of add
     setEditingId(record.id);
+    if (isExchange(record)) {
+      setExchangeFormData(record.data as ExchangeReferenceData);
+    } else {
+      setFormData(record.data as MenuReferenceData);
+    }
+    setMode("EDITOR");
   };
 
-  const backToList = () => { setMode("LIST"); setViewing(null); setEditingId(null); setPreviewPlan(null); setSaveError(""); };
+  const backToList = () => {
+    setMode("LIST");
+    setViewing(null);
+    setEditingId(null);
+    setPreviewPlan(null);
+    setSaveError("");
+  };
 
-  // ── Slot management ─────────────────────────────────────────────────────────
+  // ── Slot management (SEMANAL) ───────────────────────────────────────────────
 
   const handleAddSlot = () => {
     const slot = newMealSlot('Refacción');
     setFormData(prev => {
-      // Add slot to meals
       const meals = [...prev.meals, slot];
-      // Add empty entry for new slot in every day
       const weeklyMenu = { ...prev.weeklyMenu } as any;
-      WEEKDAY_KEYS.forEach(dk => {
-        weeklyMenu[dk] = { ...weeklyMenu[dk], [slot.id]: '' };
-      });
-      if (weeklyMenu.domingoV2) {
-        weeklyMenu.domingoV2 = { ...weeklyMenu.domingoV2, [slot.id]: '' };
-      }
+      WEEKDAY_KEYS.forEach(dk => { weeklyMenu[dk] = { ...weeklyMenu[dk], [slot.id]: '' }; });
+      if (weeklyMenu.domingoV2) weeklyMenu.domingoV2 = { ...weeklyMenu.domingoV2, [slot.id]: '' };
       return { ...prev, meals, weeklyMenu };
     });
   };
@@ -536,7 +880,6 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
   const handleRemoveSlot = (slotId: string) => {
     setFormData(prev => {
       const meals = prev.meals.filter(s => s.id !== slotId);
-      // Remove slot entry from every day
       const weeklyMenu = { ...prev.weeklyMenu } as any;
       WEEKDAY_KEYS.forEach(dk => {
         const day = { ...weeklyMenu[dk] };
@@ -553,41 +896,29 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
   };
 
   const handleChangeLabel = (slotId: string, label: MealLabel) => {
-    setFormData(prev => ({
-      ...prev,
-      meals: prev.meals.map(s => s.id === slotId ? { ...s, label } : s),
-    }));
+    setFormData(prev => ({ ...prev, meals: prev.meals.map(s => s.id === slotId ? { ...s, label } : s) }));
   };
 
   const handleChangePortions = (slotId: string, group: keyof MealPortions, value: number) => {
     setFormData(prev => ({
       ...prev,
-      meals: prev.meals.map(s =>
-        s.id === slotId ? { ...s, portions: { ...s.portions, [group]: value } } : s
-      ),
+      meals: prev.meals.map(s => s.id === slotId ? { ...s, portions: { ...s.portions, [group]: value } } : s),
     }));
   };
-
-  // ── Weekly menu text ────────────────────────────────────────────────────────
 
   const handleChangeMealText = (day: WeekDayKey | 'domingoV2', slotId: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      weeklyMenu: {
-        ...prev.weeklyMenu,
-        [day]: { ...(prev.weeklyMenu[day] as Record<string, string>), [slotId]: value },
-      },
+      weeklyMenu: { ...prev.weeklyMenu, [day]: { ...(prev.weeklyMenu[day] as Record<string, string>), [slotId]: value } },
     }));
   };
 
   const handleChangeDomingoNote = (value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      weeklyMenu: { ...prev.weeklyMenu, domingo: { note: value } },
-    }));
+    setFormData(prev => ({ ...prev, weeklyMenu: { ...prev.weeklyMenu, domingo: { note: value } } }));
   };
 
-  // ── Preview & Save ──────────────────────────────────────────────────────────
+  // ── Preview & Save (SEMANAL) ────────────────────────────────────────────────
+
   const handlePreview = () => {
     try { setPreviewPlan(MenuReferenceDataToMenuPlanData(formData)); setSaveError(""); }
     catch (e: any) { setSaveError(e?.message || "Error al generar preview."); }
@@ -597,41 +928,60 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
     setSaveError("");
     if (!formData.kcal || formData.kcal < 800) { setSaveError("Las kcal deben ser mayores a 800."); return; }
     if (formData.meals.length === 0) { setSaveError("Agrega al menos un tiempo de comida."); return; }
-    
     try {
-      await store.saveMenuReference({ 
-        id: editingId || undefined, 
-        data: formData, 
-        kcal: formData.kcal, 
-        type: formData.type 
-      });
+      await store.saveMenuReference({ id: editingId || undefined, data: formData, kcal: formData.kcal, type: formData.type });
       backToList();
-    } catch (e: any) {
+    } catch {
       setSaveError("Error al guardar la referencia.");
     }
   };
 
-  const handleDelete = async (id: string) => {
-    setConfirmDeleteId(id);
+  const handleSaveExchange = async (data: ExchangeReferenceData) => {
+    await store.saveMenuReference({ id: editingId || undefined, data: data as any, kcal: 0, type: 'INTERCAMBIO' });
+    backToList();
   };
+
+  const handleDelete = (id: string) => { setConfirmDeleteId(id); };
 
   const confirmDelete = async () => {
     if (!confirmDeleteId) return;
     try {
       await store.deleteMenuReference(confirmDeleteId);
       setConfirmDeleteId(null);
-    } catch (e: any) {
+    } catch {
       setDeleteError("Error al eliminar la referencia.");
       setTimeout(() => setDeleteError(""), 3000);
     }
   };
 
+  // ── Tab switcher UI ─────────────────────────────────────────────────────────
+
+  const TabSwitcher = () => (
+    <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+      {(["SEMANAL", "INTERCAMBIO"] as RefTab[]).map(tab => (
+        <button
+          key={tab}
+          onClick={() => switchTab(tab)}
+          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            activeRefTab === tab
+              ? tab === "INTERCAMBIO"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "bg-blue-600 text-white shadow-sm"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          {tab === "SEMANAL" ? "Menú Semanal" : "Intercambio"}
+        </button>
+      ))}
+    </div>
+  );
+
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className={hideContainer ? "" : "bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"}>
 
-      {/* Modal: importar desde menú existente */}
-      {isImportFromMenuOpen && (
+      {/* Modal: importar desde menú existente (solo SEMANAL) */}
+      {isImportFromMenuOpen && activeRefTab === "SEMANAL" && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -641,20 +991,40 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Agregar Referencia desde Menú Existente</h3>
-                  <p className="text-sm text-slate-500">Selecciona un menú del historial para guardarlo como plantilla de referencia (Hoja 1)</p>
+                  <p className="text-sm text-slate-500">Selecciona un menú semanal del historial para guardarlo como plantilla de referencia (Hoja 1)</p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsImportFromMenuOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
-              >
+              <button onClick={() => setIsImportFromMenuOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
                 <X className="w-6 h-6" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <MenuHistory
-                onAddAsReference={handleAddAsReference}
-              />
+              <MenuHistory onAddAsReference={handleAddAsReference} filterType="semanal" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: importar desde menú existente (solo INTERCAMBIO) */}
+      {isImportExchangeFromMenuOpen && activeRefTab === "INTERCAMBIO" && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="bg-indigo-50 p-2 rounded-xl">
+                  <History className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Agregar Plantilla desde Historial de Intercambio</h3>
+                  <p className="text-sm text-slate-500">Selecciona un menú de intercambio del historial para guardarlo como plantilla de referencia</p>
+                </div>
+              </div>
+              <button onClick={() => setIsImportExchangeFromMenuOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <MenuHistory onAddAsReference={handleAddExchangeAsReference} filterType="intercambio" />
             </div>
           </div>
         </div>
@@ -679,18 +1049,10 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
               <p className="text-sm text-slate-600">¿Estás seguro de que deseas eliminar esta referencia? Esta acción no se puede deshacer.</p>
               {deleteError && <p className="mt-2 text-xs font-bold text-red-500">{deleteError}</p>}
               <div className="mt-5 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmDeleteId(null)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50"
-                >
+                <button onClick={() => setConfirmDeleteId(null)} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50">
                   Cancelar
                 </button>
-                <button
-                  type="button"
-                  onClick={confirmDelete}
-                  className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700"
-                >
+                <button onClick={confirmDelete} className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700">
                   Sí, eliminar
                 </button>
               </div>
@@ -699,14 +1061,13 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
         </div>
       )}
 
-      {/* YAML Import Modal */}
+      {/* YAML Import Modal (solo SEMANAL) */}
       {showImport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col gap-4 p-6">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-slate-900 text-lg">Importar referencia desde YAML</h3>
-              <button onClick={() => { setShowImport(false); setYamlText(""); setImportError(""); setImportOk(false); }}
-                className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+              <button onClick={() => { setShowImport(false); setYamlText(""); setImportError(""); setImportOk(false); }} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
                 <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
@@ -721,12 +1082,10 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
             {importError && <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">⚠️ {importError}</p>}
             {importOk    && <p className="text-sm text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">✅ Referencia importada correctamente.</p>}
             <div className="flex justify-end gap-3">
-              <button onClick={() => { setShowImport(false); setYamlText(""); setImportError(""); setImportOk(false); }}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+              <button onClick={() => { setShowImport(false); setYamlText(""); setImportError(""); setImportOk(false); }} className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
                 Cancelar
               </button>
-              <button onClick={handleImport} disabled={!yamlText.trim()}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold rounded-xl text-sm transition-colors">
+              <button onClick={handleImport} disabled={!yamlText.trim()} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold rounded-xl text-sm transition-colors">
                 Importar
               </button>
             </div>
@@ -736,59 +1095,81 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
 
       {/* Header */}
       {!hideHeader ? (
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-50 p-2 rounded-xl">
-              <FileText className="w-5 h-5 text-blue-600" />
+        <div className="p-6 border-b border-slate-100">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-50 p-2 rounded-xl">
+                <FileText className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900">Plantillas de Referencias</h3>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {activeRefTab === "SEMANAL"
+                    ? "Menús semanales de referencia que la IA usa como base."
+                    : "Plantillas de intercambio de alimentos reutilizables."}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-slate-900">Plantillas de Referencias</h3>
-              <p className="text-sm text-slate-500 mt-0.5">
-                Ingresa un menú de referencia por kcal para que la IA lo use como base.
-              </p>
-            </div>
+            {mode === "LIST" ? (
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {activeRefTab === "SEMANAL" && (
+                  <>
+                    <button onClick={() => setShowImport(true)} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                      Importar YAML
+                    </button>
+                    <button onClick={() => setIsImportFromMenuOpen(true)} className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                      <History className="w-4 h-4" /> <span className="hidden sm:inline">Agregar desde historial</span>
+                    </button>
+                  </>
+                )}
+                {activeRefTab === "INTERCAMBIO" && (
+                  <button onClick={() => setIsImportExchangeFromMenuOpen(true)} className="flex items-center gap-2 border border-indigo-200 hover:bg-indigo-50 text-indigo-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                    <History className="w-4 h-4" /> <span className="hidden sm:inline">Agregar desde historial</span>
+                  </button>
+                )}
+                <button onClick={openNew} className={`flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors ${activeRefTab === "INTERCAMBIO" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-blue-600 hover:bg-blue-700"}`}>
+                  <Plus className="w-4 h-4" /> Nueva
+                </button>
+              </div>
+            ) : (
+              <button onClick={backToList} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                ← Volver
+              </button>
+            )}
           </div>
-          {mode === "LIST" ? (
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowImport(true)}
-                className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                Importar YAML
-              </button>
-              <button onClick={() => setIsImportFromMenuOpen(true)}
-                className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                <span className="hidden sm:inline-flex"><History className="w-4 h-4" /></span> Agregar desde menú existente
-              </button>
-              <button onClick={openNew} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                <span className="hidden sm:inline-flex"><Plus className="w-4 h-4" /></span> Nueva
-              </button>
-            </div>
-          ) : (
-            <button onClick={backToList} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-              ← Volver
-            </button>
-          )}
+          {mode === "LIST" && <TabSwitcher />}
         </div>
       ) : (
-        <div className="px-6 py-3 border-b border-slate-100 flex justify-end items-center gap-2 bg-slate-50/30">
-          {mode === "LIST" ? (
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowImport(true)}
-                className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                Importar YAML
+        <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/30">
+          <div className="flex justify-between items-center gap-2">
+            {mode === "LIST" && <TabSwitcher />}
+            {mode === "LIST" ? (
+              <div className="flex items-center gap-2">
+                {activeRefTab === "SEMANAL" && (
+                  <>
+                    <button onClick={() => setShowImport(true)} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                      Importar YAML
+                    </button>
+                    <button onClick={() => setIsImportFromMenuOpen(true)} className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                      <History className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+                {activeRefTab === "INTERCAMBIO" && (
+                  <button onClick={() => setIsImportExchangeFromMenuOpen(true)} className="flex items-center gap-2 border border-indigo-200 hover:bg-indigo-50 text-indigo-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                    <History className="w-4 h-4" />
+                  </button>
+                )}
+                <button onClick={openNew} className={`flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors ${activeRefTab === "INTERCAMBIO" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-blue-600 hover:bg-blue-700"}`}>
+                  <Plus className="w-4 h-4" /> Nueva
+                </button>
+              </div>
+            ) : (
+              <button onClick={backToList} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                ← Volver
               </button>
-              <button onClick={() => setIsImportFromMenuOpen(true)}
-                className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                <span className="hidden sm:inline-flex"><History className="w-4 h-4" /></span> Agregar desde menú existente
-              </button>
-              <button onClick={openNew} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                <span className="hidden sm:inline-flex"><Plus className="w-4 h-4" /></span> Nueva
-              </button>
-            </div>
-          ) : (
-            <button onClick={backToList} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-              ← Volver
-            </button>
-          )}
+            )}
+          </div>
         </div>
       )}
 
@@ -797,15 +1178,19 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
         <div className="p-6">
           {sortedItems.length === 0 ? (
             <div className="p-12 text-center">
-              <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-blue-400" />
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${activeRefTab === "INTERCAMBIO" ? "bg-indigo-50" : "bg-blue-50"}`}>
+                <FileText className={`w-8 h-8 ${activeRefTab === "INTERCAMBIO" ? "text-indigo-400" : "text-blue-400"}`} />
               </div>
-              <h4 className="font-bold text-slate-700 mb-1">Aún no hay referencias</h4>
+              <h4 className="font-bold text-slate-700 mb-1">
+                {activeRefTab === "INTERCAMBIO" ? "Aún no hay plantillas de intercambio" : "Aún no hay referencias"}
+              </h4>
               <p className="text-slate-500 text-sm max-w-sm mx-auto">
-                Agrega menús reales como referencia. La IA los usará para generar planes personalizados.
+                {activeRefTab === "INTERCAMBIO"
+                  ? "Crea plantillas de intercambio de alimentos para reutilizarlas en futuros menús."
+                  : "Agrega menús reales como referencia. La IA los usará para generar planes personalizados."}
               </p>
-              <button onClick={openNew} className="mt-4 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
-                <span className="hidden sm:inline-flex"><Plus className="w-4 h-4" /></span> Agregar primera referencia
+              <button onClick={openNew} className={`mt-4 inline-flex items-center gap-2 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors ${activeRefTab === "INTERCAMBIO" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-blue-600 hover:bg-blue-700"}`}>
+                <Plus className="w-4 h-4" /> {activeRefTab === "INTERCAMBIO" ? "Crear primera plantilla de intercambio" : "Agregar primera referencia"}
               </button>
             </div>
           ) : (
@@ -818,39 +1203,52 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
                       <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Paciente</th>
                       <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo</th>
                       <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Tiempos</th>
                       <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {pageItems.map((r, i) => (
-                      <tr key={r.id} className={`border-b border-slate-100 last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-blue-50/30 transition-colors`}>
-                        <td className="px-4 py-3">
-                          <span className="text-base font-extrabold text-slate-900">{r.data.kcal}</span>
-                          <span className="ml-1 text-xs font-semibold text-slate-400">kcal</span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-700">
-                          {r.data.patientName
-                            ? <span className="font-semibold">{r.data.patientName}</span>
-                            : <span className="text-slate-300 text-xs">—</span>
-                          }
-                        </td>
-                        <td className="px-4 py-3 text-xs font-semibold text-slate-500">{r.data.type}</td>
-                        <td className="px-4 py-3 text-xs text-slate-400">{new Date(r.createdAt).toLocaleDateString()}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button onClick={() => openView(r)} className="inline-flex items-center gap-1 text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-100 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors">
-                              <Eye className="w-3.5 h-3.5" /> Ver
-                            </button>
-                            <button onClick={() => openEdit(r)} className="inline-flex items-center gap-1 text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors">
-                              ✏️ Editar
-                            </button>
-                            <button onClick={() => handleDelete(r.id)} className="inline-flex items-center justify-center text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 p-1.5 rounded-lg transition-colors">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {pageItems.map((r, i) => {
+                      const d = r.data as MenuReferenceData & ExchangeReferenceData;
+                      const displayDate = d.evaluationDate
+                        ? new Date(d.evaluationDate + 'T00:00:00').toLocaleDateString()
+                        : new Date(r.createdAt).toLocaleDateString();
+                      const tiempos = activeRefTab === "INTERCAMBIO"
+                        ? (d.exchangeMenu?.meals?.length || 0)
+                        : (d.meals?.length || 0);
+                      return (
+                        <tr key={r.id} className={`border-b border-slate-100 last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-blue-50/30 transition-colors`}>
+                          <td className="px-4 py-3">
+                            {d.kcal
+                              ? <><span className="text-base font-extrabold text-slate-900">{d.kcal}</span><span className="ml-1 text-xs font-semibold text-slate-400">kcal</span></>
+                              : <span className="text-slate-300 text-xs">—</span>
+                            }
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-700">
+                            {d.patientName
+                              ? <span className="font-semibold">{d.patientName}</span>
+                              : <span className="text-slate-300 text-xs">—</span>
+                            }
+                          </td>
+                          <td className="px-4 py-3 text-xs font-semibold text-slate-500">{d.type}</td>
+                          <td className="px-4 py-3 text-xs text-slate-400">{displayDate}</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">{tiempos} tiempos</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button onClick={() => openView(r)} className="inline-flex items-center gap-1 text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-100 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors">
+                                <Eye className="w-3.5 h-3.5" /> Ver
+                              </button>
+                              <button onClick={() => openEdit(r)} className="inline-flex items-center gap-1 text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors">
+                                ✏️ Editar
+                              </button>
+                              <button onClick={() => handleDelete(r.id)} className="inline-flex items-center justify-center text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 p-1.5 rounded-lg transition-colors">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -861,18 +1259,10 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
                     Página {clampedPage} / {totalPages}
                   </span>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setPage(p => Math.max(1, p - 1))}
-                      disabled={clampedPage === 1}
-                      className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                    >
+                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={clampedPage === 1} className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                      disabled={clampedPage === totalPages}
-                      className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                    >
+                    <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={clampedPage === totalPages} className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -882,105 +1272,113 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
           )}
         </div>
       ) : (
-        <div className="p-6 space-y-8">
-          {/* Action bar */}
-          <div className="flex flex-wrap items-center gap-3">
-            {!isReadOnly && (
-              <button onClick={handleSave} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-xl text-sm transition-colors">
-                <span className="hidden sm:inline-flex"><Save className="w-4 h-4" /></span> Guardar referencia
-              </button>
-            )}
-            <button onClick={handlePreview} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-              <span className="hidden sm:inline-flex"><Eye className="w-4 h-4" /></span> Previsualizar
-            </button>
-            {saveError && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">⚠️ {saveError}</p>
-            )}
-            {isReadOnly && (
-              <span className="text-xs font-bold text-slate-400 uppercase bg-slate-100 px-3 py-1.5 rounded-lg">Solo lectura</span>
-            )}
-          </div>
-
-          {/* 1. Datos base */}
-          <div className="space-y-4">
-            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">1. Datos Base</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl">
-              <div className="space-y-1.5 sm:col-span-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">Kcal</label>
-                <input
-                  type="number" min={800}
-                  value={formData.kcal || ""}
-                  onChange={e => setFormData(prev => ({ ...prev, kcal: Number(e.target.value) || 0 }))}
-                  readOnly={isReadOnly}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                  placeholder="1820"
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">Tipo</label>
-                <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-500">SEMANAL</div>
-              </div>
-              <div className="space-y-1.5 sm:col-span-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">Nombre y Apellido</label>
-                <input
-                  type="text"
-                  value={formData.patientName || ""}
-                  onChange={e => setFormData(prev => ({ ...prev, patientName: e.target.value || undefined }))}
-                  readOnly={isReadOnly}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                  placeholder="Opcional"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 2. Porciones */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                2. Porciones por Tiempo de Comida
-              </h4>
+        /* EDITOR mode */
+        activeRefTab === "INTERCAMBIO" ? (
+          <ExchangeRefEditor
+            key={editingId || 'new-exchange'}
+            initialData={exchangeFormData}
+            readOnly={isReadOnly}
+            editingId={editingId}
+            onSave={handleSaveExchange}
+          />
+        ) : (
+          <div className="p-6 space-y-8">
+            {/* Action bar */}
+            <div className="flex flex-wrap items-center gap-3">
               {!isReadOnly && (
-                <span className="text-[10px] text-slate-400 font-medium">
-                  Usa el dropdown de cada fila para cambiar la etiqueta del tiempo
-                </span>
+                <button onClick={handleSave} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-xl text-sm transition-colors">
+                  <Save className="w-4 h-4" /> Guardar referencia
+                </button>
+              )}
+              <button onClick={handlePreview} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                <Eye className="w-4 h-4" /> Previsualizar
+              </button>
+              {saveError && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">⚠️ {saveError}</p>
+              )}
+              {isReadOnly && (
+                <span className="text-xs font-bold text-slate-400 uppercase bg-slate-100 px-3 py-1.5 rounded-lg">Solo lectura</span>
               )}
             </div>
-            <PortionsTable
-              meals={formData.meals}
-              readOnly={isReadOnly}
-              onChangePortions={handleChangePortions}
-              onChangeLabel={handleChangeLabel}
-              onAddSlot={handleAddSlot}
-              onRemoveSlot={handleRemoveSlot}
-            />
-          </div>
 
-          {/* 3. Menú semanal */}
-          <div className="space-y-4">
-            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">3. Menú Semanal</h4>
-            <WeeklyMenuEditor
-              meals={formData.meals}
-              weeklyMenu={formData.weeklyMenu}
-              hydration={formData.hydration}
-              readOnly={isReadOnly}
-              onChangeMealText={handleChangeMealText}
-              onChangeDomingoNote={handleChangeDomingoNote}
-              onHydrationChange={v => setFormData(prev => ({ ...prev, hydration: v }))}
-            />
-          </div>
+            {/* 1. Datos base */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">1. Datos Base</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl">
+                <div className="space-y-1.5 sm:col-span-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Kcal</label>
+                  <input
+                    type="number" min={800}
+                    value={formData.kcal || ""}
+                    onChange={e => setFormData(prev => ({ ...prev, kcal: Number(e.target.value) || 0 }))}
+                    readOnly={isReadOnly}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    placeholder="1820"
+                  />
+                </div>
+                <div className="space-y-1.5 sm:col-span-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Tipo</label>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-500">SEMANAL</div>
+                </div>
+                <div className="space-y-1.5 sm:col-span-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase">Nombre y Apellido</label>
+                  <input
+                    type="text"
+                    value={formData.patientName || ""}
+                    onChange={e => setFormData(prev => ({ ...prev, patientName: e.target.value || undefined }))}
+                    readOnly={isReadOnly}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                    placeholder="Opcional"
+                  />
+                </div>
+              </div>
+            </div>
 
-          {/* Preview A4 */}
-          {previewPlan && (
-            <div className="space-y-3">
-              <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Preview A4</h4>
-              <MenuPreview
-                data={previewPlan}
-                elementId="menu-reference-print-area"
+            {/* 2. Porciones */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                  2. Porciones por Tiempo de Comida
+                </h4>
+                {!isReadOnly && (
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    Usa el dropdown de cada fila para cambiar la etiqueta del tiempo
+                  </span>
+                )}
+              </div>
+              <PortionsTable
+                meals={formData.meals}
+                readOnly={isReadOnly}
+                onChangePortions={handleChangePortions}
+                onChangeLabel={handleChangeLabel}
+                onAddSlot={handleAddSlot}
+                onRemoveSlot={handleRemoveSlot}
               />
             </div>
-          )}
-        </div>
+
+            {/* 3. Menú semanal */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">3. Menú Semanal</h4>
+              <WeeklyMenuEditor
+                meals={formData.meals}
+                weeklyMenu={formData.weeklyMenu}
+                hydration={formData.hydration}
+                readOnly={isReadOnly}
+                onChangeMealText={handleChangeMealText}
+                onChangeDomingoNote={handleChangeDomingoNote}
+                onHydrationChange={v => setFormData(prev => ({ ...prev, hydration: v }))}
+              />
+            </div>
+
+            {/* Preview A4 */}
+            {previewPlan && (
+              <div className="space-y-3">
+                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">Preview A4</h4>
+                <MenuPreview data={previewPlan} elementId="menu-reference-print-area" />
+              </div>
+            )}
+          </div>
+        )
       )}
     </div>
   );

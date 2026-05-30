@@ -911,6 +911,7 @@ export const supabaseService = {
     const payload: any = {
       owner_id: rec.ownerId,
       name:     rec.name,
+      type:     rec.type,
       data:     rec.data,
     };
     if (rec.id) payload.id = rec.id;
@@ -1393,6 +1394,7 @@ export const supabaseService = {
       id:        db.id,
       ownerId:   db.owner_id,
       name:      db.name,
+      type:      db.type,
       data:      db.data,
       createdAt: db.created_at,
     };
