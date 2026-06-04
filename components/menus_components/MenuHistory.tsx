@@ -18,11 +18,12 @@ interface MenuHistoryProps {
   onAddAsReference?: (menu: GeneratedMenu, patient: Patient) => Promise<void>;
   onAddAsRecommendation?: (menu: GeneratedMenu, patient: Patient, name: string) => Promise<void>;
   filterType?: 'semanal' | 'intercambio';
+  filterEatingOut?: boolean;
 }
 
 const parseLocalDate = (dateStr: string) => new Date(dateStr + 'T00:00:00');
 
-export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideHeader, hideContainer, onAddAsReference, onAddAsRecommendation, filterType }) => {
+export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideHeader, hideContainer, onAddAsReference, onAddAsRecommendation, filterType, filterEatingOut }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
   const [refStatus, setRefStatus] = useState<Record<string, 'loading' | 'success' | 'error' | 'nodata'>>({});
@@ -69,6 +70,10 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
         const menuType = entry.menu.menuData?.menuType ?? 'semanal';
         return filterType === 'intercambio' ? menuType === 'intercambio' : menuType !== 'intercambio';
       });
+    }
+
+    if (filterEatingOut) {
+      entries = entries.filter(entry => entry.menu.menuData?.eatingOutPage?.visible === true);
     }
 
     if (!searchTerm.trim()) return entries;
@@ -185,6 +190,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Fecha</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Tipo</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Kcal</th>
+              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">Contenido</th>
               <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 text-right">Acciones</th>
             </tr>
           </thead>
@@ -216,6 +222,32 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                         {entry.menu.menuData?.kcal ?? entry.menu.kcalToWork ?? 'N/A'} kcal
                       </span>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    {(() => {
+                      const md = entry.menu.menuData;
+                      const menuType = md?.menuType ?? 'semanal';
+                      const rec = md?.recommendations;
+                      const hasRec = rec && ((rec.preparacion?.length || 0) + (rec.restricciones?.length || 0) + (rec.habitos?.length || 0) + (rec.organizacion?.length || 0)) > 0;
+                      const hasEatingOut = md?.eatingOutPage?.visible === true;
+                      return (
+                        <div className="flex flex-wrap gap-1">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${menuType === 'intercambio' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                            {menuType === 'intercambio' ? 'Menú Intercambio' : 'Menú Semanal'}
+                          </span>
+                          {hasRec && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border bg-indigo-50 text-indigo-700 border-indigo-200">
+                              Recomendaciones
+                            </span>
+                          )}
+                          {hasEatingOut && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border bg-teal-50 text-teal-700 border-teal-200">
+                              Comer Afuera
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2 flex-wrap">
@@ -280,7 +312,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center">
+                <td colSpan={6} className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center gap-2 text-slate-400">
                     <FileText className="w-8 h-8 opacity-20" />
                     <p className="text-sm">No se encontraron registros en el historial</p>

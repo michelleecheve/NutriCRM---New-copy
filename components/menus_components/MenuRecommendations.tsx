@@ -88,6 +88,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
   const [editingSectionTitles, setEditingSectionTitles] = useState<MenuSectionTitles>(DEFAULT_SECTION_TITLES);
   const [isLoading, setIsLoading]                   = useState(false);
   const [isImportFromMenuOpen, setIsImportFromMenuOpen] = useState(false);
+  const [importContext, setImportContext]               = useState<RecTab>('general');
 
   // Eating-out state
   const [editingEatingOut, setEditingEatingOut]     = useState<EatingOutEditState | null>(null);
@@ -184,6 +185,13 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
     setRecs([...store.getMenuRecommendations()]);
   };
 
+  const handleAddAsEatingOutFromMenu = async (_menu: GeneratedMenu, _patient: Patient, name: string): Promise<void> => {
+    const eoPage = _menu.menuData?.eatingOutPage;
+    if (!eoPage) throw new Error('No eatingOutPage');
+    await store.saveMenuRecommendation({ name, type: 'eating_out', data: eoPage as unknown as MenuRecommendationData });
+    setRecs([...store.getMenuRecommendations()]);
+  };
+
   // ── Eating-out handlers ─────────────────────────────────────────────────────
 
   const handleOpenAddEatingOut = () => {
@@ -276,10 +284,10 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
   // ── Tab switcher ────────────────────────────────────────────────────────────
 
   const TabSwitcher = () => (
-    <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+    <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-full sm:w-fit">
       <button
         onClick={() => setActiveTab('general')}
-        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+        className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
           activeTab === 'general' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
         }`}
       >
@@ -287,11 +295,11 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
       </button>
       <button
         onClick={() => setActiveTab('eating_out')}
-        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-          activeTab === 'eating_out' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+        className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+          activeTab === 'eating_out' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
         }`}
       >
-        <UtensilsCrossed className="w-3 h-3" /> Comer Afuera
+        <UtensilsCrossed className="hidden sm:inline w-3 h-3" /> Comer Afuera
       </button>
     </div>
   );
@@ -305,9 +313,9 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
         <div className="p-6 border-b border-slate-100">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${activeTab === 'eating_out' ? 'bg-orange-50' : 'bg-emerald-50'}`}>
+              <div className="p-2 rounded-xl bg-emerald-50">
                 {activeTab === 'eating_out'
-                  ? <UtensilsCrossed className="w-5 h-5 text-orange-500" />
+                  ? <UtensilsCrossed className="w-5 h-5 text-emerald-600" />
                   : <ClipboardList className="w-5 h-5 text-emerald-600" />
                 }
               </div>
@@ -320,11 +328,11 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
               {activeTab === 'general' ? (
                 <>
                   <button
-                    onClick={() => setIsImportFromMenuOpen(true)}
+                    onClick={() => { setImportContext('general'); setIsImportFromMenuOpen(true); }}
                     className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all"
                   >
                     <History className="w-4 h-4" /> Agregar desde menú existente
@@ -337,25 +345,66 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={handleOpenAddEatingOut}
-                  className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
-                >
-                  <Plus className="w-4 h-4" /> Nueva
-                </button>
+                <>
+                  <button
+                    onClick={() => { setImportContext('eating_out'); setIsImportFromMenuOpen(true); }}
+                    className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all"
+                  >
+                    <History className="w-4 h-4" /> Agregar desde menú existente
+                  </button>
+                  <button
+                    onClick={handleOpenAddEatingOut}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                  >
+                    <Plus className="w-4 h-4" /> Nueva
+                  </button>
+                </>
               )}
             </div>
           </div>
           <TabSwitcher />
+          <div className="flex sm:hidden items-center gap-2 mt-3">
+            {activeTab === 'general' ? (
+              <>
+                <button
+                  onClick={() => { setImportContext('general'); setIsImportFromMenuOpen(true); }}
+                  className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all"
+                >
+                  <History className="w-4 h-4" /> Agregar desde menú existente
+                </button>
+                <button
+                  onClick={handleOpenAdd}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                >
+                  <Plus className="w-4 h-4" /> Nueva
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => { setImportContext('eating_out'); setIsImportFromMenuOpen(true); }}
+                  className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all"
+                >
+                  <History className="w-4 h-4" /> Agregar desde menú existente
+                </button>
+                <button
+                  onClick={handleOpenAddEatingOut}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                >
+                  <Plus className="w-4 h-4" /> Nueva
+                </button>
+              </>
+            )}
+          </div>
         </div>
       ) : (
         <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/30">
-          <div className="flex justify-between items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             <TabSwitcher />
             <div className="flex items-center gap-2">
               {activeTab === 'general' ? (
                 <>
-                  <button onClick={() => setIsImportFromMenuOpen(true)} className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all">
+                  <button onClick={() => { setImportContext('general'); setIsImportFromMenuOpen(true); }} className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all">
                     <History className="w-4 h-4" />
                   </button>
                   <button onClick={handleOpenAdd} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all">
@@ -363,9 +412,14 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                   </button>
                 </>
               ) : (
-                <button onClick={handleOpenAddEatingOut} className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-all">
-                  <Plus className="w-4 h-4" /> Nueva
-                </button>
+                <>
+                  <button onClick={() => { setImportContext('eating_out'); setIsImportFromMenuOpen(true); }} className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all">
+                    <History className="w-4 h-4" />
+                  </button>
+                  <button onClick={handleOpenAddEatingOut} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all">
+                    <Plus className="w-4 h-4" /> Nueva
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -433,10 +487,10 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
         ) : (
           /* ── Eating-Out Templates List ── */
           eatingOutRecs.length === 0 ? (
-            <div className="text-center py-12 border-2 border-dashed border-orange-100 rounded-3xl">
-              <UtensilsCrossed className="w-12 h-12 text-orange-200 mx-auto mb-3" />
+            <div className="text-center py-12 border-2 border-dashed border-emerald-100 rounded-3xl">
+              <UtensilsCrossed className="w-12 h-12 text-emerald-200 mx-auto mb-3" />
               <p className="text-slate-400 font-medium">No tienes plantillas de comer afuera guardadas</p>
-              <button onClick={handleOpenAddEatingOut} className="text-orange-500 text-sm font-bold mt-2 hover:underline">
+              <button onClick={handleOpenAddEatingOut} className="text-emerald-600 text-sm font-bold mt-2 hover:underline">
                 Crear mi primera plantilla
               </button>
             </div>
@@ -448,11 +502,11 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                   <div
                     key={rec.id}
                     onClick={() => handleOpenEditEatingOut(rec)}
-                    className="group p-4 rounded-2xl border border-slate-200 hover:border-orange-200 hover:bg-orange-50/20 transition-all cursor-pointer"
+                    className="group p-4 rounded-2xl border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all cursor-pointer"
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <div className="bg-orange-50 p-2 rounded-lg group-hover:bg-orange-100 transition-colors">
-                        <UtensilsCrossed className="w-4 h-4 text-orange-400 group-hover:text-orange-600" />
+                      <div className="bg-slate-100 p-2 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                        <UtensilsCrossed className="w-4 h-4 text-slate-500 group-hover:text-emerald-600" />
                       </div>
                       <button
                         onClick={(e) => handleDeleteEatingOut(rec.id, e)}
@@ -505,7 +559,10 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <MenuHistory onAddAsRecommendation={handleAddAsRecommendation} />
+              <MenuHistory
+                onAddAsRecommendation={importContext === 'eating_out' ? handleAddAsEatingOutFromMenu : handleAddAsRecommendation}
+                filterEatingOut={importContext === 'eating_out'}
+              />
             </div>
           </div>
         </div>
@@ -631,8 +688,8 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
           <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-3">
-                <div className="bg-orange-100 p-2 rounded-xl">
-                  <UtensilsCrossed className="w-5 h-5 text-orange-500" />
+                <div className="bg-emerald-100 p-2 rounded-xl">
+                  <UtensilsCrossed className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900">
@@ -655,7 +712,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                   value={editingEatingOut.name}
                   onChange={e => setEditingEatingOut({ ...editingEatingOut, name: e.target.value })}
                   placeholder="Ej: Restaurantes Zona 10 — Pérdida de Peso"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 outline-none transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all"
                 />
               </div>
 
@@ -666,7 +723,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                   type="text"
                   value={eoPage?.title || ''}
                   onChange={e => eoUpdate({ title: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 outline-none transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all"
                 />
               </div>
 
@@ -678,7 +735,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                   onChange={e => eoUpdate({ freeText: e.target.value })}
                   rows={3}
                   placeholder="Escribe recomendaciones generales para comer fuera..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 outline-none transition-all resize-none leading-relaxed"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all resize-none leading-relaxed"
                 />
               </div>
 
@@ -689,14 +746,14 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                   <div className="flex items-center gap-2">
                     <button
                       onClick={eoAddColumn}
-                      className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-orange-50 text-slate-500 hover:text-orange-600 rounded-lg text-[11px] font-bold border border-slate-200 hover:border-orange-200 transition-all"
+                      className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 rounded-lg text-[11px] font-bold border border-slate-200 hover:border-emerald-200 transition-all"
                     >
                       <Plus className="w-3 h-3" /> Columna
                     </button>
                     {(eoPage?.columns?.length || 0) > 0 && (
                       <button
                         onClick={eoAddRow}
-                        className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-orange-50 text-slate-500 hover:text-orange-600 rounded-lg text-[11px] font-bold border border-slate-200 hover:border-orange-200 transition-all"
+                        className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 rounded-lg text-[11px] font-bold border border-slate-200 hover:border-emerald-200 transition-all"
                       >
                         <Plus className="w-3 h-3" /> Fila
                       </button>
@@ -705,7 +762,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                 </div>
 
                 {(eoPage?.columns?.length || 0) === 0 ? (
-                  <div className="text-center py-8 border-2 border-dashed border-orange-100 rounded-xl text-slate-400 text-xs">
+                  <div className="text-center py-8 border-2 border-dashed border-emerald-100 rounded-xl text-slate-400 text-xs">
                     Sin columnas. Agrega una para comenzar.
                   </div>
                 ) : (
@@ -720,7 +777,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                                   type="text"
                                   value={col.label}
                                   onChange={e => eoUpdateColumnLabel(col.id, e.target.value)}
-                                  className="flex-1 min-w-0 bg-transparent text-[11px] font-bold text-slate-600 outline-none focus:bg-white focus:ring-1 focus:ring-orange-400 rounded px-1 py-0.5 transition-all"
+                                  className="flex-1 min-w-0 bg-transparent text-[11px] font-bold text-slate-600 outline-none focus:bg-white focus:ring-1 focus:ring-emerald-400 rounded px-1 py-0.5 transition-all"
                                 />
                                 {eoPage!.columns.length > 1 && (
                                   <button
@@ -745,7 +802,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                                   value={row[col.id] ?? ''}
                                   onChange={e => eoUpdateCell(ri, col.id, e.target.value)}
                                   placeholder="—"
-                                  className="w-full bg-transparent text-[12px] text-slate-700 font-medium px-2 py-1.5 outline-none focus:bg-orange-50/30 focus:ring-1 focus:ring-orange-300 rounded transition-all resize-none leading-relaxed"
+                                  className="w-full bg-transparent text-[12px] text-slate-700 font-medium px-2 py-1.5 outline-none focus:bg-emerald-50/30 focus:ring-1 focus:ring-emerald-300 rounded transition-all resize-none leading-relaxed"
                                 />
                               </td>
                             ))}
@@ -777,7 +834,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
               <button
                 onClick={handleSaveEatingOut}
                 disabled={isLoading || !editingEatingOut.name?.trim()}
-                className="flex items-center gap-2 px-8 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-8 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4" />
                 {isLoading ? 'Guardando...' : 'Guardar Plantilla'}

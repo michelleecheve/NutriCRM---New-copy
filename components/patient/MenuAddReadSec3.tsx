@@ -9,6 +9,7 @@ import { Patient, VetCalculation, MacrosRecord, PortionsRecord, MenuTemplateDesi
 import { MenuDesignPanel } from '../menus_components/MenuDesignPanel';
 import { MealLabel, MealSlot, WEEKDAY_KEYS, MenuReferenceData, emptyMealPortions } from '../menus_components/Menu_References_Components/MenuReferencesStorage';
 import { MenuPlanData, MealPortions } from '../menus_components/MenuDesignTemplates';
+import { EatingOutPageData } from '../menus_components/menudesigntemplates_components/menuTemplateTypes';
 import { MenuReferenceParsertoMenuData } from '../menus_components/Menu_References_Components/MenuReferenceParsertoMenuData';
 import { MenuExportPDF } from '../menus_components/MenuExportPDF';
 import { MenuEditorToolbar, MenuEditorToolbarHandle } from '../menus_components/MenuEditorToolbar';
@@ -163,10 +164,11 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
 
   // ─── Save-as-template state ────────────────────────────────────────────────
   const [showSaveAsTemplateModal, setShowSaveAsTemplateModal] = useState(false);
-  const [saveTemplateType, setSaveTemplateType] = useState<'ref' | 'rec' | null>(null);
+  const [saveTemplateType, setSaveTemplateType] = useState<'ref' | 'rec' | 'eating_out' | null>(null);
   const [saveTemplateName, setSaveTemplateName] = useState('');
+  const [saveEatingOutName, setSaveEatingOutName] = useState('');
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
-  const [saveTemplateSuccess, setSaveTemplateSuccess] = useState<'ref' | 'rec' | null>(null);
+  const [saveTemplateSuccess, setSaveTemplateSuccess] = useState<'ref' | 'rec' | 'eating_out' | null>(null);
 
   const toolbarRef = useRef<MenuEditorToolbarHandle>(null);
   const [designModalOpen, setDesignModalOpen] = useState(false);
@@ -230,6 +232,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const [showCopyRefModal, setShowCopyRefModal] = useState(false);
   const [selectedCopyRefId, setSelectedCopyRefId] = useState<string | null>(null);
   const [selectedCopyRecId, setSelectedCopyRecId] = useState<string | null>(null);
+  const [selectedCopyEatingOutRecId, setSelectedCopyEatingOutRecId] = useState<string | null>(null);
 
   // ─── definir portion table ───────
   const hasPortionTable = !!(menuPreviewData?.portions?.byMeal &&
@@ -247,6 +250,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const availableRecs = store.menuRecommendations.filter(r =>
     selectedRecommendationIds.includes(r.id)
   );
+  const availableGeneralRecs   = availableRecs.filter(r => !r.type || r.type === 'general');
+  const availableEatingOutRecs = availableRecs.filter(r => r.type === 'eating_out');
 
   // ─── Iniciar Menú en Blanco ────────────────────────────────────────────────
   const handleStartBlank = () => {
@@ -262,12 +267,13 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     if (availableRefs.length === 0 && availableRecs.length === 0) return;
     setSelectedCopyRefId(null);
     setSelectedCopyRecId(null);
+    setSelectedCopyEatingOutRecId(null);
     setShowCopyRefModal(true);
   };
 
   // ─── Confirm Copy from Reference ──────────────────────────────────────────
   const handleConfirmCopyRef = () => {
-    if (!selectedCopyRefId && !selectedCopyRecId) return;
+    if (!selectedCopyRefId && !selectedCopyRecId && !selectedCopyEatingOutRecId) return;
 
     let plan: MenuPlanData;
 
@@ -275,27 +281,40 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       const ref = store.menuReferences.find(x => x.id === selectedCopyRefId);
       if (!ref) return;
       plan = MenuReferenceParsertoMenuData(ref.data);
+      // Preserve existing eatingOutPage when building from ref and no eating_out rec selected
+      if (!selectedCopyEatingOutRecId && menuPreviewData?.eatingOutPage) {
+        plan = { ...plan, eatingOutPage: menuPreviewData.eatingOutPage };
+      }
     } else {
-      // If no reference selected, use current preview as base or blank if null
       plan = menuPreviewData ? { ...menuPreviewData } : buildBlankMenuPlanData(patient, vetData, getNutritionistData(), evaluationId);
     }
 
-    // Get recommendations if selected
-    let recommendations = plan.recommendations || {
-      preparacion: [],
-      restricciones: [],
-      habitos: [],
-      organizacion: []
-    };
-
+    // Apply general recommendations — only affects page 2, leaves eatingOutPage untouched
     if (selectedCopyRecId) {
       const rec = store.menuRecommendations.find(x => x.id === selectedCopyRecId);
       if (rec) {
-        recommendations = {
-          preparacion: rec.data.preparacion || [],
-          restricciones: rec.data.restricciones || [],
-          habitos: rec.data.habitos || [],
-          organizacion: rec.data.organizacion || []
+        plan = {
+          ...plan,
+          recommendations: {
+            preparacion:   rec.data.preparacion   || [],
+            restricciones: rec.data.restricciones || [],
+            habitos:       rec.data.habitos       || [],
+            organizacion:  rec.data.organizacion  || [],
+          },
+        };
+      }
+    }
+
+    // Apply eating-out template — only affects page 3, activates visibility, leaves page 2 untouched
+    if (selectedCopyEatingOutRecId) {
+      const eoRec = store.menuRecommendations.find(x => x.id === selectedCopyEatingOutRecId);
+      if (eoRec) {
+        plan = {
+          ...plan,
+          eatingOutPage: {
+            ...(eoRec.data as unknown as EatingOutPageData),
+            visible: true,
+          },
         };
       }
     }
@@ -323,7 +342,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       },
       kcal: vetData.kcalToWork || plan.kcal,
       nutritionist: getNutritionistData(),
-      recommendations: recommendations
     };
 
     handleSetMenuPreviewData(withTemplateTitles(withPatient));
@@ -332,6 +350,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     setShowCopyRefModal(false);
     setSelectedCopyRefId(null);
     setSelectedCopyRecId(null);
+    setSelectedCopyEatingOutRecId(null);
     setEditTablaKey(k => k + 1);
   };
 
@@ -749,7 +768,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl">
           <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <Copy className="w-5 h-5 text-indigo-600" />
-            Copiar desde Referencia
+            Copiar de Plantillas
           </h3>
           <button onClick={() => setShowCopyRefModal(false)} className="p-2 hover:bg-white rounded-xl transition-colors">
             <X className="w-5 h-5 text-slate-400" />
@@ -757,6 +776,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         </div>
 
         <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+          {/* Plantillas de referencia (estructura del menú) */}
           <div className="space-y-3">
             <p className="text-xs font-bold text-slate-500 uppercase ml-1">
               Selecciona qué plantilla de referencia copiar
@@ -802,18 +822,19 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             )}
           </div>
 
+          {/* Plantillas de recomendaciones generales (hoja 2) */}
           <div className="space-y-3">
             <p className="text-xs font-bold text-slate-500 uppercase ml-1">
-              Selecciona qué plantilla de recomendaciones copiar
+              Selecciona plantilla de recomendaciones generales
             </p>
 
-            {availableRecs.length === 0 ? (
+            {availableGeneralRecs.length === 0 ? (
               <p className="text-sm text-slate-400 italic py-4 text-center">
-                No hay recomendaciones seleccionadas en la sección anterior.
+                No hay plantillas de recomendaciones generales seleccionadas.
               </p>
             ) : (
               <div className="space-y-2">
-                {availableRecs.map(rec => {
+                {availableGeneralRecs.map(rec => {
                   const isSelected = selectedCopyRecId === rec.id;
                   return (
                     <button
@@ -830,12 +851,58 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                           {rec.name}
                         </div>
                         <div className="text-xs text-slate-400 font-medium mt-0.5">
-                          Plantilla de recomendaciones
+                          Recomendaciones generales · hoja 2
                         </div>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
                         isSelected
                           ? 'bg-indigo-600 border-indigo-600'
+                          : 'border-slate-300'
+                      }`}>
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Plantillas de comer afuera (hoja 3) */}
+          <div className="space-y-3">
+            <p className="text-xs font-bold text-slate-500 uppercase ml-1">
+              Selecciona plantilla de comer afuera
+            </p>
+
+            {availableEatingOutRecs.length === 0 ? (
+              <p className="text-sm text-slate-400 italic py-4 text-center">
+                No hay plantillas de comer afuera seleccionadas.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {availableEatingOutRecs.map(rec => {
+                  const isSelected = selectedCopyEatingOutRecId === rec.id;
+                  return (
+                    <button
+                      key={rec.id}
+                      onClick={() => setSelectedCopyEatingOutRecId(prev => prev === rec.id ? null : rec.id)}
+                      className={`w-full flex items-center justify-between p-4 rounded-2xl border text-left transition-all ${
+                        isSelected
+                          ? 'bg-orange-50 border-orange-200 ring-1 ring-orange-200'
+                          : 'bg-white border-slate-200 hover:border-orange-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div>
+                        <div className={`text-sm font-bold ${isSelected ? 'text-orange-700' : 'text-slate-700'}`}>
+                          {rec.name}
+                        </div>
+                        <div className="text-xs text-slate-400 font-medium mt-0.5">
+                          Comer afuera · hoja 3 · se activará visible
+                        </div>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                        isSelected
+                          ? 'bg-orange-500 border-orange-500'
                           : 'border-slate-300'
                       }`}>
                         {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -857,7 +924,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
           </button>
           <button
             onClick={handleConfirmCopyRef}
-            disabled={!selectedCopyRefId && !selectedCopyRecId}
+            disabled={!selectedCopyRefId && !selectedCopyRecId && !selectedCopyEatingOutRecId}
             className="bg-indigo-600 text-white font-bold px-8 py-2 rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Copy className="w-4 h-4" />
@@ -941,6 +1008,29 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     }
   };
 
+  // ─── Save as Eating Out Recommendation ────────────────────────────────────
+  const handleSaveAsEatingOut = async () => {
+    if (!menuPreviewData?.eatingOutPage || !saveEatingOutName.trim()) return;
+    setIsSavingTemplate(true);
+    try {
+      await store.saveMenuRecommendation({
+        name: saveEatingOutName.trim(),
+        data: menuPreviewData.eatingOutPage as unknown as MenuRecommendationData,
+        type: 'eating_out',
+      });
+      setSaveTemplateSuccess('eating_out');
+      setSaveEatingOutName('');
+      setTimeout(() => {
+        setShowSaveAsTemplateModal(false);
+        setSaveTemplateSuccess(null);
+      }, 2000);
+    } catch (err) {
+      console.error('Error saving eating out recommendation:', err);
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
   // ─── Save as Recommendation ────────────────────────────────────────────────
   const handleSaveAsRec = async () => {
     if (!menuPreviewData || !saveTemplateName.trim()) return;
@@ -977,6 +1067,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         + (menuPreviewData.recommendations.organizacion?.length || 0)
       : 0;
     const hasRecs = totalRecs > 0;
+    const hasEatingOut = !!(menuPreviewData?.eatingOutPage);
+    const isIntercambio = menuPreviewData?.menuType === 'intercambio';
 
     return (
       <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -991,7 +1083,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             </button>
           </div>
 
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             {saveTemplateSuccess === 'ref' && (
               <div className="flex items-center gap-2 p-4 bg-emerald-50 rounded-2xl border border-emerald-200">
                 <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
@@ -1001,7 +1093,13 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             {saveTemplateSuccess === 'rec' && (
               <div className="flex items-center gap-2 p-4 bg-emerald-50 rounded-2xl border border-emerald-200">
                 <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                <span className="text-sm font-bold text-emerald-700">Recomendación guardada correctamente</span>
+                <span className="text-sm font-bold text-emerald-700">Recomendaciones generales guardadas correctamente</span>
+              </div>
+            )}
+            {saveTemplateSuccess === 'eating_out' && (
+              <div className="flex items-center gap-2 p-4 bg-emerald-50 rounded-2xl border border-emerald-200">
+                <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                <span className="text-sm font-bold text-emerald-700">Plantilla de comer afuera guardada correctamente</span>
               </div>
             )}
 
@@ -1012,11 +1110,13 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                     <Layout className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-bold text-slate-800">Hoja 1 · Referencia de Porciones</div>
+                    <div className="text-sm font-bold text-slate-800">
+                      {isIntercambio ? 'Referencia de porciones y menú intercambio' : 'Referencia de porciones y menú semanal'}
+                    </div>
                     <div className="text-xs text-slate-500 mt-0.5">
                       {refData
-                        ? `${refData.kcal} kcal · ${refData.meals.length} tiempos de comida · Menú semanal`
-                        : 'Tabla de porciones y menú semanal'}
+                        ? `${refData.kcal} kcal · ${refData.meals.length} tiempos de comida`
+                        : 'Tabla de porciones y estructura del menú'}
                     </div>
                   </div>
                 </div>
@@ -1054,11 +1154,11 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                     <FileText className="w-5 h-5 text-indigo-600" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-bold text-slate-800">Hoja 2 · Recomendaciones</div>
+                    <div className="text-sm font-bold text-slate-800">Recomendaciones generales</div>
                     <div className="text-xs text-slate-500 mt-0.5">
                       {hasRecs
                         ? `${totalRecs} elementos · preparación, restricciones y hábitos`
-                        : 'Este menú no tiene recomendaciones en la Hoja 2'}
+                        : 'Este menú no tiene recomendaciones generales'}
                     </div>
                   </div>
                 </div>
@@ -1093,9 +1193,63 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                     onClick={() => setSaveTemplateType('rec')}
                     disabled={!hasRecs}
                     className="w-full py-2 text-sm font-bold text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border border-indigo-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                    title={!hasRecs ? 'Este menú no tiene recomendaciones en la Hoja 2' : ''}
+                    title={!hasRecs ? 'Este menú no tiene recomendaciones generales' : ''}
                   >
                     Guardar como Recomendación →
+                  </button>
+                )}
+              </div>
+            )}
+
+            {!saveTemplateSuccess && (saveTemplateType === null || saveTemplateType === 'eating_out') && (
+              <div className="p-4 rounded-2xl border border-slate-200 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="bg-orange-50 p-2 rounded-xl flex-shrink-0">
+                    <FileText className="w-5 h-5 text-orange-500" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-bold text-slate-800">Comer afuera</div>
+                    <div className="text-xs text-slate-500 mt-0.5">
+                      {hasEatingOut
+                        ? 'Guía de opciones para comer fuera de casa'
+                        : 'Este menú no tiene sección de comer afuera'}
+                    </div>
+                  </div>
+                </div>
+                {saveTemplateType === 'eating_out' ? (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Nombre de la plantilla..."
+                      value={saveEatingOutName}
+                      onChange={e => setSaveEatingOutName(e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                      autoFocus
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => setSaveTemplateType(null)}
+                        className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
+                      >
+                        ← Volver
+                      </button>
+                      <button
+                        onClick={handleSaveAsEatingOut}
+                        disabled={isSavingTemplate || !saveEatingOutName.trim()}
+                        className="bg-orange-500 text-white font-bold px-6 py-2 rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition-all flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {isSavingTemplate ? 'Guardando...' : <><Bookmark className="w-4 h-4" />Guardar Comer Afuera</>}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setSaveTemplateType('eating_out')}
+                    disabled={!hasEatingOut}
+                    className="w-full py-2 text-sm font-bold text-orange-600 hover:bg-orange-50 rounded-xl transition-all border border-orange-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                    title={!hasEatingOut ? 'Este menú no tiene sección de comer afuera' : ''}
+                  >
+                    Guardar como Comer Afuera →
                   </button>
                 )}
               </div>
@@ -1224,13 +1378,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               }`}
             >
               <Copy className="w-5 h-5" />
-              {availableRefs.length > 0 && availableRecs.length > 0
-                ? 'Copiar Ambas Plantillas'
-                : availableRefs.length > 0
-                ? 'Copiar Referencia'
-                : availableRecs.length > 0
-                ? 'Copiar Recomendación'
-                : 'Copiar desde Plantilla'}
+              Copiar de Plantillas
             </button>
 
             {/* EXISTING: Generar menú con AI — modified to open options modal */}
@@ -1397,6 +1545,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                   onClick={() => {
                     setSaveTemplateType(null);
                     setSaveTemplateName('');
+                    setSaveEatingOutName('');
                     setSaveTemplateSuccess(null);
                     setShowSaveAsTemplateModal(true);
                   }}

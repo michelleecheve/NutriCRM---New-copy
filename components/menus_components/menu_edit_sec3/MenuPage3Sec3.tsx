@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Eye, EyeOff, Plus, Trash2, ChevronDown, ChevronUp, UtensilsCrossed } from 'lucide-react';
 import { MenuPlanData } from '../MenuDesignTemplates';
 import { EatingOutPageData, EatingOutColumn, DEFAULT_EATING_OUT_PAGE } from '../menudesigntemplates_components/menuTemplateTypes';
@@ -16,11 +16,18 @@ const AutoResizeTextarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElem
     el.style.height = 'auto';
     el.style.height = el.scrollHeight + 'px';
   };
-  useEffect(() => { resize(); }, [props.value]);
+  useLayoutEffect(() => { resize(); }, [props.value]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(resize);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   return (
     <textarea
       ref={ref}
-      rows={5}
+      rows={1}
       onChange={(e) => { onChange?.(e); resize(); }}
       className={`${className ?? ''} overflow-hidden`}
       {...props}
@@ -41,7 +48,7 @@ interface Props {
 
 export const MenuPage3Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewData }) => {
   const [open, setOpen] = useState(true);
-  const page: EatingOutPageData = menuPreviewData.eatingOutPage ?? DEFAULT_EATING_OUT_PAGE;
+  const page: EatingOutPageData = menuPreviewData.eatingOutPage ?? { ...DEFAULT_EATING_OUT_PAGE, visible: false };
 
   function update(patch: Partial<EatingOutPageData>) {
     setMenuPreviewData({
@@ -108,20 +115,21 @@ export const MenuPage3Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div className="w-full bg-slate-50 border-b border-slate-100">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full bg-slate-50 border-b border-slate-100 hover:bg-slate-100 transition-colors"
+      >
         <div className="px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => setOpen(v => !v)}
-            className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-slate-900 transition-colors"
-          >
+          <span className="flex items-center gap-2 text-sm font-bold text-slate-700">
             <UtensilsCrossed className="w-4 h-4 text-orange-500" />
             Sección Recomendaciones al Comer Fuera
             {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-          </button>
+          </span>
 
           {/* Visibility toggle */}
-          <button
-            onClick={toggleVisible}
+          <span
+            role="button"
+            onClick={e => { e.stopPropagation(); toggleVisible(); }}
             title={page.visible ? 'Hoja visible en vista previa y portal' : 'Hoja oculta (no aparece en vista previa ni portal)'}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
               page.visible
@@ -133,9 +141,9 @@ export const MenuPage3Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
               ? <><Eye className="w-3.5 h-3.5" /> Visible</>
               : <><EyeOff className="w-3.5 h-3.5" /> Oculta</>
             }
-          </button>
+          </span>
         </div>
-      </div>
+      </button>
 
       {open && (
         <div className="p-4 space-y-5">

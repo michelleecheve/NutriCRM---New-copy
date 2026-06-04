@@ -957,12 +957,12 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
   // ── Tab switcher UI ─────────────────────────────────────────────────────────
 
   const TabSwitcher = () => (
-    <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+    <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-full sm:w-fit">
       {(["SEMANAL", "INTERCAMBIO"] as RefTab[]).map(tab => (
         <button
           key={tab}
           onClick={() => switchTab(tab)}
-          className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+          className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
             activeRefTab === tab
               ? tab === "INTERCAMBIO"
                 ? "bg-indigo-600 text-white shadow-sm"
@@ -970,7 +970,7 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
               : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          {tab === "SEMANAL" ? "Menú Semanal" : "Intercambio"}
+          {tab === "SEMANAL" ? "Menú Semanal" : "Menú Intercambio"}
         </button>
       ))}
     </div>
@@ -1111,20 +1111,20 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
               </div>
             </div>
             {mode === "LIST" ? (
-              <div className="flex items-center gap-2 flex-wrap justify-end">
+              <div className="hidden sm:flex items-center gap-2 flex-wrap justify-end">
                 {activeRefTab === "SEMANAL" && (
                   <>
-                    <button onClick={() => setShowImport(true)} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                    <button onClick={() => setShowImport(true)} className="hidden flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
                       Importar YAML
                     </button>
                     <button onClick={() => setIsImportFromMenuOpen(true)} className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                      <History className="w-4 h-4" /> <span className="hidden sm:inline">Agregar desde historial</span>
+                      <History className="w-4 h-4" /> Agregar desde historial
                     </button>
                   </>
                 )}
                 {activeRefTab === "INTERCAMBIO" && (
                   <button onClick={() => setIsImportExchangeFromMenuOpen(true)} className="flex items-center gap-2 border border-indigo-200 hover:bg-indigo-50 text-indigo-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
-                    <History className="w-4 h-4" /> <span className="hidden sm:inline">Agregar desde historial</span>
+                    <History className="w-4 h-4" /> Agregar desde historial
                   </button>
                 )}
                 <button onClick={openNew} className={`flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors ${activeRefTab === "INTERCAMBIO" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-blue-600 hover:bg-blue-700"}`}>
@@ -1137,17 +1137,41 @@ export const MenuReferences: React.FC<{ hideHeader?: boolean; hideContainer?: bo
               </button>
             )}
           </div>
-          {mode === "LIST" && <TabSwitcher />}
+          {mode === "LIST" && (
+            <>
+              <TabSwitcher />
+              <div className="flex sm:hidden items-center gap-2 flex-wrap mt-3">
+                {activeRefTab === "SEMANAL" && (
+                  <>
+                    <button onClick={() => setShowImport(true)} className="hidden flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                      Importar YAML
+                    </button>
+                    <button onClick={() => setIsImportFromMenuOpen(true)} className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                      <History className="w-4 h-4" /> Agregar desde historial
+                    </button>
+                  </>
+                )}
+                {activeRefTab === "INTERCAMBIO" && (
+                  <button onClick={() => setIsImportExchangeFromMenuOpen(true)} className="flex items-center gap-2 border border-indigo-200 hover:bg-indigo-50 text-indigo-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                    <History className="w-4 h-4" /> Agregar desde historial
+                  </button>
+                )}
+                <button onClick={openNew} className={`flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors ${activeRefTab === "INTERCAMBIO" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-blue-600 hover:bg-blue-700"}`}>
+                  <Plus className="w-4 h-4" /> Nueva
+                </button>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/30">
-          <div className="flex justify-between items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             {mode === "LIST" && <TabSwitcher />}
             {mode === "LIST" ? (
               <div className="flex items-center gap-2">
                 {activeRefTab === "SEMANAL" && (
                   <>
-                    <button onClick={() => setShowImport(true)} className="flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
+                    <button onClick={() => setShowImport(true)} className="hidden flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
                       Importar YAML
                     </button>
                     <button onClick={() => setIsImportFromMenuOpen(true)} className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors">
