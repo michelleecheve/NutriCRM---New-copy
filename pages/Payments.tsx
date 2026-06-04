@@ -14,7 +14,7 @@ import { authStore } from '../services/authStore';
 
 type Tab         = 'ingresos' | 'egresos' | 'resumen';
 type StatusFilter = 'all' | 'Pendiente' | 'Pagado' | 'Vencido';
-type DatePreset  = '1m' | '3m' | '6m' | 'year' | 'custom' | 'all';
+type DatePreset  = '1m' | 'prev_month' | '3m' | '6m' | 'year' | 'custom' | 'all';
 
 const EXPENSE_CATEGORIES = [
   'Renta/Oficina',
@@ -27,23 +27,33 @@ const EXPENSE_CATEGORIES = [
 
 const getPresetRange = (preset: DatePreset): { from: string; to: string } | null => {
   if (preset === 'all' || preset === 'custom') return null;
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  if (preset === 'prev_month') {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDay  = new Date(now.getFullYear(), now.getMonth(), 0);
+    return { from: fmt(firstDay), to: fmt(lastDay) };
+  }
+  if (preset === 'year') {
+    const y = new Date().getFullYear();
+    return { from: `${y}-01-01`, to: `${y}-12-31` };
+  }
   const to   = new Date();
   const from = new Date();
-  if (preset === '1m')   { from.setDate(1); }
-  if (preset === '3m')   { from.setMonth(from.getMonth() - 2); from.setDate(1); }
-  if (preset === '6m')   { from.setMonth(from.getMonth() - 5); from.setDate(1); }
-  if (preset === 'year') { from.setMonth(0); from.setDate(1); }
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  if (preset === '1m') { from.setDate(1); }
+  if (preset === '3m') { from.setMonth(from.getMonth() - 2); from.setDate(1); }
+  if (preset === '6m') { from.setMonth(from.getMonth() - 5); from.setDate(1); }
   return { from: fmt(from), to: fmt(to) };
 };
 
 const PRESET_LABELS: Record<DatePreset, string> = {
-  all:    'Todas',
-  '1m':   'Mes Actual',
-  '3m':   'Últimos 3 meses',
-  '6m':   'Últimos 6 meses',
-  year:   `Año ${new Date().getFullYear()}`,
-  custom: 'Rango personalizado',
+  all:          'Todas',
+  '1m':         'Mes Actual',
+  'prev_month': 'Mes Anterior',
+  '3m':         'Últimos 3 meses',
+  '6m':         'Últimos 6 meses',
+  year:         'Año Actual',
+  custom:       'Rango personalizado',
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -358,7 +368,7 @@ export const Payments: React.FC = () => {
         {filterOpen && (
           <div className="absolute top-full mt-2 right-0 w-64 bg-white rounded-xl shadow-xl border border-slate-100 z-50 animate-in fade-in zoom-in duration-150">
             <div className="p-1">
-              {(['all', '1m', '3m', '6m', 'year'] as DatePreset[]).map(p => (
+              {(['all', '1m', 'prev_month', '3m', '6m', 'year'] as DatePreset[]).map(p => (
                 <button
                   key={p}
                   onClick={() => { setActivePreset(p); if (p !== 'custom') setFilterOpen(false); }}
@@ -773,7 +783,7 @@ export const Payments: React.FC = () => {
           {/* Date filter strip */}
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-sm font-semibold text-slate-500">Período:</span>
-            {(['1m', '3m', '6m', 'year', 'all'] as DatePreset[]).map(p => (
+            {(['1m', 'prev_month', '3m', '6m', 'year', 'all'] as DatePreset[]).map(p => (
               <button
                 key={p}
                 onClick={() => setActivePreset(p)}

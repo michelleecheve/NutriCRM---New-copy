@@ -3,7 +3,7 @@ import { store } from '../services/store';
 import { authStore } from '../services/authStore';
 import { Patient, Appointment, Invoice } from '../types';
 import { CreditCard, Calendar, ChefHat, Clock, ChevronRight, AlertCircle, CalendarDays, Users } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { ComposedChart, Bar, Line, ReferenceLine, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getTodayStr } from '../src/utils/dateUtils';
 import { CalendarAppointmentModal } from '../components/calendar_components/CalendarAppointmentModal';
 
@@ -65,17 +65,25 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   ];
 
   const getChartData = () => {
+    const calcMonth = (yearNum: number, monthNum: number) => {
+      const paid = invoices.filter(inv => {
+        const [y, m] = inv.date.split('-').map(Number);
+        return inv.status === 'Pagado' && y === yearNum && m === monthNum;
+      });
+      const income = paid.filter(inv => inv.type !== 'egreso').reduce((acc, curr) => acc + curr.amount, 0);
+      const expenses = paid.filter(inv => inv.type === 'egreso').reduce((acc, curr) => acc + curr.amount, 0);
+      return { income, expenses, net: income - expenses };
+    };
+
     const data = [];
     if (chartRange === 'ytd') {
       for (let m = 1; m <= currentMonth; m++) {
         const d = new Date(currentYear, m - 1, 1);
         const monthName = d.toLocaleString('es-ES', { month: 'short' });
-        const monthlyTotal = invoices
-          .filter(inv => { const [y, mo] = inv.date.split('-').map(Number); return inv.status === 'Pagado' && y === currentYear && mo === m; })
-          .reduce((acc, curr) => acc + curr.amount, 0);
+        const { income, expenses, net } = calcMonth(currentYear, m);
         const monthlyAppointments = appointments
           .filter(appt => { const [y, mo] = appt.date.split('-').map(Number); return appt.status !== 'Cancelada' && y === currentYear && mo === m; }).length;
-        data.push({ name: monthName, total: monthlyTotal, appointments: monthlyAppointments, isCurrent: m === currentMonth });
+        data.push({ name: monthName, total: net, income, expenses, appointments: monthlyAppointments, isCurrent: m === currentMonth });
       }
     } else {
       const months = chartRange === '3m' ? 3 : chartRange === '6m' ? 6 : 12;
@@ -86,12 +94,10 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
         const monthName = months <= 6
           ? d.toLocaleString('es-ES', { month: 'short' })
           : d.toLocaleString('es-ES', { month: 'short', year: '2-digit' });
-        const monthlyTotal = invoices
-          .filter(inv => { const [y, m] = inv.date.split('-').map(Number); return inv.status === 'Pagado' && y === yearNum && m === monthNum; })
-          .reduce((acc, curr) => acc + curr.amount, 0);
+        const { income, expenses, net } = calcMonth(yearNum, monthNum);
         const monthlyAppointments = appointments
           .filter(appt => { const [y, m] = appt.date.split('-').map(Number); return appt.status !== 'Cancelada' && y === yearNum && m === monthNum; }).length;
-        data.push({ name: monthName, total: monthlyTotal, appointments: monthlyAppointments, isCurrent: i === 0 });
+        data.push({ name: monthName, total: net, income, expenses, appointments: monthlyAppointments, isCurrent: i === 0 });
       }
     }
     return data;
@@ -100,12 +106,20 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const { income, expenses, appointments } = payload[0].payload;
+      const net = income - expenses;
       return (
-        <div className="bg-white p-4 border border-slate-100 shadow-xl rounded-xl">
+        <div className="bg-white p-4 border border-slate-100 shadow-xl rounded-xl min-w-[160px]">
           <p className="font-bold text-slate-800 mb-2 capitalize">{label}</p>
           <div className="space-y-1">
-            <p className="text-emerald-600 text-sm font-bold flex items-center gap-2"><CreditCard className="w-3 h-3" />{currency}{payload[0].value.toLocaleString()}</p>
-            <p className="text-blue-600 text-xs font-bold flex items-center gap-2"><Calendar className="w-3 h-3" />{payload[0].payload.appointments} Citas</p>
+            <p className="text-emerald-600 text-xs font-bold flex items-center gap-2"><CreditCard className="w-3 h-3" />Ingresos: {currency}{income.toLocaleString()}</p>
+            {expenses > 0 && <p className="text-red-500 text-xs font-bold flex items-center gap-2"><CreditCard className="w-3 h-3" />Egresos: {currency}{expenses.toLocaleString()}</p>}
+            <div className="border-t border-slate-100 pt-1 mt-1">
+              <p className={`text-sm font-bold flex items-center gap-2 ${net >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                <CreditCard className="w-3 h-3" />Neto: {currency}{net.toLocaleString()}
+              </p>
+            </div>
+            <p className="text-blue-600 text-xs font-bold flex items-center gap-2"><Calendar className="w-3 h-3" />{appointments} Citas</p>
           </div>
         </div>
       );
@@ -313,17 +327,26 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
             </div>
             <div className="h-[180px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }} dy={8} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(v) => `${currency}${v}`} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                  <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1} />
                   <Bar dataKey="total" radius={[5, 5, 0, 0]} barSize={32}>
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.isCurrent ? '#10b981' : '#cbd5e1'} />
                     ))}
                   </Bar>
-                </BarChart>
+                  <Line
+                    type="monotone"
+                    dataKey="total"
+                    stroke="#6366f1"
+                    strokeWidth={2}
+                    dot={{ fill: '#6366f1', r: 3, strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: '#6366f1', strokeWidth: 0 }}
+                  />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </div>
