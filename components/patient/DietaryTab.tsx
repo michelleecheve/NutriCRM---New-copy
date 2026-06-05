@@ -41,8 +41,6 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
   const handleSavePatient = (updated: Patient) => {
     onUpdate(updated);
     store.updatePatient(updated);
-    setView('list');
-    setEditingId(null);
   };
 
   const handleDelete = async () => {
