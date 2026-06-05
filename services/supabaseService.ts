@@ -478,7 +478,11 @@ export const supabaseService = {
   // ─── Dietary Evaluations ───────────────────────────────────────────────────
 
   async saveDietaryEvaluation(evaluationId: string, dietary: DietaryEvaluation) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No authenticated user found");
+
     const payload: any = {
+      owner_id:       user.id,
       evaluation_id:  evaluationId,
       date:           dietary.date,
       meals_per_day:  dietary.mealsPerDay,
