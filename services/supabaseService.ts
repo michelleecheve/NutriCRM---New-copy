@@ -356,8 +356,12 @@ export const supabaseService = {
   // ─── Measurements ──────────────────────────────────────────────────────────
 
   async saveMeasurement(evaluationId: string, measurement: any) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No authenticated user found");
+
     // Incluye el id si existe, siempre
     const payload: any = {
+      owner_id:            user.id,
       evaluation_id:       evaluationId,
       patient_id:          measurement.patientId,
       date:                measurement.date,

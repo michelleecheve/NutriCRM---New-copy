@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Patient } from '../../types';
-import { X, Save, Activity, ChevronRight, Trash2, Star, Info } from 'lucide-react';
+import { X, Save, Activity, ChevronRight, Trash2, Star, Info, CheckCircle } from 'lucide-react';
 import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
 import { store } from '../../services/store';
@@ -79,6 +79,10 @@ export const BioimpedanciaForm: React.FC<{
   const [evaluationId, setEvaluationId] = useState<string | null>(() => store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
+
+  const savedIdRef = useRef<string | undefined>(editingId || undefined);
+  const [savedOk, setSavedOk] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const [formData, setFormData] = useState({
     gender: '',
@@ -173,6 +177,7 @@ export const BioimpedanciaForm: React.FC<{
   }, [formData.weight, formData.height]);
 
   const handleChange = (field: string, value: any) => {
+    setSavedOk(false);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -192,20 +197,22 @@ export const BioimpedanciaForm: React.FC<{
       setStatusMessage(null);
       const recordToSave = {
         ...formData,
-        id: editingId || undefined,
+        id: savedIdRef.current,
         date: selectedEval.date,
         patientId: patient.id,
       };
 
-      await store.saveBioimpedancia(evaluationId, recordToSave);
-      
-      // Update parent component via onUpdate
+      const saved = await store.saveBioimpedancia(evaluationId, recordToSave);
+      if (saved?.id) savedIdRef.current = saved.id;
+
       const updatedPatient = store.getPatient(patient.id);
       if (updatedPatient) {
         onUpdate(updatedPatient);
       }
-      
-      onClose();
+
+      setSavedOk(true);
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+      savedTimer.current = setTimeout(() => setSavedOk(false), 2500);
     } catch (error) {
       console.error('Error saving bioimpedancia:', error);
       setStatusMessage({ type: 'error', text: 'Error al guardar el registro. Por favor intenta de nuevo.' });
@@ -253,12 +260,18 @@ export const BioimpedanciaForm: React.FC<{
             </h3>
           </div>
         </div>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors text-center">
-            Cancelar
-          </button>
+        <div className="flex items-center gap-3">
+          {savedOk && (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-500 font-semibold animate-in fade-in duration-300">
+              <CheckCircle className="w-3.5 h-3.5" />
+              Guardado
+            </div>
+          )}
           <button onClick={handleSave} className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
-            <Save className="w-4 h-4" /> {editingId ? 'Actualizar' : 'Guardar'}
+            <Save className="w-4 h-4" /> Guardar
+          </button>
+          <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors text-center">
+            Salir
           </button>
         </div>
       </div>

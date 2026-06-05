@@ -504,24 +504,25 @@ class Store {
     }
   }
 
-  async saveBioimpedancia(evaluationId: string, record: any): Promise<void> {
+  async saveBioimpedancia(evaluationId: string, record: any): Promise<any> {
     const saved = await supabaseService.saveBioimpedancia(evaluationId, record);
-    
+
     // Update local state
     const evalObj = this.getEvaluationById(evaluationId);
-    if (!evalObj) return;
-    
+    if (!evalObj) return saved;
+
     const patient = this.patients.find(p => p.id === evalObj.patientId);
     if (patient) {
       const exists = patient.bioimpedancias.some(b => b.id === saved.id);
       const updatedBioimpedancias = exists
         ? patient.bioimpedancias.map(b => b.id === saved.id ? saved : b)
         : [saved, ...patient.bioimpedancias];
-      
+
       const updatedPatient = { ...patient, bioimpedancias: updatedBioimpedancias };
       this.patients = this.patients.map(p => p.id === updatedPatient.id ? updatedPatient : p);
       save(this.K.patients, this.patients);
     }
+    return saved;
   }
 
   async deleteBioimpedancia(id: string): Promise<void> {

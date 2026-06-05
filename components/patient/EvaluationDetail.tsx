@@ -612,15 +612,9 @@ export const EvaluationDetail: React.FC<{
               patient={patient}
               patientEvaluations={patientEvaluations}
               editingId={dietaryEditingId}
-              onSavePatient={async (updated) => {
+              onSavePatient={(updated) => {
                 onUpdate(updated);
-                try {
-                  await store.updatePatient(updated);
-                  setDietaryView('card');
-                  setDietaryEditingId(null);
-                } catch (error) {
-                  console.error('Error updating patient dietary:', error);
-                }
+                store.updatePatient(updated);
               }}
               onCancel={() => { setDietaryView('card'); setDietaryEditingId(null); }}
               showDelete={true}
