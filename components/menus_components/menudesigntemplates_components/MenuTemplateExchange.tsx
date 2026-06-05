@@ -45,7 +45,7 @@ const ExchangePage: React.FC<{ data: MenuPlanData; showPortions?: boolean }> = (
     <A4Wrapper id="menu-exchange-page" footer={<Footer nutritionist={data.nutritionist} />}>
       <Header nutritionist={data.nutritionist} planTitle={titles.planTitle} />
       <PatientBar patient={data.patient} kcal={data.kcal} hiddenFields={data.hiddenFields} />
-      {showPortions && <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />}
+      {showPortions && <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} isVegetarian={data.isVegetarian} />}
 
       <div
         style={{

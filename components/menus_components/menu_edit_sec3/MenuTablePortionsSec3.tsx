@@ -279,6 +279,20 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
             </table>
           </div>
 
+          <div className="px-4 py-3 border-t border-slate-100 flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={menuPreviewData.isVegetarian ?? false}
+                onChange={e => setMenuPreviewData({ ...menuPreviewData, isVegetarian: e.target.checked })}
+                className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer"
+              />
+              <span className="text-xs font-bold text-slate-600">¿Paciente vegetariano?</span>
+            </label>
+            {(menuPreviewData.isVegetarian) && (
+              <span className="text-xs text-emerald-600 font-semibold">La columna de carnes mostrará "🥚 Proteína" en el diseño del menú</span>
+            )}
+          </div>
 </>
       )}
     </div>

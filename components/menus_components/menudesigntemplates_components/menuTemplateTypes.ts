@@ -131,6 +131,7 @@ export interface MenuPlanData {
   menuType?: 'semanal' | 'intercambio';
   exchangeMenu?: ExchangeMenuData;
   eatingOutPage?: EatingOutPageData;
+  isVegetarian?: boolean;
   nutritionist: {
     name: string;
     professionalTitle: string;

@@ -243,7 +243,7 @@ export const PortionsAndRecsPage: React.FC<{ data: MenuPlanData }> = ({ data }) 
     <A4Wrapper id="portions-recs-page" footer={<Footer nutritionist={data.nutritionist} />}>
       <Header nutritionist={data.nutritionist} planTitle={titles.planTitle} />
       <PatientBar patient={data.patient} kcal={data.kcal} hiddenFields={data.hiddenFields} />
-      <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
+      <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} isVegetarian={data.isVegetarian} />
 
       <div style={{ fontSize: `${10 * ts.fontSizeMultiplier}px`, fontWeight: 800, color: ts.colors.primary, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "10px", marginTop: "4px", textAlign: "center" }}>
         {titles.page2Title}
@@ -286,7 +286,7 @@ export const PortionsOnlyPage: React.FC<{ data: MenuPlanData }> = ({ data }) => 
     <A4Wrapper id="portions-page" footer={<Footer nutritionist={data.nutritionist} />}>
       <Header nutritionist={data.nutritionist} planTitle={titles.planTitle} />
       <PatientBar patient={data.patient} kcal={data.kcal} hiddenFields={data.hiddenFields} />
-      <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
+      <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} isVegetarian={data.isVegetarian} />
     </A4Wrapper>
   );
 };

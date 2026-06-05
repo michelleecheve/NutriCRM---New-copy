@@ -319,7 +319,8 @@ export const PatientBar: React.FC<{
 export const PortionsTable: React.FC<{
   portions: MenuPlanData["portions"];
   weeklyMenu: MenuPlanData["weeklyMenu"];
-}> = ({ portions, weeklyMenu }) => {
+  isVegetarian?: boolean;
+}> = ({ portions, weeklyMenu, isVegetarian }) => {
   const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   const totals: MealPortions = {
     lacteos: portions.lacteos,
@@ -367,21 +368,25 @@ export const PortionsTable: React.FC<{
             >
               TIEMPO
             </th>
-            {PORTION_GROUPS.map((g) => (
-              <th
-                key={g.key}
-                style={{
-                  padding: "5px 6px",
-                  textAlign: "center",
-                  fontWeight: 700,
-                  color: "#475569",
-                  borderBottom: "2px solid #e2e8f0",
-                  verticalAlign: "middle",
-                }}
-              >
-                {g.emoji} {g.label}
-              </th>
-            ))}
+            {PORTION_GROUPS.map((g) => {
+              const emoji = g.key === 'carnes' ? (isVegetarian ? '🥚' : '🥩') : g.emoji;
+              const label = g.key === 'carnes' ? (isVegetarian ? 'PROTEÍNA' : 'CARNES') : g.label;
+              return (
+                <th
+                  key={g.key}
+                  style={{
+                    padding: "5px 6px",
+                    textAlign: "center",
+                    fontWeight: 700,
+                    color: "#475569",
+                    borderBottom: "2px solid #e2e8f0",
+                    verticalAlign: "middle",
+                  }}
+                >
+                  {emoji} {label}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>

@@ -70,7 +70,7 @@ export const MenuTemplateV1: React.FC<{
           planTitle={(data.sectionTitles || DEFAULT_SECTION_TITLES).planTitle}
         />
         <PatientBar patient={data.patient} kcal={data.kcal} hiddenFields={data.hiddenFields} />
-        <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
+        <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} isVegetarian={data.isVegetarian} />
         <div
           style={{
             fontSize: `${10 * ts.fontSizeMultiplier}px`,
