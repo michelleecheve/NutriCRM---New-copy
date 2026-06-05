@@ -12,9 +12,7 @@ export interface PortalPatient {
   id: string;
   firstName: string;
   lastName: string;
-  accessCode?: string;
   portalGoal?: string;
-  portalPinActive?: boolean;
 }
 
 export interface PortalNutritionist {
@@ -403,8 +401,6 @@ export const PortalShell: React.FC<Props> = ({
               patient={patient}
               nutritionist={nutritionist}
               activeTracking={activeTracking}
-              onAccessCodeUpdate={(newCode) => onPatientUpdate?.({ accessCode: newCode })}
-              onPinActiveUpdate={(active) => onPatientUpdate?.({ portalPinActive: active })}
             />
           )}
         </div>

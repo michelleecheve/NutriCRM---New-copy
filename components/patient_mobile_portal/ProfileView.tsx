@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  LogOut,
   MessageCircle,
   Globe,
   Instagram,
@@ -8,9 +7,6 @@ import {
   Check,
   X,
   Clock,
-  KeyRound,
-  ShieldCheck,
-  ShieldOff,
 } from "lucide-react";
 import { TrackingRow } from "../../types";
 import { PortalPatient, PortalNutritionist } from "./PortalShell";
@@ -21,12 +17,6 @@ interface Props {
   patient: PortalPatient;
   nutritionist: PortalNutritionist;
   activeTracking: TrackingRow | null;
-  onAccessCodeUpdate?: (newCode: string) => void;
-  onPinActiveUpdate?: (active: boolean) => void;
-}
-
-function sessionKey(token: string): string {
-  return `nutriflow_portal_${token}`;
 }
 
 function tzKey(token: string): string {
@@ -104,25 +94,11 @@ export const ProfileView: React.FC<Props> = ({
   patient,
   nutritionist,
   activeTracking,
-  onAccessCodeUpdate,
-  onPinActiveUpdate,
 }) => {
-  const [showConfirm, setShowConfirm] = useState(false);
-
   // ── Goal editing ──
   const [goalText, setGoalText] = useState(patient.portalGoal ?? "");
   const [editingGoal, setEditingGoal] = useState(false);
   const [savingGoal, setSavingGoal] = useState(false);
-
-  // ── PIN editing ──
-  const [editingPin, setEditingPin] = useState(false);
-  const [pinInput, setPinInput] = useState(patient.accessCode ?? "");
-  const [savingPin, setSavingPin] = useState(false);
-  const [pinError, setPinError] = useState("");
-
-  // ── PIN active toggle ──
-  const [pinActive, setPinActive] = useState(patient.portalPinActive ?? true);
-  const [savingPinActive, setSavingPinActive] = useState(false);
 
   // ── Timezone ──
   const [timezone, setTimezone] = useState<string>(() => {
@@ -133,15 +109,6 @@ export const ProfileView: React.FC<Props> = ({
   useEffect(() => {
     setGoalText(patient.portalGoal ?? "");
   }, [patient.portalGoal]);
-
-  useEffect(() => {
-    setPinInput(patient.accessCode ?? "");
-  }, [patient.accessCode]);
-
-  function handleLogout() {
-    localStorage.removeItem(sessionKey(token));
-    window.location.reload();
-  }
 
   async function handleSaveGoal() {
     setSavingGoal(true);
@@ -159,60 +126,6 @@ export const ProfileView: React.FC<Props> = ({
   function handleCancelGoal() {
     setGoalText(patient.portalGoal ?? "");
     setEditingGoal(false);
-  }
-
-  async function handleSavePin() {
-    const clean = pinInput.replace(/\D/g, "");
-    if (clean.length !== 4) {
-      setPinError("El PIN debe tener exactamente 4 dígitos.");
-      return;
-    }
-    setSavingPin(true);
-    setPinError("");
-    try {
-      await supabase
-        .from("patients")
-        .update({ access_code: clean })
-        .eq("id", patient.id);
-      // Update localStorage session so the displayed code stays in sync
-      const raw = localStorage.getItem(sessionKey(token));
-      if (raw) {
-        try {
-          const stored = JSON.parse(raw);
-          localStorage.setItem(
-            sessionKey(token),
-            JSON.stringify({ ...stored, accessCode: clean }),
-          );
-        } catch {}
-      }
-      onAccessCodeUpdate?.(clean);
-      setEditingPin(false);
-    } finally {
-      setSavingPin(false);
-    }
-  }
-
-  function handleCancelPin() {
-    setPinInput(patient.accessCode ?? "");
-    setPinError("");
-    setEditingPin(false);
-  }
-
-  async function handleTogglePinActive() {
-    const next = !pinActive;
-    setPinActive(next);
-    setSavingPinActive(true);
-    try {
-      await supabase
-        .from("patients")
-        .update({ portal_pin_active: next })
-        .eq("id", patient.id);
-      onPinActiveUpdate?.(next);
-    } catch {
-      setPinActive(!next);
-    } finally {
-      setSavingPinActive(false);
-    }
   }
 
   function handleSaveTz(value: string) {
@@ -264,127 +177,6 @@ export const ProfileView: React.FC<Props> = ({
               En el camino de una vida más sana
             </p>
 
-            {/* Access code */}
-            {patient.accessCode && pinActive && !editingPin && (
-              <div
-                className="mt-4 inline-flex items-center gap-3 px-4 py-2.5 rounded-2xl"
-                style={{ backgroundColor: "rgba(255,255,255,0.07)" }}
-              >
-                <div className="flex flex-col items-center">
-                  <span
-                    className="font-bold uppercase"
-                    style={{
-                      color: "rgba(255,255,255,0.35)",
-                      fontSize: "9px",
-                      letterSpacing: "0.10em",
-                    }}
-                  >
-                    Código de acceso
-                  </span>
-                  <span
-                    className="font-black tracking-widest mt-0.5"
-                    style={{
-                      color: "#6EE7B7",
-                      fontSize: "16px",
-                      lineHeight: 1,
-                    }}
-                  >
-                    {patient.accessCode}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setEditingPin(true)}
-                  className="flex items-center justify-center w-7 h-7 rounded-xl transition-opacity active:opacity-60"
-                  style={{ backgroundColor: "rgba(110,231,183,0.15)" }}
-                  title="Cambiar PIN"
-                >
-                  <Pencil
-                    className="w-3.5 h-3.5"
-                    style={{ color: "#6EE7B7" }}
-                  />
-                </button>
-              </div>
-            )}
-
-            {/* PIN editor */}
-            {editingPin && (
-              <div className="mt-4 w-full max-w-xs px-2">
-                <div className="flex items-center gap-2 mb-2 justify-center">
-                  <KeyRound
-                    className="w-3.5 h-3.5"
-                    style={{ color: "#6EE7B7" }}
-                  />
-                  <span
-                    className="font-bold uppercase"
-                    style={{
-                      color: "rgba(255,255,255,0.55)",
-                      fontSize: "9px",
-                      letterSpacing: "0.10em",
-                    }}
-                  >
-                    Nuevo código de acceso
-                  </span>
-                </div>
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={4}
-                  value={pinInput}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 4);
-                    setPinInput(val);
-                    if (pinError) setPinError("");
-                  }}
-                  autoFocus
-                  className="w-full text-center rounded-xl px-3 py-2.5 font-black tracking-widest focus:outline-none"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.10)",
-                    border: pinError
-                      ? "1.5px solid #F87171"
-                      : "1.5px solid rgba(110,231,183,0.40)",
-                    color: "#6EE7B7",
-                    fontSize: "22px",
-                    letterSpacing: "0.25em",
-                  }}
-                  placeholder="0000"
-                />
-                {pinError && (
-                  <p
-                    className="text-center mt-1"
-                    style={{
-                      color: "#F87171",
-                      fontSize: "11px",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {pinError}
-                  </p>
-                )}
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={handleSavePin}
-                    disabled={savingPin}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold text-white transition-opacity disabled:opacity-50"
-                    style={{ backgroundColor: "#2D5A4B" }}
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    {savingPin ? "Guardando..." : "Guardar"}
-                  </button>
-                  <button
-                    onClick={handleCancelPin}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-opacity"
-                    style={{
-                      backgroundColor: "rgba(255,255,255,0.10)",
-                      color: "rgba(255,255,255,0.70)",
-                    }}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -700,39 +492,6 @@ export const ProfileView: React.FC<Props> = ({
             </select>
           </div>
 
-          {/* PIN toggle */}
-          <div className="mt-4 pt-4" style={{ borderTop: "1px solid #E8EEF0" }}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-start gap-2 min-w-0">
-                {pinActive ? (
-                  <ShieldCheck className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: "#0EA5E9" }} />
-                ) : (
-                  <ShieldOff className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: "#9CA3AF" }} />
-                )}
-                <div className="min-w-0">
-                  <p className="font-semibold" style={{ color: "#1A2E25", fontSize: "13px" }}>
-                    Requerir PIN al iniciar sesión
-                  </p>
-                  <p className="mt-0.5" style={{ color: "#9CA3AF", fontSize: "11px" }}>
-                    {pinActive
-                      ? "Se pedirá tu código de acceso cada vez que cierres sesión."
-                      : "Acceso directo con el link, sin necesidad de PIN."}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleTogglePinActive}
-                disabled={savingPinActive}
-                className="flex-shrink-0 relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50"
-                style={{ backgroundColor: pinActive ? "#0EA5E9" : "#D1D5DB" }}
-              >
-                <span
-                  className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"
-                  style={{ transform: pinActive ? "translateX(20px)" : "translateX(0)" }}
-                />
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* ── Tip: Agregar a pantalla de inicio ── */}
@@ -838,65 +597,6 @@ export const ProfileView: React.FC<Props> = ({
               </ol>
             </div>
           </div>
-        </div>
-
-        {/* ── Logout ── */}
-        <div className="pt-1">
-          {!showConfirm ? (
-            <button
-              onClick={() => setShowConfirm(true)}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl font-semibold text-sm transition-opacity active:opacity-70"
-              style={{
-                backgroundColor: "#FFF5F5",
-                border: "1.5px solid #FECACA",
-                color: "#DC2626",
-                minHeight: "52px",
-              }}
-            >
-              <LogOut className="w-4 h-4" />
-              Cerrar sesión
-            </button>
-          ) : (
-            <div
-              className="p-4 rounded-2xl"
-              style={{
-                backgroundColor: "#FFFFFF",
-                boxShadow:
-                  "0 2px 14px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.03)",
-              }}
-            >
-              <p
-                className="text-sm font-bold text-center mb-1"
-                style={{ color: "#1A2E25" }}
-              >
-                ¿Cerrar sesión?
-              </p>
-              <p
-                className="text-xs text-center mb-4"
-                style={{ color: "#9CA3AF" }}
-              >
-                {pinActive
-                  ? "Necesitarás tu PIN de 4 dígitos para volver a entrar."
-                  : "Podrás volver a entrar directamente con tu link."}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowConfirm(false)}
-                  className="flex-1 py-3 rounded-xl text-sm font-semibold"
-                  style={{ backgroundColor: "#F0F4F1", color: "#4B5E57" }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex-1 py-3 rounded-xl text-sm font-semibold text-white"
-                  style={{ backgroundColor: "#DC2626" }}
-                >
-                  Sí, salir
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ── Powered by + Beta notice ── */}

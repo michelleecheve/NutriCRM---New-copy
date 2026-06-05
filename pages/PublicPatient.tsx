@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { GeneratedMenu, TrackingRow, PatientPortalMeasurementsConfig } from '../types';
 import { PortalShell, PortalNutritionist } from '../components/patient_mobile_portal/PortalShell';
@@ -10,8 +10,6 @@ interface PortalSession {
   patientId: string;
   firstName: string;
   lastName: string;
-  accessCode: string;
-  pinActive: boolean;
   validatedAt: number;
 }
 
@@ -32,307 +30,6 @@ function loadSession(token: string): PortalSession | null {
 function saveSession(session: PortalSession): void {
   localStorage.setItem(sessionKey(session.token), JSON.stringify(session));
 }
-
-// ─── AccessGate ──────────────────────────────────────────────────────────────
-
-interface AccessGateProps {
-  token: string;
-  onSuccess: (session: PortalSession) => void;
-}
-
-const AccessGate: React.FC<AccessGateProps> = ({ token, onSuccess }) => {
-  const [digits, setDigits] = useState(['', '', '', '']);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [portalDisabled, setPortalDisabled] = useState(false);
-  const inputRefs = [
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-  ];
-
-  function handleDigit(index: number, value: string) {
-    const digit = value.replace(/\D/g, '').slice(-1);
-    const next = [...digits];
-    next[index] = digit;
-    setDigits(next);
-    setError(null);
-    if (digit && index < 3) inputRefs[index + 1].current?.focus();
-    if (digit && index === 3) {
-      const pin = [...next].join('');
-      if (pin.length === 4) submitPin(pin);
-    }
-  }
-
-  function handleKeyDown(index: number, e: React.KeyboardEvent) {
-    if (e.key === 'Backspace' && !digits[index] && index > 0) {
-      inputRefs[index - 1].current?.focus();
-    }
-  }
-
-  async function submitPin(pin: string) {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: dbError } = await supabase
-        .from('patients')
-        .select('id, first_name, last_name, portal_active')
-        .eq('access_token', token)
-        .eq('access_code', pin)
-        .maybeSingle();
-
-      if (dbError) throw dbError;
-
-      if (!data) {
-        setError('PIN incorrecto. Intenta de nuevo.');
-        setDigits(['', '', '', '']);
-        inputRefs[0].current?.focus();
-        return;
-      }
-
-      if (!data.portal_active) {
-        setPortalDisabled(true);
-        return;
-      }
-
-      const session: PortalSession = {
-        token,
-        patientId: data.id,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        accessCode: pin,
-        pinActive: true,
-        validatedAt: Date.now(),
-      };
-      saveSession(session);
-      onSuccess(session);
-    } catch {
-      setError('Ocurrió un error. Intenta de nuevo.');
-      setDigits(['', '', '', '']);
-      inputRefs[0].current?.focus();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const pin = digits.join('');
-    if (pin.length === 4) submitPin(pin);
-  }
-
-  if (portalDisabled) return <PortalDisabledScreen />;
-
-  const pinReady = digits.join('').length === 4 && !loading;
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(180deg, #FFFFFF 0%, #E8F5EE 100%)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px 20px',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-
-      {/* ── Powered by (above card) ── */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginBottom: '22px',
-        zIndex: 1,
-      }}>
-        <img
-          src="/logo_nutrifollow.png"
-          alt="NutriFollow"
-          style={{ width: 18, height: 18, objectFit: 'contain', opacity: 0.9 }}
-          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-        />
-        <span style={{ fontSize: '12px', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.04em' }}>
-          Powered by NutriFollow
-        </span>
-      </div>
-
-      {/* ── Central card ── */}
-      <div style={{
-        width: '100%',
-        maxWidth: 390,
-        backgroundColor: 'white',
-        borderRadius: '28px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.10), 0 32px 64px rgba(0,0,0,0.08)',
-        overflow: 'hidden',
-        zIndex: 1,
-      }}>
-
-        {/* Card header band */}
-        <div style={{
-          background: 'linear-gradient(135deg, #059669 0%, #10B981 60%, #34D399 100%)',
-          padding: '28px 32px 24px',
-          textAlign: 'center',
-          position: 'relative',
-          overflow: 'hidden',
-        }}>
-          {/* subtle inner glow */}
-          <div style={{
-            position: 'absolute', top: '-30px', right: '-30px',
-            width: 130, height: 130, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.12)',
-            pointerEvents: 'none',
-          }} />
-          <div style={{
-            position: 'absolute', bottom: '-20px', left: '10%',
-            width: 90, height: 90, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.08)',
-            pointerEvents: 'none',
-          }} />
-
-          <h1 style={{
-            color: 'white',
-            fontSize: '26px',
-            fontWeight: 800,
-            lineHeight: 1.2,
-            marginBottom: '4px',
-            textShadow: '0 1px 4px rgba(0,0,0,0.15)',
-          }}>
-            ¡Hola!
-          </h1>
-          <p style={{
-            color: 'rgba(255,255,255,0.90)',
-            fontSize: '16px',
-            fontWeight: 600,
-            marginBottom: '6px',
-          }}>
-            Tu plan te espera
-          </p>
-          <p style={{
-            color: 'rgba(255,255,255,0.70)',
-            fontSize: '13px',
-            fontWeight: 500,
-            lineHeight: 1.5,
-          }}>
-            Accede a tu plan alimenticio personalizado
-          </p>
-        </div>
-
-        {/* Card body */}
-        <div style={{ padding: '32px 32px 36px' }}>
-
-          <p style={{
-            textAlign: 'center',
-            fontSize: '13.5px',
-            color: '#6B7280',
-            lineHeight: 1.65,
-            marginBottom: '28px',
-          }}>
-            Ingresa el <strong style={{ color: '#065F46', fontWeight: 700 }}>PIN de 4 dígitos</strong> que tu nutricionista te envió junto con este link.
-          </p>
-
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginBottom: '28px' }}>
-              {digits.map((d, i) => (
-                <input
-                  key={i}
-                  ref={inputRefs[i]}
-                  type="tel"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={1}
-                  value={d}
-                  onChange={(e) => handleDigit(i, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(i, e)}
-                  disabled={loading}
-                  autoFocus={i === 0}
-                  style={{
-                    width: 64, height: 72,
-                    textAlign: 'center',
-                    fontSize: '30px',
-                    fontWeight: 800,
-                    borderRadius: '18px',
-                    border: d ? '2.5px solid #059669' : '2px solid #E5E7EB',
-                    backgroundColor: d ? '#ECFDF5' : '#F9FAFB',
-                    color: d ? '#064E3B' : '#374151',
-                    outline: 'none',
-                    boxShadow: d
-                      ? '0 0 0 4px rgba(5,150,105,0.12), 0 4px 14px rgba(5,150,105,0.18)'
-                      : '0 1px 4px rgba(0,0,0,0.06)',
-                    transition: 'all 0.18s ease',
-                    opacity: loading ? 0.5 : 1,
-                  }}
-                />
-              ))}
-            </div>
-
-            {error && (
-              <div style={{
-                background: 'linear-gradient(135deg, #FEF2F2, #FFF5F5)',
-                border: '1.5px solid #FECACA',
-                borderRadius: '14px',
-                padding: '12px 16px',
-                marginBottom: '20px',
-                textAlign: 'center',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-              }}>
-                <span style={{ fontSize: '16px' }}>🔒</span>
-                <p style={{ color: '#DC2626', fontSize: '13px', fontWeight: 600 }}>{error}</p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={!pinReady}
-              style={{
-                width: '100%',
-                minHeight: '56px',
-                borderRadius: '18px',
-                background: pinReady
-                  ? 'linear-gradient(135deg, #059669 0%, #10B981 100%)'
-                  : undefined,
-                backgroundColor: pinReady ? undefined : '#F3F4F6',
-                color: pinReady ? 'white' : '#9CA3AF',
-                fontWeight: 800,
-                fontSize: '16px',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                boxShadow: pinReady
-                  ? '0 6px 24px rgba(5,150,105,0.40), 0 2px 8px rgba(5,150,105,0.20)'
-                  : 'none',
-                transition: 'all 0.2s ease',
-                cursor: pinReady ? 'pointer' : 'not-allowed',
-                letterSpacing: '0.01em',
-              }}
-            >
-              {loading ? (
-                <>
-                  <svg style={{ width: 20, height: 20, animation: 'spin 1s linear infinite' }} fill="none" viewBox="0 0 24 24">
-                    <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Verificando...
-                </>
-              ) : (
-                <>
-                  Entrar a mi plan
-                  <span style={{ fontSize: '18px' }}>→</span>
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // ─── Static screens ──────────────────────────────────────────────────────────
 
@@ -640,14 +337,7 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session: initialSe
       .catch(() => setState('error'));
   }, [session.patientId]);
 
-  function handlePatientUpdate(updates: Partial<{ id: string; firstName: string; lastName: string; accessCode?: string; portalGoal?: string; portalPinActive?: boolean }>) {
-    if (updates.accessCode !== undefined) {
-      setSession(prev => ({ ...prev, accessCode: updates.accessCode! }));
-    }
-    if (updates.portalPinActive !== undefined) {
-      setSession(prev => ({ ...prev, pinActive: updates.portalPinActive! }));
-      setPortalData(prev => prev ? { ...prev, patient: { ...prev.patient, portalPinActive: updates.portalPinActive! } } : prev);
-    }
+  function handlePatientUpdate(updates: Partial<{ id: string; firstName: string; lastName: string; portalGoal?: string }>) {
     if (updates.portalGoal !== undefined && portalData) {
       setPortalData(prev => prev ? { ...prev, patient: { ...prev.patient, portalGoal: updates.portalGoal } } : prev);
     }
@@ -679,12 +369,10 @@ const PortalLoader: React.FC<{ session: PortalSession }> = ({ session: initialSe
     <PortalShell
       token={session.token}
       patient={{
-        id:             session.patientId,
-        firstName:      session.firstName,
-        lastName:       session.lastName,
-        accessCode:     session.accessCode,
-        portalGoal:     portalData.patient.portalGoal,
-        portalPinActive: portalData.patient.portalPinActive,
+        id:         session.patientId,
+        firstName:  session.firstName,
+        lastName:   session.lastName,
+        portalGoal: portalData.patient.portalGoal,
       }}
       menus={portalData.menus}
       activeTracking={activeTracking}
@@ -706,7 +394,7 @@ interface Props {
   token: string;
 }
 
-type PageState = 'checking' | 'gate' | 'portal' | 'invalid' | 'disabled';
+type PageState = 'checking' | 'portal' | 'invalid' | 'disabled';
 
 export const PublicPatient: React.FC<Props> = ({ token }) => {
   const [state, setState] = useState<PageState>('checking');
@@ -729,42 +417,30 @@ export const PublicPatient: React.FC<Props> = ({ token }) => {
       try {
         const { data } = await supabase
           .from('patients')
-          .select('id, first_name, last_name, portal_active, portal_pin_active')
+          .select('id, first_name, last_name, portal_active')
           .eq('access_token', token)
           .maybeSingle();
         if (!data) { setState('invalid'); return; }
         if (!data.portal_active) { setState('disabled'); return; }
-        if (data.portal_pin_active === false) {
-          // Bypass PIN — create session directly
-          const session: PortalSession = {
-            token,
-            patientId: data.id,
-            firstName: data.first_name,
-            lastName: data.last_name,
-            accessCode: '',
-            pinActive: false,
-            validatedAt: Date.now(),
-          };
-          saveSession(session);
-          setSession(session);
-          setState('portal');
-        } else {
-          setState('gate');
-        }
+        const newSession: PortalSession = {
+          token,
+          patientId: data.id,
+          firstName: data.first_name,
+          lastName: data.last_name,
+          validatedAt: Date.now(),
+        };
+        saveSession(newSession);
+        setSession(newSession);
+        setState('portal');
       } catch {
         setState('invalid');
       }
     })();
   }, [token]);
 
-  function handleAccessGranted(s: PortalSession) {
-    setSession(s);
-    setState('portal');
-  }
-
   if (state === 'checking') return <LoadingScreen />;
   if (state === 'invalid')  return <InvalidTokenScreen />;
   if (state === 'disabled') return <PortalDisabledScreen />;
   if (state === 'portal' && session) return <PortalLoader session={session} />;
-  return <AccessGate token={token} onSuccess={handleAccessGranted} />;
+  return <LoadingScreen />;
 };

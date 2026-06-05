@@ -14,7 +14,6 @@ import {
   TrendingUp,
   Settings,
   Lock,
-  Unlock,
   RotateCcw,
 } from "lucide-react";
 import { Patient, GeneratedMenu, TrackingRow, AntroFieldsConfig, BioFieldsConfig } from "../../types";
@@ -29,10 +28,6 @@ interface Props {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function generatePin(): string {
-  return String(Math.floor(1000 + Math.random() * 9000));
-}
 
 function generateUUID(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -149,7 +144,7 @@ function getPlanStatus(tracking: TrackingRow | null | undefined): PlanStatus {
 
 // ─── Message template ─────────────────────────────────────────────────────────
 
-const DEFAULT_MESSAGE_TEMPLATE = `¡Hola! Te comparto tu menú digital. Puedes acceder a través del siguiente link: {link} y accede con este pin de acceso: {pin}. Te recomiendo usar esta página todos los días para poder medir tu progreso y llevar contigo tu plan alimenticio.`;
+const DEFAULT_MESSAGE_TEMPLATE = `¡Hola! Te comparto tu menú digital personalizado. Puedes acceder en cualquier momento a través de este link: {link}. Te recomiendo guardar esta página en tu celular para llevar tu plan alimenticio siempre contigo y registrar tu progreso diario.`;
 
 const MESSAGE_TEMPLATE_KEY = "nutriflow_portal_message_template";
 
@@ -182,14 +177,9 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   // ── Core state ──
   const [loading, setLoading] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedPin, setCopiedPin] = useState(false);
   const [selectedMenuId, setSelectedMenuId] = useState<string>(
     menus[0]?.id ?? "",
   );
-  const [pinInput, setPinInput] = useState(patient.accessCode ?? "");
-  const [savingPin, setSavingPin] = useState(false);
-  const [pinLocked, setPinLocked] = useState(true);
-
   // ── Tracking state ──
   const [tracking, setTracking] = useState<TrackingRow | null | undefined>(
     undefined,
@@ -203,15 +193,8 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   const [savingGoal, setSavingGoal] = useState(false);
   const [savedGoal, setSavedGoal] = useState(false);
 
-  // ── PIN active per patient ──
-  const nutriPortalConfig = authStore.getCurrentUser()?.profile?.portalConfig;
-  const pinActiveNutriDefault = nutriPortalConfig?.pinActiveDefault ?? true;
-  const [pinActive, setPinActive] = useState(
-    patient.portalPinActive ?? pinActiveNutriDefault,
-  );
-  const [savingPinActive, setSavingPinActive] = useState(false);
-
   // ── Measurements detail visibility ──
+  const nutriPortalConfig = authStore.getCurrentUser()?.profile?.portalConfig;
   const nutriDefault = nutriPortalConfig?.measurementsDetailDefault ?? true;
   const [showMeasurementsDetail, setShowMeasurementsDetail] = useState(
     patient.portalShowMeasurementsDetail ?? nutriDefault,
@@ -307,12 +290,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       const patch: Parameters<typeof supabaseService.updatePatientPortal>[1] = {
         portalActive: activate,
       };
-      if (activate) {
-        if (!patient.accessToken) patch.accessToken = generateUUID();
-        if (!patient.accessCode) patch.accessCode = generatePin();
-        if (patient.portalPinActive === null || patient.portalPinActive === undefined)
-          patch.portalPinActive = pinActiveNutriDefault;
-      }
+      if (activate && !patient.accessToken) patch.accessToken = generateUUID();
       const updated = await supabaseService.updatePatientPortal(
         patient.id,
         patch,
@@ -320,23 +298,6 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       onUpdate({ ...patient, ...updated });
     } finally {
       setLoading(false);
-    }
-  }
-
-  // ── Toggle PIN active ──
-  async function handleTogglePinActive() {
-    const next = !pinActive;
-    setPinActive(next);
-    setSavingPinActive(true);
-    try {
-      const updated = await supabaseService.updatePatientPortal(patient.id, {
-        portalPinActive: next,
-      });
-      onUpdate({ ...patient, ...updated });
-    } catch {
-      setPinActive(!next);
-    } finally {
-      setSavingPinActive(false);
     }
   }
 
@@ -402,50 +363,11 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
     }
   }
 
-  // ── Sync pinInput when patient.accessCode changes externally ──
-  useEffect(() => {
-    setPinInput(patient.accessCode ?? "");
-  }, [patient.accessCode]);
-
-  // ── Regenerate PIN ──
-  async function handleRegeneratePin() {
-    setLoading(true);
-    try {
-      const newPin = generatePin();
-      const updated = await supabaseService.updatePatientPortal(patient.id, {
-        accessCode: newPin,
-      });
-      onUpdate({ ...patient, ...updated });
-      setPinInput(newPin);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // ── Save custom PIN ──
-  async function handleSavePin() {
-    if (!pinInput.trim() || pinInput === patient.accessCode) return;
-    setSavingPin(true);
-    try {
-      const updated = await supabaseService.updatePatientPortal(patient.id, {
-        accessCode: pinInput.trim(),
-      });
-      onUpdate({ ...patient, ...updated });
-    } finally {
-      setSavingPin(false);
-    }
-  }
-
   // ── Copy helpers ──
-  function copyToClipboard(text: string, type: "link" | "pin") {
+  function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text).then(() => {
-      if (type === "link") {
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2000);
-      } else {
-        setCopiedPin(true);
-        setTimeout(() => setCopiedPin(false), 2000);
-      }
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
     });
   }
 
@@ -527,9 +449,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   })();
 
   // ── Composed share message ──
-  const composedMessage = messageTemplate
-    .replace("{link}", portalUrl ?? "—")
-    .replace("{pin}", pinInput || patient.accessCode || "—");
+  const composedMessage = messageTemplate.replace("{link}", portalUrl ?? "—");
 
   // ─────────────────────────────────────────────────────────────────────────────
 
@@ -929,7 +849,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
             )}
           </div>
 
-          {/* ── Paso 3: Compartir link + PIN ── */}
+          {/* ── Paso 3: Compartir link ── */}
           <div className="relative bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
             {(!paso1Saved || !paso2Saved) && (
               <StepLockOverlay
@@ -941,133 +861,40 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
               />
             )}
             <p className="text-sm font-semibold text-slate-700">
-              Paso 3. Compartir Link del Portal y Pin de acceso a paciente
+              Paso 3. Compartir Link del Portal
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Columna izquierda: Link del portal */}
-              <div>
-                <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
-                  Link del portal
-                </label>
-                <div className="flex items-center gap-1.5">
-                  <div className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 font-mono truncate min-w-0">
-                    {portalUrl ?? "—"}
-                  </div>
-                  {portalUrl && (
-                    <>
-                      <a
-                        href={portalUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors flex-shrink-0"
-                        title="Abrir portal"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-                      </a>
-                      <button
-                        onClick={() => copyToClipboard(portalUrl, "link")}
-                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0"
-                        title="Copiar link"
-                      >
-                        {copiedLink ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5 text-emerald-600" />
-                        )}
-                      </button>
-                    </>
-                  )}
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1.5 block">
+                Link del portal
+              </label>
+              <div className="flex items-center gap-1.5">
+                <div className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600 font-mono truncate min-w-0">
+                  {portalUrl ?? "—"}
                 </div>
-              </div>
-
-              {/* Columna derecha: Pin de acceso */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                    Pin de acceso
-                  </label>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-slate-400">
-                      {pinActive ? "Requerido" : "Desactivado"}
-                    </span>
-                    <button
-                      onClick={handleTogglePinActive}
-                      disabled={savingPinActive}
-                      className={`relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
-                        pinActive ? "bg-emerald-500" : "bg-slate-300"
-                      }`}
-                      title={pinActive ? "Desactivar PIN" : "Activar PIN"}
+                {portalUrl && (
+                  <>
+                    <a
+                      href={portalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors flex-shrink-0"
+                      title="Abrir portal"
                     >
-                      <span
-                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
-                          pinActive ? "translate-x-4" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                    <div className="w-px h-3.5 bg-slate-200" />
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                    </a>
                     <button
-                      onClick={() => setPinLocked((v) => !v)}
-                      className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold transition-all ${
-                        pinLocked
-                          ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
-                          : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                      }`}
-                      title={pinLocked ? "Desbloquear para editar" : "Bloquear PIN"}
+                      onClick={() => copyToClipboard(portalUrl)}
+                      className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0"
+                      title="Copiar link"
                     >
-                      {pinLocked ? (
-                        <><Lock className="w-3 h-3" /> Desbloquear</>
+                      {copiedLink ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
                       ) : (
-                        <><Unlock className="w-3 h-3" /> Bloquear</>
+                        <Copy className="w-3.5 h-3.5 text-emerald-600" />
                       )}
                     </button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="text"
-                    value={pinInput}
-                    onChange={(e) => !pinLocked && setPinInput(e.target.value)}
-                    onBlur={() => !pinLocked && handleSavePin()}
-                    onKeyDown={(e) => !pinLocked && e.key === "Enter" && handleSavePin()}
-                    maxLength={4}
-                    placeholder="—"
-                    readOnly={pinLocked}
-                    className={`flex-1 border rounded-xl px-3 py-2 text-xs font-mono focus:outline-none min-w-0 transition-all ${
-                      pinLocked
-                        ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed select-none"
-                        : "bg-white border-slate-200 text-slate-600 focus:ring-2 focus:ring-emerald-300"
-                    }`}
-                  />
-                  {savingPin && (
-                    <RefreshCw className="w-3.5 h-3.5 text-slate-400 animate-spin flex-shrink-0" />
-                  )}
-                  <button
-                    onClick={() => pinInput && copyToClipboard(pinInput, "pin")}
-                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0"
-                    title="Copiar PIN"
-                  >
-                    {copiedPin ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5 text-emerald-600" />
-                    )}
-                  </button>
-                  <button
-                    onClick={handleRegeneratePin}
-                    disabled={loading || pinLocked}
-                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-                    title={pinLocked ? "Desbloquea para generar PIN aleatorio" : "Generar PIN aleatorio"}
-                  >
-                    <RefreshCw
-                      className={`w-3.5 h-3.5 text-slate-500 ${loading ? "animate-spin" : ""}`}
-                    />
-                  </button>
-                </div>
-                <p className="text-xs text-slate-400 mt-1">
-                  {pinLocked
-                    ? "PIN bloqueado. Toca «Desbloquear» para modificarlo."
-                    : "El paciente ingresa este PIN la primera vez. Puedes personalizarlo."}
-                </p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1120,13 +947,11 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
               {editingTemplate && (
                 <div className="mt-2 space-y-1.5">
                   <p className="text-xs text-slate-400">
-                    Configura la plantilla base del mensaje a compartir. Usa{" "}
+                    Configura la plantilla base del mensaje. Usa{" "}
                     <code className="bg-slate-100 px-1 rounded">
                       {"{link}"}
                     </code>{" "}
-                    y{" "}
-                    <code className="bg-slate-100 px-1 rounded">{"{pin}"}</code>{" "}
-                    como marcadores de posición.
+                    como marcador del link del portal.
                   </p>
                   <textarea
                     value={messageTemplate}
