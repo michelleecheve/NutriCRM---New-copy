@@ -243,7 +243,8 @@ export const Header: React.FC<{
 export const PatientBar: React.FC<{
   patient: MenuPlanData["patient"];
   kcal: number;
-}> = ({ patient, kcal }) => {
+  hiddenFields?: MenuPlanData["hiddenFields"];
+}> = ({ patient, kcal, hiddenFields }) => {
   const ts: ThemeStyles = getThemeStyles(useVisualTheme());
   return (
     <table
@@ -262,44 +263,52 @@ export const PatientBar: React.FC<{
             <span style={{ color: "#64748b", fontWeight: 600 }}>PACIENTE: </span>
             <span style={{ color: "#0f172a", fontWeight: 800 }}>{patient?.name || "N/A"}</span>
           </td>
-          <td style={{ padding: "7px 10px", verticalAlign: "middle", whiteSpace: "nowrap" }}>
-            <span style={{ color: "#64748b", fontWeight: 600 }}>EDAD: </span>
-            <span style={{ color: "#0f172a", fontWeight: 700 }}>{patient?.age || 0} años</span>
-          </td>
-          <td style={{ padding: "7px 10px", verticalAlign: "middle", whiteSpace: "nowrap" }}>
-            <span style={{ color: "#64748b", fontWeight: 600 }}>PESO: </span>
-            <span style={{ color: "#0f172a", fontWeight: 700 }}>{patient?.weight || 0} kg</span>
-          </td>
-          <td style={{ padding: "7px 10px", verticalAlign: "middle", whiteSpace: "nowrap" }}>
-            <span style={{ color: "#64748b", fontWeight: 600 }}>% GRASA: </span>
-            <span style={{ color: "#0f172a", fontWeight: 700 }}>{patient?.fatPct || 0}%</span>
-          </td>
-          <td
-            style={{
-              padding: "0",
-              verticalAlign: "middle",
-              textAlign: "right",
-              borderLeft: "1px solid #e2e8f0",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span style={{ color: "#64748b", fontWeight: 600, padding: "7px 8px 7px 12px", display: "inline-block" }}>
-              META:
-            </span>
-            <span
+          {!hiddenFields?.age && (
+            <td style={{ padding: "7px 10px", verticalAlign: "middle", whiteSpace: "nowrap" }}>
+              <span style={{ color: "#64748b", fontWeight: 600 }}>EDAD: </span>
+              <span style={{ color: "#0f172a", fontWeight: 700 }}>{patient?.age || 0} años</span>
+            </td>
+          )}
+          {!hiddenFields?.weight && (
+            <td style={{ padding: "7px 10px", verticalAlign: "middle", whiteSpace: "nowrap" }}>
+              <span style={{ color: "#64748b", fontWeight: 600 }}>PESO: </span>
+              <span style={{ color: "#0f172a", fontWeight: 700 }}>{patient?.weight || 0} kg</span>
+            </td>
+          )}
+          {!hiddenFields?.fatPct && (
+            <td style={{ padding: "7px 10px", verticalAlign: "middle", whiteSpace: "nowrap" }}>
+              <span style={{ color: "#64748b", fontWeight: 600 }}>% GRASA: </span>
+              <span style={{ color: "#0f172a", fontWeight: 700 }}>{patient?.fatPct || 0}%</span>
+            </td>
+          )}
+          {!hiddenFields?.kcal && (
+            <td
               style={{
-                color: ts.colors.primary,
-                fontWeight: 900,
-                fontSize: `${10 * ts.fontSizeMultiplier}px`,
-                backgroundColor: ts.colors.tertiary,
-                borderLeft: `1px solid ${ts.colors.tertiaryBorder}`,
-                padding: "7px 15px",
-                display: "inline-block",
+                padding: "0",
+                verticalAlign: "middle",
+                textAlign: "right",
+                borderLeft: "1px solid #e2e8f0",
+                whiteSpace: "nowrap",
               }}
             >
-              {kcal.toLocaleString()} kcal
-            </span>
-          </td>
+              <span style={{ color: "#64748b", fontWeight: 600, padding: "7px 8px 7px 12px", display: "inline-block" }}>
+                META:
+              </span>
+              <span
+                style={{
+                  color: ts.colors.primary,
+                  fontWeight: 900,
+                  fontSize: `${10 * ts.fontSizeMultiplier}px`,
+                  backgroundColor: ts.colors.tertiary,
+                  borderLeft: `1px solid ${ts.colors.tertiaryBorder}`,
+                  padding: "7px 15px",
+                  display: "inline-block",
+                }}
+              >
+                {kcal.toLocaleString()} kcal
+              </span>
+            </td>
+          )}
         </tr>
       </tbody>
     </table>

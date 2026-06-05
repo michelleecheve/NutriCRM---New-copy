@@ -3,7 +3,8 @@ import {
   Sparkles, Eye, EyeOff, Layout,
   X,
   Table as TableIcon, FileText, Copy, Check,
-  Lock, Unlock, Bookmark, Shuffle, Sliders, Palette, Pin
+  Lock, Unlock, Bookmark, Shuffle, Sliders, Palette, Pin,
+  Eraser, Trash2, Printer
 } from 'lucide-react';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, MenuTemplateDesign, MenuRecommendationData, MenuDesignConfig, DEFAULT_VISUAL_THEME } from '../../types';
 import { MenuDesignPanel } from '../menus_components/MenuDesignPanel';
@@ -171,11 +172,55 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const [saveTemplateSuccess, setSaveTemplateSuccess] = useState<'ref' | 'rec' | 'eating_out' | null>(null);
 
   const toolbarRef = useRef<MenuEditorToolbarHandle>(null);
+  const deleteDropdownRef = useRef<HTMLDivElement>(null);
+  const [showDeleteDropdown, setShowDeleteDropdown] = useState(false);
   const [designModalOpen, setDesignModalOpen] = useState(false);
   const [isBannerPinned, setIsBannerPinned] = useState(() => {
     try { return localStorage.getItem('nutriflow_banner_pinned') !== 'false'; }
     catch { return true; }
   });
+
+  // ─── Delete dropdown click-outside ────────────────────────────────────────
+  useEffect(() => {
+    if (!showDeleteDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (deleteDropdownRef.current && !deleteDropdownRef.current.contains(e.target as Node)) {
+        setShowDeleteDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showDeleteDropdown]);
+
+  // ─── Borrar páginas ────────────────────────────────────────────────────────
+  const getDeleteablePageCount = () => {
+    if (!menuPreviewData) return 0;
+    let count = 2;
+    if (menuPreviewData.eatingOutPage) count++;
+    return count;
+  };
+
+  const handleDeletePage = (page: number) => {
+    if (!menuPreviewData) return;
+    setShowDeleteDropdown(false);
+    if (page === 1) {
+      const blank = buildBlankMenuPlanData(patient, vetData, getNutritionistData(), evaluationId);
+      handleSetMenuPreviewData({ ...menuPreviewData, weeklyMenu: blank.weeklyMenu, portions: blank.portions });
+    } else if (page === 2) {
+      handleSetMenuPreviewData({ ...menuPreviewData, recommendations: { preparacion: [], restricciones: [], habitos: [], organizacion: [] } });
+    } else if (page === 3) {
+      const { eatingOutPage: _removed, ...rest } = menuPreviewData as any;
+      handleSetMenuPreviewData(rest);
+    }
+    setEditTablaKey(k => k + 1);
+  };
+
+  const handleDeleteAllPages = () => {
+    setShowDeleteDropdown(false);
+    handleSetMenuPreviewData(null);
+    setAiRationale('');
+    setAiDraftText('');
+  };
 
   // ─── Wrapper for setMenuPreviewData that marks dirty ─────────────────────
   const handleSetMenuPreviewData = (data: MenuPlanData | null) => {
@@ -1371,13 +1416,13 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                   ? 'Selecciona referencias o recomendaciones en la sección anterior'
                   : 'Copiar estructura y datos de una referencia o recomendaciones'
               }
-              className={`flex-1 min-w-[180px] flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition-all border-2 ${
+              className={`shrink-0 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all border-2 text-sm ${
                 isLocked || (availableRefs.length === 0 && availableRecs.length === 0)
                   ? 'border-slate-100 text-slate-300 cursor-not-allowed'
                   : 'border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
               }`}
             >
-              <Copy className="w-5 h-5" />
+              <Copy className="w-4 h-4" />
               Copiar de Plantillas
             </button>
 
@@ -1385,26 +1430,65 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             <button
               onClick={() => setShowAiOptionsModal(true)}
               disabled={isGenerating || isMixing || isAdapting || isLocked}
-              className={`flex-1 min-w-[180px] flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition-all shadow-lg ${
+              className={`shrink-0 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all shadow-lg text-sm ${
                 isGenerating || isMixing || isAdapting || isLocked
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
                 : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/20'
               }`}
             >
-              <Sparkles className={`w-5 h-5 ${isGenerating ? 'animate-pulse' : ''}`} />
-              {isGenerating ? 'Generando...' : 'Generar menú con AI'}
+              <Sparkles className={`w-4 h-4 ${isGenerating ? 'animate-pulse' : ''}`} />
+              {isGenerating ? 'Generando...' : 'Generar con AI'}
             </button>
 
-            <MenuExportPDF
-              elementId="menu-print-area"
-              filename={`Menu_${patient.firstName}_${new Date().toISOString().split('T')[0]}`}
-              disabled={!menuPreviewData}
-              className={`flex-1 min-w-[180px] flex items-center justify-center gap-2 py-3 rounded-2xl font-bold transition-all border-2 ${
-                !menuPreviewData
-                ? 'border-slate-100 text-slate-300 cursor-not-allowed'
-                : 'border-slate-800 text-slate-800 hover:bg-slate-50'
-              }`}
-            />
+            <div className="relative flex-1 min-w-[200px] flex gap-1" ref={deleteDropdownRef}>
+              <MenuExportPDF
+                elementId="menu-print-area"
+                filename={`Menu_${patient.firstName}_${new Date().toISOString().split('T')[0]}`}
+                disabled={!menuPreviewData}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all border-2 text-sm ${
+                  !menuPreviewData
+                  ? 'border-slate-100 text-slate-300 cursor-not-allowed'
+                  : 'border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
+                }`}
+              >
+                <Printer className="w-4 h-4" />
+                Exportar PDF
+              </MenuExportPDF>
+              <button
+                onClick={() => setShowDeleteDropdown(prev => !prev)}
+                disabled={!menuPreviewData}
+                title="Borrar páginas del menú"
+                className={`shrink-0 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all border-2 text-sm ${
+                  !menuPreviewData
+                    ? 'border-slate-100 text-slate-300 cursor-not-allowed'
+                    : 'border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
+                }`}
+              >
+                <Eraser className="w-4 h-4" />
+                Borrar página
+              </button>
+
+              {showDeleteDropdown && menuPreviewData && (
+                <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-30 min-w-[210px]">
+                  <button
+                    onClick={handleDeleteAllPages}
+                    className="w-full flex items-center px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    Borrar todas las páginas
+                  </button>
+                  <div className="border-t border-slate-100 my-1" />
+                  {Array.from({ length: getDeleteablePageCount() }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => handleDeletePage(page)}
+                      className="w-full flex items-center px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      Borrar página {page}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
           </div>
 

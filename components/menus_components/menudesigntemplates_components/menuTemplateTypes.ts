@@ -100,6 +100,12 @@ export interface MenuPlanData {
     fatPct: number;
   };
   kcal: number;
+  hiddenFields?: {
+    age?: boolean;
+    weight?: boolean;
+    fatPct?: boolean;
+    kcal?: boolean;
+  };
   portions: {
     lacteos: number;
     vegetales: number;
@@ -189,7 +195,7 @@ export const PORTION_GROUPS: {
   { key: "vegetales", label: "VEGETALES", emoji: "🥦" },
   { key: "frutas", label: "FRUTAS", emoji: "🍎" },
   { key: "cereales", label: "CEREALES", emoji: "🌾" },
-  { key: "carnes", label: "CARNES", emoji: "🥩" },
+  { key: "carnes", label: "PROTEÍNA", emoji: "🥚" },
   { key: "grasas", label: "GRASAS", emoji: "🫒" },
 ];
 

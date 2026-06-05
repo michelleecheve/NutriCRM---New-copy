@@ -152,7 +152,7 @@ export const MenuOnlyPage: React.FC<{
   return (
     <A4Wrapper id="menu-page-1" footer={<Footer nutritionist={data.nutritionist} />}>
       <Header nutritionist={data.nutritionist} planTitle={titles.planTitle} />
-      <PatientBar patient={data.patient} kcal={data.kcal} />
+      <PatientBar patient={data.patient} kcal={data.kcal} hiddenFields={data.hiddenFields} />
       <div style={{ fontSize: `${10 * ts.fontSizeMultiplier}px`, fontWeight: 800, color: ts.colors.primary, textTransform: "uppercase", letterSpacing: "1px", marginBottom: "8px" }}>
         MENÚ SEMANAL
       </div>
@@ -242,7 +242,7 @@ export const PortionsAndRecsPage: React.FC<{ data: MenuPlanData }> = ({ data }) 
   return (
     <A4Wrapper id="portions-recs-page" footer={<Footer nutritionist={data.nutritionist} />}>
       <Header nutritionist={data.nutritionist} planTitle={titles.planTitle} />
-      <PatientBar patient={data.patient} kcal={data.kcal} />
+      <PatientBar patient={data.patient} kcal={data.kcal} hiddenFields={data.hiddenFields} />
       <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
 
       <div style={{ fontSize: `${10 * ts.fontSizeMultiplier}px`, fontWeight: 800, color: ts.colors.primary, textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: "10px", marginTop: "4px", textAlign: "center" }}>
@@ -285,7 +285,7 @@ export const PortionsOnlyPage: React.FC<{ data: MenuPlanData }> = ({ data }) => 
   return (
     <A4Wrapper id="portions-page" footer={<Footer nutritionist={data.nutritionist} />}>
       <Header nutritionist={data.nutritionist} planTitle={titles.planTitle} />
-      <PatientBar patient={data.patient} kcal={data.kcal} />
+      <PatientBar patient={data.patient} kcal={data.kcal} hiddenFields={data.hiddenFields} />
       <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
     </A4Wrapper>
   );

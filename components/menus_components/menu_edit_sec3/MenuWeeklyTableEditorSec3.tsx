@@ -1,14 +1,42 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, Copy, ChevronDown, ChevronUp, Sun, CalendarDays, AlertCircle, Paintbrush, Upload, X, Info, CheckCircle, Sparkles, FileText, Loader2, Image } from 'lucide-react';
-import { MenuPlanData, DomingoV2 } from '../MenuDesignTemplates';
-import { aiService } from '../../../services/aiService';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Calendar,
+  Copy,
+  ChevronDown,
+  ChevronUp,
+  Sun,
+  CalendarDays,
+  AlertCircle,
+  Paintbrush,
+  Upload,
+  X,
+  Info,
+  CheckCircle,
+  Sparkles,
+  FileText,
+  Loader2,
+  Image,
+} from "lucide-react";
+import { MenuPlanData, DomingoV2 } from "../MenuDesignTemplates";
+import { aiService } from "../../../services/aiService";
 
-const WEEKDAYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'] as const;
-type WeekDay = typeof WEEKDAYS[number];
+const WEEKDAYS = [
+  "lunes",
+  "martes",
+  "miercoles",
+  "jueves",
+  "viernes",
+  "sabado",
+] as const;
+type WeekDay = (typeof WEEKDAYS)[number];
 
 const DAY_LABEL: Record<WeekDay, string> = {
-  lunes: 'Lun', martes: 'Mar', miercoles: 'Mié',
-  jueves: 'Jue', viernes: 'Vie', sabado: 'Sáb',
+  lunes: "Lun",
+  martes: "Mar",
+  miercoles: "Mié",
+  jueves: "Jue",
+  viernes: "Vie",
+  sabado: "Sáb",
 };
 
 type LocalGrid = Record<string, Record<string, string>>; // mealId → dayKey → title
@@ -20,7 +48,7 @@ interface AiImportResult {
   has_notes: boolean;
   has_hydration: boolean;
   grid: LocalGrid;
-  domingo_mode: 'libre' | 'completo';
+  domingo_mode: "libre" | "completo";
   domingo_note: string;
   domingo_hydration: string;
   domingo_meals: Record<string, string>;
@@ -29,7 +57,7 @@ interface AiImportResult {
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve((reader.result as string).split(',')[1]);
+    reader.onload = () => resolve((reader.result as string).split(",")[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -43,33 +71,55 @@ interface Props {
 const TABLE_MIN_WIDTH_LIBRE = 1360;
 const TABLE_MIN_WIDTH_COMPLETO = 1570;
 
-export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewData, visible }) => {
+export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
+  menuPreviewData,
+  setMenuPreviewData,
+  visible,
+}) => {
   const [open, setOpen] = useState(true);
-  const [copiedSource, setCopiedSource] = useState<WeekDay | 'domingo' | null>(null);
-  const [clipboard, setClipboard] = useState<Record<string, string> | null>(null);
+  const [copiedSource, setCopiedSource] = useState<WeekDay | "domingo" | null>(
+    null,
+  );
+  const [clipboard, setClipboard] = useState<Record<string, string> | null>(
+    null,
+  );
   const [isDirty, setIsDirty] = useState(false);
   const [tableCopied, setTableCopied] = useState(false);
   const [copyPasteOpen, setCopyPasteOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [importText, setImportText] = useState('');
+  const [importText, setImportText] = useState("");
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [importSuccess, setImportSuccess] = useState(false);
   const [aiImportOpen, setAiImportOpen] = useState(false);
-  const [aiImportText, setAiImportText] = useState('');
+  const [aiImportText, setAiImportText] = useState("");
   const [aiImportFile, setAiImportFile] = useState<File | null>(null);
   const [aiImportLoading, setAiImportLoading] = useState(false);
-  const [aiImportResult, setAiImportResult] = useState<AiImportResult | null>(null);
+  const [aiImportResult, setAiImportResult] = useState<AiImportResult | null>(
+    null,
+  );
   const [aiImportApplied, setAiImportApplied] = useState(false);
-  const [aiImportError, setAiImportError] = useState('');
-  const [aiImportPreviewUrl, setAiImportPreviewUrl] = useState<string | null>(null);
+  const [aiImportError, setAiImportError] = useState("");
+  const [aiImportPreviewUrl, setAiImportPreviewUrl] = useState<string | null>(
+    null,
+  );
 
   // Ref that always tracks the latest menuPreviewData prop for use inside timers
   const menuPreviewDataRef = useRef(menuPreviewData);
-  useEffect(() => { menuPreviewDataRef.current = menuPreviewData; });
+  useEffect(() => {
+    menuPreviewDataRef.current = menuPreviewData;
+  });
 
   // Keep latestRef in sync so flush-on-unmount always has current values
   useEffect(() => {
-    latestRef.current = { grid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration };
+    latestRef.current = {
+      grid,
+      meals,
+      domingoNote,
+      hydration,
+      domingoV2Grid,
+      domingoV2Note,
+      domingoV2Hydration,
+    };
   });
 
   // Flush any pending debounce commit when the component unmounts
@@ -79,7 +129,17 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
         clearTimeout(commitTimerRef.current);
         commitTimerRef.current = null;
         const s = latestRef.current;
-        setMenuPreviewData(buildWeeklyData(s.grid, s.meals, s.domingoNote, s.hydration, s.domingoV2Grid, s.domingoV2Note, s.domingoV2Hydration));
+        setMenuPreviewData(
+          buildWeeklyData(
+            s.grid,
+            s.meals,
+            s.domingoNote,
+            s.hydration,
+            s.domingoV2Grid,
+            s.domingoV2Note,
+            s.domingoV2Hydration,
+          ),
+        );
       }
     };
   }, []); // eslint-disable-line
@@ -88,13 +148,21 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getMeals = (): { id: string; label: string }[] => {
-    const order = menuPreviewData.weeklyMenu.lunes.mealsOrder ||
-      ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
+    const order = menuPreviewData.weeklyMenu.lunes.mealsOrder || [
+      "desayuno",
+      "refaccion1",
+      "almuerzo",
+      "refaccion2",
+      "cena",
+    ];
     const defaults: Record<string, string> = {
-      desayuno: 'Desayuno', refaccion1: 'Refacción 1',
-      almuerzo: 'Almuerzo', refaccion2: 'Refacción 2', cena: 'Cena',
+      desayuno: "Desayuno",
+      refaccion1: "Refacción 1",
+      almuerzo: "Almuerzo",
+      refaccion2: "Refacción 2",
+      cena: "Cena",
     };
-    return order.map(id => {
+    return order.map((id) => {
       const m = (menuPreviewData.weeklyMenu.lunes as any)[id];
       return { id, label: m?.label || defaults[id] || id };
     });
@@ -105,17 +173,19 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     const g: LocalGrid = {};
     mealList.forEach(({ id }) => {
       g[id] = {};
-      WEEKDAYS.forEach(day => {
-        g[id][day] = (menuPreviewData.weeklyMenu[day] as any)[id]?.title || '';
+      WEEKDAYS.forEach((day) => {
+        g[id][day] = (menuPreviewData.weeklyMenu[day] as any)[id]?.title || "";
       });
     });
     return g;
   };
 
-  const buildDomingoV2Grid = (mealList: { id: string }[]): Record<string, string> => {
+  const buildDomingoV2Grid = (
+    mealList: { id: string }[],
+  ): Record<string, string> => {
     const r: Record<string, string> = {};
     mealList.forEach(({ id }) => {
-      r[id] = (menuPreviewData.weeklyMenu.domingoV2 as any)?.[id]?.title || '';
+      r[id] = (menuPreviewData.weeklyMenu.domingoV2 as any)?.[id]?.title || "";
     });
     return r;
   };
@@ -123,26 +193,47 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
   const [meals, setMeals] = useState<{ id: string; label: string }[]>(getMeals);
   const [grid, setGrid] = useState<LocalGrid>(buildGrid);
   const [domingoV2Grid, setDomingoV2Grid] = useState<Record<string, string>>(
-    () => buildDomingoV2Grid(getMeals())
+    () => buildDomingoV2Grid(getMeals()),
   );
-  const [domingoNote, setDomingoNote] = useState(menuPreviewData.weeklyMenu.domingo.note || '');
-  const [hydration, setHydration] = useState(menuPreviewData.weeklyMenu.domingo.hydration || '');
-  const [domingoV2Note, setDomingoV2Note] = useState(menuPreviewData.weeklyMenu.domingoV2?.note || '');
-  const [domingoV2Hydration, setDomingoV2Hydration] = useState(menuPreviewData.weeklyMenu.domingoV2?.hydration || '');
-
-  const hasV2Data = meals.some(m => (menuPreviewData.weeklyMenu.domingoV2 as any)?.[m.id]?.title);
-  const [domingoMode, setDomingoMode] = useState<'libre' | 'completo'>(
-    menuPreviewData.weeklyMenu.domingoMode ?? (hasV2Data ? 'completo' : 'libre')
+  const [domingoNote, setDomingoNote] = useState(
+    menuPreviewData.weeklyMenu.domingo.note || "",
+  );
+  const [hydration, setHydration] = useState(
+    menuPreviewData.weeklyMenu.domingo.hydration || "",
+  );
+  const [domingoV2Note, setDomingoV2Note] = useState(
+    menuPreviewData.weeklyMenu.domingoV2?.note || "",
+  );
+  const [domingoV2Hydration, setDomingoV2Hydration] = useState(
+    menuPreviewData.weeklyMenu.domingoV2?.hydration || "",
   );
 
-  const textareaRefs = useRef<Record<string, Record<string, HTMLTextAreaElement | null>>>({});
+  const hasV2Data = meals.some(
+    (m) => (menuPreviewData.weeklyMenu.domingoV2 as any)?.[m.id]?.title,
+  );
+  const [domingoMode, setDomingoMode] = useState<"libre" | "completo">(
+    menuPreviewData.weeklyMenu.domingoMode ??
+      (hasV2Data ? "completo" : "libre"),
+  );
+
+  const textareaRefs = useRef<
+    Record<string, Record<string, HTMLTextAreaElement | null>>
+  >({});
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const topScrollRef = useRef<HTMLDivElement>(null);
   const isSyncing = useRef(false);
   const aiFileInputRef = useRef<HTMLInputElement>(null);
 
   // Tracks latest state values so the cleanup effect can flush on unmount
-  const latestRef = useRef({ grid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration });
+  const latestRef = useRef({
+    grid,
+    meals,
+    domingoNote,
+    hydration,
+    domingoV2Grid,
+    domingoV2Note,
+    domingoV2Hydration,
+  });
 
   const handleTableScroll = () => {
     if (isSyncing.current) return;
@@ -164,23 +255,31 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     const refs = textareaRefs.current[mealId];
     if (!refs) return;
     const els = Object.values(refs).filter(Boolean) as HTMLTextAreaElement[];
-    els.forEach(el => { el.style.height = 'auto'; });
-    const maxH = Math.max(...els.map(el => el.scrollHeight), 36);
-    els.forEach(el => { el.style.height = maxH + 'px'; });
+    els.forEach((el) => {
+      el.style.height = "auto";
+    });
+    const maxH = Math.max(...els.map((el) => el.scrollHeight), 36);
+    els.forEach((el) => {
+      el.style.height = maxH + "px";
+    });
   };
 
-  const setTextareaRef = (mealId: string, day: string, el: HTMLTextAreaElement | null) => {
+  const setTextareaRef = (
+    mealId: string,
+    day: string,
+    el: HTMLTextAreaElement | null,
+  ) => {
     if (!textareaRefs.current[mealId]) textareaRefs.current[mealId] = {};
     textareaRefs.current[mealId][day] = el;
   };
 
   useEffect(() => {
-    setTimeout(() => meals.forEach(meal => syncRowHeights(meal.id)), 0);
+    setTimeout(() => meals.forEach((meal) => syncRowHeights(meal.id)), 0);
   }, [domingoMode]); // eslint-disable-line
 
   useEffect(() => {
     if (open) {
-      setTimeout(() => meals.forEach(meal => syncRowHeights(meal.id)), 0);
+      setTimeout(() => meals.forEach((meal) => syncRowHeights(meal.id)), 0);
     }
   }, [open]); // eslint-disable-line
 
@@ -188,7 +287,10 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
   // because scrollHeight measurements are 0 while the container is display:none
   useEffect(() => {
     if (visible) {
-      setTimeout(() => latestRef.current.meals.forEach(m => syncRowHeights(m.id)), 50);
+      setTimeout(
+        () => latestRef.current.meals.forEach((m) => syncRowHeights(m.id)),
+        50,
+      );
     }
   }, [visible]); // eslint-disable-line
 
@@ -200,27 +302,40 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     dHydration: string,
     dV2Grid: Record<string, string>,
     dV2Note: string,
-    dV2Hydration: string
+    dV2Hydration: string,
   ): MenuPlanData => {
     const base = menuPreviewDataRef.current;
     const newWeekly = { ...base.weeklyMenu } as any;
-    const newOrder = ms.map(m => m.id);
+    const newOrder = ms.map((m) => m.id);
 
-    WEEKDAYS.forEach(day => {
+    WEEKDAYS.forEach((day) => {
       const dayData = { ...newWeekly[day], mealsOrder: newOrder };
       ms.forEach(({ id, label }) => {
-        dayData[id] = { ...dayData[id], title: g[id]?.[day] || '', label };
+        dayData[id] = { ...dayData[id], title: g[id]?.[day] || "", label };
       });
       newWeekly[day] = dayData;
     });
 
     const baseV2: any = newWeekly.domingoV2 || {};
-    const updatedV2: DomingoV2 = { ...baseV2, mealsOrder: newOrder, note: dV2Note, hydration: dV2Hydration };
+    const updatedV2: DomingoV2 = {
+      ...baseV2,
+      mealsOrder: newOrder,
+      note: dV2Note,
+      hydration: dV2Hydration,
+    };
     ms.forEach(({ id, label }) => {
-      (updatedV2 as any)[id] = { ...(baseV2[id] || {}), title: dV2Grid[id] || '', label };
+      (updatedV2 as any)[id] = {
+        ...(baseV2[id] || {}),
+        title: dV2Grid[id] || "",
+        label,
+      };
     });
     newWeekly.domingoV2 = updatedV2;
-    newWeekly.domingo = { ...newWeekly.domingo, note: dNote, hydration: dHydration };
+    newWeekly.domingo = {
+      ...newWeekly.domingo,
+      note: dNote,
+      hydration: dHydration,
+    };
 
     return { ...base, weeklyMenu: newWeekly };
   };
@@ -233,16 +348,26 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     dHydration: string,
     dV2Grid: Record<string, string>,
     dV2Note: string,
-    dV2Hydration: string
+    dV2Hydration: string,
   ) => {
     if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
     commitTimerRef.current = setTimeout(() => {
       commitTimerRef.current = null;
-      setMenuPreviewData(buildWeeklyData(g, ms, dNote, dHydration, dV2Grid, dV2Note, dV2Hydration));
+      setMenuPreviewData(
+        buildWeeklyData(
+          g,
+          ms,
+          dNote,
+          dHydration,
+          dV2Grid,
+          dV2Note,
+          dV2Hydration,
+        ),
+      );
     }, 500);
   };
 
-  const switchDomingoMode = (mode: 'libre' | 'completo') => {
+  const switchDomingoMode = (mode: "libre" | "completo") => {
     setDomingoMode(mode);
     setMenuPreviewData({
       ...menuPreviewData,
@@ -252,7 +377,9 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
 
   const copyDay = (day: WeekDay) => {
     const snap: Record<string, string> = {};
-    meals.forEach(({ id }) => { snap[id] = grid[id]?.[day] || ''; });
+    meals.forEach(({ id }) => {
+      snap[id] = grid[id]?.[day] || "";
+    });
     setClipboard(snap);
     setCopiedSource(day);
   };
@@ -261,71 +388,99 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     if (!clipboard || copiedSource === dstDay) return;
     const newGrid = { ...grid };
     meals.forEach(({ id }) => {
-      newGrid[id] = { ...newGrid[id], [dstDay]: clipboard[id] || '' };
+      newGrid[id] = { ...newGrid[id], [dstDay]: clipboard[id] || "" };
     });
     setGrid(newGrid);
     setIsDirty(true);
-    scheduleCommit(newGrid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
-    setTimeout(() => meals.forEach(meal => syncRowHeights(meal.id)), 0);
+    scheduleCommit(
+      newGrid,
+      meals,
+      domingoNote,
+      hydration,
+      domingoV2Grid,
+      domingoV2Note,
+      domingoV2Hydration,
+    );
+    setTimeout(() => meals.forEach((meal) => syncRowHeights(meal.id)), 0);
   };
 
   const copyDomingo = () => {
     const snap: Record<string, string> = {};
-    meals.forEach(({ id }) => { snap[id] = domingoV2Grid[id] || ''; });
+    meals.forEach(({ id }) => {
+      snap[id] = domingoV2Grid[id] || "";
+    });
     setClipboard(snap);
-    setCopiedSource('domingo');
+    setCopiedSource("domingo");
   };
 
   const pasteToDomingo = () => {
-    if (!clipboard || copiedSource === 'domingo') return;
+    if (!clipboard || copiedSource === "domingo") return;
     const newDomingoV2Grid = { ...clipboard };
     setDomingoV2Grid(newDomingoV2Grid);
     setIsDirty(true);
-    scheduleCommit(grid, meals, domingoNote, hydration, newDomingoV2Grid, domingoV2Note, domingoV2Hydration);
-    setTimeout(() => meals.forEach(meal => syncRowHeights(meal.id)), 0);
+    scheduleCommit(
+      grid,
+      meals,
+      domingoNote,
+      hydration,
+      newDomingoV2Grid,
+      domingoV2Note,
+      domingoV2Hydration,
+    );
+    setTimeout(() => meals.forEach((meal) => syncRowHeights(meal.id)), 0);
   };
 
   const copyTableAsText = () => {
     const FULL_DAY_LABEL: Record<string, string> = {
-      lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles',
-      jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo',
+      lunes: "Lunes",
+      martes: "Martes",
+      miercoles: "Miércoles",
+      jueves: "Jueves",
+      viernes: "Viernes",
+      sabado: "Sábado",
+      domingo: "Domingo",
     };
 
-    const allDays = domingoMode === 'completo'
-      ? [...WEEKDAYS, 'domingo' as const]
-      : [...WEEKDAYS];
+    const allDays =
+      domingoMode === "completo"
+        ? [...WEEKDAYS, "domingo" as const]
+        : [...WEEKDAYS];
 
     const blocks: string[] = [];
 
-    allDays.forEach(day => {
+    allDays.forEach((day) => {
       const dayLabel = FULL_DAY_LABEL[day];
       const mealChunks: string[] = [];
-      meals.forEach(meal => {
-        const content = day === 'domingo'
-          ? (domingoV2Grid[meal.id] || '').trim()
-          : (grid[meal.id]?.[day as WeekDay] || '').trim();
+      meals.forEach((meal) => {
+        const content =
+          day === "domingo"
+            ? (domingoV2Grid[meal.id] || "").trim()
+            : (grid[meal.id]?.[day as WeekDay] || "").trim();
         if (content) {
           mealChunks.push(`${meal.label} ${dayLabel}:\n${content}`);
         }
       });
       if (mealChunks.length > 0) {
-        blocks.push(`Dia: ${dayLabel}\n${mealChunks.join('\n\n')}`);
+        blocks.push(`Dia: ${dayLabel}\n${mealChunks.join("\n\n")}`);
       }
     });
 
-    if (domingoMode === 'libre') {
+    if (domingoMode === "libre") {
       const extras: string[] = [];
       if (domingoNote) extras.push(`Indicaciones domingo:\n${domingoNote}`);
       if (hydration) extras.push(`Hidratación domingo:\n${hydration}`);
-      if (extras.length > 0) blocks.push(`Dia: Domingo\n${extras.join('\n\n')}`);
+      if (extras.length > 0)
+        blocks.push(`Dia: Domingo\n${extras.join("\n\n")}`);
     } else {
       const extras: string[] = [];
       if (domingoV2Note) extras.push(`Nota domingo:\n${domingoV2Note}`);
-      if (domingoV2Hydration) extras.push(`Hidratación domingo:\n${domingoV2Hydration}`);
-      if (extras.length > 0) blocks.push(`Dia: Domingo\n${extras.join('\n\n')}`);
+      if (domingoV2Hydration)
+        extras.push(`Hidratación domingo:\n${domingoV2Hydration}`);
+      if (extras.length > 0)
+        blocks.push(`Dia: Domingo\n${extras.join("\n\n")}`);
     }
 
-    const text = blocks.join('\n\n\n');
+    const text = blocks.join("\n\n\n");
 
     navigator.clipboard.writeText(text).then(() => {
       setTableCopied(true);
@@ -334,43 +489,57 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
   };
 
   const normStr = (s: string) =>
-    s.toLowerCase()
-     .normalize('NFD').replace(/[̀-ͯ]/g, '')
-     .replace(/[^a-z0-9\s]/g, '')
-     .trim();
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9\s]/g, "")
+      .trim();
 
-  const DAY_NORM_KEY: Record<string, WeekDay | 'domingo'> = {
-    lunes: 'lunes', martes: 'martes', miercoles: 'miercoles',
-    jueves: 'jueves', viernes: 'viernes', sabado: 'sabado', domingo: 'domingo',
+  const DAY_NORM_KEY: Record<string, WeekDay | "domingo"> = {
+    lunes: "lunes",
+    martes: "martes",
+    miercoles: "miercoles",
+    jueves: "jueves",
+    viernes: "viernes",
+    sabado: "sabado",
+    domingo: "domingo",
   };
 
   const parseAndApply = () => {
     const errors: string[] = [];
 
     const clonedGrid: LocalGrid = {};
-    Object.keys(grid).forEach(mId => { clonedGrid[mId] = { ...grid[mId] }; });
+    Object.keys(grid).forEach((mId) => {
+      clonedGrid[mId] = { ...grid[mId] };
+    });
     const newDomingoV2Grid = { ...domingoV2Grid };
 
     // Pre-compute normalized meal labels (skip empty labels)
     const mealNormMap = meals
-      .map(m => ({ id: m.id, norm: normStr(m.label) }))
-      .filter(m => m.norm.length > 0);
+      .map((m) => ({ id: m.id, norm: normStr(m.label) }))
+      .filter((m) => m.norm.length > 0);
 
     // Trigger 1: line is "dia" + optional punct + day name (e.g. "Dia: Lunes", "Día Martes:")
-    const matchDayTrigger = (norm: string): WeekDay | 'domingo' | null => {
+    const matchDayTrigger = (norm: string): WeekDay | "domingo" | null => {
       const m = norm.match(/^dia\s*:?\s*(\w+)/);
       if (!m) return null;
       return DAY_NORM_KEY[m[1]] ?? null;
     };
 
     // Trigger 2: line is [meal label] [day name] only (e.g. "Desayuno Lunes:", "Refacción 1 Martes")
-    const matchMealDayTrigger = (norm: string): { mealId: string; dayKey: WeekDay | 'domingo' } | null => {
+    const matchMealDayTrigger = (
+      norm: string,
+    ): { mealId: string; dayKey: WeekDay | "domingo" } | null => {
       for (const { id, norm: mNorm } of mealNormMap) {
         if (!norm.startsWith(mNorm)) continue;
         // Require a word boundary after the meal label
         const boundary = norm[mNorm.length];
-        if (boundary !== undefined && boundary !== ' ') continue;
-        const rest = norm.slice(mNorm.length).replace(/^[\s:]+/, '').replace(/[\s:]+$/, '');
+        if (boundary !== undefined && boundary !== " ") continue;
+        const rest = norm
+          .slice(mNorm.length)
+          .replace(/^[\s:]+/, "")
+          .replace(/[\s:]+$/, "");
         const parts = rest.split(/\s+/).filter(Boolean);
         // Must be exactly one word left and that word must be a day name
         if (parts.length !== 1) continue;
@@ -381,20 +550,23 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     };
 
     let currentMealId: string | null = null;
-    let currentDayKey: WeekDay | 'domingo' | null = null;
+    let currentDayKey: WeekDay | "domingo" | null = null;
     let contentLines: string[] = [];
 
     const flushContent = () => {
       if (!currentMealId || !currentDayKey) return;
-      const content = contentLines.join('\n').trim();
-      if (currentDayKey === 'domingo') {
+      const content = contentLines.join("\n").trim();
+      if (currentDayKey === "domingo") {
         newDomingoV2Grid[currentMealId] = content;
       } else {
-        clonedGrid[currentMealId] = { ...clonedGrid[currentMealId], [currentDayKey as WeekDay]: content };
+        clonedGrid[currentMealId] = {
+          ...clonedGrid[currentMealId],
+          [currentDayKey as WeekDay]: content,
+        };
       }
     };
 
-    for (const rawLine of importText.split('\n')) {
+    for (const rawLine of importText.split("\n")) {
       const norm = normStr(rawLine);
 
       // Check meal+day trigger first (more specific)
@@ -419,19 +591,27 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
       // Warn if line looks like a day header but the day name isn't recognized
       const dayAttemptMatch = norm.match(/^dia\s*:?\s*([a-z]+)/);
       if (dayAttemptMatch && !DAY_NORM_KEY[dayAttemptMatch[1]]) {
-        errors.push(`Día no reconocido: "${rawLine.trim()}". Asegúrate de escribirlo así: Dia Lunes, Dia: Lunes, Día Martes — la palabra "Dia" debe ir siempre al inicio seguida del nombre del día.`);
+        errors.push(
+          `Día no reconocido: "${rawLine.trim()}". Asegúrate de escribirlo así: Dia Lunes, Dia: Lunes, Día Martes — la palabra "Dia" debe ir siempre al inicio seguida del nombre del día.`,
+        );
       }
 
       // Warn if line looks like a meal+day trigger but the day name isn't recognized
       for (const { id: _id, norm: mNorm } of mealNormMap) {
         if (!norm.startsWith(mNorm)) continue;
         const boundary = norm[mNorm.length];
-        if (boundary !== undefined && boundary !== ' ') break;
-        const rest = norm.slice(mNorm.length).replace(/^[\s:]+/, '').replace(/[\s:]+$/, '');
+        if (boundary !== undefined && boundary !== " ") break;
+        const rest = norm
+          .slice(mNorm.length)
+          .replace(/^[\s:]+/, "")
+          .replace(/[\s:]+$/, "");
         const parts = rest.split(/\s+/).filter(Boolean);
         if (parts.length === 1 && !DAY_NORM_KEY[parts[0]]) {
-          const mealLabel = meals.find(m => normStr(m.label) === mNorm)?.label || mNorm;
-          errors.push(`Tiempo de comida no reconocido: "${rawLine.trim()}". Asegúrate de escribirlo así: ${mealLabel} Lunes, ${mealLabel} Martes: — primero el tiempo de comida y luego el nombre del día.`);
+          const mealLabel =
+            meals.find((m) => normStr(m.label) === mNorm)?.label || mNorm;
+          errors.push(
+            `Tiempo de comida no reconocido: "${rawLine.trim()}". Asegúrate de escribirlo así: ${mealLabel} Lunes, ${mealLabel} Martes: — primero el tiempo de comida y luego el nombre del día.`,
+          );
         }
         break;
       }
@@ -449,14 +629,22 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
     setGrid(clonedGrid);
     setDomingoV2Grid(newDomingoV2Grid);
     setIsDirty(true);
-    scheduleCommit(clonedGrid, meals, domingoNote, hydration, newDomingoV2Grid, domingoV2Note, domingoV2Hydration);
-    setTimeout(() => meals.forEach(m => syncRowHeights(m.id)), 0);
+    scheduleCommit(
+      clonedGrid,
+      meals,
+      domingoNote,
+      hydration,
+      newDomingoV2Grid,
+      domingoV2Note,
+      domingoV2Hydration,
+    );
+    setTimeout(() => meals.forEach((m) => syncRowHeights(m.id)), 0);
 
     if (errors.length === 0) {
       setImportSuccess(true);
       setTimeout(() => {
         setImportOpen(false);
-        setImportText('');
+        setImportText("");
         setImportSuccess(false);
         setImportErrors([]);
       }, 1200);
@@ -465,26 +653,31 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({ menuPreviewData, se
 
   const resetAiImport = () => {
     setAiImportOpen(false);
-    setAiImportText('');
+    setAiImportText("");
     setAiImportFile(null);
     if (aiImportPreviewUrl) URL.revokeObjectURL(aiImportPreviewUrl);
     setAiImportPreviewUrl(null);
     setAiImportLoading(false);
     setAiImportResult(null);
     setAiImportApplied(false);
-    setAiImportError('');
-    if (aiFileInputRef.current) aiFileInputRef.current.value = '';
+    setAiImportError("");
+    if (aiFileInputRef.current) aiFileInputRef.current.value = "";
   };
 
   const buildAiSystemInstruction = () => {
-    const mealList = meals.map((m, i) => `  ${i + 1}. ID: "${m.id}" → etiqueta: "${m.label}"`).join('\n');
-    const gridTemplate = meals.map(m =>
-      `    "${m.id}": { "lunes": "contenido ${m.label} lunes", "martes": "contenido ${m.label} martes", "miercoles": "contenido ${m.label} miércoles", "jueves": "contenido ${m.label} jueves", "viernes": "contenido ${m.label} viernes", "sabado": "contenido ${m.label} sábado" }`
-    ).join(',\n');
-    const domingoTemplate = meals.map(m =>
-      `    "${m.id}": "contenido ${m.label} domingo"`
-    ).join(',\n');
-    const mealIdList = meals.map(m => `"${m.id}"`).join(', ');
+    const mealList = meals
+      .map((m, i) => `  ${i + 1}. ID: "${m.id}" → etiqueta: "${m.label}"`)
+      .join("\n");
+    const gridTemplate = meals
+      .map(
+        (m) =>
+          `    "${m.id}": { "lunes": "contenido ${m.label} lunes", "martes": "contenido ${m.label} martes", "miercoles": "contenido ${m.label} miércoles", "jueves": "contenido ${m.label} jueves", "viernes": "contenido ${m.label} viernes", "sabado": "contenido ${m.label} sábado" }`,
+      )
+      .join(",\n");
+    const domingoTemplate = meals
+      .map((m) => `    "${m.id}": "contenido ${m.label} domingo"`)
+      .join(",\n");
+    const mealIdList = meals.map((m) => `"${m.id}"`).join(", ");
     return `Eres un asistente que transcribe menús nutricionales semanales a JSON. Tu único trabajo es COPIAR el contenido del documento al JSON, sin inventar ni modificar nada.
 
 PROCESO OBLIGATORIO (en este orden):
@@ -499,7 +692,7 @@ ${mealList}
 
 REGLAS DE MAPEO:
 - Busca el tiempo de comida del documento que mejor coincida con cada ID configurado (por nombre o posición en el día)
-- NOMBRES REPETIDOS: si el documento tiene dos tiempos con el mismo nombre o similar (ej: dos "Refacción", dos "Snack", dos "Colación"), asígnalos EN ORDEN DE APARICIÓN a los IDs configurados que tengan nombre similar. Ejemplo: primera "Refacción" → ID ${meals.find(m => /refaccion|snack|colacion/i.test(m.label))?.id || meals[1]?.id || 'refaccion1'}, segunda "Refacción" → ID ${meals.filter(m => /refaccion|snack|colacion/i.test(m.label))[1]?.id || meals[3]?.id || 'refaccion2'}
+- NOMBRES REPETIDOS: si el documento tiene dos tiempos con el mismo nombre o similar (ej: dos "Refacción", dos "Snack", dos "Colación"), asígnalos EN ORDEN DE APARICIÓN a los IDs configurados que tengan nombre similar. Ejemplo: primera "Refacción" → ID ${meals.find((m) => /refaccion|snack|colacion/i.test(m.label))?.id || meals[1]?.id || "refaccion1"}, segunda "Refacción" → ID ${meals.filter((m) => /refaccion|snack|colacion/i.test(m.label))[1]?.id || meals[3]?.id || "refaccion2"}
 - TIEMPOS EXTRA: si el documento tiene un tiempo de comida que no tiene ID equivalente, agrega su contenido AL FINAL del ID configurado más cercano por posición en el día, separado por una línea en blanco y precedido por el nombre original entre paréntesis. Nunca descartes contenido del documento.
 - DÍAS FALTANTES: si un día no aparece en el documento, usa "" para todas sus celdas e inclúyelo en missing_days
 - NUNCA inventes contenido, días ni tiempos de comida que no estén en el documento
@@ -527,7 +720,7 @@ ${domingoTemplate}
   const analyzeWithAI = async () => {
     if (!aiImportText.trim() && !aiImportFile) return;
     setAiImportLoading(true);
-    setAiImportError('');
+    setAiImportError("");
     setAiImportResult(null);
 
     try {
@@ -536,38 +729,57 @@ ${domingoTemplate}
 
       if (aiImportFile) {
         const base64 = await fileToBase64(aiImportFile);
-        const mimeType = aiImportFile.type || 'application/octet-stream';
+        const mimeType = aiImportFile.type || "application/octet-stream";
         const parts: any[] = [
-          { text: `Analiza este menú semanal y extrae toda la información.${aiImportText.trim() ? '\n\nContexto adicional: ' + aiImportText.trim() : ''}` },
+          {
+            text: `Analiza este menú semanal y extrae toda la información.${aiImportText.trim() ? "\n\nContexto adicional: " + aiImportText.trim() : ""}`,
+          },
           { inline_data: { mime_type: mimeType, data: base64 } },
         ];
-        response = await aiService.invokeGemini(parts, 'general', systemInstruction);
+        response = await aiService.invokeGemini(
+          parts,
+          "general",
+          systemInstruction,
+        );
       } else {
         response = await aiService.invokeGemini(
           `Analiza este menú semanal y extrae toda la información:\n\n${aiImportText.trim()}`,
-          'general',
-          systemInstruction
+          "general",
+          systemInstruction,
         );
       }
 
       // response.output is the raw Gemini API object: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
       let raw: string;
-      if (typeof response.output === 'string') {
+      if (typeof response.output === "string") {
         raw = response.output;
-      } else if (typeof response.output === 'object' && response.output !== null) {
-        const text = response.output?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new Error('La IA no devolvió contenido. Intenta de nuevo.');
+      } else if (
+        typeof response.output === "object" &&
+        response.output !== null
+      ) {
+        const text =
+          response.output?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text)
+          throw new Error("La IA no devolvió contenido. Intenta de nuevo.");
         raw = text;
       } else {
         raw = String(response.output);
       }
-      raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+      raw = raw
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/```\s*$/i, "")
+        .trim();
       setAiImportResult(JSON.parse(raw));
     } catch (err: any) {
-      if (err.message?.includes('JSON') || err.message?.includes('parse')) {
-        setAiImportError('La IA no devolvió un formato válido. Intenta de nuevo.');
+      if (err.message?.includes("JSON") || err.message?.includes("parse")) {
+        setAiImportError(
+          "La IA no devolvió un formato válido. Intenta de nuevo.",
+        );
       } else {
-        setAiImportError(err.message || 'Error al procesar con IA. Intenta de nuevo.');
+        setAiImportError(
+          err.message || "Error al procesar con IA. Intenta de nuevo.",
+        );
       }
     } finally {
       setAiImportLoading(false);
@@ -579,15 +791,23 @@ ${domingoTemplate}
 
     // Validate that the AI result actually has grid content
     const rawGrid = aiImportResult.grid;
-    const hasGridContent = rawGrid && typeof rawGrid === 'object' &&
+    const hasGridContent =
+      rawGrid &&
+      typeof rawGrid === "object" &&
       Object.keys(rawGrid).length > 0 &&
-      Object.values(rawGrid).some(dayMap =>
-        typeof dayMap === 'object' && dayMap !== null &&
-        Object.values(dayMap as Record<string, string>).some(v => typeof v === 'string' && v.trim())
+      Object.values(rawGrid).some(
+        (dayMap) =>
+          typeof dayMap === "object" &&
+          dayMap !== null &&
+          Object.values(dayMap as Record<string, string>).some(
+            (v) => typeof v === "string" && v.trim(),
+          ),
       );
 
     if (!hasGridContent) {
-      setAiImportError('La IA no encontró contenido de comidas en el documento. Revisa que el texto o PDF tenga el menú estructurado por días y tiempos de comida, luego intenta de nuevo.');
+      setAiImportError(
+        "La IA no encontró contenido de comidas en el documento. Revisa que el texto o PDF tenga el menú estructurado por días y tiempos de comida, luego intenta de nuevo.",
+      );
       setAiImportResult(null);
       return;
     }
@@ -595,27 +815,39 @@ ${domingoTemplate}
     const newGrid: LocalGrid = {};
     meals.forEach(({ id }) => {
       newGrid[id] = {};
-      WEEKDAYS.forEach(day => {
+      WEEKDAYS.forEach((day) => {
         const cellValue = rawGrid?.[id]?.[day];
-        newGrid[id][day] = typeof cellValue === 'string' ? cellValue : '';
+        newGrid[id][day] = typeof cellValue === "string" ? cellValue : "";
       });
     });
 
     const newDomingoV2Grid: Record<string, string> = {};
     meals.forEach(({ id }) => {
-      newDomingoV2Grid[id] = aiImportResult.domingo_meals?.[id] ?? '';
+      newDomingoV2Grid[id] = aiImportResult.domingo_meals?.[id] ?? "";
     });
 
-    const newDomingoMode = aiImportResult.domingo_mode ?? 'libre';
-    const newDomingoNote = newDomingoMode === 'libre' ? (aiImportResult.domingo_note ?? '') : domingoNote;
-    const newHydration = newDomingoMode === 'libre' ? (aiImportResult.domingo_hydration ?? '') : hydration;
-    const newDomingoV2Note = newDomingoMode === 'completo' ? (aiImportResult.domingo_note ?? '') : domingoV2Note;
-    const newDomingoV2Hydration = newDomingoMode === 'completo' ? (aiImportResult.domingo_hydration ?? '') : domingoV2Hydration;
+    const newDomingoMode = aiImportResult.domingo_mode ?? "libre";
+    const newDomingoNote =
+      newDomingoMode === "libre"
+        ? (aiImportResult.domingo_note ?? "")
+        : domingoNote;
+    const newHydration =
+      newDomingoMode === "libre"
+        ? (aiImportResult.domingo_hydration ?? "")
+        : hydration;
+    const newDomingoV2Note =
+      newDomingoMode === "completo"
+        ? (aiImportResult.domingo_note ?? "")
+        : domingoV2Note;
+    const newDomingoV2Hydration =
+      newDomingoMode === "completo"
+        ? (aiImportResult.domingo_hydration ?? "")
+        : domingoV2Hydration;
 
     setGrid(newGrid);
     setDomingoV2Grid(newDomingoV2Grid);
     setDomingoMode(newDomingoMode);
-    if (newDomingoMode === 'libre') {
+    if (newDomingoMode === "libre") {
       setDomingoNote(newDomingoNote);
       setHydration(newHydration);
     } else {
@@ -625,11 +857,22 @@ ${domingoTemplate}
 
     setIsDirty(true);
     if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
-    const builtData = buildWeeklyData(newGrid, meals, newDomingoNote, newHydration, newDomingoV2Grid, newDomingoV2Note, newDomingoV2Hydration);
-    setMenuPreviewData({ ...builtData, weeklyMenu: { ...builtData.weeklyMenu, domingoMode: newDomingoMode } });
+    const builtData = buildWeeklyData(
+      newGrid,
+      meals,
+      newDomingoNote,
+      newHydration,
+      newDomingoV2Grid,
+      newDomingoV2Note,
+      newDomingoV2Hydration,
+    );
+    setMenuPreviewData({
+      ...builtData,
+      weeklyMenu: { ...builtData.weeklyMenu, domingoMode: newDomingoMode },
+    });
 
     setAiImportApplied(true);
-    setTimeout(() => meals.forEach(m => syncRowHeights(m.id)), 0);
+    setTimeout(() => meals.forEach((m) => syncRowHeights(m.id)), 0);
     setTimeout(() => resetAiImport(), 2800);
   };
 
@@ -640,32 +883,61 @@ ${domingoTemplate}
     [newMeals[index], newMeals[target]] = [newMeals[target], newMeals[index]];
     setMeals(newMeals);
     setIsDirty(true);
-    scheduleCommit(grid, newMeals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
-    setTimeout(() => newMeals.forEach(m => syncRowHeights(m.id)), 0);
+    scheduleCommit(
+      grid,
+      newMeals,
+      domingoNote,
+      hydration,
+      domingoV2Grid,
+      domingoV2Note,
+      domingoV2Hydration,
+    );
+    setTimeout(() => newMeals.forEach((m) => syncRowHeights(m.id)), 0);
   };
 
   const updateMealLabel = (id: string, label: string) => {
-    const newMeals = meals.map(m => m.id === id ? { ...m, label } : m);
+    const newMeals = meals.map((m) => (m.id === id ? { ...m, label } : m));
     setMeals(newMeals);
     setIsDirty(true);
-    scheduleCommit(grid, newMeals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
+    scheduleCommit(
+      grid,
+      newMeals,
+      domingoNote,
+      hydration,
+      domingoV2Grid,
+      domingoV2Note,
+      domingoV2Hydration,
+    );
   };
 
   const copyMealToAll = (mealId: string) => {
-    const srcTitle = grid[mealId]?.lunes || '';
+    const srcTitle = grid[mealId]?.lunes || "";
     const newGrid = { ...grid };
-    WEEKDAYS.forEach(day => { newGrid[mealId] = { ...newGrid[mealId], [day]: srcTitle }; });
+    WEEKDAYS.forEach((day) => {
+      newGrid[mealId] = { ...newGrid[mealId], [day]: srcTitle };
+    });
     setGrid(newGrid);
     setIsDirty(true);
-    scheduleCommit(newGrid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
+    scheduleCommit(
+      newGrid,
+      meals,
+      domingoNote,
+      hydration,
+      domingoV2Grid,
+      domingoV2Note,
+      domingoV2Hydration,
+    );
     setTimeout(() => syncRowHeights(mealId), 0);
   };
 
   const cellCls =
-    'w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700 font-medium ' +
-    'focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all resize-none leading-relaxed overflow-hidden';
+    "w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700 font-medium " +
+    "focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all resize-none leading-relaxed overflow-hidden";
 
-  const tableMinWidth = domingoMode === 'completo' ? TABLE_MIN_WIDTH_COMPLETO : TABLE_MIN_WIDTH_LIBRE;
+  const tableMinWidth =
+    domingoMode === "completo"
+      ? TABLE_MIN_WIDTH_COMPLETO
+      : TABLE_MIN_WIDTH_LIBRE;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
@@ -674,12 +946,16 @@ ${domingoTemplate}
         {/* Title row */}
         <div className="px-4 py-3 flex items-center justify-between">
           <button
-            onClick={() => setOpen(v => !v)}
+            onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-slate-900 transition-colors"
           >
             <Calendar className="w-4 h-4 text-indigo-600" />
             Menú Semanal
-            {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            {open ? (
+              <ChevronUp className="w-4 h-4 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            )}
           </button>
 
           {/* Controls — desktop only */}
@@ -687,29 +963,44 @@ ${domingoTemplate}
             {/* Dropdown Copiar / Pegar */}
             <div className="relative">
               <button
-                onClick={() => setCopyPasteOpen(v => !v)}
+                onClick={() => setCopyPasteOpen((v) => !v)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border bg-white text-slate-500 border-slate-200 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
               >
                 <Copy className="w-3 h-3" />
                 Copiar / Pegar
-                <ChevronDown className={`w-3 h-3 transition-transform ${copyPasteOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`w-3 h-3 transition-transform ${copyPasteOpen ? "rotate-180" : ""}`}
+                />
               </button>
               {copyPasteOpen && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setCopyPasteOpen(false)} />
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setCopyPasteOpen(false)}
+                  />
                   <div className="absolute right-0 mt-1.5 z-20 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-44">
                     <button
-                      onClick={() => { copyTableAsText(); setCopyPasteOpen(false); }}
+                      onClick={() => {
+                        copyTableAsText();
+                        setCopyPasteOpen(false);
+                      }}
                       className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold transition-colors ${
-                        tableCopied ? 'text-emerald-600 bg-emerald-50' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
+                        tableCopied
+                          ? "text-emerald-600 bg-emerald-50"
+                          : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-600"
                       }`}
                     >
                       <Copy className="w-3.5 h-3.5 shrink-0" />
-                      {tableCopied ? '¡Copiado!' : 'Copiar Menú'}
+                      {tableCopied ? "¡Copiado!" : "Copiar Menú"}
                     </button>
                     <div className="border-t border-slate-100" />
                     <button
-                      onClick={() => { setImportOpen(true); setImportErrors([]); setImportSuccess(false); setCopyPasteOpen(false); }}
+                      onClick={() => {
+                        setImportOpen(true);
+                        setImportErrors([]);
+                        setImportSuccess(false);
+                        setCopyPasteOpen(false);
+                      }}
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                     >
                       <Paintbrush className="w-3.5 h-3.5 shrink-0" />
@@ -717,7 +1008,13 @@ ${domingoTemplate}
                     </button>
                     <div className="border-t border-slate-100" />
                     <button
-                      onClick={() => { setAiImportOpen(true); setAiImportResult(null); setAiImportApplied(false); setAiImportError(''); setCopyPasteOpen(false); }}
+                      onClick={() => {
+                        setAiImportOpen(true);
+                        setAiImportResult(null);
+                        setAiImportApplied(false);
+                        setAiImportError("");
+                        setCopyPasteOpen(false);
+                      }}
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-violet-50 hover:text-violet-600 transition-colors"
                     >
                       <Sparkles className="w-3.5 h-3.5 shrink-0" />
@@ -731,22 +1028,22 @@ ${domingoTemplate}
             {/* Domingo toggle */}
             <div className="flex items-center gap-1.5 bg-slate-100 rounded-xl p-1">
               <button
-                onClick={() => switchDomingoMode('libre')}
+                onClick={() => switchDomingoMode("libre")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  domingoMode === 'libre'
-                    ? 'bg-amber-400 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                  domingoMode === "libre"
+                    ? "bg-amber-400 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                 }`}
               >
                 <Sun className="w-3 h-3" />
                 Dom. Libre
               </button>
               <button
-                onClick={() => switchDomingoMode('completo')}
+                onClick={() => switchDomingoMode("completo")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  domingoMode === 'completo'
-                    ? 'bg-indigo-500 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                  domingoMode === "completo"
+                    ? "bg-indigo-500 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                 }`}
               >
                 <CalendarDays className="w-3 h-3" />
@@ -761,29 +1058,44 @@ ${domingoTemplate}
           {/* Dropdown Copiar / Pegar */}
           <div className="relative">
             <button
-              onClick={() => setCopyPasteOpen(v => !v)}
+              onClick={() => setCopyPasteOpen((v) => !v)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border bg-white text-slate-500 border-slate-200 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
             >
               <Copy className="w-3 h-3" />
               Copiar / Pegar
-              <ChevronDown className={`w-3 h-3 transition-transform ${copyPasteOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-3 h-3 transition-transform ${copyPasteOpen ? "rotate-180" : ""}`}
+              />
             </button>
             {copyPasteOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setCopyPasteOpen(false)} />
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setCopyPasteOpen(false)}
+                />
                 <div className="absolute left-0 mt-1.5 z-20 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden w-44">
                   <button
-                    onClick={() => { copyTableAsText(); setCopyPasteOpen(false); }}
+                    onClick={() => {
+                      copyTableAsText();
+                      setCopyPasteOpen(false);
+                    }}
                     className={`w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold transition-colors ${
-                      tableCopied ? 'text-emerald-600 bg-emerald-50' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
+                      tableCopied
+                        ? "text-emerald-600 bg-emerald-50"
+                        : "text-slate-600 hover:bg-indigo-50 hover:text-indigo-600"
                     }`}
                   >
                     <Copy className="w-3.5 h-3.5 shrink-0" />
-                    {tableCopied ? '¡Copiado!' : 'Copiar Menú'}
+                    {tableCopied ? "¡Copiado!" : "Copiar Menú"}
                   </button>
                   <div className="border-t border-slate-100" />
                   <button
-                    onClick={() => { setImportOpen(true); setImportErrors([]); setImportSuccess(false); setCopyPasteOpen(false); }}
+                    onClick={() => {
+                      setImportOpen(true);
+                      setImportErrors([]);
+                      setImportSuccess(false);
+                      setCopyPasteOpen(false);
+                    }}
                     className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
                   >
                     <Paintbrush className="w-3.5 h-3.5 shrink-0" />
@@ -791,7 +1103,13 @@ ${domingoTemplate}
                   </button>
                   <div className="border-t border-slate-100" />
                   <button
-                    onClick={() => { setAiImportOpen(true); setAiImportResult(null); setAiImportApplied(false); setAiImportError(''); setCopyPasteOpen(false); }}
+                    onClick={() => {
+                      setAiImportOpen(true);
+                      setAiImportResult(null);
+                      setAiImportApplied(false);
+                      setAiImportError("");
+                      setCopyPasteOpen(false);
+                    }}
                     className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-violet-50 hover:text-violet-600 transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5 shrink-0" />
@@ -805,22 +1123,22 @@ ${domingoTemplate}
           {/* Domingo toggle */}
           <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
             <button
-              onClick={() => switchDomingoMode('libre')}
+              onClick={() => switchDomingoMode("libre")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                domingoMode === 'libre'
-                  ? 'bg-amber-400 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                domingoMode === "libre"
+                  ? "bg-amber-400 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
               }`}
             >
               <Sun className="w-3 h-3" />
               Dom. Libre
             </button>
             <button
-              onClick={() => switchDomingoMode('completo')}
+              onClick={() => switchDomingoMode("completo")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                domingoMode === 'completo'
-                  ? 'bg-indigo-500 text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
+                domingoMode === "completo"
+                  ? "bg-indigo-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
               }`}
             >
               <CalendarDays className="w-3 h-3" />
@@ -848,16 +1166,25 @@ ${domingoTemplate}
             onScroll={handleTableScroll}
             className="overflow-x-auto"
           >
-            <table className="border-collapse" style={{ minWidth: tableMinWidth, width: '100%' }}>
+            <table
+              className="border-collapse"
+              style={{ minWidth: tableMinWidth, width: "100%" }}
+            >
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-3 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider" style={{ minWidth: 100, width: 100 }}>
+                  <th
+                    className="px-3 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider"
+                    style={{ minWidth: 100, width: 100 }}
+                  >
                     Tiempo
                   </th>
 
-                  {WEEKDAYS.map(day => (
-                    <th key={day} className="px-2 py-2 text-[10px] font-black text-slate-600 uppercase tracking-wider"
-                      style={{ minWidth: 210, width: 210 }}>
+                  {WEEKDAYS.map((day) => (
+                    <th
+                      key={day}
+                      className="px-2 py-2 text-[10px] font-black text-slate-600 uppercase tracking-wider"
+                      style={{ minWidth: 210, width: 210 }}
+                    >
                       <div className="flex items-center justify-between gap-1">
                         <span>{DAY_LABEL[day]}</span>
                         <div className="flex items-center gap-0.5">
@@ -866,8 +1193,8 @@ ${domingoTemplate}
                             title={`Copiar ${DAY_LABEL[day]}`}
                             className={`p-1 rounded-lg transition-all ${
                               copiedSource === day
-                                ? 'bg-indigo-100 text-indigo-600'
-                                : 'hover:bg-indigo-100 text-slate-400 hover:text-indigo-600'
+                                ? "bg-indigo-100 text-indigo-600"
+                                : "hover:bg-indigo-100 text-slate-400 hover:text-indigo-600"
                             }`}
                           >
                             <Copy className="w-3 h-3" />
@@ -878,8 +1205,8 @@ ${domingoTemplate}
                             disabled={!clipboard || copiedSource === day}
                             className={`p-1 rounded-lg transition-all ${
                               clipboard && copiedSource !== day
-                                ? 'hover:bg-emerald-100 text-slate-400 hover:text-emerald-600'
-                                : 'text-slate-200 cursor-not-allowed'
+                                ? "hover:bg-emerald-100 text-slate-400 hover:text-emerald-600"
+                                : "text-slate-200 cursor-not-allowed"
                             }`}
                           >
                             <Paintbrush className="w-3 h-3" />
@@ -890,8 +1217,11 @@ ${domingoTemplate}
                   ))}
 
                   {/* Domingo Completo column header */}
-                  {domingoMode === 'completo' && (
-                    <th className="px-2 py-2 text-[10px] font-black text-indigo-500 uppercase tracking-wider" style={{ minWidth: 210, width: 210 }}>
+                  {domingoMode === "completo" && (
+                    <th
+                      className="px-2 py-2 text-[10px] font-black text-indigo-500 uppercase tracking-wider"
+                      style={{ minWidth: 210, width: 210 }}
+                    >
                       <div className="flex items-center justify-between gap-1">
                         <div className="flex items-center gap-1.5">
                           <CalendarDays className="w-3 h-3" />
@@ -902,9 +1232,9 @@ ${domingoTemplate}
                             onClick={copyDomingo}
                             title="Copiar Dom."
                             className={`p-1 rounded-lg transition-all ${
-                              copiedSource === 'domingo'
-                                ? 'bg-indigo-100 text-indigo-600'
-                                : 'hover:bg-indigo-100 text-indigo-300 hover:text-indigo-600'
+                              copiedSource === "domingo"
+                                ? "bg-indigo-100 text-indigo-600"
+                                : "hover:bg-indigo-100 text-indigo-300 hover:text-indigo-600"
                             }`}
                           >
                             <Copy className="w-3 h-3" />
@@ -912,11 +1242,11 @@ ${domingoTemplate}
                           <button
                             onClick={pasteToDomingo}
                             title="Pegar día copiado"
-                            disabled={!clipboard || copiedSource === 'domingo'}
+                            disabled={!clipboard || copiedSource === "domingo"}
                             className={`p-1 rounded-lg transition-all ${
-                              clipboard && copiedSource !== 'domingo'
-                                ? 'hover:bg-emerald-100 text-indigo-300 hover:text-emerald-600'
-                                : 'text-indigo-100 cursor-not-allowed'
+                              clipboard && copiedSource !== "domingo"
+                                ? "hover:bg-emerald-100 text-indigo-300 hover:text-emerald-600"
+                                : "text-indigo-100 cursor-not-allowed"
                             }`}
                           >
                             <Paintbrush className="w-3 h-3" />
@@ -930,7 +1260,10 @@ ${domingoTemplate}
 
               <tbody className="divide-y divide-slate-100">
                 {meals.map((meal, index) => (
-                  <tr key={meal.id} className="hover:bg-slate-50/40 transition-colors">
+                  <tr
+                    key={meal.id}
+                    className="hover:bg-slate-50/40 transition-colors"
+                  >
                     <td className="px-2 py-2 align-top">
                       <div className="flex items-start gap-1">
                         {/* Flechas reordenar */}
@@ -939,7 +1272,7 @@ ${domingoTemplate}
                             onClick={() => moveMeal(index, -1)}
                             disabled={index === 0}
                             title="Mover arriba"
-                            className={`p-0.5 rounded transition-colors ${index === 0 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                            className={`p-0.5 rounded transition-colors ${index === 0 ? "text-slate-200 cursor-not-allowed" : "text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"}`}
                           >
                             <ChevronUp className="w-3 h-3" />
                           </button>
@@ -947,7 +1280,7 @@ ${domingoTemplate}
                             onClick={() => moveMeal(index, 1)}
                             disabled={index === meals.length - 1}
                             title="Mover abajo"
-                            className={`p-0.5 rounded transition-colors ${index === meals.length - 1 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                            className={`p-0.5 rounded transition-colors ${index === meals.length - 1 ? "text-slate-200 cursor-not-allowed" : "text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"}`}
                           >
                             <ChevronDown className="w-3 h-3" />
                           </button>
@@ -956,7 +1289,9 @@ ${domingoTemplate}
                         <div className="space-y-1 min-w-0">
                           <input
                             value={meal.label}
-                            onChange={e => updateMealLabel(meal.id, e.target.value)}
+                            onChange={(e) =>
+                              updateMealLabel(meal.id, e.target.value)
+                            }
                             title="Editar nombre del tiempo de comida"
                             className="text-[10px] font-black text-slate-600 uppercase leading-tight block w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-400 outline-none transition-colors"
                           />
@@ -971,45 +1306,67 @@ ${domingoTemplate}
                       </div>
                     </td>
 
-                    {WEEKDAYS.map(day => (
+                    {WEEKDAYS.map((day) => (
                       <td key={day} className="px-1.5 py-1.5 align-top">
                         <textarea
-                          value={grid[meal.id]?.[day] || ''}
+                          value={grid[meal.id]?.[day] || ""}
                           rows={1}
-                          ref={el => setTextareaRef(meal.id, day, el)}
-                          onChange={e => {
+                          ref={(el) => setTextareaRef(meal.id, day, el)}
+                          onChange={(e) => {
                             const newGrid = {
                               ...grid,
-                              [meal.id]: { ...grid[meal.id], [day]: e.target.value },
+                              [meal.id]: {
+                                ...grid[meal.id],
+                                [day]: e.target.value,
+                              },
                             };
                             setGrid(newGrid);
                             setIsDirty(true);
                             syncRowHeights(meal.id);
-                            scheduleCommit(newGrid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
+                            scheduleCommit(
+                              newGrid,
+                              meals,
+                              domingoNote,
+                              hydration,
+                              domingoV2Grid,
+                              domingoV2Note,
+                              domingoV2Hydration,
+                            );
                           }}
                           className={cellCls}
-                          style={{ minHeight: '36px' }}
+                          style={{ minHeight: "36px" }}
                           placeholder="Si el campo está vacío se ignora este tiempo de comida"
                         />
                       </td>
                     ))}
 
                     {/* Domingo Completo cell */}
-                    {domingoMode === 'completo' && (
+                    {domingoMode === "completo" && (
                       <td className="px-1.5 py-1.5 align-top">
                         <textarea
-                          value={domingoV2Grid[meal.id] || ''}
+                          value={domingoV2Grid[meal.id] || ""}
                           rows={1}
-                          ref={el => setTextareaRef(meal.id, 'domingo', el)}
-                          onChange={e => {
-                            const newDomingoV2Grid = { ...domingoV2Grid, [meal.id]: e.target.value };
+                          ref={(el) => setTextareaRef(meal.id, "domingo", el)}
+                          onChange={(e) => {
+                            const newDomingoV2Grid = {
+                              ...domingoV2Grid,
+                              [meal.id]: e.target.value,
+                            };
                             setDomingoV2Grid(newDomingoV2Grid);
                             setIsDirty(true);
                             syncRowHeights(meal.id);
-                            scheduleCommit(grid, meals, domingoNote, hydration, newDomingoV2Grid, domingoV2Note, domingoV2Hydration);
+                            scheduleCommit(
+                              grid,
+                              meals,
+                              domingoNote,
+                              hydration,
+                              newDomingoV2Grid,
+                              domingoV2Note,
+                              domingoV2Hydration,
+                            );
                           }}
                           className={`${cellCls} focus:ring-indigo-500/20 focus:border-indigo-400`}
-                          style={{ minHeight: '36px' }}
+                          style={{ minHeight: "36px" }}
                           placeholder="Si el campo está vacío se ignora este tiempo de comida"
                         />
                       </td>
@@ -1021,11 +1378,13 @@ ${domingoTemplate}
           </div>
 
           {/* Domingo Libre section */}
-          {domingoMode === 'libre' && (
+          {domingoMode === "libre" && (
             <div className="mx-4 my-3 rounded-2xl border border-amber-200 bg-amber-50/40 overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-2.5 border-b border-amber-100 bg-amber-50/60">
                 <Sun className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-xs font-black text-amber-600 uppercase tracking-wide">Domingo — Día Libre</span>
+                <span className="text-xs font-black text-amber-600 uppercase tracking-wide">
+                  Domingo — Día Libre
+                </span>
               </div>
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1035,10 +1394,18 @@ ${domingoTemplate}
                   <textarea
                     value={domingoNote}
                     rows={3}
-                    onChange={e => {
+                    onChange={(e) => {
                       setDomingoNote(e.target.value);
                       setIsDirty(true);
-                      scheduleCommit(grid, meals, e.target.value, hydration, domingoV2Grid, domingoV2Note, domingoV2Hydration);
+                      scheduleCommit(
+                        grid,
+                        meals,
+                        e.target.value,
+                        hydration,
+                        domingoV2Grid,
+                        domingoV2Note,
+                        domingoV2Hydration,
+                      );
                     }}
                     className="w-full bg-white border border-amber-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-amber-400/20 focus:border-amber-400 outline-none transition-all resize-none leading-relaxed"
                     placeholder="Ej: Día de descanso, puede comer más flexible. Evitar excesos. Priorizar proteína en almuerzo..."
@@ -1051,10 +1418,18 @@ ${domingoTemplate}
                   <textarea
                     rows={3}
                     value={hydration}
-                    onChange={e => {
+                    onChange={(e) => {
                       setHydration(e.target.value);
                       setIsDirty(true);
-                      scheduleCommit(grid, meals, domingoNote, e.target.value, domingoV2Grid, domingoV2Note, domingoV2Hydration);
+                      scheduleCommit(
+                        grid,
+                        meals,
+                        domingoNote,
+                        e.target.value,
+                        domingoV2Grid,
+                        domingoV2Note,
+                        domingoV2Hydration,
+                      );
                     }}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 outline-none transition-all resize-none overflow-y-auto leading-relaxed"
                     placeholder="Ej: 2.5L de agua"
@@ -1065,11 +1440,13 @@ ${domingoTemplate}
           )}
 
           {/* Domingo Completo — nota + hidratación complementarias */}
-          {domingoMode === 'completo' && (
+          {domingoMode === "completo" && (
             <div className="mx-4 my-3 rounded-2xl border border-indigo-100 bg-indigo-50/30 overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-2.5 border-b border-indigo-100 bg-indigo-50/50">
                 <CalendarDays className="w-3.5 h-3.5 text-indigo-500" />
-                <span className="text-xs font-black text-indigo-600 uppercase tracking-wide">Domingo — Nota e Hidratación</span>
+                <span className="text-xs font-black text-indigo-600 uppercase tracking-wide">
+                  Domingo — Nota e Hidratación
+                </span>
               </div>
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -1079,10 +1456,18 @@ ${domingoTemplate}
                   <textarea
                     value={domingoV2Note}
                     rows={3}
-                    onChange={e => {
+                    onChange={(e) => {
                       setDomingoV2Note(e.target.value);
                       setIsDirty(true);
-                      scheduleCommit(grid, meals, domingoNote, hydration, domingoV2Grid, e.target.value, domingoV2Hydration);
+                      scheduleCommit(
+                        grid,
+                        meals,
+                        domingoNote,
+                        hydration,
+                        domingoV2Grid,
+                        e.target.value,
+                        domingoV2Hydration,
+                      );
                     }}
                     className="w-full bg-white border border-indigo-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-indigo-400/20 focus:border-indigo-400 outline-none transition-all resize-none leading-relaxed"
                     placeholder="Observaciones del día..."
@@ -1095,10 +1480,18 @@ ${domingoTemplate}
                   <textarea
                     rows={3}
                     value={domingoV2Hydration}
-                    onChange={e => {
+                    onChange={(e) => {
                       setDomingoV2Hydration(e.target.value);
                       setIsDirty(true);
-                      scheduleCommit(grid, meals, domingoNote, hydration, domingoV2Grid, domingoV2Note, e.target.value);
+                      scheduleCommit(
+                        grid,
+                        meals,
+                        domingoNote,
+                        hydration,
+                        domingoV2Grid,
+                        domingoV2Note,
+                        e.target.value,
+                      );
                     }}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-medium focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 outline-none transition-all resize-none overflow-y-auto leading-relaxed"
                     placeholder="Ej: 2.5L de agua"
@@ -1110,25 +1503,27 @@ ${domingoTemplate}
 
           {/* Toggle de modo domingo — acceso rápido bajo el box */}
           <div className="mx-4 mb-3 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cambiar modo domingo:</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Cambiar modo domingo:
+            </span>
             <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-0.5">
               <button
-                onClick={() => switchDomingoMode('libre')}
+                onClick={() => switchDomingoMode("libre")}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                  domingoMode === 'libre'
-                    ? 'bg-amber-400 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                  domingoMode === "libre"
+                    ? "bg-amber-400 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                 }`}
               >
                 <Sun className="w-2.5 h-2.5" />
                 Dom. Libre
               </button>
               <button
-                onClick={() => switchDomingoMode('completo')}
+                onClick={() => switchDomingoMode("completo")}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                  domingoMode === 'completo'
-                    ? 'bg-indigo-500 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                  domingoMode === "completo"
+                    ? "bg-indigo-500 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                 }`}
               >
                 <CalendarDays className="w-2.5 h-2.5" />
@@ -1141,7 +1536,9 @@ ${domingoTemplate}
           <div className="px-4 py-3 bg-slate-50 border-t border-slate-100">
             <p className="text-[10px] text-slate-400 italic">
               Usa Enter para listar varias opciones por tiempo de comida.
-              <Copy className="w-2.5 h-2.5 inline mx-0.5" /> copia el día · <Paintbrush className="w-2.5 h-2.5 inline mx-0.5" /> pega el día copiado · "→ todos" copia desde Lunes a toda la semana.
+              <Copy className="w-2.5 h-2.5 inline mx-0.5" /> copia el día ·{" "}
+              <Paintbrush className="w-2.5 h-2.5 inline mx-0.5" /> pega el día
+              copiado · "→ todos" copia desde Lunes a toda la semana.
             </p>
           </div>
         </>
@@ -1151,15 +1548,21 @@ ${domingoTemplate}
       {importOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
-
             {/* Modal header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
               <div className="flex items-center gap-2">
                 <Upload className="w-4 h-4 text-emerald-600" />
-                <span className="text-sm font-black text-slate-700">Importar menú editado</span>
+                <span className="text-sm font-black text-slate-700">
+                  Importar menú editado
+                </span>
               </div>
               <button
-                onClick={() => { setImportOpen(false); setImportText(''); setImportErrors([]); setImportSuccess(false); }}
+                onClick={() => {
+                  setImportOpen(false);
+                  setImportText("");
+                  setImportErrors([]);
+                  setImportSuccess(false);
+                }}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -1172,23 +1575,42 @@ ${domingoTemplate}
               <div className="mx-5 mt-4 rounded-xl bg-sky-50 border border-sky-100 p-3.5 space-y-1.5">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Info className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                  <span className="text-[11px] font-black text-sky-600 uppercase tracking-wide">Antes de pegar, ten en cuenta:</span>
+                  <span className="text-[11px] font-black text-sky-600 uppercase tracking-wide">
+                    Antes de pegar, ten en cuenta:
+                  </span>
                 </div>
-                <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Copia primero el menú para tener la estructura — cambia solo las comidas, sin modificar los títulos de los días ni de los tiempos de comida. Luego pégalo aquí con el mismo formato en que se copió.</p>
-                <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5"><span className="text-emerald-500 font-black">✓</span> Si el contenido de un tiempo queda vacío, se borrará esa celda.</p>
+                <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5">
+                  <span className="text-emerald-500 font-black">✓</span> Copia
+                  primero el menú para tener la estructura — cambia solo las
+                  comidas, sin modificar los títulos de los días ni de los
+                  tiempos de comida. Luego pégalo aquí con el mismo formato en
+                  que se copió.
+                </p>
+                <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5">
+                  <span className="text-emerald-500 font-black">✓</span> Si el
+                  contenido de un tiempo queda vacío, se borrará esa celda.
+                </p>
               </div>
 
               {/* Textarea */}
               <div className="px-5 pt-4">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Pega aquí el texto editado — Recuerda copiar antes la estructura completa en <span className="text-indigo-400">Copiar Menú</span>
+                  Pega aquí el texto editado — Recuerda copiar antes la
+                  estructura completa en{" "}
+                  <span className="text-indigo-400">Copiar Menú</span>
                 </label>
                 <textarea
                   value={importText}
-                  onChange={e => { setImportText(e.target.value); setImportErrors([]); setImportSuccess(false); }}
+                  onChange={(e) => {
+                    setImportText(e.target.value);
+                    setImportErrors([]);
+                    setImportSuccess(false);
+                  }}
                   rows={10}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all resize-none leading-relaxed"
-                  placeholder={'Dia: Lunes\nDesayuno Lunes:\nAvena con frutas y yogur\nAlmuerzo Lunes:\nPollo a la plancha con arroz\n\nDia: Martes\nDesayuno Martes:\nHuevos revueltos con tostadas\nAlmuerzo Martes:\n...'}
+                  placeholder={
+                    "Dia: Lunes\nDesayuno Lunes:\nAvena con frutas y yogur\nAlmuerzo Lunes:\nPollo a la plancha con arroz\n\nDia: Martes\nDesayuno Martes:\nHuevos revueltos con tostadas\nAlmuerzo Martes:\n..."
+                  }
                 />
               </div>
 
@@ -1201,7 +1623,9 @@ ${domingoTemplate}
                   </p>
                   <div className="max-h-32 overflow-y-auto space-y-0.5">
                     {importErrors.map((e, i) => (
-                      <p key={i} className="text-[11px] text-amber-700">• {e}</p>
+                      <p key={i} className="text-[11px] text-amber-700">
+                        • {e}
+                      </p>
                     ))}
                   </div>
                 </div>
@@ -1209,7 +1633,9 @@ ${domingoTemplate}
               {importSuccess && (
                 <div className="mx-5 mt-3 mb-1 rounded-xl bg-emerald-50 border border-emerald-200 p-3 flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  <p className="text-[11px] font-black text-emerald-600">¡Menú importado correctamente!</p>
+                  <p className="text-[11px] font-black text-emerald-600">
+                    ¡Menú importado correctamente!
+                  </p>
                 </div>
               )}
             </div>
@@ -1217,7 +1643,12 @@ ${domingoTemplate}
             {/* Footer */}
             <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100 shrink-0">
               <button
-                onClick={() => { setImportOpen(false); setImportText(''); setImportErrors([]); setImportSuccess(false); }}
+                onClick={() => {
+                  setImportOpen(false);
+                  setImportText("");
+                  setImportErrors([]);
+                  setImportSuccess(false);
+                }}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors"
               >
                 Cancelar
@@ -1227,8 +1658,8 @@ ${domingoTemplate}
                 disabled={!importText.trim()}
                 className={`flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold transition-all ${
                   importText.trim()
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
-                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+                    : "bg-slate-100 text-slate-400 cursor-not-allowed"
                 }`}
               >
                 <Upload className="w-3.5 h-3.5" />
@@ -1243,13 +1674,16 @@ ${domingoTemplate}
       {aiImportOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
-
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-violet-500" />
                 <span className="text-sm font-black text-slate-700">
-                  {aiImportApplied ? '¡Listo!' : aiImportResult ? 'Resultado del análisis' : 'Pegar con IA'}
+                  {aiImportApplied
+                    ? "¡Listo!"
+                    : aiImportResult
+                      ? "Resultado del análisis"
+                      : "Pegar con IA"}
                 </span>
               </div>
               <button
@@ -1262,14 +1696,17 @@ ${domingoTemplate}
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto">
-
               {/* LOADING */}
               {aiImportLoading && (
                 <div className="flex flex-col items-center justify-center py-16 gap-4">
                   <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
                   <div className="text-center">
-                    <p className="text-sm font-bold text-slate-700">Analizando tu menú con IA...</p>
-                    <p className="text-xs text-slate-400 mt-1">Esto puede tomar unos segundos</p>
+                    <p className="text-sm font-bold text-slate-700">
+                      Analizando tu menú con IA...
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Esto puede tomar unos segundos
+                    </p>
                   </div>
                 </div>
               )}
@@ -1279,7 +1716,9 @@ ${domingoTemplate}
                 <div className="mx-5 mt-4 rounded-xl bg-red-50 border border-red-200 p-3.5 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-[11px] font-black text-red-600 mb-0.5">Error al procesar</p>
+                    <p className="text-[11px] font-black text-red-600 mb-0.5">
+                      Error al procesar
+                    </p>
                     <p className="text-[11px] text-red-700">{aiImportError}</p>
                   </div>
                 </div>
@@ -1291,22 +1730,36 @@ ${domingoTemplate}
                   <div className="mx-5 mt-4 rounded-xl bg-violet-50 border border-violet-100 p-3.5 space-y-1.5">
                     <div className="flex items-center gap-1.5 mb-2">
                       <Sparkles className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                      <span className="text-[11px] font-black text-violet-600 uppercase tracking-wide">Pegar desde otro formato</span>
+                      <span className="text-[11px] font-black text-violet-600 uppercase tracking-wide">
+                        Pegar desde otro formato
+                      </span>
                     </div>
                     <p className="text-[11px] text-violet-700 leading-relaxed">
-                      Si ya tienes los datos de tu menú semanal en otro programa, pégalos aquí y la IA los leerá e insertará automáticamente.
+                      Si ya tienes los datos de tu menú semanal en otro
+                      programa, pégalos aquí y la IA los leerá e insertará
+                      automáticamente.
                     </p>
                     <p className="text-[11px] text-violet-700 leading-relaxed flex gap-1.5">
-                      <span className="text-emerald-500 font-black shrink-0">✓</span>
-                      Etiqueta bien tus tiempos de comida y días de la semana para mejores resultados.
+                      <span className="text-emerald-500 font-black shrink-0">
+                        ✓
+                      </span>
+                      Etiqueta bien tus tiempos de comida y días de la semana
+                      para mejores resultados.
                     </p>
                     <p className="text-[11px] text-violet-700 leading-relaxed flex gap-1.5">
-                      <span className="text-emerald-500 font-black shrink-0">✓</span>
-                      Solo inserta el menú semanal — no incluyas otra información que pueda confundir al convertidor.
+                      <span className="text-emerald-500 font-black shrink-0">
+                        ✓
+                      </span>
+                      Solo inserta el menú semanal — no incluyas otra
+                      información que pueda confundir al convertidor.
                     </p>
                     <p className="text-[11px] text-violet-700 leading-relaxed flex gap-1.5">
-                      <span className="text-emerald-500 font-black shrink-0">✓</span>
-                      Si tienes un Word, selecciona todo (Ctrl+A), cópialo y pégalo aquí. También puedes subir un PDF o un screenshot / imagen.
+                      <span className="text-emerald-500 font-black shrink-0">
+                        ✓
+                      </span>
+                      Si tienes un Word, selecciona todo (Ctrl+A), cópialo y
+                      pégalo aquí. También puedes subir un PDF o un screenshot /
+                      imagen.
                     </p>
                   </div>
 
@@ -1316,10 +1769,15 @@ ${domingoTemplate}
                     </label>
                     <textarea
                       value={aiImportText}
-                      onChange={e => { setAiImportText(e.target.value); setAiImportError(''); }}
+                      onChange={(e) => {
+                        setAiImportText(e.target.value);
+                        setAiImportError("");
+                      }}
                       rows={8}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-mono focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 outline-none transition-all resize-none leading-relaxed"
-                      placeholder={'Lunes\nDesayuno: Avena con frutas y yogur\nAlmuerzo: Pollo con arroz y verduras\nCena: Sopa de verduras\n\nMartes\nDesayuno: Huevos revueltos con tostadas\n...'}
+                      placeholder={
+                        "Lunes\nDesayuno: Avena con frutas y yogur\nAlmuerzo: Pollo con arroz y verduras\nCena: Sopa de verduras\n\nMartes\nDesayuno: Huevos revueltos con tostadas\n..."
+                      }
                     />
                   </div>
 
@@ -1329,12 +1787,17 @@ ${domingoTemplate}
                       type="file"
                       accept=".pdf,image/*"
                       className="hidden"
-                      onChange={e => {
+                      onChange={(e) => {
                         const f = e.target.files?.[0] || null;
-                        if (aiImportPreviewUrl) URL.revokeObjectURL(aiImportPreviewUrl);
+                        if (aiImportPreviewUrl)
+                          URL.revokeObjectURL(aiImportPreviewUrl);
                         setAiImportFile(f);
-                        setAiImportPreviewUrl(f && f.type.startsWith('image/') ? URL.createObjectURL(f) : null);
-                        setAiImportError('');
+                        setAiImportPreviewUrl(
+                          f && f.type.startsWith("image/")
+                            ? URL.createObjectURL(f)
+                            : null,
+                        );
+                        setAiImportError("");
                       }}
                     />
                     {aiImportFile ? (
@@ -1348,13 +1811,17 @@ ${domingoTemplate}
                           />
                           <div className="flex items-center gap-2 px-3 py-2">
                             <Image className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                            <span className="text-xs text-violet-700 font-medium flex-1 truncate">{aiImportFile.name}</span>
+                            <span className="text-xs text-violet-700 font-medium flex-1 truncate">
+                              {aiImportFile.name}
+                            </span>
                             <button
                               onClick={() => {
-                                if (aiImportPreviewUrl) URL.revokeObjectURL(aiImportPreviewUrl);
+                                if (aiImportPreviewUrl)
+                                  URL.revokeObjectURL(aiImportPreviewUrl);
                                 setAiImportFile(null);
                                 setAiImportPreviewUrl(null);
-                                if (aiFileInputRef.current) aiFileInputRef.current.value = '';
+                                if (aiFileInputRef.current)
+                                  aiFileInputRef.current.value = "";
                               }}
                               className="p-0.5 rounded text-violet-400 hover:text-violet-600 transition-colors"
                             >
@@ -1366,9 +1833,15 @@ ${domingoTemplate}
                         /* PDF seleccionado */
                         <div className="flex items-center gap-2 bg-violet-50 border border-violet-200 rounded-xl px-3 py-2.5">
                           <FileText className="w-4 h-4 text-violet-500 shrink-0" />
-                          <span className="text-xs text-violet-700 font-medium flex-1 truncate">{aiImportFile.name}</span>
+                          <span className="text-xs text-violet-700 font-medium flex-1 truncate">
+                            {aiImportFile.name}
+                          </span>
                           <button
-                            onClick={() => { setAiImportFile(null); if (aiFileInputRef.current) aiFileInputRef.current.value = ''; }}
+                            onClick={() => {
+                              setAiImportFile(null);
+                              if (aiFileInputRef.current)
+                                aiFileInputRef.current.value = "";
+                            }}
                             className="p-0.5 rounded text-violet-400 hover:text-violet-600 transition-colors"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -1391,16 +1864,18 @@ ${domingoTemplate}
               {/* RESULTADO */}
               {!aiImportLoading && aiImportResult && (
                 <div className="px-5 pt-4 pb-2 space-y-3">
-
                   {/* Banner éxito + advertencia */}
                   {aiImportApplied && (
                     <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 flex items-start gap-2">
                       <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-[11px] font-black text-emerald-600">¡Menú insertado correctamente!</p>
+                        <p className="text-[11px] font-black text-emerald-600">
+                          ¡Menú insertado correctamente!
+                        </p>
                         <p className="text-[11px] text-amber-700 mt-1 leading-relaxed flex items-start gap-1">
                           <AlertCircle className="w-3 h-3 shrink-0 mt-0.5 text-amber-500" />
-                          Recuerda revisar bien porciones y texto, ya que la IA puede cometer errores.
+                          Recuerda revisar bien porciones y texto, ya que la IA
+                          puede cometer errores.
                         </p>
                       </div>
                     </div>
@@ -1411,32 +1886,38 @@ ${domingoTemplate}
                     <div className="flex items-center gap-1.5 mb-2">
                       <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                       <span className="text-[11px] font-black text-slate-600">
-                        {meals.length} tiempo{meals.length !== 1 ? 's' : ''} de comida configurado{meals.length !== 1 ? 's' : ''}
+                        {meals.length} tiempo{meals.length !== 1 ? "s" : ""} de
+                        comida configurado{meals.length !== 1 ? "s" : ""}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {meals.map(m => {
-                        const mealHasContent = WEEKDAYS.some(day => {
+                      {meals.map((m) => {
+                        const mealHasContent = WEEKDAYS.some((day) => {
                           const v = aiImportResult.grid?.[m.id]?.[day];
-                          return typeof v === 'string' && v.trim();
+                          return typeof v === "string" && v.trim();
                         });
                         return (
-                          <span key={m.id} className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${mealHasContent ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-600'}`}>
+                          <span
+                            key={m.id}
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${mealHasContent ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-600"}`}
+                          >
                             {m.label}
                           </span>
                         );
                       })}
                     </div>
                     {(() => {
-                      const withContent = meals.filter(m => WEEKDAYS.some(day => {
-                        const v = aiImportResult.grid?.[m.id]?.[day];
-                        return typeof v === 'string' && v.trim();
-                      })).length;
+                      const withContent = meals.filter((m) =>
+                        WEEKDAYS.some((day) => {
+                          const v = aiImportResult.grid?.[m.id]?.[day];
+                          return typeof v === "string" && v.trim();
+                        }),
+                      ).length;
                       return withContent < meals.length ? (
                         <p className="text-[10px] text-amber-600 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3 shrink-0" />
                           {withContent === 0
-                            ? 'La IA no detectó contenido de comidas — revisa el documento'
+                            ? "La IA no detectó contenido de comidas — revisa el documento"
                             : `${withContent} de ${meals.length} tiempos tienen contenido detectado`}
                         </p>
                       ) : (
@@ -1450,13 +1931,37 @@ ${domingoTemplate}
 
                   {/* Días detectados */}
                   <div className="rounded-xl bg-slate-50 border border-slate-200 p-3.5">
-                    <p className="text-[11px] font-black text-slate-600 mb-2">Días detectados</p>
+                    <p className="text-[11px] font-black text-slate-600 mb-2">
+                      Días detectados
+                    </p>
                     <div className="flex flex-wrap gap-1">
-                      {(['lunes','martes','miercoles','jueves','viernes','sabado','domingo'] as const).map(day => {
-                        const found = aiImportResult.found_days?.includes(day) ?? false;
-                        const chipLabel: Record<string, string> = { lunes:'Lun', martes:'Mar', miercoles:'Mié', jueves:'Jue', viernes:'Vie', sabado:'Sáb', domingo:'Dom' };
+                      {(
+                        [
+                          "lunes",
+                          "martes",
+                          "miercoles",
+                          "jueves",
+                          "viernes",
+                          "sabado",
+                          "domingo",
+                        ] as const
+                      ).map((day) => {
+                        const found =
+                          aiImportResult.found_days?.includes(day) ?? false;
+                        const chipLabel: Record<string, string> = {
+                          lunes: "Lun",
+                          martes: "Mar",
+                          miercoles: "Mié",
+                          jueves: "Jue",
+                          viernes: "Vie",
+                          sabado: "Sáb",
+                          domingo: "Dom",
+                        };
                         return (
-                          <span key={day} className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${found ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-600'}`}>
+                          <span
+                            key={day}
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${found ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-600"}`}
+                          >
                             {chipLabel[day]}
                           </span>
                         );
@@ -1465,40 +1970,55 @@ ${domingoTemplate}
                     {(aiImportResult.missing_days?.length ?? 0) > 0 && (
                       <p className="text-[11px] text-amber-600 mt-2 flex items-center gap-1.5">
                         <AlertCircle className="w-3 h-3 shrink-0" />
-                        {aiImportResult.missing_days.length === 1 && aiImportResult.missing_days[0] === 'domingo'
-                          ? 'Domingo sin datos — se aplicará modo Domingo Libre'
-                          : `Sin datos: ${aiImportResult.missing_days.map(d => ({ lunes:'Lunes', martes:'Martes', miercoles:'Miércoles', jueves:'Jueves', viernes:'Viernes', sabado:'Sábado', domingo:'Domingo' } as Record<string,string>)[d] || d).join(', ')}`
-                        }
+                        {aiImportResult.missing_days.length === 1 &&
+                        aiImportResult.missing_days[0] === "domingo"
+                          ? "Domingo sin datos — se aplicará modo Domingo Libre"
+                          : `Sin datos: ${aiImportResult.missing_days.map((d) => (({ lunes: "Lunes", martes: "Martes", miercoles: "Miércoles", jueves: "Jueves", viernes: "Viernes", sabado: "Sábado", domingo: "Domingo" }) as Record<string, string>)[d] || d).join(", ")}`}
                       </p>
                     )}
                   </div>
 
                   {/* Modo domingo */}
-                  <div className={`rounded-xl border p-3.5 ${aiImportResult.domingo_mode === 'completo' ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-200'}`}>
+                  <div
+                    className={`rounded-xl border p-3.5 ${aiImportResult.domingo_mode === "completo" ? "bg-indigo-50 border-indigo-200" : "bg-amber-50 border-amber-200"}`}
+                  >
                     <div className="flex items-center gap-1.5">
-                      {aiImportResult.domingo_mode === 'completo'
-                        ? <CalendarDays className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                        : <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                      }
-                      <span className={`text-[11px] font-black ${aiImportResult.domingo_mode === 'completo' ? 'text-indigo-600' : 'text-amber-600'}`}>
-                        Domingo: {aiImportResult.domingo_mode === 'completo' ? 'Menú completo detectado' : 'Se aplicará Domingo Libre'}
+                      {aiImportResult.domingo_mode === "completo" ? (
+                        <CalendarDays className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                      ) : (
+                        <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      )}
+                      <span
+                        className={`text-[11px] font-black ${aiImportResult.domingo_mode === "completo" ? "text-indigo-600" : "text-amber-600"}`}
+                      >
+                        Domingo:{" "}
+                        {aiImportResult.domingo_mode === "completo"
+                          ? "Menú completo detectado"
+                          : "Se aplicará Domingo Libre"}
                       </span>
                     </div>
-                    {(aiImportResult.domingo_note || aiImportResult.domingo_hydration) && (
+                    {(aiImportResult.domingo_note ||
+                      aiImportResult.domingo_hydration) && (
                       <div className="mt-1.5 space-y-0.5 pl-5">
                         {aiImportResult.domingo_note && (
-                          <p className={`text-[11px] ${aiImportResult.domingo_mode === 'completo' ? 'text-indigo-700' : 'text-amber-700'}`}>📝 Nota detectada</p>
+                          <p
+                            className={`text-[11px] ${aiImportResult.domingo_mode === "completo" ? "text-indigo-700" : "text-amber-700"}`}
+                          >
+                            📝 Nota detectada
+                          </p>
                         )}
                         {aiImportResult.domingo_hydration && (
-                          <p className={`text-[11px] ${aiImportResult.domingo_mode === 'completo' ? 'text-indigo-700' : 'text-amber-700'}`}>💧 Hidratación detectada</p>
+                          <p
+                            className={`text-[11px] ${aiImportResult.domingo_mode === "completo" ? "text-indigo-700" : "text-amber-700"}`}
+                          >
+                            💧 Hidratación detectada
+                          </p>
                         )}
                       </div>
                     )}
                   </div>
-
                 </div>
               )}
-
             </div>
 
             {/* Footer */}
@@ -1507,7 +2027,7 @@ ${domingoTemplate}
                 onClick={resetAiImport}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors"
               >
-                {aiImportApplied ? 'Cerrar' : 'Cancelar'}
+                {aiImportApplied ? "Cerrar" : "Cancelar"}
               </button>
 
               {!aiImportLoading && !aiImportResult && (
@@ -1515,9 +2035,9 @@ ${domingoTemplate}
                   onClick={analyzeWithAI}
                   disabled={!aiImportText.trim() && !aiImportFile}
                   className={`flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold transition-all ${
-                    (aiImportText.trim() || aiImportFile)
-                      ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm'
-                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    aiImportText.trim() || aiImportFile
+                      ? "bg-violet-600 text-white hover:bg-violet-700 shadow-sm"
+                      : "bg-slate-100 text-slate-400 cursor-not-allowed"
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -1536,13 +2056,15 @@ ${domingoTemplate}
               )}
 
               {aiImportApplied && (
-                <button disabled className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-600 cursor-not-allowed">
+                <button
+                  disabled
+                  className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-600 cursor-not-allowed"
+                >
                   <CheckCircle className="w-3.5 h-3.5" />
                   Aplicado
                 </button>
               )}
             </div>
-
           </div>
         </div>
       )}

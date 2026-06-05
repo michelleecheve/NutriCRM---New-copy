@@ -69,7 +69,7 @@ export const MenuTemplateV1: React.FC<{
           nutritionist={data.nutritionist}
           planTitle={(data.sectionTitles || DEFAULT_SECTION_TITLES).planTitle}
         />
-        <PatientBar patient={data.patient} kcal={data.kcal} />
+        <PatientBar patient={data.patient} kcal={data.kcal} hiddenFields={data.hiddenFields} />
         <PortionsTable portions={data.portions} weeklyMenu={data.weeklyMenu} />
         <div
           style={{

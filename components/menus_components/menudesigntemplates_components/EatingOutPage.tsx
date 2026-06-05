@@ -21,7 +21,7 @@ export const EatingOutPage: React.FC<{ data: MenuPlanData }> = ({ data }) => {
       footer={<Footer nutritionist={data.nutritionist} />}
     >
       <Header nutritionist={data.nutritionist} planTitle={titles.planTitle} />
-      <PatientBar patient={data.patient} kcal={data.kcal} />
+      <PatientBar patient={data.patient} kcal={data.kcal} hiddenFields={data.hiddenFields} />
 
       {/* Page title */}
       <div

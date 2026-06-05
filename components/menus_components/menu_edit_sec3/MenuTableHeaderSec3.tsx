@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react';
 import { MenuPlanData } from '../MenuDesignTemplates';
 import { DEFAULT_SECTION_TITLES } from '../../../types';
 
@@ -18,14 +18,22 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
   const [weight, setWeight]       = useState(menuPreviewData.patient.weight);
   const [fatPct, setFatPct]       = useState(menuPreviewData.patient.fatPct);
   const [kcal, setKcal]           = useState(menuPreviewData.kcal);
+  const [hidden, setHidden]       = useState(menuPreviewData.hiddenFields ?? {});
 
-  const commit = () => {
-    setMenuPreviewData({
-      ...menuPreviewData,
-      kcal,
-      patient: { ...menuPreviewData.patient, name, age, weight, fatPct },
-      sectionTitles: { ...(menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES), planTitle },
-    });
+  const buildUpdate = (overrides?: typeof hidden) => ({
+    ...menuPreviewData,
+    kcal,
+    patient: { ...menuPreviewData.patient, name, age, weight, fatPct },
+    sectionTitles: { ...(menuPreviewData.sectionTitles || DEFAULT_SECTION_TITLES), planTitle },
+    hiddenFields: overrides ?? hidden,
+  });
+
+  const commit = () => setMenuPreviewData(buildUpdate());
+
+  const toggleField = (field: keyof NonNullable<typeof hidden>) => {
+    const next = { ...hidden, [field]: !hidden[field] };
+    setHidden(next);
+    setMenuPreviewData(buildUpdate(next));
   };
 
   const inp = "w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all";
@@ -63,24 +71,44 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
               <input type="text" value={name} onChange={e => setName(e.target.value)} onBlur={commit} className={inp} />
             </div>
             <div className="w-24 flex-shrink-0 space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Edad</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Edad</label>
+                <button type="button" onClick={() => toggleField('age')} className="p-0.5 rounded hover:bg-slate-100 transition-colors" title={hidden.age ? 'Mostrar en vista previa' : 'Ocultar en vista previa'}>
+                  {hidden.age ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-indigo-400" />}
+                </button>
+              </div>
               <input type="number" value={age} onChange={e => setAge(Number(e.target.value))} onBlur={commit}
-                onWheel={e => (e.target as HTMLInputElement).blur()} className={inp} />
+                onWheel={e => (e.target as HTMLInputElement).blur()} className={`${inp} ${hidden.age ? 'opacity-40' : ''}`} />
             </div>
             <div className="w-24 flex-shrink-0 space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peso (kg)</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peso (kg)</label>
+                <button type="button" onClick={() => toggleField('weight')} className="p-0.5 rounded hover:bg-slate-100 transition-colors" title={hidden.weight ? 'Mostrar en vista previa' : 'Ocultar en vista previa'}>
+                  {hidden.weight ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-indigo-400" />}
+                </button>
+              </div>
               <input type="number" step="0.1" value={weight} onChange={e => setWeight(Number(e.target.value))} onBlur={commit}
-                onWheel={e => (e.target as HTMLInputElement).blur()} className={inp} />
+                onWheel={e => (e.target as HTMLInputElement).blur()} className={`${inp} ${hidden.weight ? 'opacity-40' : ''}`} />
             </div>
             <div className="w-24 flex-shrink-0 space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">% Grasa</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">% Grasa</label>
+                <button type="button" onClick={() => toggleField('fatPct')} className="p-0.5 rounded hover:bg-slate-100 transition-colors" title={hidden.fatPct ? 'Mostrar en vista previa' : 'Ocultar en vista previa'}>
+                  {hidden.fatPct ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-indigo-400" />}
+                </button>
+              </div>
               <input type="number" step="0.1" value={fatPct} onChange={e => setFatPct(Number(e.target.value))} onBlur={commit}
-                onWheel={e => (e.target as HTMLInputElement).blur()} className={inp} />
+                onWheel={e => (e.target as HTMLInputElement).blur()} className={`${inp} ${hidden.fatPct ? 'opacity-40' : ''}`} />
             </div>
             <div className="w-24 flex-shrink-0 space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kcal</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kcal</label>
+                <button type="button" onClick={() => toggleField('kcal')} className="p-0.5 rounded hover:bg-slate-100 transition-colors" title={hidden.kcal ? 'Mostrar en vista previa' : 'Ocultar en vista previa'}>
+                  {hidden.kcal ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-indigo-400" />}
+                </button>
+              </div>
               <input type="number" value={kcal} onChange={e => setKcal(Number(e.target.value))} onBlur={commit}
-                onWheel={e => (e.target as HTMLInputElement).blur()} className={inp} />
+                onWheel={e => (e.target as HTMLInputElement).blur()} className={`${inp} ${hidden.kcal ? 'opacity-40' : ''}`} />
             </div>
           </div>
           </div>
