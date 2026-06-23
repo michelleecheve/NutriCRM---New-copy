@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { prefsService } from '../services/prefsService';
 import { Layout, Eye, EyeOff, Trash2, Save, CheckCircle, ChevronDown, Settings } from 'lucide-react';
 import type { MenuFooterConfig, MenuSectionTitles, VisualThemeConfig, PageLayoutOption } from '../types';
 import { DEFAULT_SECTION_TITLES, DEFAULT_VISUAL_THEME } from '../types';
@@ -733,14 +734,11 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => void }> = ({ onSelectPatient }) => {
-  const [configOpen, setConfigOpen] = useState(() => {
-    const saved = localStorage.getItem('nutriflow_menu_section_config');
-    return saved !== null ? saved === 'true' : false;
-  });
+  const [configOpen, setConfigOpen] = useState(() => prefsService.get('menus.configOpen', false));
 
   const toggleConfig = (value: boolean) => {
     setConfigOpen(value);
-    localStorage.setItem('nutriflow_menu_section_config', String(value));
+    prefsService.set('menus.configOpen', value);
   };
 
   return (

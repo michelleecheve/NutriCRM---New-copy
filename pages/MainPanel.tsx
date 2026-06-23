@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
+import { prefsService } from '../services/prefsService';
 import { Patient, Appointment, Invoice } from '../types';
 import { CreditCard, Calendar, ChefHat, Clock, ChevronRight, AlertCircle, CalendarDays, Users, Settings } from 'lucide-react';
 import { ComposedChart, Bar, Line, ReferenceLine, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -57,22 +58,21 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   type ChartRange = 'ytd' | '3m' | '6m' | '12m';
   type ChartType = 'bars' | 'line' | 'both';
 
-  const chartConfigKey = `nutriflow_chart_config_v1_${currentUser?.id ?? 'guest'}`;
-  const loadChartConfig = () => {
-    try { return JSON.parse(localStorage.getItem(chartConfigKey) || '{}'); } catch { return {}; }
-  };
-  const saved = loadChartConfig();
-
-  const [chartRange, setChartRange] = useState<ChartRange>(saved.chartRange ?? 'ytd');
-  const [showExpenses, setShowExpenses] = useState<boolean>(saved.showExpenses ?? true);
+  const [chartRange, setChartRange] = useState<ChartRange>(() => prefsService.get('chart.range', 'ytd'));
+  const [showExpenses, setShowExpenses] = useState<boolean>(() => prefsService.get('chart.showExpenses', true));
   const [showChartSettings, setShowChartSettings] = useState(false);
-  const [chartType, setChartType] = useState<ChartType>(saved.chartType ?? 'both');
-  const [tooltipShowExpenses, setTooltipShowExpenses] = useState<boolean>(saved.tooltipShowExpenses ?? true);
-  const [tooltipShowNeto, setTooltipShowNeto] = useState<boolean>(saved.tooltipShowNeto ?? true);
-  const [tooltipShowCitas, setTooltipShowCitas] = useState<boolean>(saved.tooltipShowCitas ?? true);
+  const [chartType, setChartType] = useState<ChartType>(() => prefsService.get('chart.type', 'both'));
+  const [tooltipShowExpenses, setTooltipShowExpenses] = useState<boolean>(() => prefsService.get('chart.tooltipShowExpenses', true));
+  const [tooltipShowNeto, setTooltipShowNeto] = useState<boolean>(() => prefsService.get('chart.tooltipShowNeto', true));
+  const [tooltipShowCitas, setTooltipShowCitas] = useState<boolean>(() => prefsService.get('chart.tooltipShowCitas', true));
 
   useEffect(() => {
-    localStorage.setItem(chartConfigKey, JSON.stringify({ chartRange, showExpenses, chartType, tooltipShowExpenses, tooltipShowNeto, tooltipShowCitas }));
+    prefsService.set('chart.range', chartRange);
+    prefsService.set('chart.showExpenses', showExpenses);
+    prefsService.set('chart.type', chartType);
+    prefsService.set('chart.tooltipShowExpenses', tooltipShowExpenses);
+    prefsService.set('chart.tooltipShowNeto', tooltipShowNeto);
+    prefsService.set('chart.tooltipShowCitas', tooltipShowCitas);
   }, [chartRange, showExpenses, chartType, tooltipShowExpenses, tooltipShowNeto, tooltipShowCitas]);
 
   const chartRangeOptions: { value: ChartRange; label: string; tooltip: string }[] = [

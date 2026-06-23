@@ -14,6 +14,7 @@ import {
 } from "../types";
 import { supabaseService } from "./supabaseService";
 import { googleCalendarService } from "./googleCalendarService";
+import { prefsService } from "./prefsService";
 
 // ─── Read current userId directly from localStorage (no circular import) ──────
 const SESSION_KEY = "nutricrm_session_v1";
@@ -154,8 +155,12 @@ class Store {
       this.user = null as any;
       this.statuses = DEFAULT_STATUSES;
       this.evaluations = [];
+      prefsService.reset();
       return;
     }
+
+    // Init prefs synchronously so useState initializers in components can read them
+    prefsService.initSync(userId);
 
     // Cargar desde cache inmediatamente para que la UI no espere
     const cachedPatients = load<Patient[]>(this.K.patients, []);
@@ -231,6 +236,9 @@ class Store {
       }
 
       this.isInitialized = true;
+
+      // Sync preferences from DB (non-blocking, updates localStorage for next mount)
+      prefsService.loadFromDB(userId);
 
       // Cache local
       save(this.K.patients, this.patients);

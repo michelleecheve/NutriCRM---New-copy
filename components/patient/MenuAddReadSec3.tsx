@@ -6,6 +6,7 @@ import {
   Lock, Unlock, Bookmark, Shuffle, Sliders, Palette, Pin,
   Eraser, Trash2, Printer
 } from 'lucide-react';
+import { prefsService } from '../../services/prefsService';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, MenuTemplateDesign, MenuRecommendationData, MenuDesignConfig, DEFAULT_VISUAL_THEME } from '../../types';
 import { MenuDesignPanel } from '../menus_components/MenuDesignPanel';
 import { MealLabel, MealSlot, WEEKDAY_KEYS, MenuReferenceData, emptyMealPortions, calcPortionsTotal } from '../menus_components/Menu_References_Components/MenuReferencesStorage';
@@ -153,10 +154,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const [isVisible, setIsVisible] = useState(true);
   const [editMode, setEditMode] = useState<'tabla' | 'preview'>('tabla');
   const [editTablaKey, setEditTablaKey] = useState(0);
-  const [isLocked, setIsLocked] = useState<boolean>(() => {
-  try { return localStorage.getItem('nutriflow_menu_locked') === 'true'; }
-  catch { return false; }
-  });
+  const [isLocked, setIsLocked] = useState<boolean>(() => prefsService.get('menus.locked', false));
   const [showAiOptionsModal, setShowAiOptionsModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isMixing, setIsMixing] = useState(false);
@@ -175,10 +173,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const deleteDropdownRef = useRef<HTMLDivElement>(null);
   const [showDeleteDropdown, setShowDeleteDropdown] = useState(false);
   const [designModalOpen, setDesignModalOpen] = useState(false);
-  const [isBannerPinned, setIsBannerPinned] = useState(() => {
-    try { return localStorage.getItem('nutriflow_banner_pinned') !== 'false'; }
-    catch { return true; }
-  });
+  const [isBannerPinned, setIsBannerPinned] = useState(() => prefsService.get('menus.bannerPinned', true));
 
   // ─── Delete dropdown click-outside ────────────────────────────────────────
   useEffect(() => {
@@ -1356,7 +1351,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             e.stopPropagation();
             const next = !isLocked;
             setIsLocked(next);
-            try { localStorage.setItem('nutriflow_menu_locked', String(next)); } catch {}
+            prefsService.set('menus.locked', next);
           }}
           title={isLocked ? 'Desbloquear botones de generación' : 'Bloquear botones de generación para evitar cambios accidentales'}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
@@ -1555,7 +1550,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                     onClick={() => {
                       const next = !isBannerPinned;
                       setIsBannerPinned(next);
-                      try { localStorage.setItem('nutriflow_banner_pinned', String(next)); } catch {}
+                      prefsService.set('menus.bannerPinned', next);
                     }}
                     title={isBannerPinned ? 'Desanclar barra (scroll normal)' : 'Anclar barra (sticky)'}
                     className={`p-1.5 rounded-lg transition-all ${

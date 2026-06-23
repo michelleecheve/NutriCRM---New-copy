@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
+import { prefsService } from '../../services/prefsService';
 
 interface MenuWrapperProps {
   title: string;
@@ -22,13 +23,12 @@ export const MenuWrapper: React.FC<MenuWrapperProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(() => {
     if (!storageKey) return defaultOpen;
-    const saved = localStorage.getItem(`nutriflow_menu_section_${storageKey}`);
-    return saved !== null ? saved === 'true' : defaultOpen;
+    return prefsService.get(`menus.sections.${storageKey}`, defaultOpen);
   });
 
   useEffect(() => {
     if (!storageKey) return;
-    localStorage.setItem(`nutriflow_menu_section_${storageKey}`, String(isOpen));
+    prefsService.set(`menus.sections.${storageKey}`, isOpen);
   }, [isOpen, storageKey]);
 
   return (

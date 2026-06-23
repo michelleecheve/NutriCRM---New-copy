@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Appointment } from '../../types';
 import { ChevronLeft, ChevronRight, LayoutGrid, CalendarDays } from 'lucide-react';
+import { prefsService } from '../../services/prefsService';
 
 type ViewMode = 'month' | 'week';
 
@@ -20,9 +21,6 @@ const monthNames = [
 
 // Week starts on Monday
 const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-
-const storageKey = (userId?: string) =>
-  userId ? `nutriflow_cal_view_v1_${userId}` : 'nutriflow_cal_view_v1';
 
 // Returns the Monday of the week containing `date`
 function getWeekStart(date: Date): Date {
@@ -47,10 +45,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   onAppointmentClick,
   userId,
 }) => {
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const saved = localStorage.getItem(storageKey(userId));
-    return saved === 'week' ? 'week' : 'month';
-  });
+  const [viewMode, setViewMode] = useState<ViewMode>(() => prefsService.get('calendar.view', 'month'));
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +60,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
-    localStorage.setItem(storageKey(userId), mode);
+    prefsService.set('calendar.view', mode);
   };
 
   // ── Month data ──────────────────────────────────────────────────────────────

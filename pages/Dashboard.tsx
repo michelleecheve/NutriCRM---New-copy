@@ -4,6 +4,7 @@ import { store } from '../services/store';
 import { Search, Plus, User, ChevronRight, Filter, Check, Settings, Trash2, X as CloseIcon, ArrowUpDown, ChevronLeft } from 'lucide-react';
 import { showPlanLimitModal } from '../components/PlanLimitModal';
 import { authStore } from '../services/authStore';
+import { prefsService } from '../services/prefsService';
 
 interface DashboardProps {
   onSelectPatient: (patientId: string, tab?: string) => void;
@@ -11,14 +12,7 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
   const [patients, setPatients] = useState<Patient[]>(store.getPatients());
-  const [searchTerm, setSearchTerm] = useState<string>(() => {
-    try {
-      const raw = localStorage.getItem('nutricrm_session_v1');
-      const userId = raw ? (JSON.parse(raw)?.id ?? 'guest') : 'guest';
-      const stored = localStorage.getItem(`nutriflow_dashboard_filters_v1_${userId}`);
-      return stored ? (JSON.parse(stored)?.searchTerm ?? '') : '';
-    } catch { return ''; }
-  });
+  const [searchTerm, setSearchTerm] = useState<string>(() => prefsService.get('dashboard.searchTerm', ''));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [statusList, setStatusList] = useState<string[]>(store.getPatientStatuses());
@@ -36,53 +30,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
     return () => clearInterval(checkInit);
   }, []);
 
-  // Filter State — persisted in localStorage per user
-  const [filterStatus, setFilterStatus] = useState<string[]>(() => {
-    try {
-      const raw = localStorage.getItem('nutricrm_session_v1');
-      const userId = raw ? (JSON.parse(raw)?.id ?? 'guest') : 'guest';
-      const stored = localStorage.getItem(`nutriflow_dashboard_filters_v1_${userId}`);
-      return stored ? (JSON.parse(stored)?.filterStatus ?? []) : [];
-    } catch { return []; }
-  });
+  // Filter State — persisted in DB per user via prefsService
+  const [filterStatus, setFilterStatus] = useState<string[]>(() => prefsService.get('dashboard.filterStatus', []));
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
 
-  // Sort State — persisted in localStorage per user
+  // Sort State — persisted in DB per user via prefsService
   type SortOrder = 'ultimo' | 'reciente' | 'alfabetico';
-  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
-    try {
-      const raw = localStorage.getItem('nutricrm_session_v1');
-      const userId = raw ? (JSON.parse(raw)?.id ?? 'guest') : 'guest';
-      const stored = localStorage.getItem(`nutriflow_dashboard_filters_v1_${userId}`);
-      return stored ? (JSON.parse(stored)?.sortOrder ?? 'reciente') : 'reciente';
-    } catch { return 'reciente'; }
-  });
+  const [sortOrder, setSortOrder] = useState<SortOrder>(() => prefsService.get('dashboard.sortOrder', 'reciente'));
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
 
-  // Persist filters to localStorage whenever they change
+  // Persist filters whenever they change
   React.useEffect(() => {
-    try {
-      const key = getDashboardFiltersKey();
-      localStorage.setItem(key, JSON.stringify({ filterStatus, sortOrder, searchTerm }));
-    } catch {}
+    prefsService.set('dashboard.filterStatus', filterStatus);
+    prefsService.set('dashboard.sortOrder', sortOrder);
+    prefsService.set('dashboard.searchTerm', searchTerm);
   }, [filterStatus, sortOrder, searchTerm]);
 
-  // Helpers for per-user localStorage keys
-  const getUserId = (): string => {
-    try {
-      const raw = localStorage.getItem('nutricrm_session_v1');
-      return raw ? (JSON.parse(raw)?.id ?? 'guest') : 'guest';
-    } catch { return 'guest'; }
-  };
-  const getLastSelectedKey = (): string => `nutriflow_last_selected_v1_${getUserId()}`;
-  const getDashboardFiltersKey = (): string => `nutriflow_dashboard_filters_v1_${getUserId()}`;
-
-  const [lastSelectedOrder, setLastSelectedOrder] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem(getLastSelectedKey());
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
-  });
+  const [lastSelectedOrder, setLastSelectedOrder] = useState<string[]>(() => prefsService.get('dashboard.lastSelectedOrder', []));
 
   // Pagination State
   const ITEMS_PER_PAGE = 8;
@@ -158,8 +122,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
   const handleSelectPatient = (patientId: string, tab?: string) => {
     const newOrder = [patientId, ...lastSelectedOrder.filter(id => id !== patientId)];
     setLastSelectedOrder(newOrder);
-    // Persist synchronously before navigating away — useEffect may not fire in time
-    try { localStorage.setItem(getLastSelectedKey(), JSON.stringify(newOrder)); } catch {}
+    prefsService.set('dashboard.lastSelectedOrder', newOrder);
     onSelectPatient(patientId, tab);
   };
 
