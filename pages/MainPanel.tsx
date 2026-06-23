@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { store } from '../services/store';
 import { authStore } from '../services/authStore';
 import { Patient, Appointment, Invoice } from '../types';
-import { CreditCard, Calendar, ChefHat, Clock, ChevronRight, AlertCircle, CalendarDays, Users } from 'lucide-react';
+import { CreditCard, Calendar, ChefHat, Clock, ChevronRight, AlertCircle, CalendarDays, Users, Settings } from 'lucide-react';
 import { ComposedChart, Bar, Line, ReferenceLine, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getTodayStr } from '../src/utils/dateUtils';
 import { CalendarAppointmentModal } from '../components/calendar_components/CalendarAppointmentModal';
@@ -55,7 +55,25 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
   const pendingMenusCount = patients.filter(p => p.clinical.status === 'Menú Pendiente').length;
 
   type ChartRange = 'ytd' | '3m' | '6m' | '12m';
-  const [chartRange, setChartRange] = useState<ChartRange>('ytd');
+  type ChartType = 'bars' | 'line' | 'both';
+
+  const chartConfigKey = `nutriflow_chart_config_v1_${currentUser?.id ?? 'guest'}`;
+  const loadChartConfig = () => {
+    try { return JSON.parse(localStorage.getItem(chartConfigKey) || '{}'); } catch { return {}; }
+  };
+  const saved = loadChartConfig();
+
+  const [chartRange, setChartRange] = useState<ChartRange>(saved.chartRange ?? 'ytd');
+  const [showExpenses, setShowExpenses] = useState<boolean>(saved.showExpenses ?? true);
+  const [showChartSettings, setShowChartSettings] = useState(false);
+  const [chartType, setChartType] = useState<ChartType>(saved.chartType ?? 'both');
+  const [tooltipShowExpenses, setTooltipShowExpenses] = useState<boolean>(saved.tooltipShowExpenses ?? true);
+  const [tooltipShowNeto, setTooltipShowNeto] = useState<boolean>(saved.tooltipShowNeto ?? true);
+  const [tooltipShowCitas, setTooltipShowCitas] = useState<boolean>(saved.tooltipShowCitas ?? true);
+
+  useEffect(() => {
+    localStorage.setItem(chartConfigKey, JSON.stringify({ chartRange, showExpenses, chartType, tooltipShowExpenses, tooltipShowNeto, tooltipShowCitas }));
+  }, [chartRange, showExpenses, chartType, tooltipShowExpenses, tooltipShowNeto, tooltipShowCitas]);
 
   const chartRangeOptions: { value: ChartRange; label: string; tooltip: string }[] = [
     { value: 'ytd', label: String(currentYear), tooltip: 'Datos del año actual' },
@@ -82,8 +100,8 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
         const monthName = d.toLocaleString('es-ES', { month: 'short' });
         const { income, expenses, net } = calcMonth(currentYear, m);
         const monthlyAppointments = appointments
-          .filter(appt => { const [y, mo] = appt.date.split('-').map(Number); return appt.status !== 'Cancelada' && y === currentYear && mo === m; }).length;
-        data.push({ name: monthName, total: net, income, expenses, appointments: monthlyAppointments, isCurrent: m === currentMonth });
+          .filter(appt => { const [y, mo] = appt.date.split('-').map(Number); return appt.status !== 'Cancelada' && appt.date <= todayStr && y === currentYear && mo === m; }).length;
+        data.push({ name: monthName, total: showExpenses ? net : Math.max(0, net), income, expenses, appointments: monthlyAppointments, isCurrent: m === currentMonth });
       }
     } else {
       const months = chartRange === '3m' ? 3 : chartRange === '6m' ? 6 : 12;
@@ -96,8 +114,8 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
           : d.toLocaleString('es-ES', { month: 'short', year: '2-digit' });
         const { income, expenses, net } = calcMonth(yearNum, monthNum);
         const monthlyAppointments = appointments
-          .filter(appt => { const [y, m] = appt.date.split('-').map(Number); return appt.status !== 'Cancelada' && y === yearNum && m === monthNum; }).length;
-        data.push({ name: monthName, total: net, income, expenses, appointments: monthlyAppointments, isCurrent: i === 0 });
+          .filter(appt => { const [y, m] = appt.date.split('-').map(Number); return appt.status !== 'Cancelada' && appt.date <= todayStr && y === yearNum && m === monthNum; }).length;
+        data.push({ name: monthName, total: showExpenses ? net : Math.max(0, net), income, expenses, appointments: monthlyAppointments, isCurrent: i === 0 });
       }
     }
     return data;
@@ -113,13 +131,15 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
           <p className="font-bold text-slate-800 mb-2 capitalize">{label}</p>
           <div className="space-y-1">
             <p className="text-emerald-600 text-xs font-bold flex items-center gap-2"><CreditCard className="w-3 h-3" />Ingresos: {currency}{income.toLocaleString()}</p>
-            {expenses > 0 && <p className="text-red-500 text-xs font-bold flex items-center gap-2"><CreditCard className="w-3 h-3" />Egresos: {currency}{expenses.toLocaleString()}</p>}
-            <div className="border-t border-slate-100 pt-1 mt-1">
-              <p className={`text-sm font-bold flex items-center gap-2 ${net >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
-                <CreditCard className="w-3 h-3" />Neto: {currency}{net.toLocaleString()}
-              </p>
-            </div>
-            <p className="text-blue-600 text-xs font-bold flex items-center gap-2"><Calendar className="w-3 h-3" />{appointments} Citas</p>
+            {tooltipShowExpenses && expenses > 0 && <p className="text-red-500 text-xs font-bold flex items-center gap-2"><CreditCard className="w-3 h-3" />Egresos: {currency}{expenses.toLocaleString()}</p>}
+            {tooltipShowNeto && (
+              <div className="border-t border-slate-100 pt-1 mt-1">
+                <p className={`text-sm font-bold flex items-center gap-2 ${net >= 0 ? 'text-emerald-700' : 'text-red-600'}`}>
+                  <CreditCard className="w-3 h-3" />Neto: {currency}{net.toLocaleString()}
+                </p>
+              </div>
+            )}
+            {tooltipShowCitas && <p className="text-blue-600 text-xs font-bold flex items-center gap-2"><Calendar className="w-3 h-3" />{appointments} Citas</p>}
           </div>
         </div>
       );
@@ -312,17 +332,84 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-slate-800 text-sm">Comportamiento de Ingresos</h3>
-              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
-                {chartRangeOptions.map(opt => (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
+                  {chartRangeOptions.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setChartRange(opt.value)}
+                      title={opt.tooltip}
+                      className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${chartRange === opt.value ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="relative">
                   <button
-                    key={opt.value}
-                    onClick={() => setChartRange(opt.value)}
-                    title={opt.tooltip}
-                    className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${chartRange === opt.value ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    onClick={() => setShowChartSettings(v => !v)}
+                    className={`p-1.5 rounded-lg transition-all ${showChartSettings ? 'bg-slate-200 text-slate-700' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                    title="Ajustes de la gráfica"
                   >
-                    {opt.label}
+                    <Settings className="w-3.5 h-3.5" />
                   </button>
-                ))}
+                  {showChartSettings && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowChartSettings(false)} />
+                      <div className="absolute right-0 top-full mt-1.5 z-20 bg-white border border-slate-200 rounded-xl shadow-lg p-3 w-56">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Ajustes de gráfica</p>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-medium text-slate-700">Mostrar egresos</span>
+                          <button
+                            onClick={() => setShowExpenses(v => !v)}
+                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${showExpenses ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                          >
+                            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${showExpenses ? 'translate-x-4' : 'translate-x-0'}`} />
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1 mb-3">
+                          {showExpenses ? 'Las barras pueden bajar de 0.' : 'Las barras se mantienen en 0 como mínimo.'}
+                        </p>
+
+                        <div className="mb-3">
+                          <span className="text-xs font-medium text-slate-700 block mb-1.5">Tipo de gráfica</span>
+                          <div className="flex gap-1">
+                            {([['bars', 'Barras'], ['line', 'Lineal'], ['both', 'Ambas']] as [ChartType, string][]).map(([val, label]) => (
+                              <button
+                                key={val}
+                                onClick={() => setChartType(val)}
+                                className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all ${chartType === val ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-2.5">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Ajustes del cursor</p>
+                          <div className="space-y-2">
+                            {[
+                              { label: 'Mostrar egresos', value: tooltipShowExpenses, setter: setTooltipShowExpenses },
+                              { label: 'Mostrar neto', value: tooltipShowNeto, setter: setTooltipShowNeto },
+                              { label: 'Mostrar citas', value: tooltipShowCitas, setter: setTooltipShowCitas },
+                            ].map(({ label, value, setter }) => (
+                              <div key={label} className="flex items-center justify-between gap-3">
+                                <span className="text-xs font-medium text-slate-700">{label}</span>
+                                <button
+                                  onClick={() => setter(v => !v)}
+                                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${value ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                                >
+                                  <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${value ? 'translate-x-4' : 'translate-x-0'}`} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             <div className="h-[180px] w-full">
@@ -333,19 +420,23 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} tickFormatter={(v) => `${currency}${v}`} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
                   <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1} />
-                  <Bar dataKey="total" radius={[5, 5, 0, 0]} barSize={32}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.isCurrent ? '#10b981' : '#cbd5e1'} />
-                    ))}
-                  </Bar>
-                  <Line
-                    type="monotone"
-                    dataKey="total"
-                    stroke="#6366f1"
-                    strokeWidth={2}
-                    dot={{ fill: '#6366f1', r: 3, strokeWidth: 0 }}
-                    activeDot={{ r: 5, fill: '#6366f1', strokeWidth: 0 }}
-                  />
+                  {(chartType === 'bars' || chartType === 'both') && (
+                    <Bar dataKey="total" radius={[5, 5, 0, 0]} barSize={32}>
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.isCurrent ? '#10b981' : '#cbd5e1'} />
+                      ))}
+                    </Bar>
+                  )}
+                  {(chartType === 'line' || chartType === 'both') && (
+                    <Line
+                      type="monotone"
+                      dataKey="total"
+                      stroke="#6366f1"
+                      strokeWidth={2}
+                      dot={{ fill: '#6366f1', r: 3, strokeWidth: 0 }}
+                      activeDot={{ r: 5, fill: '#6366f1', strokeWidth: 0 }}
+                    />
+                  )}
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
