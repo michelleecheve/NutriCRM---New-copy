@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, MenuTemplateDesign, MenuRecommendationData, MenuDesignConfig, DEFAULT_VISUAL_THEME } from '../../types';
 import { MenuDesignPanel } from '../menus_components/MenuDesignPanel';
-import { MealLabel, MealSlot, WEEKDAY_KEYS, MenuReferenceData, emptyMealPortions } from '../menus_components/Menu_References_Components/MenuReferencesStorage';
+import { MealLabel, MealSlot, WEEKDAY_KEYS, MenuReferenceData, emptyMealPortions, calcPortionsTotal } from '../menus_components/Menu_References_Components/MenuReferencesStorage';
 import { MenuPlanData, MealPortions } from '../menus_components/MenuDesignTemplates';
 import { EatingOutPageData } from '../menus_components/menudesigntemplates_components/menuTemplateTypes';
 import { MenuReferenceParsertoMenuData } from '../menus_components/Menu_References_Components/MenuReferenceParsertoMenuData';
@@ -325,7 +325,22 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     if (selectedCopyRefId) {
       const ref = store.menuReferences.find(x => x.id === selectedCopyRefId);
       if (!ref) return;
-      plan = MenuReferenceParsertoMenuData(ref.data);
+      if ((ref.data as any)?.type === 'INTERCAMBIO') {
+        const blank = buildBlankMenuPlanData(patient, vetData, getNutritionistData(), evaluationId);
+        const slots: MealSlot[] = (ref.data as any).portions ?? [];
+        const totals = calcPortionsTotal(slots);
+        const byMeal: Record<string, any> = {};
+        slots.forEach(s => { byMeal[s.id] = { ...s.portions, label: s.label }; });
+        plan = {
+          ...blank,
+          menuType: 'intercambio',
+          exchangeMenu: (ref.data as any).exchangeMenu,
+          kcal: (ref.data as any).kcal || 0,
+          portions: { ...totals, byMeal },
+        };
+      } else {
+        plan = MenuReferenceParsertoMenuData(ref.data);
+      }
       // Preserve existing eatingOutPage when building from ref and no eating_out rec selected
       if (!selectedCopyEatingOutRecId && menuPreviewData?.eatingOutPage) {
         plan = { ...plan, eatingOutPage: menuPreviewData.eatingOutPage };
@@ -850,7 +865,9 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                           {ref.data.kcal} kcal
                         </div>
                         <div className="text-xs text-slate-400 font-medium mt-0.5">
-                          {ref.data.meals.length} tiempos · {ref.data.type}
+                          {ref.data?.type === 'INTERCAMBIO'
+                            ? (ref.data?.portions?.length ?? 0)
+                            : (ref.data?.meals?.length ?? 0)} tiempos · {ref.data?.type}
                         </div>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
