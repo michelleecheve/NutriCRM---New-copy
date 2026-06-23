@@ -410,7 +410,8 @@ export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate, onNavigateT
           onUpdate={handleUpdateFiles}
           title="Resultados de Laboratorio"
           icon={Microscope}
-          accept="application/pdf,image/*"
+          accept="application/pdf,image/jpeg,image/png,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          folder="labs"
           onCreateEvaluation={onNavigateToEvaluations}
         />
       </div>

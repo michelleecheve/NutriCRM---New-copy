@@ -83,6 +83,8 @@ export const BioimpedanciaForm: React.FC<{
   const savedIdRef = useRef<string | undefined>(editingId || undefined);
   const [savedOk, setSavedOk] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSaving = useRef(false);
+  const [isSavingState, setIsSavingState] = useState(false);
   
   const [formData, setFormData] = useState({
     gender: '',
@@ -182,14 +184,22 @@ export const BioimpedanciaForm: React.FC<{
   };
 
   const handleSave = async () => {
+    if (isSaving.current) return;
+    isSaving.current = true;
+    setIsSavingState(true);
+
     if (!evaluationId) {
       setStatusMessage({ type: 'error', text: 'Por favor selecciona una evaluación para vincular este registro.' });
+      isSaving.current = false;
+      setIsSavingState(false);
       return;
     }
 
     const selectedEval = patientEvaluations.find(e => e.id === evaluationId);
     if (!selectedEval) {
       setStatusMessage({ type: 'error', text: 'La evaluación seleccionada no es válida.' });
+      isSaving.current = false;
+      setIsSavingState(false);
       return;
     }
 
@@ -216,6 +226,9 @@ export const BioimpedanciaForm: React.FC<{
     } catch (error) {
       console.error('Error saving bioimpedancia:', error);
       setStatusMessage({ type: 'error', text: 'Error al guardar el registro. Por favor intenta de nuevo.' });
+    } finally {
+      isSaving.current = false;
+      setIsSavingState(false);
     }
   };
 
@@ -267,8 +280,8 @@ export const BioimpedanciaForm: React.FC<{
               Guardado
             </div>
           )}
-          <button onClick={handleSave} className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
-            <Save className="w-4 h-4" /> Guardar
+          <button onClick={handleSave} disabled={isSavingState} className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+            <Save className="w-4 h-4" /> {isSavingState ? 'Guardando...' : 'Guardar'}
           </button>
           <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors text-center">
             Salir

@@ -16,6 +16,7 @@ interface FileGalleryProps {
   title: string;
   icon: React.ElementType;
   accept?: string;
+  folder?: 'photos' | 'labs';
   showDelete?: boolean;
   hideHeader?: boolean;
   onCreateEvaluation?: () => void;
@@ -64,8 +65,11 @@ const compressImageFile = (inputFile: File, maxSizeKb = 500): Promise<File> => {
   });
 };
 
+const isDocFile = (file: any) => /\.(doc|docx)$/i.test(file.name ?? '');
+const isViewable = (file: any) => file.type === 'image' || file.type === 'pdf' || isDocFile(file);
+
 export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
-  ({ patientId, files = [], onUpdate, title, icon: Icon, accept, showDelete = true, hideHeader = false, onCreateEvaluation }, ref) => {
+  ({ patientId, files = [], onUpdate, title, icon: Icon, accept, folder: forcedFolder, showDelete = true, hideHeader = false, onCreateEvaluation }, ref) => {
 
     const [uploadModalOpen,        setUploadModalOpen]        = useState(false);
     const [isUploading,            setIsUploading]            = useState(false);
@@ -157,7 +161,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
       try {
         const fileToUpload = isImage ? await compressImageFile(file, 500) : file;
 
-        const folder: 'photos' | 'labs' = isImage ? 'photos' : 'labs';
+        const folder: 'photos' | 'labs' = forcedFolder ?? (isImage ? 'photos' : 'labs');
         const userId = authStore.getCurrentUser()?.id ?? 'guest';
         const type: 'image' | 'pdf' | 'other' = isImage
           ? 'image'
@@ -198,11 +202,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
     };
 
     const handlePreview = (file: any) => {
-      if (file.type === 'pdf') {
-        window.open(file.url, '_blank');
-      } else if (file.type === 'image') {
-        setPreviewFile(file);
-      }
+      if (isViewable(file)) setPreviewFile(file);
     };
 
     const requestDelete = (id: string) => {
@@ -314,7 +314,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                   className="group relative bg-slate-50 rounded-2xl border border-slate-100 p-4 hover:border-slate-200 hover:shadow-md transition-all"
                 >
                   <div
-                    className={`${file.type === 'image' ? 'cursor-pointer' : ''}`}
+                    className={`${isViewable(file) ? 'cursor-pointer' : ''}`}
                     onClick={() => handlePreview(file)}
                   >
                     {file.type === 'image' && (
@@ -366,7 +366,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                     >
                       <Link className="w-3.5 h-3.5" />
                     </button>
-                    {file.type === 'image' && (
+                    {isViewable(file) && (
                       <button
                         onClick={() => handlePreview(file)}
                         className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-500 transition-colors"
@@ -569,7 +569,7 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                   >
                     {isUploading ? 'Subiendo...' : 'Seleccionar archivo'}
                   </button>
-                  <p className="text-[10px] text-slate-400 mt-3"> Peso Máx por archivo/imágen: 1 mb. Imágenes se comprimen automáticamente. </p>
+                  <p className="text-[10px] text-slate-400 mt-3">Formatos aceptados: PDF, JPEG, PNG, DOC — máx. 5 MB por archivo. Las imágenes se comprimen al cargarse.</p>
                 </div>
               </div>
             </div>
@@ -579,8 +579,8 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
         {/* ── Preview Modal ── */}
         {previewFile && (
           <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-              <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+              <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center flex-shrink-0">
                 <h3 className="font-bold text-slate-900 truncate">{previewFile.name}</h3>
                 <button
                   onClick={() => setPreviewFile(null)}
@@ -589,8 +589,26 @@ export const FileGallery = forwardRef<FileGalleryHandle, FileGalleryProps>(
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              <div className="flex-1 overflow-auto bg-slate-100 p-8 flex items-start justify-center">
-                <img src={previewFile.url} alt={previewFile.name} className="max-w-full max-h-full object-contain shadow-lg" />
+              <div className="flex-1 overflow-hidden bg-slate-100">
+                {previewFile.type === 'image' && (
+                  <div className="w-full h-full overflow-auto p-8 flex items-start justify-center">
+                    <img src={previewFile.url} alt={previewFile.name} className="max-w-full max-h-full object-contain shadow-lg" />
+                  </div>
+                )}
+                {previewFile.type === 'pdf' && (
+                  <iframe
+                    src={previewFile.url}
+                    className="w-full h-full border-0"
+                    title={previewFile.name}
+                  />
+                )}
+                {isDocFile(previewFile) && (
+                  <iframe
+                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewFile.url)}&embedded=true`}
+                    className="w-full h-full border-0"
+                    title={previewFile.name}
+                  />
+                )}
               </div>
             </div>
           </div>
