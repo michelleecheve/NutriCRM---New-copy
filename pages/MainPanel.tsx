@@ -100,7 +100,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
         const monthName = d.toLocaleString('es-ES', { month: 'short' });
         const { income, expenses, net } = calcMonth(currentYear, m);
         const monthlyAppointments = appointments
-          .filter(appt => { const [y, mo] = appt.date.split('-').map(Number); return appt.status !== 'Cancelada' && appt.date <= todayStr && y === currentYear && mo === m; }).length;
+          .filter(appt => { const [y, mo] = appt.date.split('-').map(Number); return appt.status === 'Completada' && y === currentYear && mo === m; }).length;
         data.push({ name: monthName, total: showExpenses ? net : Math.max(0, net), income, expenses, appointments: monthlyAppointments, isCurrent: m === currentMonth });
       }
     } else {
@@ -114,7 +114,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
           : d.toLocaleString('es-ES', { month: 'short', year: '2-digit' });
         const { income, expenses, net } = calcMonth(yearNum, monthNum);
         const monthlyAppointments = appointments
-          .filter(appt => { const [y, m] = appt.date.split('-').map(Number); return appt.status !== 'Cancelada' && appt.date <= todayStr && y === yearNum && m === monthNum; }).length;
+          .filter(appt => { const [y, m] = appt.date.split('-').map(Number); return appt.status === 'Completada' && y === yearNum && m === monthNum; }).length;
         data.push({ name: monthName, total: showExpenses ? net : Math.max(0, net), income, expenses, appointments: monthlyAppointments, isCurrent: i === 0 });
       }
     }
@@ -139,7 +139,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
                 </p>
               </div>
             )}
-            {tooltipShowCitas && <p className="text-blue-600 text-xs font-bold flex items-center gap-2"><Calendar className="w-3 h-3" />{appointments} Citas</p>}
+            {tooltipShowCitas && <p className="text-blue-600 text-xs font-bold flex items-center gap-2"><Calendar className="w-3 h-3" />{appointments} Citas completadas</p>}
           </div>
         </div>
       );
@@ -392,7 +392,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
                             {[
                               { label: 'Mostrar egresos', value: tooltipShowExpenses, setter: setTooltipShowExpenses },
                               { label: 'Mostrar neto', value: tooltipShowNeto, setter: setTooltipShowNeto },
-                              { label: 'Mostrar citas', value: tooltipShowCitas, setter: setTooltipShowCitas },
+                              { label: 'Mostrar citas completadas', value: tooltipShowCitas, setter: setTooltipShowCitas },
                             ].map(({ label, value, setter }) => (
                               <div key={label} className="flex items-center justify-between gap-3">
                                 <span className="text-xs font-medium text-slate-700">{label}</span>
