@@ -217,7 +217,6 @@ serve(async (req: Request) => {
         updated_at:           new Date().toISOString(),
       }, { onConflict: 'owner_id' });
       await supabase.from('profiles').update({ plan: 'pro' }).eq('id', ownerId);
-      await supabase.from('ai_rate_limits').update({ max_tokens: 200000 }).eq('owner_id', ownerId);
       console.log(`Activated Pro for owner ${ownerId} via ${eventType}`);
 
       const { data: prof } = await supabase.from('profiles').select('name, email').eq('id', ownerId).single();
@@ -243,7 +242,6 @@ serve(async (req: Request) => {
         owner_id: ownerId, plan: 'free', status: 'cancelled', updated_at: new Date().toISOString(),
       }, { onConflict: 'owner_id' });
       await supabase.from('profiles').update({ plan: 'free' }).eq('id', ownerId);
-      await supabase.from('ai_rate_limits').update({ max_tokens: 30000 }).eq('owner_id', ownerId);
       console.log(`subscription.cancel: payment-failure downgrade for owner ${ownerId}`);
 
       const { data: profDown } = await supabase.from('profiles').select('name, email').eq('id', ownerId).single();
@@ -284,7 +282,6 @@ serve(async (req: Request) => {
         owner_id: ownerId, plan: 'free', status: 'paused', updated_at: new Date().toISOString(),
       }, { onConflict: 'owner_id' });
       await supabase.from('profiles').update({ plan: 'free' }).eq('id', ownerId);
-      await supabase.from('ai_rate_limits').update({ max_tokens: 30000 }).eq('owner_id', ownerId);
       break;
     }
 

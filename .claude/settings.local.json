@@ -26,7 +26,10 @@
       "PowerShell(cmd /c \"dir /a \"\"C:\\\\Users\\\\INTEL CORE i9 12th\\\\Downloads\\\\Github Clone\\\\NutriCRM---New-copy\\\\memory\\\\\"\"\")",
       "Bash(npx vite *)",
       "Bash(Remove-Item *)",
-      "Bash(Write-Host \"Deleted AI service files\")"
+      "Bash(Write-Host \"Deleted AI service files\")",
+      "Bash(grep -rn \"^\\\\s*//\\\\s*\\\\\\(function\\\\|const\\\\|let\\\\|var\\\\|export\\\\|import\\\\|if\\\\|for\\\\|while\\\\|return\\\\\\)\" \"C:\\\\Users\\\\INTEL CORE i9 12th\\\\Downloads\\\\Github Clone\\\\NutriCRM---New-copy/components\" \"C:\\\\Users\\\\INTEL CORE i9 12th\\\\Downloads\\\\Github Clone\\\\NutriCRM---New-copy/pages\" --include=\"*.tsx\" --include=\"*.ts\")",
+      "Bash(grep -rn \"//\" \"C:\\\\Users\\\\INTEL CORE i9 12th\\\\Downloads\\\\Github Clone\\\\NutriCRM---New-copy/components/patient\" --include=\"*.tsx\")",
+      "Bash(grep -E \"^\\\\s*//\\\\s*\\(const|function|interface|let|var|if|for|while\\)\")"
     ]
   }
 }
