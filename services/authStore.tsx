@@ -319,7 +319,6 @@ class AuthStore {
           this.subscription = { ...this.subscription, plan: 'free', status: 'free' };
           supabase.from('subscriptions').update({ plan: 'free', status: 'cancelled', updated_at: new Date().toISOString() }).eq('owner_id', user.id);
           supabase.from('profiles').update({ plan: 'free' }).eq('id', user.id);
-          supabase.from('ai_rate_limits').update({ max_tokens: 30000 }).eq('owner_id', user.id);
         }
       }
     } else {
@@ -365,14 +364,6 @@ class AuthStore {
     if (profileError) {
       console.error('Error creating profile:', profileError);
       return { ok: false, message: 'Error al crear el perfil de usuario.' };
-    }
-
-    // Crear registro de rate limit de IA (plan gratuito por defecto)
-    try {
-      await supabaseService.createAIRateLimit(data.user.id);
-    } catch (e) {
-      // No bloquear el registro si falla — el usuario puede activarlo manualmente desde su perfil
-      console.warn('Could not create AI rate limit on signup:', e);
     }
 
     return { ok: true };

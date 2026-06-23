@@ -140,8 +140,6 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("base_v1");
   const [selectedReferenceIds, setSelectedReferenceIds] = useState<string[]>([]);
   const [selectedRecommendationIds, setSelectedRecommendationIds] = useState<string[]>([]);
-  const [aiDraftText, setAiDraftText] = useState<string>("");
-  const [aiRationale, setAiRationale] = useState<string>("");
   const [menuPreviewData, setMenuPreviewData] = useState<MenuPlanData | null>(null);
   const [selectedPreviewTemplate, setSelectedPreviewTemplate] = useState<string>(() => store.getMenuTemplate()?.templateDesign ?? 'plantilla_v1');
   const [zoom, setZoom] = useState<number>(1);
@@ -229,8 +227,6 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         setSelectedRecommendationIds([]);
       }
 
-      setAiDraftText(menu.content || "");
-      setAiRationale(menu.aiRationale || "");
       setMenuPreviewData(menu.menuData || null);
 
       // Load per-menu design config (or derive from templateId if no designConfig saved yet)
@@ -347,8 +343,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         sectionTitles: menuPreviewData.sectionTitles ?? store.getMenuTemplate()?.sectionTitles,
       } : menuPreviewData,
       name: menuName || `Menú ${vetData.kcalToWork} kcal`,
-      content: aiDraftText,
-      aiRationale: aiRationale
+      content: '',
+      aiRationale: ''
     };
 
     const updatedMenus = [...(patient.menus || [])];
@@ -427,8 +423,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         sectionTitles: menuPreviewData.sectionTitles ?? store.getMenuTemplate()?.sectionTitles,
       } : menuPreviewData,
       name: menuName || `Menú ${vetData.kcalToWork} kcal`,
-      content: aiDraftText,
-      aiRationale: aiRationale
+      content: '',
+      aiRationale: ''
     };
 
     const updatedMenus = [...(patient.menus || [])];
@@ -681,10 +677,6 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           selectedTemplateId={selectedTemplateId}
           selectedReferenceIds={selectedReferenceIds}
           selectedRecommendationIds={selectedRecommendationIds}
-          aiDraftText={aiDraftText}
-          setAiDraftText={setAiDraftText}
-          aiRationale={aiRationale}
-          setAiRationale={setAiRationale}
           menuPreviewData={menuPreviewData}
           setMenuPreviewData={setMenuPreviewData}
           zoom={zoom}

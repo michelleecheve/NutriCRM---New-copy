@@ -340,59 +340,9 @@ export interface UserProfile {
   country?: string;
   dateOfBirth?: string;
   currency?: string;
-  menuAIConfig?: MenuAIConfig;
-  labAIPrompt?: string;
   shareDigitalMenuMessage?: string;
   navbarConfig?: 'sidebar' | 'topnav';
   portalConfig?: PortalConfig;
-}
-
-export type MealTimeKey = 'desayuno' | 'refaccion' | 'almuerzo' | 'merienda' | 'cena';
-
-export interface FoodIdea {
-  id: string;
-  name: string;
-  description: string;
-  category: 'ingrediente' | 'receta' | 'evitar' | 'marca';
-}
-
-export interface MealTimeIdeas {
-  desayuno:  FoodIdea[];
-  refaccion: FoodIdea[];
-  almuerzo:  FoodIdea[];
-  merienda:  FoodIdea[];
-  cena:      FoodIdea[];
-}
-
-export interface RecommendationIdeas {
-  preparacion: string[];
-  restricciones: string[];
-  habitos: string[];
-  organizacion: string[];
-}
-
-export interface PatientDataFields {
-  datosClinicos:            boolean;
-  antecedentes:             boolean;
-  horasSueno:               boolean;
-  deporteEntrenamiento:     boolean;
-  meta:                     boolean;
-  alergias:                 boolean;
-  diagnostico:              boolean;
-  historialFamiliar:        boolean;
-  medicamentos:             boolean;
-  evaluacionDietetica:      boolean;
-  evaluacionDieteticaFecha: boolean;
-  medidasAntropometricas:   boolean;
-  bioimpedancia:            boolean;
-  laboratorios:             boolean;
-}
-
-export interface MenuAIConfig {
-  prompt: string;
-  ideas:  MealTimeIdeas;
-  fields: PatientDataFields;
-  recommendationIdeas?: RecommendationIdeas;
 }
 
 export interface AntroFieldsConfig {

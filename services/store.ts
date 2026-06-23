@@ -8,7 +8,6 @@ import {
   DietaryEvaluation,
   SomatotypeRecord,
   GeneratedMenu,
-  MenuAIConfig,
   MenuReferenceRecord,
   MenuRecommendationRecord,
 } from "../types";
@@ -223,8 +222,6 @@ class Store {
           instagramHandle: profile.instagram_handle || "",
           website: profile.website || "",
           address: profile.address || "",
-          menuAIConfig: profile.menu_ai_config,
-          labAIPrompt: profile.lab_ai_prompt || "",
           currency: profile.currency || "$",
         };
 
@@ -1029,16 +1026,6 @@ class Store {
 
   getUserProfile(): UserProfile {
     return this.user || SEED_USER;
-  }
-
-  async updateMenuAIConfig(config: MenuAIConfig): Promise<void> {
-    if (this.uid && this.uid !== "guest") {
-      await supabaseService.updateProfile(this.uid, { menuAIConfig: config });
-    }
-    if (this.user) {
-      this.user.menuAIConfig = config;
-      save(this.K.user, this.user);
-    }
   }
 
   // ── Menu Templates ─────────────────────────────────────────────────────────

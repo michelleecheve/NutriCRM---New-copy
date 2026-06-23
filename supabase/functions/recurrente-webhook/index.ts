@@ -50,7 +50,6 @@ function emailWelcomePro(name: string, nextBilling: string): string {
     <table cellpadding="0" cellspacing="0" style="margin:20px 0;">
       <tr><td style="padding:6px 0;"><span style="color:#059669;font-weight:700;margin-right:8px;">✓</span>Pacientes ilimitados</td></tr>
       <tr><td style="padding:6px 0;"><span style="color:#059669;font-weight:700;margin-right:8px;">✓</span>Citas y facturas ilimitadas</td></tr>
-      <tr><td style="padding:6px 0;"><span style="color:#059669;font-weight:700;margin-right:8px;">✓</span>200,000 tokens de IA por mes</td></tr>
     </table>
     <p style="background:#f0fdf4;border-left:3px solid #059669;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
       📅 Tu próximo cobro es el <strong>${nextBilling}</strong>.

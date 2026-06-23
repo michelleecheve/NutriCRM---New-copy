@@ -24,7 +24,9 @@
       "Bash(npm ls *)",
       "PowerShell(cmd /c \"dir /a /s \"\"C:\\\\Users\\\\INTEL CORE i9 12th\\\\.claude\\\\projects\\\\C--Users-INTEL-CORE-i9-12th-Downloads-Github-Clone-NutriCRM---New-copy\\\\memory\\\\\"\"\")",
       "PowerShell(cmd /c \"dir /a \"\"C:\\\\Users\\\\INTEL CORE i9 12th\\\\Downloads\\\\Github Clone\\\\NutriCRM---New-copy\\\\memory\\\\\"\"\")",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(Remove-Item *)",
+      "Bash(Write-Host \"Deleted AI service files\")"
     ]
   }
 }

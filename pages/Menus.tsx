@@ -12,10 +12,9 @@ import { MenuDesignPanel } from '../components/menus_components/MenuDesignPanel'
 import { MenuHistory } from '../components/menus_components/MenuHistory';
 import { MenuExportPDF } from '../components/menus_components/MenuExportPDF';
 import { MenuPreview } from '../components/menus_components/MenuPreview';
-import { MenuAIConfigurator } from '../components/menus_components/MenuAIConfigurator';
 import { MenuRecommendations } from '../components/menus_components/MenuRecommendations';
 import { MenuWrapper } from '../components/menus_components/MenuWrapper';
-import { Sparkles, FileText, ClipboardList, History, Smartphone } from 'lucide-react';
+import { FileText, ClipboardList, History, Smartphone } from 'lucide-react';
 import { MenuPatientPortal } from '../components/menus_components/MenuPatientPortal';
 
 const MOCK_MEAL_ORDER = ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
@@ -760,7 +759,7 @@ export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => v
             </div>
             <div className="text-left">
               <h3 className="font-bold text-slate-900">Configuración de Menús</h3>
-              <p className="text-sm text-slate-500 mt-0.5">Plantilla base, IA, referencias, recomendaciones y portal del paciente</p>
+              <p className="text-sm text-slate-500 mt-0.5">Plantilla base, referencias, recomendaciones y portal del paciente</p>
             </div>
             <div className={`hidden sm:flex ml-2 p-1.5 rounded-lg transition-colors ${configOpen ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
               {configOpen ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -783,18 +782,9 @@ export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => v
             </MenuWrapper>
 
             <MenuWrapper
-              title="Configuración de AI para Menús"
-              icon={<Sparkles className="w-5 h-5 text-indigo-600" />}
-              description="Personaliza cómo Gemini genera los menús de tus pacientes"
-              storageKey="ai_config"
-            >
-              <MenuAIConfigurator hideHeader hideContainer />
-            </MenuWrapper>
-
-            <MenuWrapper
               title="Plantillas de Referencias"
               icon={<FileText className="w-5 h-5 text-blue-600" />}
-              description="Ingresa un menú de referencia por kcal para que la IA lo use como base"
+              description="Ingresa un menú de referencia por kcal para usar como base al copiar"
               storageKey="referencias"
             >
               <MenuReferences hideHeader hideContainer />

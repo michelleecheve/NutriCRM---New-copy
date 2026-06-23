@@ -65,7 +65,6 @@ export const CheckoutSuccess: React.FC<{ onGoToProfile: () => void }> = ({ onGoT
           <ul className="space-y-1.5 text-sm text-emerald-800">
             <li>Pacientes ilimitados</li>
             <li>Citas y facturas ilimitadas</li>
-            <li>200,000 tokens de IA por mes</li>
           </ul>
         </div>
 

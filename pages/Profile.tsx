@@ -9,7 +9,6 @@ import {
   PanelLeft, LayoutTemplate
 } from 'lucide-react';
 
-import { ProfileAIConfig } from '../components/profile_config/ProfileAIConfig';
 import { ProfileSubscription } from '../components/profile_config/ProfileSubscription';
 
 const InputField = ({ label, icon: Icon, value, onChange, type = "text", readOnly = false, placeholder = "" }: any) => (
@@ -464,7 +463,6 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const showSistema = authStore.canAccessModule('profile', 'profile-sistema');
   const showVinculacionRecepcionistas = authStore.canAccessModule('profile', 'profile-vinculacion-recepcionistas');
   const showVinculacionNutricionistas = authStore.canAccessModule('profile', 'profile-vinculacion-nutricionistas');
-  const showAIConfig = authStore.canAccessModule('profile', 'profile-ai-config');
   const showSubscription = authStore.getCurrentUser()?.role === 'nutricionista';
 
   const [formData, setFormData] = useState<UserProfile>(authStore.getUserProfile());
@@ -638,8 +636,6 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                 <InputField label="Dirección" icon={MapPin} value={formData.address || ''} onChange={(e: any) => setFormData({ ...formData, address: e.target.value })} placeholder="Ingresa la dirección de tu clínica..." />
               </div>
             </div>
-
-            {showAIConfig && <ProfileAIConfig />}
 
             {showSubscription && <ProfileSubscription />}
 

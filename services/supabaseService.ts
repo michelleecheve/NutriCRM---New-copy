@@ -39,8 +39,6 @@ export const supabaseService = {
     if (profile.specialty)         updateData.specialty          = profile.specialty;
     if (profile.licenseNumber)     updateData.license_number     = profile.licenseNumber;
     if (profile.avatar)            updateData.avatar             = profile.avatar;
-    if (profile.menuAIConfig)      updateData.menu_ai_config     = profile.menuAIConfig;
-    if (profile.labAIPrompt             !== undefined) updateData.lab_ai_prompt             = profile.labAIPrompt;
     if (profile.shareDigitalMenuMessage !== undefined) updateData.share_digital_menu_message = profile.shareDigitalMenuMessage;
     if (profile.portalConfig            !== undefined) updateData.patient_portal_config      = profile.portalConfig;
 
@@ -1055,27 +1053,6 @@ export const supabaseService = {
   },
 
 
-  // ─── AI Rate Limits ────────────────────────────────────────────────────────
-
-  async getAIRateLimit(userId: string) {
-    const { data, error } = await supabase
-      .from('ai_rate_limits')
-      .select('*')
-      .eq('owner_id', userId)
-      .maybeSingle();
-    if (error) throw error;
-    return data;
-  },
-
-  async createAIRateLimit(userId: string) {
-    const { data, error } = await supabase.functions.invoke('create-ai-rate-limit', {
-      body: { owner_id: userId }
-    });
-
-    if (error) throw error;
-    return data;
-  },
-
   // ─── Mappers ───────────────────────────────────────────────────────────────
 
   mapMenuTemplateFromDb(db: any) {
@@ -1418,7 +1395,6 @@ export const supabaseService = {
       avatar:            db.avatar,
       timezone:          db.timezone,
       phone:             db.phone || '',
-      menuAIConfig:      db.menu_ai_config,
     };
   },
 };

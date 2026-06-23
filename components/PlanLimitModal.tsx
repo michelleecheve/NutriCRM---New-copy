@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { X, Zap, Lock, BrainCircuit } from 'lucide-react';
+import { X, Zap, Lock } from 'lucide-react';
 import { authStore } from '../services/authStore';
 
-export const PLAN_LIMIT_EVENT    = 'nutriflow-plan-limit';
-export const PLAN_LIMIT_AI_EVENT = 'nutriflow-plan-limit-ai';
+export const PLAN_LIMIT_EVENT = 'nutriflow-plan-limit';
 
 /** Dispatch this from anywhere to show the plan-limit popup. */
 export function showPlanLimitModal() {
@@ -11,21 +10,13 @@ export function showPlanLimitModal() {
 }
 
 export const PlanLimitModal: React.FC = () => {
-  const [open, setOpen]           = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [isAILimit, setIsAILimit] = useState(false);
-
-  const isPro = authStore.isPro();
+  const [open, setOpen]       = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const handler   = () => { setIsAILimit(false); setOpen(true); };
-    const handlerAI = () => { setIsAILimit(true);  setOpen(true); };
-    window.addEventListener(PLAN_LIMIT_EVENT,    handler);
-    window.addEventListener(PLAN_LIMIT_AI_EVENT, handlerAI);
-    return () => {
-      window.removeEventListener(PLAN_LIMIT_EVENT,    handler);
-      window.removeEventListener(PLAN_LIMIT_AI_EVENT, handlerAI);
-    };
+    const handler = () => setOpen(true);
+    window.addEventListener(PLAN_LIMIT_EVENT, handler);
+    return () => window.removeEventListener(PLAN_LIMIT_EVENT, handler);
   }, []);
 
   if (!open) return null;
@@ -55,57 +46,37 @@ export const PlanLimitModal: React.FC = () => {
         </button>
 
         <div className="flex justify-center mb-4">
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isAILimit ? 'bg-violet-100' : 'bg-amber-100'}`}>
-            {isAILimit
-              ? <BrainCircuit className="w-7 h-7 text-violet-500" />
-              : <Lock className="w-7 h-7 text-amber-500" />
-            }
+          <div className="w-14 h-14 rounded-full flex items-center justify-center bg-amber-100">
+            <Lock className="w-7 h-7 text-amber-500" />
           </div>
         </div>
 
         <h2 className="text-center text-lg font-bold text-slate-800 mb-1">
-          {isAILimit ? 'Límite de tokens de IA' : 'Límite del Plan Básico'}
+          Límite del Plan Básico
         </h2>
         <p className="text-center text-slate-500 text-sm mb-5">
-          {isAILimit
-            ? isPro
-              ? 'Has usado los 200,000 tokens de IA de este mes. Se reinician el próximo mes.'
-              : 'Has usado los 30,000 tokens de IA del Plan Básico este mes.'
-            : 'Has llegado al límite de tu Plan Básico.'
-          }
+          Has llegado al límite de tu Plan Básico.
         </p>
 
-        {isAILimit && isPro ? (
+        <>
+          <p className="text-center text-sm text-slate-600 mb-5">
+            Suscríbete a <span className="font-semibold text-amber-600">Plan Pro</span> para acceso ilimitado sin restricciones.
+          </p>
+          <button
+            onClick={handleCheckout}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold rounded-xl py-3 transition-colors"
+          >
+            <Zap className="w-4 h-4" />
+            {loading ? 'Redirigiendo...' : 'Suscribirse a Plan Pro'}
+          </button>
           <button
             onClick={() => setOpen(false)}
-            className="w-full text-sm text-slate-500 hover:text-slate-700 py-2 transition-colors"
+            className="w-full mt-2 text-sm text-slate-400 hover:text-slate-600 py-2 transition-colors"
           >
-            Entendido
+            Ahora no
           </button>
-        ) : (
-          <>
-            <p className="text-center text-sm text-slate-600 mb-5">
-              {isAILimit
-                ? <>Suscríbete a <span className="font-semibold text-amber-600">Plan Pro</span> para obtener <span className="font-semibold">200,000 tokens de IA</span> al mes.</>
-                : <>Suscríbete a <span className="font-semibold text-amber-600">Plan Pro</span> para acceso ilimitado sin restricciones.</>
-              }
-            </p>
-            <button
-              onClick={handleCheckout}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold rounded-xl py-3 transition-colors"
-            >
-              <Zap className="w-4 h-4" />
-              {loading ? 'Redirigiendo...' : 'Suscribirse a Plan Pro'}
-            </button>
-            <button
-              onClick={() => setOpen(false)}
-              className="w-full mt-2 text-sm text-slate-400 hover:text-slate-600 py-2 transition-colors"
-            >
-              Ahora no
-            </button>
-          </>
-        )}
+        </>
       </div>
     </div>
   );

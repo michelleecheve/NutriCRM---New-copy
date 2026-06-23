@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Sparkles, Eye, EyeOff, Layout,
+  Eye, EyeOff, Layout,
   X,
   Table as TableIcon, FileText, Copy, Check,
-  Lock, Unlock, Bookmark, Shuffle, Sliders, Palette, Pin,
-  Eraser, Trash2, Printer
+  Lock, Unlock, Bookmark, Palette, Pin,
+  Eraser, Trash2, Printer, Pencil
 } from 'lucide-react';
 import { prefsService } from '../../services/prefsService';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, MenuTemplateDesign, MenuRecommendationData, MenuDesignConfig, DEFAULT_VISUAL_THEME } from '../../types';
@@ -17,11 +17,7 @@ import { MenuExportPDF } from '../menus_components/MenuExportPDF';
 import { MenuEditorToolbar, MenuEditorToolbarHandle } from '../menus_components/MenuEditorToolbar';
 import { MenuPreview } from '../menus_components/MenuPreview';
 import { MenuEditSec3 } from '../menus_components/menu_edit_sec3/MenuEditSec3';
-import { generateStructuredMenu, generateMixFromReferences, generateExchangeMenu, adaptPortionsFromMenu, regenerateSingleDay, regenerateMealSlot } from '../../services/geminiService';
-import { MenuAIActionsPanel } from '../menus_components/MenuAIActionsPanel';
 import { store } from '../../services/store';
-import { authStore } from '../../services/authStore';
-import { showPlanLimitModal } from '../PlanLimitModal';
 import { supabaseService } from '../../services/supabaseService';
 
 interface MenuAddReadSec3Props {
@@ -33,10 +29,6 @@ interface MenuAddReadSec3Props {
   selectedTemplateId: string;
   selectedReferenceIds: string[];
   selectedRecommendationIds: string[];
-  aiDraftText: string;
-  setAiDraftText: (text: string) => void;
-  aiRationale: string;
-  setAiRationale: (text: string) => void;
   menuPreviewData: MenuPlanData | null;
   setMenuPreviewData: (data: MenuPlanData | null) => void;
   zoom: number;
@@ -129,10 +121,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   selectedTemplateId,
   selectedReferenceIds,
   selectedRecommendationIds,
-  aiDraftText,
-  setAiDraftText,
-  aiRationale,
-  setAiRationale,
   menuPreviewData,
   setMenuPreviewData,
   zoom,
@@ -155,10 +143,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const [editMode, setEditMode] = useState<'tabla' | 'preview'>('tabla');
   const [editTablaKey, setEditTablaKey] = useState(0);
   const [isLocked, setIsLocked] = useState<boolean>(() => prefsService.get('menus.locked', false));
-  const [showAiOptionsModal, setShowAiOptionsModal] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isMixing, setIsMixing] = useState(false);
-  const [isAdapting, setIsAdapting] = useState(false);
   const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
 
   // ─── Save-as-template state ────────────────────────────────────────────────
@@ -213,8 +197,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const handleDeleteAllPages = () => {
     setShowDeleteDropdown(false);
     handleSetMenuPreviewData(null);
-    setAiRationale('');
-    setAiDraftText('');
   };
 
   // ─── Wrapper for setMenuPreviewData that marks dirty ─────────────────────
@@ -297,8 +279,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   const handleStartBlank = () => {
     const blank = buildBlankMenuPlanData(patient, vetData, getNutritionistData(), evaluationId);
     handleSetMenuPreviewData(withTemplateTitles(blank));
-    setAiRationale('');
-    setAiDraftText('');
     setEditTablaKey(k => k + 1);
   };
 
@@ -400,8 +380,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     };
 
     handleSetMenuPreviewData(withTemplateTitles(withPatient));
-    setAiRationale('');
-    setAiDraftText('');
     setShowCopyRefModal(false);
     setSelectedCopyRefId(null);
     setSelectedCopyRecId(null);
@@ -409,412 +387,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     setEditTablaKey(k => k + 1);
   };
 
-  // ─── AI Generation ─────────────────────────────────────────────────────────
-  const handleGenerateAi = async (scope: 'page1' | 'page2' | 'both' = 'both') => {
-    setShowAiOptionsModal(false);
-    if (!authStore.canUseAI()) {
-      showPlanLimitModal();
-      return;
-    }
-    setIsGenerating(true);
-    try {
-      const refs = store.menuReferences
-        .filter(r => selectedReferenceIds.includes(r.id))
-        .map(r => ({ title: `${r.data.kcal} kcal`, data: r.data }));
-
-      const nutritionistData = getNutritionistData();
-
-      // ✅ Cargar bioimpedancia si existe vinculación
-      let bioData = null;
-      if (evaluationId) {
-        const ev = store.getEvaluationById(evaluationId);
-        if (ev) {
-          // Buscar en bioimpedancias del paciente
-          bioData = patient.bioimpedancias?.find(b => b.evaluation_id === evaluationId) || null;
-          // Si no hay, buscar en antropometría (como fallback de datos básicos)
-          if (!bioData) {
-            const meas = patient.measurements?.find(m => m.linkedEvaluationId === evaluationId);
-            if (meas) {
-              bioData = {
-                weight: meas.weight,
-                fat_pct: meas.bodyFat,
-                muscle_pct: meas.muscleKg ? ((meas.muscleKg / (meas.weight || 1)) * 100).toFixed(1) : undefined,
-                visceral_fat: meas.visceralFat,
-                basal_metabolism: meas.basalMetabolism,
-                metabolic_age: meas.metabolicAge,
-                body_water: meas.bodyWater,
-                bone_mass: meas.boneMass
-              };
-            }
-          }
-        }
-      }
-
-      // ✅ Cargar plantilla guardada (diseño)
-      let templateDesign: MenuTemplateDesign = 'plantilla_v1';
-      const template = store.getMenuTemplate();
-      if (template) {
-        templateDesign = template.templateDesign as MenuTemplateDesign;
-      }
-
-      // ✅ Override patient info with vetData to ensure consistency
-      let fat = 0;
-      if (evaluationId) {
-        const bio = patient.bioimpedancias?.find(b => b.evaluation_id === evaluationId);
-        if (bio) {
-          fat = bio.body_fat_pct;
-        } else {
-          const meas = patient.measurements?.find(m => m.linkedEvaluationId === evaluationId);
-          if (meas) fat = meas.bodyFat || 0;
-        }
-      }
-
-      // ✅ Si el menú activo es de intercambio, usar generador específico
-      if (menuPreviewData?.menuType === 'intercambio') {
-        const result = await generateExchangeMenu(
-          patient,
-          vetData,
-          menuPreviewData?.portions || portions,
-          refs,
-          nutritionistData,
-          evaluationId || undefined,
-          2,
-          bioData
-        );
-        const finalPlan: MenuPlanData = {
-          ...result.plan,
-          // Preserve the user's portions table and weeklyMenu structure (meal order)
-          // so MenuTablePortionsSec3 re-initializes with the correct data after remount.
-          portions: menuPreviewData.portions,
-          weeklyMenu: menuPreviewData.weeklyMenu,
-          patient: {
-            name: `${patient.firstName} ${patient.lastName}`,
-            age: vetData.age || patient.clinical?.age || 0,
-            weight: vetData.weight || 0,
-            height: vetData.height || 0,
-            fatPct: fat,
-          },
-          kcal: vetData.kcalToWork || result.plan.kcal,
-        };
-        handleSetMenuPreviewData(withTemplateTitles(finalPlan));
-        setAiRationale(result.rationale);
-        setAiDraftText('Menú de intercambio generado por IA');
-        setEditTablaKey(k => k + 1);
-        return;
-      }
-
-      const result = await generateStructuredMenu(
-        patient,
-        vetData,
-        menuPreviewData?.portions || portions,
-        refs,
-        nutritionistData,
-        evaluationId || undefined,
-        templateDesign,
-        scope,
-        bioData
-      );
-
-      const finalPlan: MenuPlanData = {
-        ...result.plan,
-        patient: {
-          name: `${patient.firstName} ${patient.lastName}`,
-          age: vetData.age || patient.clinical?.age || 0,
-          weight: vetData.weight || 0,
-          height: vetData.height || 0,
-          fatPct: fat,
-        },
-        kcal: vetData.kcalToWork || result.plan.kcal
-      };
-
-      if (scope === 'page1') {
-        // Keep existing recommendations if any
-        const currentRecs = menuPreviewData?.recommendations;
-        handleSetMenuPreviewData(withTemplateTitles({
-          ...finalPlan,
-          recommendations: currentRecs || finalPlan.recommendations
-        }));
-      } else if (scope === 'page2') {
-        // Keep existing menu if any, but update patient info and recommendations
-        if (menuPreviewData) {
-          handleSetMenuPreviewData(withTemplateTitles({
-            ...menuPreviewData,
-            patient: finalPlan.patient,
-            kcal: finalPlan.kcal,
-            recommendations: finalPlan.recommendations
-          }));
-        } else {
-          handleSetMenuPreviewData(withTemplateTitles(finalPlan));
-        }
-      } else {
-        handleSetMenuPreviewData(withTemplateTitles(finalPlan));
-      }
-
-      setAiRationale(result.rationale);
-      setAiDraftText(`Menú generado por IA (${scope === 'both' ? 'Completo' : scope === 'page1' ? 'Página 1' : 'Página 2'})`);
-      setEditTablaKey(k => k + 1);
-
-    } catch (error: any) {
-      console.error("Error generating menu:", error);
-      setInfoModal({
-        title: "Error de generación",
-        message: error.message || "Hubo un error al generar el menú con IA. Por favor intenta de nuevo."
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  // ─── Mix de plantillas de referencia ──────────────────────────────────────
-  const handleMixReferences = async () => {
-    if (!authStore.canUseAI()) { showPlanLimitModal(); return; }
-    if (selectedReferenceIds.length < 2) return;
-    setIsMixing(true);
-    try {
-      const refs = store.menuReferences
-        .filter(r => selectedReferenceIds.includes(r.id))
-        .map(r => ({ title: `${r.data.kcal} kcal`, data: r.data }));
-
-      let bioData = null;
-      if (evaluationId) {
-        bioData = patient.bioimpedancias?.find(b => b.evaluation_id === evaluationId) || null;
-        if (!bioData) {
-          const meas = patient.measurements?.find(m => m.linkedEvaluationId === evaluationId);
-          if (meas) bioData = { weight: meas.weight, fat_pct: meas.bodyFat, muscle_pct: meas.muscleKg ? ((meas.muscleKg / (meas.weight || 1)) * 100).toFixed(1) : undefined, visceral_fat: meas.visceralFat, basal_metabolism: meas.basalMetabolism, metabolic_age: meas.metabolicAge };
-        }
-      }
-
-      const result = await generateMixFromReferences(
-        patient, vetData,
-        menuPreviewData?.portions || portions,
-        refs, getNutritionistData(),
-        evaluationId, bioData
-      );
-
-      let fat = 0;
-      if (evaluationId) {
-        const bio = patient.bioimpedancias?.find(b => b.evaluation_id === evaluationId);
-        if (bio) fat = bio.body_fat_pct;
-        else { const meas = patient.measurements?.find(m => m.linkedEvaluationId === evaluationId); if (meas) fat = meas.bodyFat || 0; }
-      }
-
-      const finalPlan: MenuPlanData = {
-        ...result.plan,
-        patient: { name: `${patient.firstName} ${patient.lastName}`, age: vetData.age || patient.clinical?.age || 0, weight: vetData.weight || 0, height: vetData.height || 0, fatPct: fat },
-        kcal: vetData.kcalToWork || result.plan.kcal,
-      };
-
-      handleSetMenuPreviewData(withTemplateTitles(finalPlan));
-      setAiRationale(result.rationale);
-      setAiDraftText('Menú generado — Mix de referencias');
-      setEditTablaKey(k => k + 1);
-    } catch (error: any) {
-      setInfoModal({ title: 'Error en Mix de referencias', message: error.message || 'Hubo un error al generar el mix. Intenta de nuevo.' });
-    } finally {
-      setIsMixing(false);
-    }
-  };
-
-  // ─── Adaptar porciones de referencia copiada ──────────────────────────────
-  const handleAdaptPortions = async () => {
-    if (!authStore.canUseAI()) { showPlanLimitModal(); return; }
-    if (!menuPreviewData) return;
-    setIsAdapting(true);
-    try {
-      const result = await adaptPortionsFromMenu(
-        menuPreviewData,
-        menuPreviewData?.portions || portions,
-        patient, vetData, getNutritionistData()
-      );
-
-      let fat = 0;
-      if (evaluationId) {
-        const bio = patient.bioimpedancias?.find(b => b.evaluation_id === evaluationId);
-        if (bio) fat = bio.body_fat_pct;
-        else { const meas = patient.measurements?.find(m => m.linkedEvaluationId === evaluationId); if (meas) fat = meas.bodyFat || 0; }
-      }
-
-      const finalPlan: MenuPlanData = {
-        ...result.plan,
-        patient: { name: `${patient.firstName} ${patient.lastName}`, age: vetData.age || patient.clinical?.age || 0, weight: vetData.weight || 0, height: vetData.height || 0, fatPct: fat },
-        kcal: vetData.kcalToWork || result.plan.kcal,
-      };
-
-      handleSetMenuPreviewData(withTemplateTitles(finalPlan));
-      setAiRationale(result.rationale);
-      setAiDraftText('Porciones adaptadas por IA');
-      setEditTablaKey(k => k + 1);
-    } catch (error: any) {
-      setInfoModal({ title: 'Error al adaptar porciones', message: error.message || 'Hubo un error al adaptar las porciones. Intenta de nuevo.' });
-    } finally {
-      setIsAdapting(false);
-    }
-  };
-
-  // ─── Regenerar un día ─────────────────────────────────────────────────────
-  const handleRegenerateDay = async (dayKey: string) => {
-    if (!authStore.canUseAI()) { showPlanLimitModal(); throw new Error('Límite de tokens alcanzado.'); }
-    if (!menuPreviewData) throw new Error('No hay menú cargado.');
-    const updated = await regenerateSingleDay(menuPreviewData, dayKey, patient, vetData);
-    handleSetMenuPreviewData(withTemplateTitles(updated));
-    setAiDraftText(`Día ${dayKey} regenerado por IA`);
-  };
-
-  // ─── Cambiar un tiempo de comida ───────────────────────────────────────────
-  const handleRegenerateMealSlot = async (slotId: string, label: string) => {
-    if (!authStore.canUseAI()) { showPlanLimitModal(); throw new Error('Límite de tokens alcanzado.'); }
-    if (!menuPreviewData) throw new Error('No hay menú cargado.');
-    const updated = await regenerateMealSlot(menuPreviewData, slotId, label, patient, vetData);
-    handleSetMenuPreviewData(withTemplateTitles(updated));
-    setAiDraftText(`${label} actualizado por IA (toda la semana)`);
-  };
-
-  // ─── AI Options Modal ──────────────────────────────────────────────────────
-  const AiOptionsModal = () => {
-    // If no portion table, show inline editor first
-    if (!hasPortionTable) {
-      return (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl flex-shrink-0">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-600" />
-                Antes de generar
-              </h3>
-              <button onClick={() => setShowAiOptionsModal(false)} className="p-2 hover:bg-white rounded-xl transition-colors">
-                <X className="w-5 h-5 text-slate-400" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
-                <TableIcon className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-sm font-bold text-amber-800">Tabla de porciones requerida</p>
-                  <p className="text-xs text-amber-600 font-medium leading-relaxed">
-                    Para generar el menú con IA, primero necesitás definir la distribución de porciones por tiempo de comida.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowAiOptionsModal(false);
-                  if (!menuPreviewData) handleStartBlank();
-                  setTimeout(() => toolbarRef.current?.openPortions(), 200);
-                }}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
-              >
-                <TableIcon className="w-5 h-5" />
-                Editar Tabla de Porciones
-              </button>
-            </div>
-            <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex-shrink-0">
-              <button onClick={() => setShowAiOptionsModal(false)} className="w-full py-2 font-bold text-slate-500 hover:bg-white rounded-xl transition-all">
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // Normal options when portion table exists
-    const canMix = selectedReferenceIds.length >= 2;
-    const canAdapt = !!menuPreviewData;
-
-    return (
-      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl flex-shrink-0">
-            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-600" />
-              Opciones de Generación
-            </h3>
-            <button onClick={() => setShowAiOptionsModal(false)} className="p-2 hover:bg-white rounded-xl transition-colors">
-              <X className="w-5 h-5 text-slate-400" />
-            </button>
-          </div>
-          <div className="p-6 space-y-3 overflow-y-auto flex-1">
-            <button onClick={() => handleGenerateAi('page1')} className="w-full flex items-center gap-3 p-4 rounded-2xl border border-slate-200 hover:border-indigo-600 hover:bg-indigo-50 transition-all text-left group">
-              <div className="bg-slate-100 p-2 rounded-xl group-hover:bg-white transition-colors">
-                <Layout className="w-5 h-5 text-slate-600 group-hover:text-indigo-600" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-slate-700 group-hover:text-indigo-700">Generar página 1</div>
-                <div className="text-xs text-slate-400 font-medium">Menú semanal y tiempos de comida</div>
-              </div>
-            </button>
-            <button onClick={() => handleGenerateAi('page2')} className="w-full flex items-center gap-3 p-4 rounded-2xl border border-slate-200 hover:border-indigo-600 hover:bg-indigo-50 transition-all text-left group">
-              <div className="bg-slate-100 p-2 rounded-xl group-hover:bg-white transition-colors">
-                <FileText className="w-5 h-5 text-slate-600 group-hover:text-indigo-600" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-slate-700 group-hover:text-indigo-700">Generar Pagina 2</div>
-                <div className="text-xs text-slate-400 font-medium">Recomendaciones personalizadas</div>
-              </div>
-            </button>
-            <button onClick={() => handleGenerateAi('both')} className="w-full flex items-center gap-3 p-4 rounded-2xl border-2 border-indigo-100 bg-indigo-50/30 hover:border-indigo-600 hover:bg-indigo-50 transition-all text-left group">
-              <div className="bg-indigo-100 p-2 rounded-xl group-hover:bg-white transition-colors">
-                <Sparkles className="w-5 h-5 text-indigo-600" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-indigo-700">Generar ambas paginas</div>
-                <div className="text-xs text-indigo-500/70 font-medium">Plan completo (Menú + Recs)</div>
-              </div>
-            </button>
-
-            <div className="pt-1 border-t border-slate-100" />
-
-            <button
-              onClick={() => { setShowAiOptionsModal(false); handleMixReferences(); }}
-              disabled={!canMix}
-              title={!canMix ? 'Selecciona 2 o 3 referencias en la sección anterior para activar' : `Genera un mix fiel de ${selectedReferenceIds.length} referencias seleccionadas`}
-              className={`w-full flex items-center gap-3 p-4 rounded-2xl border transition-all text-left group ${
-                canMix
-                  ? 'border-slate-200 hover:border-violet-500 hover:bg-violet-50'
-                  : 'border-slate-100 opacity-40 cursor-not-allowed'
-              }`}
-            >
-              <div className={`p-2 rounded-xl transition-colors ${canMix ? 'bg-slate-100 group-hover:bg-white' : 'bg-slate-50'}`}>
-                <Shuffle className="w-5 h-5 text-slate-500 group-hover:text-violet-600" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-slate-700 group-hover:text-violet-700">Mix de referencias</div>
-                <div className="text-xs text-slate-400 font-medium">
-                  {canMix ? `Combina ${selectedReferenceIds.length} referencias seleccionadas` : 'Requiere 2+ referencias seleccionadas'}
-                </div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => { setShowAiOptionsModal(false); handleAdaptPortions(); }}
-              disabled={!canAdapt}
-              title={!canAdapt ? 'Copia o genera un menú primero' : 'Adapta las cantidades del menú actual a la tabla de porciones'}
-              className={`w-full flex items-center gap-3 p-4 rounded-2xl border transition-all text-left group ${
-                canAdapt
-                  ? 'border-slate-200 hover:border-teal-500 hover:bg-teal-50'
-                  : 'border-slate-100 opacity-40 cursor-not-allowed'
-              }`}
-            >
-              <div className={`p-2 rounded-xl transition-colors ${canAdapt ? 'bg-slate-100 group-hover:bg-white' : 'bg-slate-50'}`}>
-                <Sliders className="w-5 h-5 text-slate-500 group-hover:text-teal-600" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-slate-700 group-hover:text-teal-700">Adaptar porciones</div>
-                <div className="text-xs text-slate-400 font-medium">
-                  {canAdapt ? 'Ajusta el menú actual a la tabla de porciones' : 'Requiere un menú cargado primero'}
-                </div>
-              </div>
-            </button>
-          </div>
-          <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex-shrink-0">
-            <button onClick={() => setShowAiOptionsModal(false)} className="w-full py-2 font-bold text-slate-500 hover:bg-white rounded-xl transition-all">
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // ─── Copy from Reference Modal ─────────────────────────────────────────────
   const CopyRefModal = () => (
@@ -1334,9 +906,9 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
       >
         <div className="flex items-center gap-3">
           <div className="bg-indigo-100 p-2 rounded-xl">
-            <Sparkles className="w-5 h-5 text-indigo-600" />
+            <Pencil className="w-5 h-5 text-indigo-600" />
           </div>
-          <h2 className="text-lg font-bold text-slate-800">Generación y Preview</h2>
+          <h2 className="text-lg font-bold text-slate-800">Edición y Preview</h2>
           <div className="flex items-center gap-2">
             <button
               className="p-1.5 hover:bg-white rounded-lg transition-colors text-slate-400 hover:text-indigo-600"
@@ -1438,20 +1010,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               Copiar de Plantillas
             </button>
 
-            {/* EXISTING: Generar menú con AI — modified to open options modal */}
-            <button
-              onClick={() => setShowAiOptionsModal(true)}
-              disabled={isGenerating || isMixing || isAdapting || isLocked}
-              className={`shrink-0 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all shadow-lg text-sm ${
-                isGenerating || isMixing || isAdapting || isLocked
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/20'
-              }`}
-            >
-              <Sparkles className={`w-4 h-4 ${isGenerating ? 'animate-pulse' : ''}`} />
-              {isGenerating ? 'Generando...' : 'Generar con AI'}
-            </button>
-
             <div className="relative flex-1 min-w-[200px] flex gap-1" ref={deleteDropdownRef}>
               <MenuExportPDF
                 elementId="menu-print-area"
@@ -1503,19 +1061,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
             </div>
 
           </div>
-
-          {/* AI Actions Panel — visible cuando hay menú generado */}
-          {menuPreviewData && (
-            <MenuAIActionsPanel
-              patient={patient}
-              menuPreviewData={menuPreviewData}
-              aiRationale={aiRationale}
-              isLocked={isLocked}
-              evaluationId={evaluationId}
-              onRegenerateDay={handleRegenerateDay}
-              onRegenerateMealSlot={handleRegenerateMealSlot}
-            />
-          )}
 
           {/* Preview Area */}
           {menuPreviewData && (
@@ -1594,8 +1139,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                     elementId="menu-print-area"
                     selectedTemplate={selectedPreviewTemplate}
                     onTemplateChange={handleTemplateChange}
-                    defaultEditMode={false}
-                    visualTheme={localDesignConfig.visualTheme}
+visualTheme={localDesignConfig.visualTheme}
                     pageLayout={localDesignConfig.pageLayout}
                     onEditPatientInfo={() => toolbarRef.current?.openPatientInfo()}
                     onEditPortions={() => toolbarRef.current?.openPortions()}
@@ -1656,7 +1200,6 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
 
           {/* Modals */}
           {showCopyRefModal && <CopyRefModal />}
-          {showAiOptionsModal && <AiOptionsModal />}
           {showSaveAsTemplateModal && <SaveAsTemplateModal />}
         </div>
     </section>

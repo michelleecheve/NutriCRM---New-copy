@@ -14,12 +14,10 @@ import {
   Crosshair,
   Download,
   X,
-  Sparkles,
   Eye,
   EyeOff,
 } from 'lucide-react';
 import { store } from '../../services/store';
-import { authStore } from '../../services/authStore';
 import { supabaseService } from '../../services/supabaseService';
 import { DietaryCard } from './DietaryCard';
 import { DietaryForm } from './DietaryForm';
@@ -35,7 +33,7 @@ import { BioimpedanciaForm } from './BioimpedanciaForm';
 import { SomatocartaCard } from './SomatocartaCard';
 import { SomatocartaForm } from './SomatocartaForm';
 import { SomatocartaLogic } from './SomatocartaLogic';
-import { LabInterpretationPanel, DEFAULT_PROMPT } from './LabsTab';
+import { LabInterpretationPanel } from './LabsTab';
 
 type Draft = {
   title: string;
@@ -82,32 +80,6 @@ const LabsInterpretationSection: React.FC<{
   patient: Patient;
   onUpdate: (p: Patient) => void;
 }> = ({ linkedLabs, patient, onUpdate }) => {
-  const savedPrompt = store.getUserProfile()?.labAIPrompt || DEFAULT_PROMPT;
-  const [customPrompt,   setCustomPrompt]   = useState<string>(savedPrompt);
-  const [isPromptCustom, setIsPromptCustom] = useState(savedPrompt !== DEFAULT_PROMPT);
-
-  const handleSavePrompt = async (p: string) => {
-    setCustomPrompt(p);
-    setIsPromptCustom(p !== DEFAULT_PROMPT);
-    try {
-      const userId = authStore.getCurrentUser()?.id;
-      if (userId) await supabaseService.updateProfile(userId, { labAIPrompt: p });
-    } catch (err) {
-      console.error('Error guardando lab prompt:', err);
-    }
-  };
-
-  const handleResetPrompt = async () => {
-    setCustomPrompt(DEFAULT_PROMPT);
-    setIsPromptCustom(false);
-    try {
-      const userId = authStore.getCurrentUser()?.id;
-      if (userId) await supabaseService.updateProfile(userId, { labAIPrompt: '' });
-    } catch (err) {
-      console.error('Error reseteando lab prompt:', err);
-    }
-  };
-
   const handleSaveInterpretation = async (fileId: string, interpretation: string) => {
     const updatedLabs = (patient.labs || []).map((f: any) =>
       f.id === fileId ? { ...f, labInterpretation: interpretation } : f
@@ -125,13 +97,10 @@ const LabsInterpretationSection: React.FC<{
   return (
     <div className="mt-6 rounded-2xl border border-slate-200 overflow-hidden">
       <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
-        <div className="bg-indigo-100 p-2 rounded-xl">
-          <Sparkles className="w-4 h-4 text-indigo-600" />
-        </div>
         <div>
           <h3 className="text-sm font-bold text-slate-800">Interpretación de Laboratorios</h3>
           <p className="text-xs text-slate-400 font-medium mt-0.5">
-            Análisis clínico por archivo — manual o asistido por IA (Gemini)
+            Notas clínicas por archivo
           </p>
         </div>
       </div>
@@ -140,11 +109,6 @@ const LabsInterpretationSection: React.FC<{
           <LabInterpretationPanel
             key={file.id}
             file={file}
-            patientName={`${patient.firstName} ${patient.lastName}`}
-            customPrompt={customPrompt}
-            isPromptCustom={isPromptCustom}
-            onSavePrompt={handleSavePrompt}
-            onResetPrompt={handleResetPrompt}
             onSave={handleSaveInterpretation}
           />
         ))}
