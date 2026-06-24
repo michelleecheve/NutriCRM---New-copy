@@ -17,6 +17,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [statusList, setStatusList] = useState<string[]>(store.getPatientStatuses());
   const [newStatusName, setNewStatusName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   React.useEffect(() => {
     const unsub = authStore.onAuthReady(() => {
@@ -124,6 +125,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
 
   const handleAddPatient = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCreating) return;
+    setIsCreating(true);
     try {
       await store.addPatient(newPatient);
       setPatients(store.getPatients());
@@ -135,6 +138,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
       } else {
         console.error('Error adding patient:', error);
       }
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -537,9 +542,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-lg shadow-emerald-600/20 transition-all"
+                  disabled={isCreating}
+                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-semibold shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2"
                 >
-                  Crear Registro
+                  {isCreating && (
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                  )}
+                  {isCreating ? 'Creando...' : 'Crear Registro'}
                 </button>
               </div>
             </form>
