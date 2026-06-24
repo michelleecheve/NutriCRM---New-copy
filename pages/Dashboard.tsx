@@ -18,16 +18,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
   const [statusList, setStatusList] = useState<string[]>(store.getPatientStatuses());
   const [newStatusName, setNewStatusName] = useState('');
 
-  // Sync with store when initialized
   React.useEffect(() => {
-    const checkInit = setInterval(() => {
-      if (store.isInitialized) {
-        setStatusList(store.getPatientStatuses());
-        setPatients(store.getPatients());
-        clearInterval(checkInit);
-      }
-    }, 500);
-    return () => clearInterval(checkInit);
+    const unsub = authStore.onAuthReady(() => {
+      setPatients(store.getPatients());
+      setStatusList(store.getPatientStatuses());
+    });
+    return unsub;
   }, []);
 
   // Filter State — persisted in DB per user via prefsService

@@ -81,7 +81,7 @@ export const supabaseService = {
           bioimpedancia_measurements (*),
           dietary_evaluations (*),
           somatotypes (*),
-          menus (*)
+          menus (id, evaluation_id, patient_id, date, name, age, gender, weight_kg, height_cm, kcal_to_work, vet_details, macros, portions, templates_references, template_id, ai_rationale, created_at, design_config)
         )
       `)
       .eq('id', id)
@@ -666,6 +666,20 @@ export const supabaseService = {
       .order('date', { ascending: false });
     if (error) throw error;
     return (data || []).map(this.mapMenuFromDb);
+  },
+
+  async getMenuData(menuId: string): Promise<{ menuData: any; content: string; menuPreviewData: any }> {
+    const { data, error } = await supabase
+      .from('menus')
+      .select('id, menu_data, content, menu_preview_data')
+      .eq('id', menuId)
+      .single();
+    if (error) throw error;
+    return {
+      menuData:        data.menu_data        ?? null,
+      content:         data.content          ?? '',
+      menuPreviewData: data.menu_preview_data ?? null,
+    };
   },
 
   // ─── Patient Files (labs & photos) ─────────────────────────────────────────

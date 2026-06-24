@@ -179,7 +179,6 @@ class Store {
         appointments,
         invoices,
         evaluations,
-        menus,
         profile,
         menuRefs,
         menuRecs,
@@ -189,17 +188,16 @@ class Store {
         supabaseService.getAppointments(),
         supabaseService.getInvoices(),
         supabaseService.getEvaluations(),
-        supabaseService.getMenus(),
         supabaseService.getProfile(userId),
         supabaseService.getMenuReferences(userId),
         supabaseService.getMenuRecommendations(userId),
         supabaseService.getDefaultMenuTemplate(userId),
       ]);
 
-      this.patients = (patients as Patient[]).map((p) => ({
-        ...p,
-        menus: (menus as GeneratedMenu[]).filter((m) => m.patientId === p.id),
-      }));
+      // Menus are NOT loaded at init — they're fetched on-demand per patient
+      // via supabaseService.getPatientById() in PatientDetail. This avoids
+      // downloading menu_data JSONB (full AI meal plans) for every patient at login.
+      this.patients = patients as Patient[];
       this.appointments = appointments as Appointment[];
       this.invoices = invoices as Invoice[];
       this.evaluations = evaluations as PatientEvaluation[];
@@ -238,7 +236,7 @@ class Store {
       prefsService.loadFromDB(userId);
 
       // Cache local
-      save(this.K.patients, this.patients);
+      this.savePatients(this.patients);
       save(this.K.appointments, this.appointments);
       save(this.K.invoices, this.invoices);
       save(this.K.evaluations, this.evaluations);
@@ -258,6 +256,13 @@ class Store {
 
   getTodayStr(): string {
     return getTodayYMDInUserTimezone(this.user?.timezone || "UTC±00:00");
+  }
+
+  // Strips menus from patients before persisting to localStorage so the cache
+  // never accumulates heavy menu_data JSONB. Menus are always re-fetched fresh
+  // from Supabase when a patient is opened in PatientDetail.
+  private savePatients(patients: Patient[]): void {
+    save(this.K.patients, patients.map(p => ({ ...p, menus: [] })));
   }
 
   // ── Patients ───────────────────────────────────────────────────────────────
@@ -372,7 +377,7 @@ class Store {
     this.patients = this.patients.map((p) =>
       p.id === patient.id ? { ...patient } : p,
     );
-    save(this.K.patients, this.patients);
+    this.savePatients(this.patients);
   }
 
   importPatientData(
@@ -473,7 +478,7 @@ class Store {
 
     const savedPatient = await supabaseService.createPatient(newPatient);
     this.patients = [savedPatient, ...this.patients];
-    save(this.K.patients, this.patients);
+    this.savePatients(this.patients);
     return savedPatient;
   }
 
@@ -482,7 +487,7 @@ class Store {
     this.patients = this.patients.map((p) =>
       p.id === updatedPatient.id ? updatedPatient : p,
     );
-    save(this.K.patients, this.patients);
+    this.savePatients(this.patients);
   }
 
   async saveDietaryEvaluation(
@@ -554,7 +559,7 @@ class Store {
       this.patients = this.patients.map((p) =>
         p.id === updatedPatient.id ? updatedPatient : p,
       );
-      save(this.K.patients, this.patients);
+      this.savePatients(this.patients);
     }
   }
 
@@ -573,7 +578,7 @@ class Store {
       this.patients = this.patients.map((p) =>
         p.id === updatedPatient.id ? updatedPatient : p,
       );
-      save(this.K.patients, this.patients);
+      this.savePatients(this.patients);
     }
   }
 
@@ -603,7 +608,7 @@ class Store {
       this.patients = this.patients.map((p) =>
         p.id === updatedPatient.id ? updatedPatient : p,
       );
-      save(this.K.patients, this.patients);
+      this.savePatients(this.patients);
     }
     return savedRecord;
   }
@@ -621,7 +626,7 @@ class Store {
       this.patients = this.patients.map((p) =>
         p.id === updatedPatient.id ? updatedPatient : p,
       );
-      save(this.K.patients, this.patients);
+      this.savePatients(this.patients);
     }
   }
 
@@ -650,7 +655,7 @@ class Store {
       this.patients = this.patients.map((p) =>
         p.id === updatedPatient.id ? updatedPatient : p,
       );
-      save(this.K.patients, this.patients);
+      this.savePatients(this.patients);
     }
     return saved;
   }
@@ -673,7 +678,7 @@ class Store {
       this.patients = this.patients.map((p) =>
         p.id === updatedPatient.id ? updatedPatient : p,
       );
-      save(this.K.patients, this.patients);
+      this.savePatients(this.patients);
     }
   }
 
@@ -695,7 +700,7 @@ class Store {
       this.patients = this.patients.map((p) =>
         p.id === updatedPatient.id ? updatedPatient : p,
       );
-      save(this.K.patients, this.patients);
+      this.savePatients(this.patients);
     }
   }
 
@@ -710,7 +715,7 @@ class Store {
       this.patients = this.patients.map((p) =>
         p.id === updatedPatient.id ? updatedPatient : p,
       );
-      save(this.K.patients, this.patients);
+      this.savePatients(this.patients);
     }
   }
 
@@ -993,7 +998,7 @@ class Store {
     save(this.K.evalSelected, this.selectedEvaluationByPatient);
 
     this.patients = this.patients.filter((p) => p.id !== patientId);
-    save(this.K.patients, this.patients);
+    this.savePatients(this.patients);
   }
 
   getSelectedEvaluationId(patientId: string): string | null {

@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Download, Upload, Settings, AlertCircle, CheckCircle2, Trash2, X, FileDown, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Patient } from '../../types';
 import { store } from '../../services/store';
+import { supabaseService } from '../../services/supabaseService';
 import { getTodayStr } from '../../src/utils/dateUtils';
 import { exportClinicalDoc } from '../../services/exportClinicalDoc';
 import { exportEvaluationDoc } from '../../services/exportEvaluationDoc';
@@ -387,11 +388,18 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
                             try {
                               await exportEvaluationDoc(patient, ev);
                               const linkedMenu = patient.menus.find(
-                                (m) => m.linkedEvaluationId === ev.id && m.menuData
+                                (m) => m.linkedEvaluationId === ev.id
                               );
                               if (linkedMenu) {
-                                const safeName = `${patient.firstName}_${patient.lastName}`.replace(/\s+/g, '_');
-                                await exportMenuPDF(linkedMenu, `${safeName}_Menu_${ev.date}`);
+                                let menuToExport = linkedMenu;
+                                if (!linkedMenu.menuData) {
+                                  const data = await supabaseService.getMenuData(linkedMenu.id);
+                                  menuToExport = { ...linkedMenu, menuData: data.menuData, content: data.content };
+                                }
+                                if (menuToExport.menuData) {
+                                  const safeName = `${patient.firstName}_${patient.lastName}`.replace(/\s+/g, '_');
+                                  await exportMenuPDF(menuToExport, `${safeName}_Menu_${ev.date}`);
+                                }
                               }
                             } finally {
                               setExportingEvaluationId(null);

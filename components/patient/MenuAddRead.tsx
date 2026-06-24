@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, PatientEvaluation, GeneratedMenu, MenuDesignConfig, DEFAULT_VISUAL_THEME } from '../../types';
 import { store } from '../../services/store';
+import { supabaseService } from '../../services/supabaseService';
 import { Calculator, Eye, EyeOff, ArrowLeft, Edit2, Pencil, X, Trash2, AlertTriangle, Save, Check } from 'lucide-react';
 
 import { MenuAddReadSec1 } from './MenuAddReadSec1';
@@ -227,7 +228,13 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         setSelectedRecommendationIds([]);
       }
 
-      setMenuPreviewData(menu.menuData || null);
+      if (menu.menuData) {
+        setMenuPreviewData(menu.menuData);
+      } else {
+        supabaseService.getMenuData(menu.id)
+          .then(({ menuData }) => setMenuPreviewData(menuData || null))
+          .catch(() => setMenuPreviewData(null));
+      }
 
       // Load per-menu design config (or derive from templateId if no designConfig saved yet)
       if (menu.designConfig) {

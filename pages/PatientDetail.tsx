@@ -66,24 +66,9 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack 
   const navigateToEvaluations = () => setActiveTab('appointments');
 
   const handleUpdatePatient = async (updated: Patient) => {
-    setPatient(updated); // actualización optimista inmediata en la UI
+    setPatient(updated);
     try {
       await store.updatePatient(updated);
-      
-      // Solo refrescamos si es necesario para obtener IDs generados por el servidor o cálculos.
-      // Para Measurements y Menus, ya tenemos los datos en 'updated'.
-      // Pero para asegurar que todo está sincronizado con Supabase (por si hubo cambios concurrentes):
-      const fresh = await supabaseService.getPatientById(updated.id);
-      
-      // ✅ IMPORTANTE: Solo actualizamos si el paciente actual sigue siendo el mismo 
-      // y si los datos frescos son realmente más recientes o contienen lo que necesitamos.
-      setPatient(prev => {
-        if (!prev || prev.id !== fresh.id) return prev;
-        // Si el re-fetch tardó mucho y el usuario ya hizo otro cambio, 
-        // podríamos estar sobreescribiendo con datos viejos.
-        // Pero por ahora, confiamos en el fresh fetch.
-        return fresh;
-      });
     } catch (error) {
       console.error('Error actualizando paciente:', error);
     }
