@@ -333,7 +333,7 @@ class Store {
     // 5. Upsert dietary evaluations
     for (const d of patient.dietaryEvaluations || []) {
       if (d.linkedEvaluationId) {
-        await supabaseService.saveDietaryEvaluation(d.linkedEvaluationId, d);
+        await supabaseService.saveDietaryEvaluation(d.linkedEvaluationId, { ...d, patientId: patient.id });
       }
     }
 

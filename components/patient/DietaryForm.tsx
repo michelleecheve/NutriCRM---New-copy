@@ -135,6 +135,7 @@ export const DietaryForm: React.FC<{
         ...formData,
         date: ev.date,
         linkedEvaluationId: evaluationId,
+        patientId: patient.id,
       };
       try {
         await store.saveDietaryEvaluation(evaluationId, normalized);
@@ -220,10 +221,11 @@ export const DietaryForm: React.FC<{
     const ev = store.getEvaluationById(evaluationId);
     if (!ev) return;
 
-    const normalized: DietaryEvaluation = { 
-      ...formData, 
-      date: ev.date, 
-      linkedEvaluationId: evaluationId || '' 
+    const normalized: DietaryEvaluation = {
+      ...formData,
+      date: ev.date,
+      linkedEvaluationId: evaluationId || '',
+      patientId: patient.id,
     };
 
     try {

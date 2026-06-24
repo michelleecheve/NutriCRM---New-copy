@@ -17,6 +17,7 @@ export interface FoodFrequencyEntry {
 export interface DietaryEvaluation {
   id: string;
   linkedEvaluationId: string;  // AGREGADO - Foreign key con evaluations
+  patientId?: string;
   date: string;
   mealsPerDay: number;
   excludedFoods: string;

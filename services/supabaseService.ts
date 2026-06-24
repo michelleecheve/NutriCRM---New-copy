@@ -330,12 +330,15 @@ export const supabaseService = {
   },
 
   async upsertPatientFileMeta(file: { id: string; linkedEvaluationId?: string | null; name: string; type: string; folder: string; url: string; path?: string; date?: string; description?: string; labInterpretation?: string }, patientId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No authenticated user found");
     const { error } = await supabase
       .from('patient_files')
       .upsert(
         {
           id:                 file.id,
           patient_id:         patientId,
+          owner_id:           user.id,
           evaluation_id:      file.linkedEvaluationId || null,
           name:               file.name,
           type:               file.type,
@@ -486,6 +489,7 @@ export const supabaseService = {
     const payload: any = {
       owner_id:       user.id,
       evaluation_id:  evaluationId,
+      patient_id:     dietary.patientId,
       date:           dietary.date,
       meals_per_day:  dietary.mealsPerDay,
       excluded_foods: dietary.excludedFoods,
@@ -533,10 +537,13 @@ export const supabaseService = {
   // ─── Menus ─────────────────────────────────────────────────────────────────
 
   async saveMenu(evaluationId: string, menu: GeneratedMenu) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No authenticated user found");
     const payload: any = {
       id:                   menu.id,
       evaluation_id:        evaluationId,
       patient_id:           menu.patientId,
+      owner_id:             user.id,
       date:                 menu.date,
       age:                  menu.age,
       weight_kg:            menu.weightKg,
@@ -706,10 +713,13 @@ export const supabaseService = {
     description?: string;
     labInterpretation?: string;
   }) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No authenticated user found");
     const { data, error } = await supabase
       .from('patient_files')
       .insert({
         patient_id:          file.patientId,
+        owner_id:            user.id,
         evaluation_id:       file.evaluationId || null,
         name:                file.name,
         type:                file.type,
@@ -1205,6 +1215,7 @@ export const supabaseService = {
           patient.dietaryEvaluations.push({
             id:                  de.id,
             linkedEvaluationId:  ev.id,
+            patientId:           de.patient_id,
             date:                de.date,
             mealsPerDay:         de.meals_per_day,
             excludedFoods:       de.excluded_foods,
