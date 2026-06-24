@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, PatientEvaluation, GeneratedMenu, MenuDesignConfig, DEFAULT_VISUAL_THEME } from '../../types';
 import { store } from '../../services/store';
 import { supabaseService } from '../../services/supabaseService';
-import { Calculator, Eye, EyeOff, ArrowLeft, Edit2, Pencil, X, Trash2, AlertTriangle, Save, Check } from 'lucide-react';
+import { Calculator, Eye, EyeOff, ArrowLeft, Edit2, Pencil, X, Trash2, AlertTriangle } from 'lucide-react';
+import { SaveButton } from '../SaveButton';
 
 import { MenuAddReadSec1 } from './MenuAddReadSec1';
 import { MenuAddReadSec2 } from './MenuAddReadSec2';
@@ -102,11 +103,9 @@ const InfoModal: React.FC<{
 export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, editingMenuId, onClose }) => {
   const [menuName, setMenuName] = useState('');
   const [currentMenuId, setCurrentMenuId] = useState<string | null>(editingMenuId);
+  const currentMenuIdRef = useRef<string | null>(editingMenuId);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isCalculationVisible, setIsCalculationVisible] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isStickySuccess, setIsStickySuccess] = useState(false);
-
   const patientEvaluations: PatientEvaluation[] = useMemo(
     () => store.getEvaluations(patient.id),
     [patient.id]
@@ -292,7 +291,6 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     }
 
     setEvalSelectorOpen(false);
-    setHasUnsavedChanges(false);
   }, [currentMenuId, patient.id]);
 
   // Auto-fill age from birthdate when evaluation date changes (new menus only)
@@ -313,13 +311,12 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       return;
     }
 
-    // ✅ La fecha del menú es la fecha de la evaluación
-    const normalizedDate = ev.date;
-    const menuId = currentMenuId || crypto.randomUUID();
+    const menuId = currentMenuIdRef.current || crypto.randomUUID();
+    currentMenuIdRef.current = menuId;
 
     const menuToSave: GeneratedMenu = {
       id: menuId,
-      date: normalizedDate,
+      date: ev.date,
       linkedEvaluationId: formEvaluationId,
       patientId: patient.id,
       age: vetData.age,
@@ -355,25 +352,14 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     };
 
     const updatedMenus = [...(patient.menus || [])];
-
-    if (currentMenuId) {
-      const idx = updatedMenus.findIndex(m => m.id === currentMenuId);
-      if (idx !== -1) {
-        updatedMenus[idx] = menuToSave;
-      }
+    const existingIdx = updatedMenus.findIndex(m => m.id === menuId);
+    if (existingIdx !== -1) {
+      updatedMenus[existingIdx] = menuToSave;
     } else {
       updatedMenus.push(menuToSave);
     }
 
-    const updatedPatient = {
-      ...patient,
-      menus: updatedMenus,
-      dietary: {
-        ...patient.dietary,
-        menus: []
-      }
-    };
-    onUpdate(updatedPatient);
+    onUpdate({ ...patient, menus: updatedMenus, dietary: { ...patient.dietary, menus: [] } });
     try {
       await store.saveMenu(formEvaluationId, menuToSave);
       setCurrentMenuId(menuId);
@@ -384,22 +370,16 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
   };
 
   const handleSaveOnly = async () => {
-    if (!formEvaluationId) {
-      setInfoModal({ title: 'Falta evaluación', message: 'Primero selecciona una evaluación.' });
-      return;
-    }
+    if (!formEvaluationId) throw new Error('Primero selecciona una evaluación.');
     const ev = store.getEvaluationById(formEvaluationId);
-    if (!ev) {
-      setInfoModal({ title: 'Evaluación no encontrada', message: 'La evaluación seleccionada no existe o fue eliminada.' });
-      return;
-    }
+    if (!ev) throw new Error('La evaluación seleccionada no existe o fue eliminada.');
 
-    const normalizedDate = ev.date;
-    const menuId = currentMenuId || crypto.randomUUID();
+    const menuId = currentMenuIdRef.current || crypto.randomUUID();
+    currentMenuIdRef.current = menuId;
 
     const menuToSave: GeneratedMenu = {
       id: menuId,
-      date: normalizedDate,
+      date: ev.date,
       linkedEvaluationId: formEvaluationId,
       patientId: patient.id,
       age: vetData.age,
@@ -435,33 +415,16 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     };
 
     const updatedMenus = [...(patient.menus || [])];
-
-    if (currentMenuId) {
-      const idx = updatedMenus.findIndex(m => m.id === currentMenuId);
-      if (idx !== -1) {
-        updatedMenus[idx] = menuToSave;
-      }
+    const existingIdx = updatedMenus.findIndex(m => m.id === menuId);
+    if (existingIdx !== -1) {
+      updatedMenus[existingIdx] = menuToSave;
     } else {
       updatedMenus.push(menuToSave);
     }
 
-    const updatedPatient = {
-      ...patient,
-      menus: updatedMenus,
-      dietary: {
-        ...patient.dietary,
-        menus: []
-      }
-    };
-    onUpdate(updatedPatient);
-    try {
-      await store.saveMenu(formEvaluationId, menuToSave);
-      setCurrentMenuId(menuId);
-      return true;
-    } catch (error) {
-      console.error('Error saving menu:', error);
-      return false;
-    }
+    onUpdate({ ...patient, menus: updatedMenus, dietary: { ...patient.dietary, menus: [] } });
+    await store.saveMenu(formEvaluationId, menuToSave);
+    setCurrentMenuId(menuId);
   };
 
   const handleDeleteMenuConfirmed = async () => {
@@ -660,7 +623,6 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
               setPortions={setPortions}
               birthdate={patient.clinical?.birthdate}
               evaluationDate={formEvaluation?.date ?? ''}
-              onDirty={() => setHasUnsavedChanges(true)}
             />
           )}
         </section>
@@ -671,7 +633,6 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           setSelectedReferenceIds={setSelectedReferenceIds}
           selectedRecommendationIds={selectedRecommendationIds}
           setSelectedRecommendationIds={setSelectedRecommendationIds}
-          onDirty={() => setHasUnsavedChanges(true)}
         />
 
         <MenuAddReadSec3
@@ -695,34 +656,11 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           }}
           localDesignConfig={localDesignConfig}
           setLocalDesignConfig={setLocalDesignConfig}
-          onDirty={() => setHasUnsavedChanges(true)}
         />
 
         {/* Sticky Save Button */}
         <div className="fixed bottom-6 right-6 z-50">
-          <button
-            onClick={async () => {
-              const ok = await handleSaveOnly();
-              if (ok) {
-                setHasUnsavedChanges(false);
-                setIsStickySuccess(true);
-                setTimeout(() => setIsStickySuccess(false), 2500);
-              }
-            }}
-            className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm shadow-xl transition-all ${
-              isStickySuccess
-                ? 'bg-emerald-500 text-white shadow-emerald-500/30'
-                : hasUnsavedChanges
-                  ? 'bg-amber-500 text-white shadow-amber-500/40 hover:bg-amber-600'
-                  : 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-700'
-            }`}
-          >
-            {isStickySuccess ? (
-              <><Check className="w-4 h-4" /> Guardado</>
-            ) : (
-              <><Save className="w-4 h-4" /> {hasUnsavedChanges ? 'Hay cambios sin guardar' : 'Guardar Menú'}</>
-            )}
-          </button>
+          <SaveButton onSave={handleSaveOnly} label="Guardar Menú" />
         </div>
 
         {/* Bottom action bar */}

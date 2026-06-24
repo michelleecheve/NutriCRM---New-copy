@@ -1,13 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Patient, Measurement, PatientEvaluation } from '../../types';
 import { store } from '../../services/store';
 import {
-  Save, Trash2, ChevronRight, Calculator, Info,
-  Star, X, AlertTriangle, CheckCircle
+  Trash2, ChevronRight, Calculator, Info,
+  Star, X, AlertTriangle
 } from 'lucide-react';
 import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
 import { calculateAnthropometry } from '../../services/MeasurementsFormulas';
+import { SaveButton } from '../SaveButton';
 
 
 const FORM_SECTIONS: any[] = [
@@ -310,61 +311,29 @@ export const NewMeasurementForm: React.FC<{
   }, [evaluation?.date]);
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [infoModal, setInfoModal] = useState<{ title: string; message: string } | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [savedOk, setSavedOk] = useState(false);
-  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleFieldChange = (key: keyof Measurement, value: any) => {
-    setSavedOk(false);
     setFormData(prev => calculateAnthropometry({ ...prev, [key]: value }));
   };
 
   const handleSave = async () => {
-    if (!evaluationId) {
-      setInfoModal({ title: 'Falta evaluación', message: 'Primero selecciona una evaluación.' });
-      return;
-    }
+    if (!evaluationId) throw new Error('Primero selecciona una evaluación.');
     const ev = store.getEvaluationById(evaluationId);
-    if (!ev) {
-      setInfoModal({ title: 'Evaluación no encontrada', message: 'La evaluación seleccionada no existe o fue eliminada.' });
-      return;
-    }
-
-    setIsSaving(true);
-    setSavedOk(false);
+    if (!ev) throw new Error('La evaluación seleccionada no existe o fue eliminada.');
 
     const normalized: Measurement = calculateAnthropometry({
       ...formData,
       date: ev.date,
-      linkedEvaluationId: evaluationId || '',
+      linkedEvaluationId: evaluationId,
       id: isEditing && existingRecord ? existingRecord.id : (formData.id || crypto.randomUUID()),
     });
 
-    // Upsert por ID para evitar duplicados al guardar varias veces
-    let updatedMeasurements: Measurement[];
-    if (isEditing && existingRecord) {
-      updatedMeasurements = patient.measurements.map(m =>
-        m.id === existingRecord.id ? normalized : m
-      );
-    } else {
-      updatedMeasurements = [normalized, ...patient.measurements.filter(m => m.id !== normalized.id)];
-    }
+    const updatedMeasurements: Measurement[] = isEditing && existingRecord
+      ? patient.measurements.map(m => m.id === existingRecord.id ? normalized : m)
+      : [normalized, ...patient.measurements.filter(m => m.id !== normalized.id)];
 
-    const updatedPatient = { ...patient, measurements: updatedMeasurements };
-
-    try {
-      await store.saveMeasurement(evaluationId, { ...normalized, patientId: patient.id });
-      onUpdate(updatedPatient);
-
-      setIsSaving(false);
-      setSavedOk(true);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
-      savedTimer.current = setTimeout(() => setSavedOk(false), 2500);
-    } catch (error) {
-      console.error('Error saving measurement:', error);
-      setIsSaving(false);
-    }
+    await store.saveMeasurement(evaluationId, { ...normalized, patientId: patient.id });
+    onUpdate({ ...patient, measurements: updatedMeasurements });
   };
 
   const handleDeleteConfirmed = async () => {
@@ -386,14 +355,6 @@ export const NewMeasurementForm: React.FC<{
 
   return (
     <>
-      {infoModal && (
-        <InfoModal
-          title={infoModal.title}
-          message={infoModal.message}
-          onClose={() => setInfoModal(null)}
-        />
-      )}
-
       {confirmDeleteOpen && (
         <ConfirmModal
           title="Eliminar registro"
@@ -424,22 +385,7 @@ export const NewMeasurementForm: React.FC<{
             </div>
           </div>
           <div className="flex items-center gap-3 sm:ml-0">
-            {savedOk && (
-              <div className="flex items-center gap-1.5 text-xs text-emerald-500 font-semibold animate-in fade-in duration-300">
-                <CheckCircle className="w-3.5 h-3.5" />
-                Guardado
-              </div>
-            )}
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex-1 sm:flex-none px-6 py-2 bg-emerald-600 text-white font-bold rounded-lg shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {isSaving
-                ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Guardando...</>
-                : <><Save className="w-4 h-4" /> Guardar</>
-              }
-            </button>
+            <SaveButton onSave={handleSave} />
             <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors flex items-center justify-center gap-1.5">
               Salir
             </button>
@@ -585,22 +531,7 @@ export const NewMeasurementForm: React.FC<{
           ) : <div />}
 
           <div className="flex items-center gap-2">
-            {savedOk && (
-              <div className="flex items-center gap-1.5 text-xs text-emerald-500 font-semibold animate-in fade-in duration-300">
-                <CheckCircle className="w-3.5 h-3.5" />
-                Guardado
-              </div>
-            )}
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="px-3 py-1.5 sm:px-6 sm:py-2 bg-emerald-600 text-white font-bold rounded-lg shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all flex items-center gap-1.5 text-xs sm:text-sm disabled:opacity-60"
-            >
-              {isSaving
-                ? <><div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Guardando...</>
-                : <><Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Guardar</>
-              }
-            </button>
+            <SaveButton onSave={handleSave} />
             <button onClick={onClose} className="px-2.5 py-1.5 sm:px-4 sm:py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors text-xs sm:text-sm flex items-center gap-1.5">
               Salir
             </button>

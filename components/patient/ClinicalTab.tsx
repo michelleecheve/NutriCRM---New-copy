@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { Patient } from '../../types';
 import { store } from '../../services/store';
-import { User, Activity, History as HistoryIcon, Flag, Plus, Trash2, Save } from 'lucide-react';
+import { User, Activity, History as HistoryIcon, Flag, Plus, Trash2 } from 'lucide-react';
 import { GridInput, SectionHeader, ModernTextArea } from './SharedComponents';
+import { SaveButton } from '../SaveButton';
 
 export const ClinicalTab: React.FC<{ 
   patient: Patient; 
@@ -12,7 +13,6 @@ export const ClinicalTab: React.FC<{
 }> = ({ patient, onUpdate, hideHeader, hideContainer }) => {
   const [localPatient, setLocalPatient] = React.useState<Patient>(patient);
   const [statusList, setStatusList] = React.useState<string[]>(store.getPatientStatuses().filter(s => s !== 'Sin Status'));
-  const [isSaving, setIsSaving] = React.useState(false);
 
   // Sincronizar estado local si cambia el paciente (por ejemplo al cambiar de ID)
   useEffect(() => {
@@ -61,12 +61,7 @@ export const ClinicalTab: React.FC<{
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await onUpdate(localPatient);
-    } finally {
-      setIsSaving(false);
-    }
+    await onUpdate(localPatient);
   };
 
   useEffect(() => {
@@ -84,40 +79,18 @@ export const ClinicalTab: React.FC<{
     }
   }, [localPatient.clinical.birthdate]);
 
-  const hasChanges = JSON.stringify(localPatient) !== JSON.stringify(patient);
-
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20 relative">
-      
+
       {/* Botón Flotante de Guardar */}
       <div className="fixed bottom-8 right-8 z-50">
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className={`flex items-center gap-2 text-white px-6 py-3 rounded-full font-bold shadow-xl transition-all active:scale-95 disabled:opacity-50 ${hasChanges ? 'bg-amber-500 hover:bg-amber-600 hover:shadow-amber-500/20' : 'bg-emerald-600 hover:bg-emerald-700 hover:shadow-emerald-600/20'}`}
-        >
-          {isSaving ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Save className="w-5 h-5" />
-          )}
-          {isSaving ? 'Guardando...' : hasChanges ? 'Cambios sin guardar' : 'Guardar'}
-        </button>
+        <SaveButton onSave={handleSave} />
       </div>
 
       {/* 0. Status Section */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <SectionHeader icon={Flag} title="Status del Paciente" />
-          {!hideHeader && (
-             <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="text-emerald-600 text-xs font-bold flex items-center gap-1 hover:text-emerald-700 transition-colors bg-emerald-50 px-3 py-1.5 rounded-lg"
-            >
-              <Save className="w-3 h-3" /> {isSaving ? 'Guardando...' : 'Guardar Todo'}
-            </button>
-          )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2">
           <div className="flex flex-col">

@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DietaryEvaluation, MealEntry, Patient, PatientEvaluation } from '../../types';
-import { Utensils, Plus, X, Save, Trash2, AlertTriangle } from 'lucide-react';
+import { Utensils, Plus, X, Trash2, AlertTriangle } from 'lucide-react';
+import { SaveButton } from '../SaveButton';
 import { GridInput, ModernTextArea } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
 import { store } from '../../services/store';
@@ -86,7 +87,6 @@ export const DietaryForm: React.FC<{
   );
 
   useEffect(() => {
-    isResetting.current = true;
     const rec = editingId
       ? patient.dietaryEvaluations.find(d => d.id === editingId) ?? null
       : null;
@@ -117,52 +117,8 @@ export const DietaryForm: React.FC<{
     setFormData(prev => ({ ...prev, date: evaluation.date }));
   }, [evaluation?.date]);
 
-  useEffect(() => {
-    if (isResetting.current) {
-      isResetting.current = false;
-      return;
-    }
-    if (!evaluationId) return;
-
-    setIsDirty(true);
-    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-
-    autosaveTimerRef.current = setTimeout(async () => {
-      const ev = store.getEvaluationById(evaluationId);
-      if (!ev) return;
-      setAutosaveStatus('saving');
-      const normalized: DietaryEvaluation = {
-        ...formData,
-        date: ev.date,
-        linkedEvaluationId: evaluationId,
-        patientId: patient.id,
-      };
-      try {
-        await store.saveDietaryEvaluation(evaluationId, normalized);
-        onSavePatient({ ...patient, dietaryEvaluations: patient.dietaryEvaluations.some(d => d.id === normalized.id)
-          ? patient.dietaryEvaluations.map(d => d.id === normalized.id ? normalized : d)
-          : [normalized, ...patient.dietaryEvaluations]
-        });
-        setIsDirty(false);
-        setAutosaveStatus('saved');
-        setTimeout(() => setAutosaveStatus('idle'), 2500);
-      } catch {
-        setAutosaveStatus('idle');
-      }
-    }, 3000);
-
-    return () => {
-      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-    };
-  }, [formData]);
-
   const [confirmOpen, setConfirmOpen] = useState(false);
   const canDelete = showDelete && !!onDelete;
-
-  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isResetting = useRef(true);
-  const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [isDirty, setIsDirty] = useState(false);
 
   const addMeal = () =>
     setFormData({ 
@@ -217,29 +173,24 @@ export const DietaryForm: React.FC<{
   };
 
   const handleSave = async () => {
-    if (!evaluationId) return;
+    if (!evaluationId) throw new Error('Selecciona una evaluación primero');
     const ev = store.getEvaluationById(evaluationId);
-    if (!ev) return;
+    if (!ev) throw new Error('Evaluación no válida');
 
     const normalized: DietaryEvaluation = {
       ...formData,
       date: ev.date,
-      linkedEvaluationId: evaluationId || '',
+      linkedEvaluationId: evaluationId,
       patientId: patient.id,
     };
 
-    try {
-      await store.saveDietaryEvaluation(evaluationId, normalized);
-      onSavePatient({ ...patient, dietaryEvaluations: isEditing
+    await store.saveDietaryEvaluation(evaluationId, normalized);
+    onSavePatient({
+      ...patient,
+      dietaryEvaluations: isEditing
         ? patient.dietaryEvaluations.map(d => d.id === editingId ? normalized : d)
-        : [normalized, ...patient.dietaryEvaluations]
-      });
-      setIsDirty(false);
-      setAutosaveStatus('saved');
-      setTimeout(() => setAutosaveStatus('idle'), 2500);
-    } catch (error) {
-      console.error('Error saving dietary evaluation to Supabase:', error);
-    }
+        : [normalized, ...patient.dietaryEvaluations],
+    });
   };
 
   return (
@@ -266,18 +217,7 @@ export const DietaryForm: React.FC<{
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {isDirty && autosaveStatus === 'idle' && (
-              <span className="text-xs text-amber-600 font-medium">● Cambios sin guardar</span>
-            )}
-            {autosaveStatus === 'saving' && (
-              <span className="text-xs text-slate-400 font-medium animate-pulse">Guardando...</span>
-            )}
-            {autosaveStatus === 'saved' && (
-              <span className="text-xs text-emerald-600 font-medium">✓ Guardado</span>
-            )}
-            <button type="button" onClick={handleSave} className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 transition-colors">
-              <Save className="w-4 h-4" /> Guardar
-            </button>
+            <SaveButton onSave={handleSave} />
             <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full text-slate-400">
               <X className="w-6 h-6" />
             </button>
@@ -445,18 +385,7 @@ export const DietaryForm: React.FC<{
         ) : <div />}
 
         <div className="flex gap-2 sm:gap-3 items-center">
-          {isDirty && autosaveStatus === 'idle' && (
-            <span className="text-xs text-amber-600 font-medium hidden sm:inline">● Cambios sin guardar</span>
-          )}
-          {autosaveStatus === 'saving' && (
-            <span className="text-xs text-slate-400 font-medium animate-pulse hidden sm:inline">Guardando...</span>
-          )}
-          {autosaveStatus === 'saved' && (
-            <span className="text-xs text-emerald-600 font-medium hidden sm:inline">✓ Guardado</span>
-          )}
-          <button type="button" onClick={handleSave} className="px-3 py-2 sm:px-6 sm:py-3 text-sm bg-emerald-600 text-white font-bold rounded-full shadow-xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all flex items-center gap-2">
-            <Save className="w-4 h-4" /> <span className="hidden sm:inline">Guardar Evaluación</span><span className="sm:hidden">Guardar</span>
-          </button>
+          <SaveButton onSave={handleSave} />
           <button type="button" onClick={onCancel} className="px-3 py-2 sm:px-6 sm:py-3 text-sm bg-white text-slate-500 font-bold rounded-full shadow-lg border border-slate-100 hover:bg-slate-50 transition-colors">
             Cerrar
           </button>

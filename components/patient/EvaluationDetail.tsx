@@ -18,6 +18,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { store } from '../../services/store';
+import { SaveButton } from '../SaveButton';
 import { supabaseService } from '../../services/supabaseService';
 import { DietaryCard } from './DietaryCard';
 import { DietaryForm } from './DietaryForm';
@@ -154,30 +155,21 @@ export const EvaluationDetail: React.FC<{
   const selected = useMemo(() => store.getEvaluationById(evaluationId) ?? null, [evaluationId]);
 
   const [notes, setNotes] = useState(selected?.notes || '');
-  const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(true);
 
   const [prefValue, setPrefValue] = useState(patient.dietary?.preferences || '');
-  const [isSavingPref, setIsSavingPref] = useState(false);
 
   useEffect(() => {
     setPrefValue(patient.dietary?.preferences || '');
   }, [patient.id, patient.dietary?.preferences]);
 
-  const hasPrefChanges = prefValue !== (patient.dietary?.preferences || '');
-
   const handleSavePref = async () => {
-    setIsSavingPref(true);
-    try {
-      const updated: Patient = {
-        ...patient,
-        dietary: { ...patient.dietary, preferences: prefValue },
-      };
-      onUpdate(updated);
-      await store.updatePatient(updated);
-    } finally {
-      setIsSavingPref(false);
-    }
+    const updated: Patient = {
+      ...patient,
+      dietary: { ...patient.dietary, preferences: prefValue },
+    };
+    onUpdate(updated);
+    await store.updatePatient(updated);
   };
 
   const patientEvaluations: PatientEvaluation[] = useMemo(
@@ -191,15 +183,9 @@ export const EvaluationDetail: React.FC<{
 
   const handleNotesSave = async () => {
     if (!selected) return;
-    setIsSavingNotes(true);
-    try {
-      await store.updateEvaluation(selected.id, { notes: notes });
-    } finally {
-      setIsSavingNotes(false);
-    }
+    await store.updateEvaluation(selected.id, { notes });
   };
 
-  const hasNotesChanges = notes !== (selected?.notes || '');
 
   const linkedDietaryEvaluations = useMemo(() => {
     if (!selected) return [];
@@ -476,7 +462,7 @@ export const EvaluationDetail: React.FC<{
 
         {/* Card: Evaluation Notes */}
         <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-sm">
-          <button 
+          <button
             type="button"
             onClick={() => setNotesExpanded(!notesExpanded)}
             className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors"
@@ -491,7 +477,7 @@ export const EvaluationDetail: React.FC<{
               {notesExpanded ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </div>
           </button>
-          
+
           {notesExpanded && (
             <div className="px-6 pb-6 animate-in slide-in-from-top-2 duration-200">
               <textarea
@@ -500,22 +486,8 @@ export const EvaluationDetail: React.FC<{
                 placeholder="Escribe aquí las notas generales de esta evaluación..."
                 className="w-full min-h-[150px] p-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-medium outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-300 transition-all resize-y"
               />
-              <div className="mt-4 flex justify-between items-center">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                  {hasNotesChanges ? 'Tienes cambios sin guardar' : 'Notas actualizadas'}
-                </p>
-                <button
-                  onClick={handleNotesSave}
-                  disabled={isSavingNotes}
-                  className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg hover:shadow-amber-600/20 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {isSavingNotes ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  {isSavingNotes ? 'Guardando...' : 'Guardar Notas'}
-                </button>
+              <div className="mt-4 flex justify-end">
+                <SaveButton onSave={handleNotesSave} size="sm" />
               </div>
             </div>
           )}
@@ -555,19 +527,7 @@ export const EvaluationDetail: React.FC<{
               <p className="text-[10px] text-slate-400 leading-relaxed">
                 Este campo es general del paciente — también puedes editarlo desde la pestaña <span className="font-semibold text-slate-500">Evaluación Dietética</span>. Los cambios se reflejan en ambos lugares.
               </p>
-              <button
-                type="button"
-                onClick={handleSavePref}
-                disabled={isSavingPref || !hasPrefChanges}
-                className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-colors ${
-                  hasPrefChanges
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                }`}
-              >
-                <Save className="w-3 h-3" />
-                {isSavingPref ? 'Guardando...' : 'Guardar'}
-              </button>
+              <SaveButton onSave={handleSavePref} size="sm" />
             </div>
           </div>
 

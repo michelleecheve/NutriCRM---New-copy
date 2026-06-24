@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Patient } from '../../types';
-import { X, Save, Activity, ChevronRight, Trash2, Star, Info, CheckCircle } from 'lucide-react';
+import { X, Activity, ChevronRight, Trash2, Star, Info } from 'lucide-react';
+import { SaveButton } from '../SaveButton';
 import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
 import { store } from '../../services/store';
@@ -78,13 +79,7 @@ export const BioimpedanciaForm: React.FC<{
 }> = ({ patient, onClose, onUpdate, editingId }) => {
   const [evaluationId, setEvaluationId] = useState<string | null>(() => store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
-
   const savedIdRef = useRef<string | undefined>(editingId || undefined);
-  const [savedOk, setSavedOk] = useState(false);
-  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isSaving = useRef(false);
-  const [isSavingState, setIsSavingState] = useState(false);
   
   const [formData, setFormData] = useState({
     gender: '',
@@ -179,77 +174,34 @@ export const BioimpedanciaForm: React.FC<{
   }, [formData.weight, formData.height]);
 
   const handleChange = (field: string, value: any) => {
-    setSavedOk(false);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async () => {
-    if (isSaving.current) return;
-    isSaving.current = true;
-    setIsSavingState(true);
-
-    if (!evaluationId) {
-      setStatusMessage({ type: 'error', text: 'Por favor selecciona una evaluación para vincular este registro.' });
-      isSaving.current = false;
-      setIsSavingState(false);
-      return;
-    }
-
+    if (!evaluationId) throw new Error('Selecciona una evaluación para vincular este registro.');
     const selectedEval = patientEvaluations.find(e => e.id === evaluationId);
-    if (!selectedEval) {
-      setStatusMessage({ type: 'error', text: 'La evaluación seleccionada no es válida.' });
-      isSaving.current = false;
-      setIsSavingState(false);
-      return;
-    }
+    if (!selectedEval) throw new Error('La evaluación seleccionada no es válida.');
 
-    try {
-      setStatusMessage(null);
-      const recordToSave = {
-        ...formData,
-        id: savedIdRef.current,
-        date: selectedEval.date,
-        patientId: patient.id,
-      };
+    const recordToSave = {
+      ...formData,
+      id: savedIdRef.current,
+      date: selectedEval.date,
+      patientId: patient.id,
+    };
 
-      const saved = await store.saveBioimpedancia(evaluationId, recordToSave);
-      if (saved?.id) savedIdRef.current = saved.id;
+    const saved = await store.saveBioimpedancia(evaluationId, recordToSave);
+    if (saved?.id) savedIdRef.current = saved.id;
 
-      const updatedPatient = store.getPatient(patient.id);
-      if (updatedPatient) {
-        onUpdate(updatedPatient);
-      }
-
-      setSavedOk(true);
-      if (savedTimer.current) clearTimeout(savedTimer.current);
-      savedTimer.current = setTimeout(() => setSavedOk(false), 2500);
-    } catch (error) {
-      console.error('Error saving bioimpedancia:', error);
-      setStatusMessage({ type: 'error', text: 'Error al guardar el registro. Por favor intenta de nuevo.' });
-    } finally {
-      isSaving.current = false;
-      setIsSavingState(false);
-    }
+    const updatedPatient = store.getPatient(patient.id);
+    if (updatedPatient) onUpdate(updatedPatient);
   };
 
   const handleDelete = async () => {
     if (!editingId) return;
-    
-    try {
-      setStatusMessage(null);
-      await store.deleteBioimpedancia(editingId);
-      
-      // Update parent component
-      const updatedPatient = store.getPatient(patient.id);
-      if (updatedPatient) {
-        onUpdate(updatedPatient);
-      }
-      
-      onClose();
-    } catch (error) {
-      console.error('Error deleting bioimpedancia:', error);
-      setStatusMessage({ type: 'error', text: 'Error al eliminar el registro.' });
-    }
+    await store.deleteBioimpedancia(editingId);
+    const updatedPatient = store.getPatient(patient.id);
+    if (updatedPatient) onUpdate(updatedPatient);
+    onClose();
   };
 
   return (
@@ -274,15 +226,7 @@ export const BioimpedanciaForm: React.FC<{
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {savedOk && (
-            <div className="flex items-center gap-1.5 text-xs text-emerald-500 font-semibold animate-in fade-in duration-300">
-              <CheckCircle className="w-3.5 h-3.5" />
-              Guardado
-            </div>
-          )}
-          <button onClick={handleSave} disabled={isSavingState} className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-            <Save className="w-4 h-4" /> {isSavingState ? 'Guardando...' : 'Guardar'}
-          </button>
+          <SaveButton onSave={handleSave} />
           <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors text-center">
             Salir
           </button>
@@ -290,13 +234,6 @@ export const BioimpedanciaForm: React.FC<{
       </div>
 
       <div className="p-8 space-y-8">
-        {statusMessage && (
-          <div className={`p-4 rounded-xl text-sm font-bold animate-in fade-in slide-in-from-top-2 ${
-            statusMessage.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-          }`}>
-            {statusMessage.text}
-          </div>
-        )}
         {/* Evaluación Asignada Section */}
         <div className="space-y-3">
           <EvaluationLink
@@ -506,10 +443,10 @@ export const BioimpedanciaForm: React.FC<{
         {/* Visual Interpretation */}
         <BioimpedanciaInterpretation formData={formData} />
 
-        {/* Delete Button at the end */}
-        {editingId && (
-          <div className="pt-8 border-t border-slate-100 flex justify-start">
-            {!showDeleteConfirm ? (
+        {/* Footer */}
+        <div className="pt-8 border-t border-slate-100 flex items-center justify-between gap-3">
+          <div>
+            {editingId && (!showDeleteConfirm ? (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 className="flex items-center gap-2 px-4 py-2 text-red-500 font-bold hover:bg-red-50 rounded-xl transition-all group"
@@ -535,9 +472,15 @@ export const BioimpedanciaForm: React.FC<{
                   </button>
                 </div>
               </div>
-            )}
+            ))}
           </div>
-        )}
+          <div className="flex items-center gap-3">
+            <SaveButton onSave={handleSave} />
+            <button onClick={onClose} className="px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors">
+              Salir
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

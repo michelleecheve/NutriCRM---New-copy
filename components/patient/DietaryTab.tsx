@@ -1,16 +1,16 @@
 import React, { useMemo, useState } from 'react';
 import { Patient, PatientEvaluation } from '../../types';
 import { store } from '../../services/store';
-import { Utensils, Plus, Save } from 'lucide-react';
+import { Utensils, Plus } from 'lucide-react';
 import { SectionHeader, ModernTextArea } from './SharedComponents';
 import { DietaryCard } from './DietaryCard';
 import { DietaryForm } from './DietaryForm';
+import { SaveButton } from '../SaveButton';
 
 export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => void; onNavigateToEvaluations: () => void }> = ({ patient, onUpdate, onNavigateToEvaluations }) => {
   const [view, setView] = useState<'list' | 'edit'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [localPatient, setLocalPatient] = useState<Patient>(patient);
-  const [isSaving, setIsSaving] = useState(false);
 
   // Sync local state if patient changes
   React.useEffect(() => {
@@ -30,12 +30,7 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
   };
 
   const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await onUpdate(localPatient);
-    } finally {
-      setIsSaving(false);
-    }
+    await onUpdate(localPatient);
   };
 
   const handleSavePatient = (updated: Patient) => {
@@ -61,8 +56,6 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
     }
   };
 
-  const hasChanges = JSON.stringify(localPatient.dietary) !== JSON.stringify(patient.dietary);
-
   if (view === 'edit') {
     return (
       <DietaryForm
@@ -83,18 +76,7 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <SectionHeader icon={Utensils} title="Perfil Dietético Actual" />
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className={`text-xs font-bold flex items-center gap-1 transition-colors px-3 py-1.5 rounded-lg ${
-              hasChanges
-                ? 'text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100'
-                : 'text-emerald-600 bg-emerald-50 hover:text-emerald-700'
-            }`}
-          >
-            <Save className="w-3 h-3" />
-            {isSaving ? 'Guardando...' : hasChanges ? '● Hay cambios sin guardar' : 'Guardar Cambios'}
-          </button>
+          <SaveButton onSave={handleSave} size="sm" />
         </div>
         <div className="grid grid-cols-1 gap-6">
           <ModernTextArea
