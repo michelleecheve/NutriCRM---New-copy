@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   FileText,
   Plus,
@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   History,
+  ChevronDown,
 } from "lucide-react";
 import { MenuPlanData } from "./MenuDesignTemplates";
 import { MenuPreview } from "./MenuPreview";
@@ -820,6 +821,63 @@ const ExchangeRefEditor: React.FC<{
   );
 };
 
+// ─── Dropdown "Nueva" button ───────────────────────────────────────────────────
+
+const NewRefDropdownButton: React.FC<{
+  onNew: () => void;
+  onFromMenu: () => void;
+  color: 'blue' | 'indigo';
+}> = ({ onNew, onFromMenu, color }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  const btnColor = color === 'indigo'
+    ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
+    : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20';
+  const iconColor = color === 'indigo' ? 'text-indigo-400' : 'text-blue-400';
+
+  return (
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`flex items-center gap-2 px-4 py-2 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg ${btnColor}`}
+      >
+        <Plus className="w-4 h-4" />
+        Nueva
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 w-64 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 overflow-hidden origin-top-right">
+          <button
+            onClick={() => { onNew(); setOpen(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
+          >
+            <FileText className={`w-4 h-4 ${iconColor} shrink-0`} />
+            <span>Crear plantilla desde cero</span>
+          </button>
+          <div className="border-t border-slate-100" />
+          <button
+            onClick={() => { onFromMenu(); setOpen(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
+          >
+            <History className={`w-4 h-4 ${iconColor} shrink-0`} />
+            <span>Crear desde un menú existente</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 type Mode = "LIST" | "EDITOR";
@@ -1471,38 +1529,13 @@ export const MenuReferences: React.FC<{
               </div>
             </div>
             {mode === "LIST" ? (
-              <div className="hidden sm:flex items-center gap-2 flex-wrap justify-end">
-                {activeRefTab === "SEMANAL" && (
-                  <>
-                    <button
-                      onClick={() => setShowImport(true)}
-                      className="hidden flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
-                    >
-                      Importar YAML
-                    </button>
-                    <button
-                      onClick={() => setIsImportFromMenuOpen(true)}
-                      className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
-                    >
-                      <History className="w-4 h-4" /> Agregar desde historial
-                    </button>
-                  </>
-                )}
-                {activeRefTab === "INTERCAMBIO" && (
-                  <button
-                    onClick={() => setIsImportExchangeFromMenuOpen(true)}
-                    className="flex items-center gap-2 border border-indigo-200 hover:bg-indigo-50 text-indigo-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
-                  >
-                    <History className="w-4 h-4" /> Agregar desde historial
-                  </button>
-                )}
-                <button
-                  onClick={openNew}
-                  className={`flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors ${activeRefTab === "INTERCAMBIO" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-blue-600 hover:bg-blue-700"}`}
-                >
-                  <Plus className="w-4 h-4" /> Nueva
-                </button>
-              </div>
+              <NewRefDropdownButton
+                onNew={openNew}
+                onFromMenu={activeRefTab === "SEMANAL"
+                  ? () => setIsImportFromMenuOpen(true)
+                  : () => setIsImportExchangeFromMenuOpen(true)}
+                color={activeRefTab === "INTERCAMBIO" ? "indigo" : "blue"}
+              />
             ) : (
               <button
                 onClick={backToList}
@@ -1512,81 +1545,20 @@ export const MenuReferences: React.FC<{
               </button>
             )}
           </div>
-          {mode === "LIST" && (
-            <>
-              <TabSwitcher />
-              <div className="flex sm:hidden items-center gap-2 flex-wrap mt-3">
-                {activeRefTab === "SEMANAL" && (
-                  <>
-                    <button
-                      onClick={() => setShowImport(true)}
-                      className="hidden flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
-                    >
-                      Importar YAML
-                    </button>
-                    <button
-                      onClick={() => setIsImportFromMenuOpen(true)}
-                      className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
-                    >
-                      <History className="w-4 h-4" /> Agregar desde historial
-                    </button>
-                  </>
-                )}
-                {activeRefTab === "INTERCAMBIO" && (
-                  <button
-                    onClick={() => setIsImportExchangeFromMenuOpen(true)}
-                    className="flex items-center gap-2 border border-indigo-200 hover:bg-indigo-50 text-indigo-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
-                  >
-                    <History className="w-4 h-4" /> Agregar desde historial
-                  </button>
-                )}
-                <button
-                  onClick={openNew}
-                  className={`flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors ${activeRefTab === "INTERCAMBIO" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-blue-600 hover:bg-blue-700"}`}
-                >
-                  <Plus className="w-4 h-4" /> Nueva
-                </button>
-              </div>
-            </>
-          )}
+          {mode === "LIST" && <TabSwitcher />}
         </div>
       ) : (
         <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/30">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             {mode === "LIST" && <TabSwitcher />}
             {mode === "LIST" ? (
-              <div className="flex items-center gap-2">
-                {activeRefTab === "SEMANAL" && (
-                  <>
-                    <button
-                      onClick={() => setShowImport(true)}
-                      className="hidden flex items-center gap-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
-                    >
-                      Importar YAML
-                    </button>
-                    <button
-                      onClick={() => setIsImportFromMenuOpen(true)}
-                      className="flex items-center gap-2 border border-blue-200 hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
-                    >
-                      <History className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
-                {activeRefTab === "INTERCAMBIO" && (
-                  <button
-                    onClick={() => setIsImportExchangeFromMenuOpen(true)}
-                    className="flex items-center gap-2 border border-indigo-200 hover:bg-indigo-50 text-indigo-600 font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
-                  >
-                    <History className="w-4 h-4" />
-                  </button>
-                )}
-                <button
-                  onClick={openNew}
-                  className={`flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors ${activeRefTab === "INTERCAMBIO" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-blue-600 hover:bg-blue-700"}`}
-                >
-                  <Plus className="w-4 h-4" /> Nueva
-                </button>
-              </div>
+              <NewRefDropdownButton
+                onNew={openNew}
+                onFromMenu={activeRefTab === "SEMANAL"
+                  ? () => setIsImportFromMenuOpen(true)
+                  : () => setIsImportExchangeFromMenuOpen(true)}
+                color={activeRefTab === "INTERCAMBIO" ? "indigo" : "blue"}
+              />
             ) : (
               <button
                 onClick={backToList}

@@ -109,16 +109,11 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
 
   const handleOpenMenu = async (entry: HistoryEntry) => {
     setSelectedEntry(entry);
-    if (entry.menu.menuData) {
-      setPreviewMenuData(entry.menu.menuData);
-      return;
-    }
     setPreviewMenuData(null);
     setPreviewLoading(true);
     try {
       const { menuData } = await supabaseService.getMenuData(entry.menu.id);
       setPreviewMenuData(menuData);
-      setMenus(prev => prev.map(m => m.id === entry.menu.id ? { ...m, menuData } : m));
     } catch {
       setPreviewMenuData(null);
     } finally {

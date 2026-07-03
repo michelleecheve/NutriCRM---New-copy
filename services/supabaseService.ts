@@ -676,12 +676,9 @@ export const supabaseService = {
   },
 
   async getMenusForHistory(): Promise<GeneratedMenu[]> {
-    const { data, error } = await supabase
-      .from('menus')
-      .select('id, patient_id, evaluation_id, date, name, kcal_to_work, template_id, design_config, created_at')
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabase.rpc('get_menus_for_history');
     if (error) throw error;
-    return (data || []).map(m => ({
+    return (data || []).map((m: any) => ({
       id:                 m.id,
       patientId:          m.patient_id,
       linkedEvaluationId: m.evaluation_id,
@@ -691,6 +688,13 @@ export const supabaseService = {
       templateId:         m.template_id || null,
       designConfig:       m.design_config || null,
       createdAt:          m.created_at,
+      menuData: {
+        menuType:        m.menu_type ?? 'semanal',
+        eatingOutPage:   { visible: m.eating_out_visible ?? false },
+        recommendations: m.has_recommendations
+          ? { preparacion: ['_'], restricciones: [], habitos: [], organizacion: [] }
+          : null,
+      },
     }));
   },
 

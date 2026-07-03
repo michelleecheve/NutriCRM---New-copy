@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FileText, Plus, Trash2, Save, X,
-  ClipboardList, History, UtensilsCrossed,
+  ClipboardList, History, UtensilsCrossed, ChevronDown,
 } from 'lucide-react';
 import { MenuRecommendationRecord, MenuRecommendationData, DEFAULT_SECTION_TITLES, MenuSectionTitles, GeneratedMenu, Patient } from '../../types';
 import { EatingOutPageData, EatingOutColumn, DEFAULT_EATING_OUT_PAGE } from './menudesigntemplates_components/menuTemplateTypes';
@@ -75,6 +75,54 @@ const AutoResizeTextarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElem
       className={`${className ?? ''} overflow-hidden`}
       {...props}
     />
+  );
+};
+
+// ─── Dropdown "Nueva" button ───────────────────────────────────────────────────
+
+const NewDropdownButton: React.FC<{ onNew: () => void; onFromMenu: () => void }> = ({ onNew, onFromMenu }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  return (
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+      >
+        <Plus className="w-4 h-4" />
+        Nueva
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 w-64 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 overflow-hidden origin-top-right">
+          <button
+            onClick={() => { onNew(); setOpen(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
+          >
+            <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+            <span>Crear plantilla desde cero</span>
+          </button>
+          <div className="border-t border-slate-100" />
+          <button
+            onClick={() => { onFromMenu(); setOpen(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
+          >
+            <History className="w-4 h-4 text-slate-400 shrink-0" />
+            <span>Crear desde un menú existente</span>
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -328,100 +376,21 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                 </p>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-2">
-              {activeTab === 'general' ? (
-                <>
-                  <button
-                    onClick={() => { setImportContext('general'); setIsImportFromMenuOpen(true); }}
-                    className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all"
-                  >
-                    <History className="w-4 h-4" /> Agregar desde menú existente
-                  </button>
-                  <button
-                    onClick={handleOpenAdd}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
-                  >
-                    <Plus className="w-4 h-4" /> Nueva
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => { setImportContext('eating_out'); setIsImportFromMenuOpen(true); }}
-                    className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all"
-                  >
-                    <History className="w-4 h-4" /> Agregar desde menú existente
-                  </button>
-                  <button
-                    onClick={handleOpenAddEatingOut}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
-                  >
-                    <Plus className="w-4 h-4" /> Nueva
-                  </button>
-                </>
-              )}
-            </div>
+            <NewDropdownButton
+              onNew={activeTab === 'general' ? handleOpenAdd : handleOpenAddEatingOut}
+              onFromMenu={() => { setImportContext(activeTab); setIsImportFromMenuOpen(true); }}
+            />
           </div>
           <TabSwitcher />
-          <div className="flex sm:hidden items-center gap-2 mt-3">
-            {activeTab === 'general' ? (
-              <>
-                <button
-                  onClick={() => { setImportContext('general'); setIsImportFromMenuOpen(true); }}
-                  className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all"
-                >
-                  <History className="w-4 h-4" /> Agregar desde menú existente
-                </button>
-                <button
-                  onClick={handleOpenAdd}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
-                >
-                  <Plus className="w-4 h-4" /> Nueva
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => { setImportContext('eating_out'); setIsImportFromMenuOpen(true); }}
-                  className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all"
-                >
-                  <History className="w-4 h-4" /> Agregar desde menú existente
-                </button>
-                <button
-                  onClick={handleOpenAddEatingOut}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
-                >
-                  <Plus className="w-4 h-4" /> Nueva
-                </button>
-              </>
-            )}
-          </div>
         </div>
       ) : (
         <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/30">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             <TabSwitcher />
-            <div className="flex items-center gap-2">
-              {activeTab === 'general' ? (
-                <>
-                  <button onClick={() => { setImportContext('general'); setIsImportFromMenuOpen(true); }} className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all">
-                    <History className="w-4 h-4" />
-                  </button>
-                  <button onClick={handleOpenAdd} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all">
-                    <Plus className="w-4 h-4" /> Nueva
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => { setImportContext('eating_out'); setIsImportFromMenuOpen(true); }} className="flex items-center gap-2 px-4 py-2 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all">
-                    <History className="w-4 h-4" />
-                  </button>
-                  <button onClick={handleOpenAddEatingOut} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all">
-                    <Plus className="w-4 h-4" /> Nueva
-                  </button>
-                </>
-              )}
-            </div>
+            <NewDropdownButton
+              onNew={activeTab === 'general' ? handleOpenAdd : handleOpenAddEatingOut}
+              onFromMenu={() => { setImportContext(activeTab); setIsImportFromMenuOpen(true); }}
+            />
           </div>
         </div>
       )}
