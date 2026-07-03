@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { History, Search, ExternalLink, Download, User, Calendar, Flame, FileText, Eye, ClipboardList } from 'lucide-react';
 import { store } from '../../services/store';
+import { supabaseService } from '../../services/supabaseService';
 import { GeneratedMenu, Patient } from '../../types';
 import { MenuPreview } from './MenuPreview';
 import { MenuExportPDF } from './MenuExportPDF';
@@ -26,41 +27,56 @@ const parseLocalDate = (dateStr: string) => new Date(dateStr + 'T00:00:00');
 export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideHeader, hideContainer, onAddAsReference, onAddAsRecommendation, filterType, filterEatingOut }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
+  const [previewMenuData, setPreviewMenuData] = useState<any>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [refStatus, setRefStatus] = useState<Record<string, 'loading' | 'success' | 'error' | 'nodata'>>({});
   const [recStatus, setRecStatus] = useState<Record<string, 'loading' | 'success' | 'error'>>({});
   const [recModal, setRecModal] = useState<{ menu: GeneratedMenu; patient: Patient } | null>(null);
   const [recModalName, setRecModalName] = useState('');
   const [recModalLoading, setRecModalLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [menus, setMenus] = useState<GeneratedMenu[]>([]);
 
   useEffect(() => {
-    const checkInit = setInterval(() => {
-      if (store.isInitialized) {
-        setPatients(store.getPatients());
-        clearInterval(checkInit);
+    const load = async () => {
+      setPatients(store.getPatients());
+      setLoading(true);
+      try {
+        const data = await supabaseService.getMenusForHistory();
+        setMenus(data);
+      } catch (e) {
+        console.error('Error cargando historial de menús:', e);
+      } finally {
+        setLoading(false);
       }
-    }, 100);
-    return () => clearInterval(checkInit);
+    };
+
+    if (store.isInitialized) {
+      load();
+    } else {
+      const interval = setInterval(() => {
+        if (store.isInitialized) {
+          clearInterval(interval);
+          load();
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   const historyEntries = useMemo(() => {
-    const entries: HistoryEntry[] = [];
-    
-    patients.forEach(patient => {
-      const rootMenus = patient.menus || [];
-      
-      rootMenus.forEach(menu => {
+    const patientMap = new Map(patients.map(p => [p.id, p]));
+    return menus
+      .map(menu => {
+        const patient = patientMap.get(menu.patientId || '');
+        if (!patient) return null;
         const evaluation = menu.linkedEvaluationId ? store.getEvaluationById(menu.linkedEvaluationId) : undefined;
-        entries.push({ patient, menu, evaluationDate: evaluation?.date });
-      });
-    });
-
-    // Sort by evaluation date descending
-    return entries.sort((a, b) =>
-      parseLocalDate(b.evaluationDate || b.menu.date).getTime() - parseLocalDate(a.evaluationDate || a.menu.date).getTime()
-    );
-  }, [patients]);
+        return { patient, menu, evaluationDate: evaluation?.date };
+      })
+      .filter(Boolean) as HistoryEntry[];
+  }, [menus, patients]);
 
   const filteredEntries = useMemo(() => {
     let entries = historyEntries;
@@ -91,8 +107,23 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
     });
   }, [historyEntries, searchTerm, filterType]);
 
-  const handleOpenMenu = (entry: HistoryEntry) => {
+  const handleOpenMenu = async (entry: HistoryEntry) => {
     setSelectedEntry(entry);
+    if (entry.menu.menuData) {
+      setPreviewMenuData(entry.menu.menuData);
+      return;
+    }
+    setPreviewMenuData(null);
+    setPreviewLoading(true);
+    try {
+      const { menuData } = await supabaseService.getMenuData(entry.menu.id);
+      setPreviewMenuData(menuData);
+      setMenus(prev => prev.map(m => m.id === entry.menu.id ? { ...m, menuData } : m));
+    } catch {
+      setPreviewMenuData(null);
+    } finally {
+      setPreviewLoading(false);
+    }
   };
 
   const clearRefStatus = (menuId: string) =>
@@ -103,14 +134,20 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
 
   const handleAddRef = async (entry: HistoryEntry) => {
     if (!onAddAsReference) return;
-    if (!entry.menu.menuData) {
-      setRefStatus(prev => ({ ...prev, [entry.menu.id]: 'nodata' }));
-      clearRefStatus(entry.menu.id);
-      return;
-    }
     setRefStatus(prev => ({ ...prev, [entry.menu.id]: 'loading' }));
     try {
-      await onAddAsReference(entry.menu, entry.patient);
+      let menuData = entry.menu.menuData;
+      if (!menuData) {
+        const fetched = await supabaseService.getMenuData(entry.menu.id);
+        menuData = fetched.menuData;
+        if (menuData) setMenus(prev => prev.map(m => m.id === entry.menu.id ? { ...m, menuData } : m));
+      }
+      if (!menuData) {
+        setRefStatus(prev => ({ ...prev, [entry.menu.id]: 'nodata' }));
+        clearRefStatus(entry.menu.id);
+        return;
+      }
+      await onAddAsReference({ ...entry.menu, menuData }, entry.patient);
       setRefStatus(prev => ({ ...prev, [entry.menu.id]: 'success' }));
       clearRefStatus(entry.menu.id);
     } catch {
@@ -195,7 +232,16 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filteredEntries.length > 0 ? (
+            {loading ? (
+        <tr>
+          <td colSpan={6} className="px-6 py-12 text-center">
+            <div className="flex flex-col items-center gap-2 text-slate-400">
+              <div className="w-6 h-6 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
+              <p className="text-sm">Cargando historial...</p>
+            </div>
+          </td>
+        </tr>
+      ) : filteredEntries.length > 0 ? (
               filteredEntries.map((entry) => (
                 <tr key={entry.menu.id} onClick={() => handleOpenMenu(entry)} className="hover:bg-slate-50/50 transition-colors group cursor-pointer">
                   <td className="px-6 py-4">
@@ -407,7 +453,7 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                     />
                   </div>
                   <button
-                    onClick={() => setSelectedEntry(null)}
+                    onClick={() => { setSelectedEntry(null); setPreviewMenuData(null); }}
                     className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
                   >
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -420,9 +466,14 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
             
             <div className="flex-1 overflow-y-auto p-8 bg-slate-100/50">
               <div className="max-w-[800px] mx-auto">
-                {selectedEntry.menu.menuData ? (
+                {previewLoading ? (
+                  <div className="flex flex-col items-center gap-3 py-20 text-slate-400">
+                    <div className="w-8 h-8 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
+                    <p className="text-sm">Cargando menú...</p>
+                  </div>
+                ) : previewMenuData ? (
                   <MenuPreview
-                    data={selectedEntry.menu.menuData}
+                    data={previewMenuData}
                     elementId={`menu-history-${selectedEntry.menu.id}`}
                     selectedTemplate={selectedEntry.menu.designConfig?.templateDesign || selectedEntry.menu.templateId || 'plantilla_v1'}
                     hideTemplateSelector={true}
@@ -432,9 +483,6 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                 ) : (
                   <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
                     <p className="text-slate-500 italic">Este menú no tiene datos de vista previa estructurados.</p>
-                    <div className="mt-4 text-left whitespace-pre-wrap font-mono text-xs bg-slate-50 p-4 rounded-lg border border-slate-100">
-                      {selectedEntry.menu.content}
-                    </div>
                   </div>
                 )}
               </div>

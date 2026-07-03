@@ -675,17 +675,35 @@ export const supabaseService = {
     return (data || []).map(this.mapMenuFromDb);
   },
 
-  async getMenuData(menuId: string): Promise<{ menuData: any; content: string; menuPreviewData: any }> {
+  async getMenusForHistory(): Promise<GeneratedMenu[]> {
     const { data, error } = await supabase
       .from('menus')
-      .select('id, menu_data, content, menu_preview_data')
+      .select('id, patient_id, evaluation_id, date, name, kcal_to_work, template_id, design_config, created_at')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(m => ({
+      id:                 m.id,
+      patientId:          m.patient_id,
+      linkedEvaluationId: m.evaluation_id,
+      date:               m.date,
+      name:               m.name,
+      kcalToWork:         m.kcal_to_work,
+      templateId:         m.template_id || null,
+      designConfig:       m.design_config || null,
+      createdAt:          m.created_at,
+    }));
+  },
+
+  async getMenuData(menuId: string): Promise<{ menuData: any; content: string }> {
+    const { data, error } = await supabase
+      .from('menus')
+      .select('id, menu_data, content')
       .eq('id', menuId)
       .single();
     if (error) throw error;
     return {
-      menuData:        data.menu_data        ?? null,
-      content:         data.content          ?? '',
-      menuPreviewData: data.menu_preview_data ?? null,
+      menuData: data.menu_data ?? null,
+      content:  data.content   ?? '',
     };
   },
 
@@ -1317,7 +1335,7 @@ export const supabaseService = {
       name:                menu.name,
       content:             menu.content,
       aiRationale:         menu.ai_rationale,
-      menuPreviewData:     menu.menu_preview_data,
+      menuPreviewData:     undefined,
       createdAt:           menu.created_at,
       designConfig:        menu.design_config || null,
     };
