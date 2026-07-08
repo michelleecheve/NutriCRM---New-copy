@@ -14,8 +14,10 @@ import {
   Check,
 } from "lucide-react";
 import { getTodayStr } from "../src/utils/dateUtils";
+import { prefsService } from "../services/prefsService";
 import { CalendarGrid } from "../components/calendar_components/CalendarGrid";
 import { CalendarSidebar } from "../components/calendar_components/CalendarSidebar";
+import { DEFAULT_STATUS_FILTER } from "../components/calendar_components/StatusFilter";
 import { CalendarAppointmentModal } from "../components/calendar_components/CalendarAppointmentModal";
 import { CalendarHistorialTable } from "../components/calendar_components/CalendarHistorialTable";
 import { CalendarFollowUpTable } from "../components/calendar_components/CalendarFollowUpTable";
@@ -391,6 +393,14 @@ export const CalendarPage: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
 
+  const [statusFilter, setStatusFilter] = useState<string[]>(() =>
+    prefsService.get("calendar.statusFilter", DEFAULT_STATUS_FILTER),
+  );
+  const handleStatusFilterChange = (filter: string[]) => {
+    setStatusFilter(filter);
+    prefsService.set("calendar.statusFilter", filter);
+  };
+
   useEffect(() => {
     if (currentAppUser?.role !== "recepcionista") return;
 
@@ -642,12 +652,15 @@ export const CalendarPage: React.FC = () => {
               handleEditAppointment(appt);
             }}
             userId={currentAppUser?.id}
+            statusFilter={statusFilter}
+            onStatusFilterChange={handleStatusFilterChange}
           />
           <CalendarSidebar
             todayStr={todayStr}
             fiveDaysFromNowStr={fiveDaysFromNowStr}
             appointments={appointments}
             onAppointmentClick={handleEditAppointment}
+            statusFilter={statusFilter}
           />
         </div>
 

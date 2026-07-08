@@ -40,7 +40,11 @@
       "Bash(node_modules/.bin/esbuild \"supabase/functions/cancel-subscription/index.ts\" --loader=ts --format=esm)",
       "Bash(node_modules/.bin/esbuild \"supabase/functions/cancel-subscription/index.ts\" --bundle --platform=neutral --format=esm --external:https://*)",
       "Bash(echo \"EXIT:$?\")",
-      "Bash(git log *)"
+      "Bash(git log *)",
+      "Bash(chromium-cli --help)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(powershell -NoProfile -Command 'Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '\\\\''*vite*'\\\\'' } | Stop-Process -Force')",
+      "Bash(taskkill //F //IM node.exe //FI \"WINDOWTITLE eq *vite*\")"
     ]
   }
 }

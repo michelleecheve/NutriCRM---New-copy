@@ -1645,7 +1645,8 @@ export const MenuReferences: React.FC<{
                       return (
                         <tr
                           key={r.id}
-                          className={`border-b border-slate-100 last:border-0 ${i % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-blue-50/30 transition-colors`}
+                          onClick={() => openView(r)}
+                          className={`border-b border-slate-100 last:border-0 cursor-pointer ${i % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-blue-50/30 transition-colors`}
                         >
                           <td className="px-4 py-3">
                             {d.kcal ? (
@@ -1682,19 +1683,13 @@ export const MenuReferences: React.FC<{
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
-                                onClick={() => openView(r)}
-                                className="inline-flex items-center gap-1 text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-100 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                              >
-                                <Eye className="w-3.5 h-3.5" /> Ver
-                              </button>
-                              <button
-                                onClick={() => openEdit(r)}
+                                onClick={(e) => { e.stopPropagation(); openEdit(r); }}
                                 className="inline-flex items-center gap-1 text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
                               >
                                 ✏️ Editar
                               </button>
                               <button
-                                onClick={() => handleDelete(r.id)}
+                                onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }}
                                 className="inline-flex items-center justify-center text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 p-1.5 rounded-lg transition-colors"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />

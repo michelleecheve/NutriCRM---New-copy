@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { History, Search, ExternalLink, Download, User, Calendar, Flame, FileText, Eye, ClipboardList } from 'lucide-react';
+import { History, Search, ExternalLink, Download, User, Calendar, Flame, FileText, Eye, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react';
 import { store } from '../../services/store';
 import { supabaseService } from '../../services/supabaseService';
 import { GeneratedMenu, Patient } from '../../types';
@@ -20,12 +20,16 @@ interface MenuHistoryProps {
   onAddAsRecommendation?: (menu: GeneratedMenu, patient: Patient, name: string) => Promise<void>;
   filterType?: 'semanal' | 'intercambio';
   filterEatingOut?: boolean;
+  filterRecommendations?: boolean;
 }
 
 const parseLocalDate = (dateStr: string) => new Date(dateStr + 'T00:00:00');
 
-export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideHeader, hideContainer, onAddAsReference, onAddAsRecommendation, filterType, filterEatingOut }) => {
+const PAGE_SIZE = 10;
+
+export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideHeader, hideContainer, onAddAsReference, onAddAsRecommendation, filterType, filterEatingOut, filterRecommendations }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(null);
   const [previewMenuData, setPreviewMenuData] = useState<any>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -92,6 +96,10 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
       entries = entries.filter(entry => entry.menu.menuData?.eatingOutPage?.visible === true);
     }
 
+    if (filterRecommendations) {
+      entries = entries.filter(entry => !!entry.menu.menuData?.recommendations);
+    }
+
     if (!searchTerm.trim()) return entries;
     const term = searchTerm.toLowerCase();
     return entries.filter(entry => {
@@ -105,7 +113,15 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
         date.includes(term)
       );
     });
-  }, [historyEntries, searchTerm, filterType]);
+  }, [historyEntries, searchTerm, filterType, filterEatingOut, filterRecommendations]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterType, filterEatingOut, filterRecommendations]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / PAGE_SIZE));
+  const clampedPage = Math.min(page, totalPages);
+  const pageEntries = filteredEntries.slice((clampedPage - 1) * PAGE_SIZE, clampedPage * PAGE_SIZE);
 
   const handleOpenMenu = async (entry: HistoryEntry) => {
     setSelectedEntry(entry);
@@ -131,12 +147,10 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
     if (!onAddAsReference) return;
     setRefStatus(prev => ({ ...prev, [entry.menu.id]: 'loading' }));
     try {
-      let menuData = entry.menu.menuData;
-      if (!menuData) {
-        const fetched = await supabaseService.getMenuData(entry.menu.id);
-        menuData = fetched.menuData;
-        if (menuData) setMenus(prev => prev.map(m => m.id === entry.menu.id ? { ...m, menuData } : m));
-      }
+      // entry.menu.menuData viene de getMenusForHistory() (solo flags livianos, sin JSONB) — siempre hay que traer el menu_data completo
+      const fetched = await supabaseService.getMenuData(entry.menu.id);
+      const menuData = fetched.menuData;
+      if (menuData) setMenus(prev => prev.map(m => m.id === entry.menu.id ? { ...m, menuData } : m));
       if (!menuData) {
         setRefStatus(prev => ({ ...prev, [entry.menu.id]: 'nodata' }));
         clearRefStatus(entry.menu.id);
@@ -161,7 +175,11 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
     setRecModalLoading(true);
     const menuId = recModal.menu.id;
     try {
-      await onAddAsRecommendation(recModal.menu, recModal.patient, recModalName.trim());
+      // recModal.menu.menuData viene de getMenusForHistory() (solo flags livianos, sin JSONB) — siempre hay que traer el menu_data completo
+      const { menuData } = await supabaseService.getMenuData(menuId);
+      if (!menuData) throw new Error('No menuData');
+      setMenus(prev => prev.map(m => m.id === menuId ? { ...m, menuData } : m));
+      await onAddAsRecommendation({ ...recModal.menu, menuData }, recModal.patient, recModalName.trim());
       setRecStatus(prev => ({ ...prev, [menuId]: 'success' }));
       setRecModal(null);
       clearRecStatus(menuId);
@@ -236,8 +254,8 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
             </div>
           </td>
         </tr>
-      ) : filteredEntries.length > 0 ? (
-              filteredEntries.map((entry) => (
+      ) : pageEntries.length > 0 ? (
+              pageEntries.map((entry) => (
                 <tr key={entry.menu.id} onClick={() => handleOpenMenu(entry)} className="hover:bg-slate-50/50 transition-colors group cursor-pointer">
                   <td className="px-6 py-4">
                     <div>
@@ -364,6 +382,30 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100">
+          <span className="text-xs font-semibold text-slate-500">
+            Página {clampedPage} / {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={clampedPage === 1}
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={clampedPage === totalPages}
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mini-modal: nombre para guardar como recomendación */}
       {recModal && (

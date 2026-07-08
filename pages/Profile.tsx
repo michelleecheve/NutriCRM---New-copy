@@ -6,7 +6,7 @@ import { UserProfile, AppUser } from '../types';
 import {
   Save, User, Mail, Phone, Award, Camera, Check, Loader2,
   MapPin, Globe, ChevronDown, Clock, Link2, UserPlus, Trash2, Copy, Users, AlertTriangle, LogOut, Calendar,
-  PanelLeft, LayoutTemplate
+  PanelLeft, LayoutTemplate, LifeBuoy
 } from 'lucide-react';
 
 import { ProfileSubscription } from '../components/profile_config/ProfileSubscription';
@@ -469,6 +469,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isProcessingImg, setIsProcessingImg] = useState(false);
   const [isSistemaOpen, setIsSistemaOpen] = useState(false);
+  const [isSoporteOpen, setIsSoporteOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estados para modal de desvinculación
@@ -794,6 +795,35 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                 )}
               </div>
             )}
+
+            <div className="space-y-6">
+              <button
+                type="button"
+                onClick={() => setIsSoporteOpen(o => !o)}
+                className="w-full flex items-center justify-between pb-2 border-b border-slate-100 group"
+              >
+                <div className="flex items-center gap-2">
+                  <LifeBuoy className="w-5 h-5 text-emerald-600" />
+                  <h3 className="font-bold text-slate-800">Soporte</h3>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isSoporteOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isSoporteOpen && (
+                <div className="space-y-4 px-1">
+                  <p className="text-sm text-slate-600">
+                    ¿Tienes dudas o quieres reportar un problema? Contáctanos a{' '}
+                    <a href="mailto:nutrifollow.app@outlook.com" className="font-bold text-emerald-700 hover:text-emerald-800">
+                      nutrifollow.app@outlook.com
+                    </a>
+                    {' '}y con gusto te ayudamos.
+                  </p>
+                  <p className="text-sm text-slate-400">
+                    Tip: estamos trabajando de forma continua para hacer de NutriFlow una plataforma cada vez más rápida y fácil de usar. Si en algún momento notas información o alguna función que no carga correctamente, te recomendamos recargar la página, ya que en la mayoría de los casos esto resuelve el inconveniente. Asegúrate también de contar con una buena conexión a internet, y si sientes la plataforma lenta, borrar la caché de tu navegador suele ayudar. Si el problema persiste, no dudes en reportarlo para que podamos solucionarlo lo antes posible.
+                  </p>
+                </div>
+              )}
+            </div>
 
             <div className="fixed bottom-6 right-8 z-50">
               <button

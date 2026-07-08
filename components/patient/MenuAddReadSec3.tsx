@@ -3,7 +3,7 @@ import {
   Eye, EyeOff,
   X,
   Lock, Unlock, Palette, Pin,
-  FileText, Pencil, Printer
+  FileText, Pencil
 } from 'lucide-react';
 import { prefsService } from '../../services/prefsService';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, MenuDesignConfig } from '../../types';
@@ -91,6 +91,15 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     }
   };
 
+  const handleDomingoModeChange = (mode: 'libre' | 'completo') => {
+    if (!menuPreviewData) return;
+    handleSetMenuPreviewData({
+      ...menuPreviewData,
+      weeklyMenu: { ...menuPreviewData.weeklyMenu, domingoMode: mode },
+    });
+    setEditTablaKey(k => k + 1);
+  };
+
   const handleStartBlank = () => {
     const blank = buildBlankMenuPlanData(patient, vetData, getNutritionistData(), evaluationId);
     handleSetMenuPreviewData(withTemplateTitles(blank));
@@ -154,6 +163,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                   pageLayout={localDesignConfig.pageLayout}
                   visualTheme={localDesignConfig.visualTheme}
                   onChange={handleDesignChange}
+                  domingoMode={menuPreviewData?.weeklyMenu?.domingoMode ?? 'libre'}
+                  onDomingoModeChange={handleDomingoModeChange}
                 />
               </div>
               <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex-shrink-0">
@@ -228,10 +239,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               filename={`Menu_${patient.firstName}_${new Date().toISOString().split('T')[0]}`}
               disabled={!menuPreviewData}
               className="shrink-0 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all border-2 text-sm border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50"
-            >
-              <Printer className="w-4 h-4" />
-              Exportar PDF
-            </MenuExportPDF>
+            />
           </div>
         )}
 

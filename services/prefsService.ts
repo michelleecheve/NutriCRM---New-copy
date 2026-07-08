@@ -17,6 +17,7 @@ export interface StorageSaved {
   };
   calendar?: {
     view?: 'month' | 'week';
+    statusFilter?: string[];
   };
   menus?: {
     configOpen?: boolean;

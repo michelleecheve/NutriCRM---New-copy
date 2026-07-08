@@ -17,6 +17,8 @@ interface MenuDesignPanelProps {
   pageLayout: PageLayoutOption;
   visualTheme: VisualThemeConfig;
   onChange: (updates: Partial<MenuDesignConfig>) => void;
+  domingoMode?: "libre" | "completo";
+  onDomingoModeChange?: (mode: "libre" | "completo") => void;
 }
 
 export const MenuDesignPanel: React.FC<MenuDesignPanelProps> = ({
@@ -24,6 +26,8 @@ export const MenuDesignPanel: React.FC<MenuDesignPanelProps> = ({
   pageLayout,
   visualTheme,
   onChange,
+  domingoMode = "libre",
+  onDomingoModeChange,
 }) => {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
@@ -263,24 +267,24 @@ export const MenuDesignPanel: React.FC<MenuDesignPanelProps> = ({
             </div>
           </div>
 
-          {/* Plantilla V1 / V2 (domingo) */}
+          {/* Plantilla V1 / V2 (domingo) — sincronizado con el switch de "Editar en Tabla" */}
           <div className="space-y-2">
             <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Formato del Domingo</label>
             <div className="flex gap-2">
               {([
-                { value: 'v1', label: 'V1 · Día Libre', desc: 'Solo nota de día libre' },
-                { value: 'v2', label: 'V2 · Completo',  desc: 'Domingo con menú completo' },
-              ] as { value: string; label: string; desc: string }[]).map(opt => {
-                const isV2 = templateDesign.startsWith('plantilla_v2');
-                const isActive = opt.value === 'v2' ? isV2 : !isV2;
+                { value: 'libre', label: 'V1 · Día Libre', desc: 'Solo nota de día libre' },
+                { value: 'completo', label: 'V2 · Completo',  desc: 'Domingo con menú completo' },
+              ] as { value: 'libre' | 'completo'; label: string; desc: string }[]).map(opt => {
+                const isActive = domingoMode === opt.value;
                 return (
                   <button
                     key={opt.value}
                     onClick={() => {
                       const is4col = templateDesign.endsWith('_4col');
-                      const base = opt.value === 'v2' ? 'plantilla_v2' : 'plantilla_v1';
+                      const base = opt.value === 'completo' ? 'plantilla_v2' : 'plantilla_v1';
                       const next = (is4col ? `${base}_4col` : base) as MenuTemplateDesign;
                       onChange({ templateDesign: next });
+                      onDomingoModeChange?.(opt.value);
                     }}
                     className={`flex-1 flex flex-col items-start gap-0.5 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
                       isActive

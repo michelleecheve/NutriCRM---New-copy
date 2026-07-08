@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Appointment } from '../../types';
 import { ChevronLeft, ChevronRight, LayoutGrid, CalendarDays } from 'lucide-react';
 import { prefsService } from '../../services/prefsService';
+import { StatusFilter, STATUS_FILTER_STYLES, APPOINTMENT_STATUSES } from './StatusFilter';
 
 type ViewMode = 'month' | 'week';
 
@@ -12,6 +13,8 @@ interface CalendarGridProps {
   onDayClick?: (dateStr: string) => void;
   onAppointmentClick: (e: React.MouseEvent, appt: Appointment) => void;
   userId?: string;
+  statusFilter: string[];
+  onStatusFilterChange: (value: string[]) => void;
 }
 
 const monthNames = [
@@ -44,6 +47,8 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   onDayClick,
   onAppointmentClick,
   userId,
+  statusFilter,
+  onStatusFilterChange,
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>(() => prefsService.get('calendar.view', 'month'));
 
@@ -108,22 +113,19 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const getAppointmentsForDay = (day: number) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return appointments.filter(a => a.date === dateStr && a.status !== 'Cancelada');
+    return appointments.filter(a => a.date === dateStr && statusFilter.includes(a.status));
   };
 
   const getAppointmentsForDate = (date: Date) =>
     appointments
-      .filter(a => a.date === toDateStr(date) && a.status !== 'Cancelada')
+      .filter(a => a.date === toDateStr(date) && statusFilter.includes(a.status))
       .sort((a, b) => a.time.localeCompare(b.time));
 
   const fmtTime = (time: string) => time.slice(0, 5);
 
   const apptClass = (appt: Appointment) =>
-    appt.status === 'Reagendada'
-      ? 'bg-amber-50 border-amber-500 text-amber-800'
-      : appt.modality === 'Presencial'
-        ? 'bg-emerald-50 border-emerald-500 text-emerald-800'
-        : 'bg-blue-50 border-blue-500 text-blue-800';
+    STATUS_FILTER_STYLES[appt.status as keyof typeof STATUS_FILTER_STYLES]?.badge
+    ?? STATUS_FILTER_STYLES.Programada.badge;
 
   const todayStr = toDateStr(new Date());
 
@@ -145,12 +147,6 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Legend */}
-          <div className="hidden md:flex gap-3 text-xs font-bold text-slate-400">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Presencial</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" /> Video</span>
-          </div>
-
           {/* View toggle */}
           <div className="flex items-center bg-slate-100 rounded-lg p-1 gap-0.5">
             <button
@@ -176,6 +172,9 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               Semana
             </button>
           </div>
+
+          {/* Status filter */}
+          <StatusFilter value={statusFilter} onChange={onStatusFilterChange} />
         </div>
       </div>
 
@@ -292,6 +291,16 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
           )}
 
         </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-4 px-4 sm:px-6 py-3 border-t border-slate-100 text-xs font-bold text-slate-400 shrink-0">
+        {APPOINTMENT_STATUSES.map(status => (
+          <span key={status} className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${STATUS_FILTER_STYLES[status].dot}`} />
+            {status}
+          </span>
+        ))}
       </div>
     </div>
   );

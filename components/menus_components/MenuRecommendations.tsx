@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   FileText, Plus, Trash2, Save, X,
-  ClipboardList, History, UtensilsCrossed, ChevronDown,
+  ClipboardList, History, UtensilsCrossed, ChevronDown, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { MenuRecommendationRecord, MenuRecommendationData, DEFAULT_SECTION_TITLES, MenuSectionTitles, GeneratedMenu, Patient } from '../../types';
 import { EatingOutPageData, EatingOutColumn, DEFAULT_EATING_OUT_PAGE } from './menudesigntemplates_components/menuTemplateTypes';
@@ -21,6 +21,8 @@ interface EatingOutEditState {
 function genColId() {
   return `col_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 }
+
+const REC_PAGE_SIZE = 10;
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -137,6 +139,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
   const [isLoading, setIsLoading]                   = useState(false);
   const [isImportFromMenuOpen, setIsImportFromMenuOpen] = useState(false);
   const [importContext, setImportContext]               = useState<RecTab>('general');
+  const [page, setPage]                              = useState(1);
 
   // Eating-out state
   const [editingEatingOut, setEditingEatingOut]     = useState<EatingOutEditState | null>(null);
@@ -147,6 +150,13 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
 
   const generalRecs    = recs.filter(r => !r.type || r.type === 'general');
   const eatingOutRecs  = recs.filter(r => r.type === 'eating_out');
+
+  useEffect(() => { setPage(1); }, [activeTab]);
+
+  const activeRecs   = activeTab === 'general' ? generalRecs : eatingOutRecs;
+  const totalPages   = Math.max(1, Math.ceil(activeRecs.length / REC_PAGE_SIZE));
+  const clampedPage  = Math.min(page, totalPages);
+  const pageRecs      = activeRecs.slice((clampedPage - 1) * REC_PAGE_SIZE, clampedPage * REC_PAGE_SIZE);
 
   // ── General recommendations handlers ───────────────────────────────────────
 
@@ -408,32 +418,21 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {generalRecs.map(rec => (
-                <div
-                  key={rec.id}
-                  onClick={() => handleOpenEdit(rec)}
-                  className="group p-4 rounded-2xl border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all cursor-pointer relative"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="bg-slate-100 p-2 rounded-lg group-hover:bg-emerald-100 transition-colors">
-                      <FileText className="w-4 h-4 text-slate-500 group-hover:text-emerald-600" />
-                    </div>
-                    <button
-                      onClick={(e) => handleDelete(rec.id, e)}
-                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <h4 className="font-bold text-slate-800 line-clamp-1">{rec.name}</h4>
-                  <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wide font-bold">
-                    {new Date(rec.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-1">
-                    {(() => {
+            <div className="space-y-3">
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Secciones</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha</th>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageRecs.map((rec, i) => {
                       const t = resolveRecTitles(rec.data);
-                      return [
+                      const badges = [
                         { key: 'preparacion',   label: t.preparacionTitle,   emoji: t.preparacionEmoji },
                         { key: 'restricciones', label: t.restriccionesTitle, emoji: t.restriccionesEmoji },
                         { key: 'habitos',       label: t.habitosTitle,       emoji: t.habitosEmoji },
@@ -441,16 +440,79 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
                       ].map(({ key, label, emoji }) => {
                         const val = rec.data[key as keyof MenuRecommendationData];
                         if (!Array.isArray(val) || val.length === 0) return null;
-                        return (
-                          <span key={key} className="text-[9px] px-1.5 py-0.5 rounded-full bg-white border border-slate-100 text-slate-500 font-bold">
-                            {emoji} {label} ({val.length})
-                          </span>
-                        );
-                      });
-                    })()}
+                        return { key, label, emoji, count: val.length };
+                      }).filter(Boolean) as { key: string; label?: string; emoji?: string; count: number }[];
+                      return (
+                        <tr
+                          key={rec.id}
+                          onClick={() => handleOpenEdit(rec)}
+                          className={`border-b border-slate-100 last:border-0 cursor-pointer ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'} hover:bg-emerald-50/30 transition-colors`}
+                        >
+                          <td className="px-4 py-3">
+                            <span className="font-semibold text-slate-800">{rec.name}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {badges.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {badges.map(b => (
+                                  <span key={b.key} className="text-[9px] px-1.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500 font-bold">
+                                    {b.emoji} {b.label} ({b.count})
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-slate-300 text-xs">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-slate-400">
+                            {new Date(rec.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleOpenEdit(rec); }}
+                                className="inline-flex items-center gap-1 text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                              >
+                                ✏️ Editar
+                              </button>
+                              <button
+                                onClick={(e) => handleDelete(rec.id, e)}
+                                className="inline-flex items-center justify-center text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 p-1.5 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-1 pt-1">
+                  <span className="text-xs font-semibold text-slate-500">
+                    Página {clampedPage} / {totalPages}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={clampedPage === 1}
+                      className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={clampedPage === totalPages}
+                      className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           )
         ) : (
@@ -464,46 +526,96 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {eatingOutRecs.map(rec => {
-                const d = rec.data as unknown as EatingOutPageData;
-                return (
-                  <div
-                    key={rec.id}
-                    onClick={() => handleOpenEditEatingOut(rec)}
-                    className="group p-4 rounded-2xl border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="bg-slate-100 p-2 rounded-lg group-hover:bg-emerald-100 transition-colors">
-                        <UtensilsCrossed className="w-4 h-4 text-slate-500 group-hover:text-emerald-600" />
-                      </div>
-                      <button
-                        onClick={(e) => handleDeleteEatingOut(rec.id, e)}
-                        className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <h4 className="font-bold text-slate-800 line-clamp-1">{rec.name}</h4>
-                    <p className="text-[10px] text-slate-500 mt-1 line-clamp-1 font-medium">{d?.title || ''}</p>
-                    <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-wide font-bold">
-                      {new Date(rec.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      {(d?.columns?.length || 0) > 0 && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white border border-slate-100 text-slate-500 font-bold">
-                          {d.columns.length} col · {d.rows?.length || 0} filas
-                        </span>
-                      )}
-                      {d?.freeText?.trim() && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white border border-slate-100 text-slate-500 font-bold">
-                          + texto libre
-                        </span>
-                      )}
-                    </div>
+            <div className="space-y-3">
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Título</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Contenido</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha</th>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageRecs.map((rec, i) => {
+                      const d = rec.data as unknown as EatingOutPageData;
+                      return (
+                        <tr
+                          key={rec.id}
+                          onClick={() => handleOpenEditEatingOut(rec)}
+                          className={`border-b border-slate-100 last:border-0 cursor-pointer ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'} hover:bg-emerald-50/30 transition-colors`}
+                        >
+                          <td className="px-4 py-3">
+                            <span className="font-semibold text-slate-800">{rec.name}</span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-slate-500 max-w-[220px] truncate">
+                            {d?.title || <span className="text-slate-300">—</span>}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1">
+                              {(d?.columns?.length || 0) > 0 && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500 font-bold">
+                                  {d.columns.length} col · {d.rows?.length || 0} filas
+                                </span>
+                              )}
+                              {d?.freeText?.trim() && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500 font-bold">
+                                  + texto libre
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-slate-400">
+                            {new Date(rec.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleOpenEditEatingOut(rec); }}
+                                className="inline-flex items-center gap-1 text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                              >
+                                ✏️ Editar
+                              </button>
+                              <button
+                                onClick={(e) => handleDeleteEatingOut(rec.id, e)}
+                                className="inline-flex items-center justify-center text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 p-1.5 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-1 pt-1">
+                  <span className="text-xs font-semibold text-slate-500">
+                    Página {clampedPage} / {totalPages}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={clampedPage === 1}
+                      className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={clampedPage === totalPages}
+                      className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
           )
         )}
@@ -531,6 +643,7 @@ export const MenuRecommendations: React.FC<{ hideHeader?: boolean; hideContainer
               <MenuHistory
                 onAddAsRecommendation={importContext === 'eating_out' ? handleAddAsEatingOutFromMenu : handleAddAsRecommendation}
                 filterEatingOut={importContext === 'eating_out'}
+                filterRecommendations={importContext === 'general'}
               />
             </div>
           </div>

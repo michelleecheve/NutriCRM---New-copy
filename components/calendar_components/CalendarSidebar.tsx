@@ -8,6 +8,7 @@ interface CalendarSidebarProps {
   fiveDaysFromNowStr: string;
   appointments: Appointment[];
   onAppointmentClick: (appt: Appointment) => void;
+  statusFilter: string[];
 }
 
 export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
@@ -15,13 +16,14 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   fiveDaysFromNowStr,
   appointments,
   onAppointmentClick,
+  statusFilter,
 }) => {
   const todaysAppointments = appointments
-    .filter(a => a.date === todayStr && a.status !== 'Cancelada')
+    .filter(a => a.date === todayStr && statusFilter.includes(a.status))
     .sort((a, b) => a.time.localeCompare(b.time));
 
   const upcomingAppointments = appointments
-    .filter(a => a.date > todayStr && a.date <= fiveDaysFromNowStr && a.status !== 'Cancelada')
+    .filter(a => a.date > todayStr && a.date <= fiveDaysFromNowStr && statusFilter.includes(a.status))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (

@@ -678,7 +678,24 @@ export const supabaseService = {
   async getMenusForHistory(): Promise<GeneratedMenu[]> {
     const { data, error } = await supabase.rpc('get_menus_for_history');
     if (error) throw error;
-    return (data || []).map((m: any) => ({
+    const rows = data || [];
+
+    // El kcal editado en el encabezado del menú vive dentro de menu_data (jsonb) — se trae aparte
+    // extrayendo solo esa key (sin descargar el resto del JSONB) para no perder la carga liviana del historial.
+    const kcalById = new Map<string, number>();
+    if (rows.length > 0) {
+      const { data: kcalRows, error: kcalError } = await supabase
+        .from('menus')
+        .select('id, kcal:menu_data->>kcal')
+        .in('id', rows.map((m: any) => m.id));
+      if (!kcalError) {
+        (kcalRows || []).forEach((r: any) => {
+          if (r.kcal !== null && r.kcal !== undefined) kcalById.set(r.id, Number(r.kcal));
+        });
+      }
+    }
+
+    return rows.map((m: any) => ({
       id:                 m.id,
       patientId:          m.patient_id,
       linkedEvaluationId: m.evaluation_id,
@@ -689,6 +706,7 @@ export const supabaseService = {
       designConfig:       m.design_config || null,
       createdAt:          m.created_at,
       menuData: {
+        kcal:            kcalById.get(m.id),
         menuType:        m.menu_type ?? 'semanal',
         eatingOutPage:   { visible: m.eating_out_visible ?? false },
         recommendations: m.has_recommendations
