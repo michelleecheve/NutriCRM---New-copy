@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { authStore } from '../../services/authStore';
-import { Zap, CheckCircle, AlertCircle, CreditCard, Star, ChevronDown, XCircle, RefreshCw, Clock } from 'lucide-react';
+import { Zap, CheckCircle, AlertCircle, CreditCard, Star, ChevronDown, XCircle, RefreshCw, Clock, Tag } from 'lucide-react';
 
 export const ProfileSubscription: React.FC = () => {
   const sub   = authStore.getSubscription();
   const isPro = authStore.isPro();
 
-  const [isOpen, setIsOpen]                   = useState(!isPro);
+  const [isOpen, setIsOpen]                   = useState(!isPro || sub?.status === 'cancelled_pending');
   const [isLoading, setIsLoading]             = useState(false);
   const [msg, setMsg]                         = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -20,7 +20,7 @@ export const ProfileSubscription: React.FC = () => {
     if (!sub || sub.status === 'free')     return { text: 'Plan Básico',    color: 'text-slate-500',   bg: 'bg-slate-100'   };
     if (sub.status === 'active')           return { text: 'Pro Activo',     color: 'text-emerald-700', bg: 'bg-emerald-100' };
     if (sub.status === 'cancelled_pending') return {
-      text: `Pro · Cancela el ${formatDate(sub.current_period_end)}`,
+      text: `Pro · Se cancela el ${formatDate(sub.current_period_end)}`,
       color: 'text-amber-700', bg: 'bg-amber-100',
     };
     if (sub.status === 'past_due')         return { text: 'Pago pendiente', color: 'text-red-700',     bg: 'bg-red-100'     };
@@ -65,7 +65,7 @@ export const ProfileSubscription: React.FC = () => {
 
   const isCancelledPending = sub?.status === 'cancelled_pending';
   const showCancelButton   = (sub?.status === 'active' || sub?.status === 'past_due') && !isCancelledPending && !showCancelConfirm;
-  const showCardButton     = !!sub?.recurrente_subscription_id && (sub?.status === 'active' || sub?.status === 'past_due' || isCancelledPending);
+  const showCardButton     = !!sub?.recurrente_subscription_id && (sub?.status === 'active' || sub?.status === 'past_due');
 
   return (
     <div className="space-y-4">
@@ -112,7 +112,14 @@ export const ProfileSubscription: React.FC = () => {
                 </div>
                 {isPro && <span className="text-xs bg-emerald-200 text-emerald-700 font-bold px-2 py-0.5 rounded-full">Plan actual</span>}
               </div>
-              <p className="text-2xl font-black text-slate-800">$32 <span className="text-sm font-normal text-slate-400">USD/mes</span></p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-2xl font-black text-slate-800">$29 <span className="text-sm font-normal text-slate-400">USD/mes</span></p>
+                {!isPro && (
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white whitespace-nowrap">
+                    50% OFF tu primer mes!
+                  </span>
+                )}
+              </div>
               <ul className="space-y-1.5 text-sm text-slate-700">
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> Pacientes ilimitados</li>
                 <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" /> Citas ilimitadas</li>
@@ -120,6 +127,19 @@ export const ProfileSubscription: React.FC = () => {
               </ul>
             </div>
           </div>
+
+          {/* Promoción del mes — solo relevante para quien todavía no es Pro */}
+          {!isPro && (
+            <div className="flex items-start gap-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4">
+              <Tag className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-emerald-700">Promociones del mes</p>
+                <p className="text-xs text-emerald-700 mt-0.5">
+                  Usa el código <strong className="font-mono bg-white px-1.5 py-0.5 rounded border border-emerald-200">LAUNCH</strong> al pagar y obtén 50% de descuento en tu primer pago.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Subscription period info — only when Pro or cancelled_pending */}
           {isPro && (sub?.current_period_start || sub?.current_period_end) && (
@@ -158,9 +178,9 @@ export const ProfileSubscription: React.FC = () => {
             <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
               <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-bold text-amber-700">Suscripción cancelada — acceso activo</p>
+                <p className="text-sm font-bold text-amber-700">Suscripción cancelada — Acceso activo</p>
                 <p className="text-xs text-amber-600 mt-0.5">
-                  Tu acceso Pro continuará hasta el <strong>{formatDate(sub.current_period_end)}</strong>. Después pasarás al Plan Básico automáticamente. Tus datos nunca se eliminan.
+                  Tu acceso Pro continuará hasta el <strong>{formatDate(sub.current_period_end)}</strong>. Después de esa fecha podrás renovar tu suscripción cuando quieras. Tus datos no se eliminan: podrás seguir accediendo a ellos y editándolos, aunque aplicarán los límites del Plan Básico para crear nuevos registros. Si prefieres eliminar todos tus datos, escríbenos a <strong>nutrifollow.app@outlook.com</strong>.
                 </p>
               </div>
             </div>
@@ -184,7 +204,7 @@ export const ProfileSubscription: React.FC = () => {
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
               <p className="text-sm font-bold text-red-700">¿Confirmar cancelación?</p>
               <p className="text-xs text-red-600">
-                Tu acceso Pro continuará hasta el <strong>{formatDate(sub?.current_period_end ?? null)}</strong>. Después pasarás al Plan Básico automáticamente. Tus datos no se eliminarán.
+                Tu acceso Pro continuará hasta el <strong>{formatDate(sub?.current_period_end ?? null)}</strong>. Después de esa fecha pasarás al Plan Básico automáticamente. Tus datos no se eliminan y podrás seguir accediendo a ellos, aunque aplicarán los límites del Plan Básico para crear nuevos registros.
               </p>
               <div className="flex gap-2">
                 <button

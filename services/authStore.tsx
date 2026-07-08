@@ -312,13 +312,14 @@ class AuthStore {
         .single();
       this.subscription = sub ?? { plan: 'free', status: 'free', current_period_start: null, current_period_end: null, cancelled_at: null, recurrente_subscription_id: null };
 
-      // Auto-expire cancelled_pending when current_period_end has passed
+      // Auto-expire cancelled_pending when current_period_end has passed.
+      // Downgrade + "ahora estás en Plan Básico" email happen server-side in
+      // expire-subscription (idempotent — safe to call on every session load).
       if (this.subscription.status === 'cancelled_pending' && this.subscription.current_period_end) {
         const expired = new Date(this.subscription.current_period_end) < new Date();
         if (expired) {
           this.subscription = { ...this.subscription, plan: 'free', status: 'free' };
-          supabase.from('subscriptions').update({ plan: 'free', status: 'cancelled', updated_at: new Date().toISOString() }).eq('owner_id', user.id);
-          supabase.from('profiles').update({ plan: 'free' }).eq('id', user.id);
+          supabase.functions.invoke('expire-subscription');
         }
       }
 

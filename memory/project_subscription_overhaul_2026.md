@@ -57,6 +57,7 @@ Ver regla de trial en [[feedback_trial_activation]].
 ```bash
 supabase functions deploy recurrente-webhook
 supabase functions deploy cancel-subscription
+supabase functions deploy expire-subscription
 ```
 
 ---
@@ -161,6 +162,21 @@ where owner_id = '2200646d-db1f-4764-83cd-0e4a901b86ea';
 
 ---
 
+## FEATURE — Email "Plan Básico" al expirar el período de gracia (2026-07-07)
+
+**Problema detectado:** el email de cancelación inmediata (`cancel-subscription`) decía "puedes volver a suscribirte en cualquier momento" y traía el botón "Volver a suscribirme" — pero mientras `status='cancelled_pending'`, `authStore.subscribe()` bloquea la resuscripción con "Ya tienes una suscripción Pro activa." El botón llevaba a un dead end.
+
+**Además:** cuando el período de gracia realmente termina y el usuario pasa a Plan Básico, esa transición ocurría solo client-side (`authStore.tsx handleSupabaseSession`, downgrade directo a la tabla) — sin ningún email.
+
+**Solución:**
+1. `cancel-subscription/index.ts` — se quitó el botón y se corrigió el texto: ahora dice que podrá volver a suscribirse recién cuando termine su acceso Pro y pase al Plan Básico.
+2. Nueva edge function `supabase/functions/expire-subscription/index.ts` — hace el downgrade server-side (`status: 'cancelled_pending' → 'cancelled'`, `plan → 'free'`) y envía el email "Tu cuenta ahora está en el Plan Básico" con el botón "Volver a suscribirme". Idempotente: el `UPDATE` solo afecta filas todavía en `cancelled_pending` (`.eq('status','cancelled_pending')`), así que llamadas repetidas (multi-tab, re-login) después del primer downgrade no reenvían el correo.
+3. `authStore.tsx` (`handleSupabaseSession`) — el bloque que detecta `cancelled_pending` + `current_period_end` vencido ahora llama `supabase.functions.invoke('expire-subscription')` en vez de escribir directo a `subscriptions`/`profiles`.
+
+**Nota:** el safety-net de `active`/`past_due` vencido hace +5 días (línea ~328 de `authStore.tsx`, agregado en el bug fix del mismo día) sigue haciendo downgrade directo sin email — no se tocó, es un caso distinto (falla silenciosa de webhook, no cancelación voluntaria).
+
+---
+
 ## BLOQUE 4 — Webhook llena `current_period_end`
 
 **Problema:** el campo existe en la tabla pero el webhook nunca lo llena. Sin este dato no puede existir período de gracia.
@@ -198,9 +214,9 @@ Esto se hace en el panel de Recurrente, no en código:
 - [ ] 6.5 **Email pago fallido** — disparar desde webhook `subscription.past_due`:
   - Asunto: "Problema con tu pago en NutriFlow"
   - Cuerpo: problema al cobrar + instrucciones para cambiar tarjeta (cancelar y volver a suscribirse) + días antes de que se cancele
-- [ ] 6.6 **Email cancelación voluntaria** — disparar desde edge function `cancel-subscription`:
-  - Asunto: "Suscripción cancelada — tu acceso continúa hasta el [fecha]"
-  - Cuerpo: confirmación + fecha hasta la que tiene acceso Pro + "puedes volver cuando quieras"
+- [x] 6.6 **Email cancelación voluntaria** — 2 emails distintos (corregido 2026-07-07, ver nota abajo):
+  - `cancel-subscription` envía la confirmación inmediata SIN botón de resuscribir (resuscribir está bloqueado mientras `status='cancelled_pending'`)
+  - `expire-subscription` (nueva, invocada por `authStore` cuando `current_period_end` ya pasó) envía "Tu cuenta ahora está en el Plan Básico" CON el botón "Volver a suscribirme"
 - [ ] 6.7 **Email baja por cobro fallido** — disparar desde webhook `subscription.cancel` cuando era `active`/`past_due`:
   - Asunto: "Tu suscripción Pro ha sido cancelada"
   - Cuerpo: cobro no se pudo completar después de varios intentos + cómo volver a suscribirse
@@ -214,7 +230,7 @@ Esto se hace en el panel de Recurrente, no en código:
   1. Cancela tu suscripción actual (seguirás con acceso Pro hasta el [fecha])
   2. Cuando expire, vuelve a suscribirte con la nueva tarjeta
   "Tus datos y pacientes nunca se eliminan."
-- [ ] 7.3 El botón solo aparece cuando `status === 'active'` con `recurrente_subscription_id`, o `status === 'cancelled_pending'`
+- [x] 7.3 (revertido 2026-07-07) El botón "Cambiar tarjeta" NO aparece en `cancelled_pending` — no tiene sentido actualizar la tarjeta de una suscripción que ya está en cuenta regresiva para cancelarse. Solo `status === 'active'` o `'past_due'` con `recurrente_subscription_id`.
 
 ---
 

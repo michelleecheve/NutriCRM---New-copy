@@ -122,8 +122,7 @@ export function emailCancellationConfirmed(name: string, accessUntil: string): s
     <p style="background:#fffbeb;border-left:3px solid #d97706;padding:12px 16px;border-radius:0 8px 8px 0;margin:20px 0;">
       📅 Tu acceso Pro continuará activo hasta el <strong>${accessUntil}</strong>. Después pasarás al Plan Básico automáticamente.
     </p>
-    <p>Si cambias de opinión, puedes volver a suscribirte en cualquier momento desde tu perfil.</p>
-    ${btn('Volver a suscribirme', `${APP_URL}/profile`)}
+    <p>Si cambias de opinión, cuando finalice tu acceso Pro y pases al Plan Básico podrás volver a suscribirte desde tu perfil cuando quieras.</p>
     <p style="color:#64748b;font-size:13px;">Tus datos y pacientes nunca se eliminan, independientemente de tu plan.</p>
   `);
 }
