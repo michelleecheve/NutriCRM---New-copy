@@ -197,10 +197,10 @@ export const MenuExchangeEditorSec3: React.FC<Props> = ({ menuPreviewData, setMe
         <>
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="border-collapse" style={{ minWidth: 480, width: '100%' }}>
+            <table className="border-collapse" style={{ minWidth: 500, width: '100%' }}>
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-3 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider" style={{ minWidth: 100, width: 100 }}>
+                  <th className="px-3 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider" style={{ minWidth: 120, width: 120 }}>
                     Tiempo
                   </th>
                   {Array.from({ length: numCols }, (_, i) => (

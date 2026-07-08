@@ -43,8 +43,8 @@ interface Props {
   visible?: boolean;
 }
 
-const TABLE_MIN_WIDTH_LIBRE = 1360;
-const TABLE_MIN_WIDTH_COMPLETO = 1570;
+const TABLE_MIN_WIDTH_LIBRE = 1410;
+const TABLE_MIN_WIDTH_COMPLETO = 1620;
 
 export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
   menuPreviewData,
@@ -883,7 +883,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th
                     className="px-3 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider"
-                    style={{ minWidth: 100, width: 100 }}
+                    style={{ minWidth: 120, width: 120 }}
                   >
                     Tiempo
                   </th>
@@ -1290,7 +1290,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                 </div>
                 <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5">
                   <span className="text-emerald-500 font-black">✓</span> Copia
-                  primero el menú para tener la estructura — cambia solo las
+                  primero el menú para tener la estructura, cambia solo las
                   comidas, sin modificar los títulos de los días ni de los
                   tiempos de comida. Luego pégalo aquí con el mismo formato en
                   que se copió.
@@ -1299,12 +1299,18 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                   <span className="text-emerald-500 font-black">✓</span> Si el
                   contenido de un tiempo queda vacío, se borrará esa celda.
                 </p>
+                <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5">
+                  <span className="text-emerald-500 font-black">✓</span> Cada
+                  nombre de tiempo de comida (primera columna) debe ser único,
+                  si hay dos con el mismo nombre no sabremos cuál es cuál y se
+                  pueden mezclar sin querer.
+                </p>
               </div>
 
               {/* Textarea */}
               <div className="px-5 pt-4">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Pega aquí el texto editado — Recuerda copiar antes la
+                  Pega aquí el texto editado. Recuerda copiar antes la
                   estructura completa en{" "}
                   <span className="text-indigo-400">Copiar Menú</span>
                 </label>
@@ -1378,7 +1384,6 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
           </div>
         </div>
       )}
-
     </div>
   );
 };
