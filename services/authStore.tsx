@@ -596,6 +596,7 @@ class AuthStore {
         date_of_birth:      profile.dateOfBirth || null,
         currency:           profile.currency || '$',
         navbarconfig:       profile.navbarConfig || 'sidebar',
+        share_digital_menu_message: profile.shareDigitalMenuMessage,
       })
       .eq('id', this.currentUser.id);
     if (error) {

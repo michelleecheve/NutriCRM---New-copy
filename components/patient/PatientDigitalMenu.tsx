@@ -154,6 +154,26 @@ function bannerDismissKey(patientId: string): string {
   return `nutriflow_newer_menu_dismissed_${patientId}`;
 }
 
+function paso2SavedKey(patientId: string): string {
+  return `nutriflow_paso2_goal_saved_${patientId}`;
+}
+
+// `updatePatientPortal` maps its response through `mapPatientFromDb`, which defaults
+// menus/measurements/bioimpedancias/etc. to []. Only merge the portal-related scalar
+// fields it actually touched, so those defaults don't wipe out already-loaded collections.
+function mergePortalUpdate(patient: Patient, updated: Patient): Patient {
+  return {
+    ...patient,
+    portalActive: updated.portalActive,
+    accessToken: updated.accessToken,
+    accessCode: updated.accessCode,
+    portalGoal: updated.portalGoal,
+    portalShowMeasurementsDetail: updated.portalShowMeasurementsDetail,
+    portalMeasurementsConfig: updated.portalMeasurementsConfig,
+    portalPinActive: updated.portalPinActive,
+  };
+}
+
 // ─── Step lock overlay ───────────────────────────────────────────────────────
 
 const StepLockOverlay: React.FC<{ message: string }> = ({ message }) => (
@@ -225,7 +245,9 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   const [templateDirty, setTemplateDirty] = useState(false);
 
   // ── Step progression ──
-  const [paso2Saved, setPaso2Saved] = useState<boolean>(() => !!(patient.portalGoal));
+  const [paso2Saved, setPaso2Saved] = useState<boolean>(
+    () => !!(patient.portalGoal) || localStorage.getItem(paso2SavedKey(patient.id)) === "true",
+  );
 
   // ── Extend plan state ──
   const [extendMode, setExtendMode] = useState(false);
@@ -295,7 +317,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
         patient.id,
         patch,
       );
-      onUpdate({ ...patient, ...updated });
+      onUpdate(mergePortalUpdate(patient, updated));
     } finally {
       setLoading(false);
     }
@@ -310,7 +332,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       const updated = await supabaseService.updatePatientPortal(patient.id, {
         portalShowMeasurementsDetail: next,
       });
-      onUpdate({ ...patient, ...updated });
+      onUpdate(mergePortalUpdate(patient, updated));
     } catch {
       setShowMeasurementsDetail(!next);
     } finally {
@@ -332,7 +354,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       const updated = await supabaseService.updatePatientPortal(patient.id, {
         portalMeasurementsConfig: { antro: measAntro, bio: measBio },
       });
-      onUpdate({ ...patient, ...updated });
+      onUpdate(mergePortalUpdate(patient, updated));
       setMeasConfigDirty(false);
     } finally {
       setSavingMeasConfig(false);
@@ -355,6 +377,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
         .update({ portal_goal: portalGoal || null })
         .eq("id", patient.id);
       onUpdate({ ...patient, portalGoal: portalGoal || null });
+      localStorage.setItem(paso2SavedKey(patient.id), "true");
       setSavedGoal(true);
       setPaso2Saved(true);
       setTimeout(() => setSavedGoal(false), 2000);
@@ -979,8 +1002,10 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                       onClick={async () => {
                         setSavingTemplate(true);
                         try {
-                          const userId = authStore.getCurrentUser()?.id;
-                          if (userId) await supabaseService.updateProfile(userId, { shareDigitalMenuMessage: messageTemplate });
+                          const currentProfile = authStore.getCurrentUser()?.profile;
+                          if (currentProfile) {
+                            await authStore.updateCurrentUserProfile({ ...currentProfile, shareDigitalMenuMessage: messageTemplate });
+                          }
                           setTemplateDirty(false);
                         } finally {
                           setSavingTemplate(false);

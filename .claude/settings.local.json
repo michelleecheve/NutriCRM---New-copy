@@ -39,7 +39,8 @@
       "Bash(npx --no-install esbuild --version)",
       "Bash(node_modules/.bin/esbuild \"supabase/functions/cancel-subscription/index.ts\" --loader=ts --format=esm)",
       "Bash(node_modules/.bin/esbuild \"supabase/functions/cancel-subscription/index.ts\" --bundle --platform=neutral --format=esm --external:https://*)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(git log *)"
     ]
   }
 }
