@@ -321,6 +321,23 @@ class AuthStore {
           supabase.from('profiles').update({ plan: 'free' }).eq('id', user.id);
         }
       }
+
+      // Salvaguarda: si status sigue 'active'/'past_due' pero el período pagado venció hace
+      // más de 5 días (margen para retries/webhooks lentos de Recurrente), no confiar ciegamente
+      // en el status — el webhook de renovación pudo haber fallado en silencio.
+      if (
+        (this.subscription.status === 'active' || this.subscription.status === 'past_due') &&
+        this.subscription.current_period_end
+      ) {
+        const GRACE_DAYS = 5;
+        const graceDeadline = new Date(this.subscription.current_period_end);
+        graceDeadline.setDate(graceDeadline.getDate() + GRACE_DAYS);
+        if (graceDeadline < new Date()) {
+          this.subscription = { ...this.subscription, plan: 'free', status: 'free' };
+          supabase.from('subscriptions').update({ plan: 'free', status: 'cancelled', updated_at: new Date().toISOString() }).eq('owner_id', user.id);
+          supabase.from('profiles').update({ plan: 'free' }).eq('id', user.id);
+        }
+      }
     } else {
       this.subscription = null;
     }

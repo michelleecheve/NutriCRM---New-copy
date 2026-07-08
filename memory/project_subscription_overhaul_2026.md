@@ -45,7 +45,7 @@ Ver regla de trial en [[feedback_trial_activation]].
 | 1 | Eliminar trial de la UI | ✅ Hecho (2026-05-14) |
 | 2 | Renombrar "Gratuito" → "Básico" en toda la UI | ✅ Hecho (2026-05-14) |
 | 3 | Cancelación con período de gracia (CRÍTICO) | ✅ Hecho (2026-05-14) |
-| 4 | Webhook llena `current_period_end` | ✅ Hecho (2026-05-14) |
+| 4 | Webhook llena `current_period_end` | ⚠️ Reabierto y corregido de verdad (2026-07-07) — ver nota abajo |
 | 5 | Configuración en dashboard de Recurrente (manual) | ⬜ Pendiente — hacer en Recurrente dashboard |
 | 6 | Emails transaccionales con Resend | ⏸️ Diferido — retomar cuando haya API key de Resend |
 | 7 | Botón "Cambiar tarjeta" con explicación clara | ✅ Hecho (2026-05-14) |
@@ -114,6 +114,22 @@ supabase functions deploy cancel-subscription
 - [ ] 3.8 **UI `ProfileSubscription.tsx`** — confirmation dialog de cancelación: cambiar "Tu acceso Pro terminará inmediatamente" → "Tu acceso Pro continuará hasta el **[current_period_end]**. Después pasarás al Plan Básico automáticamente."
 - [ ] 3.9 **UI `statusLabel()`** — agregar caso `cancelled_pending`: badge "Pro · Cancela el [fecha]" en color ámbar
 - [ ] 3.10 **UI** — cuando `status === 'cancelled_pending'`, NO mostrar botón "Cancelar suscripción" (ya canceló); mostrar solo info de cuándo expira el acceso
+
+---
+
+## BUG CRÍTICO ENCONTRADO Y CORREGIDO — 2026-07-07
+
+**Síntoma:** a Michelle le cobraron el 15 de junio (renovación real, confirmado en `subscription_events`), pero `subscriptions.current_period_end` se quedó congelado en el 14 de junio. El 7 de julio seguía en `status='active'` con el período vencido hace 23 días y sin ningún bloqueo de acceso.
+
+**Causa raíz real (el Bloque 4 de mayo se marcó ✅ pero nunca funcionó):** el webhook `recurrente-webhook/index.ts` solo tenía `case` para `subscription.renew`/`subscription.renewed`. **Recurrente nunca manda esos eventos.** Los eventos reales que llegan en cada cobro recurrente son `payment_intent.succeeded` e `intent.succeeded` (confirmado inspeccionando el payload real en `subscription_events`). Ambos caían en el `default: unhandled` — se logueaban pero nunca actualizaban la tabla.
+
+Además, el payload de `payment_intent.succeeded` **no trae ningún campo de fecha de próximo cobro** (a diferencia de `setup_intent.succeeded`). Hay que calcular `current_period_end` sumando `billing_interval`/`billing_interval_count` (vienen en `products[].prices[].billing_interval`) a la fecha del cobro (`payload.created_at`), no confiar en `extractPeriodEnd()`.
+
+**Fix aplicado:**
+1. `supabase/functions/recurrente-webhook/index.ts` — agregado `case 'payment_intent.succeeded'` (calcula el período sumando el intervalo de facturación) y `case 'intent.succeeded'` (no-op, es el mismo cobro duplicado con otro nombre de evento). Desplegado manualmente por Michelle el 2026-07-07.
+2. `services/authStore.tsx` (`handleSupabaseSession`) — agregado safety-net: si `status` es `active`/`past_due` y `current_period_end` venció hace más de 5 días, hace auto-downgrade a `free` en vez de confiar ciegamente en `status`. Antes esto solo existía para `cancelled_pending`. Antes de desplegar este cambio en frontend, se corrigió manualmente la fila de Michelle (`current_period_start`/`current_period_end` = 15 jun → 15 jul) para que este safety-net no la bajara de plan por error.
+
+**Pendiente de verificar:** confirmar en el dashboard de Recurrente si esta suscripción específica (`su_5kjl9lj5`) sigue anclada a `billing_cycle_anchor_day: 1` en el precio — eso fue probablemente la causa del problema original ("cobro el 1ro del mes"). El campo seguía apareciendo en el payload del 15 de junio pese a que Michelle dice haber corregido la configuración.
 
 ---
 

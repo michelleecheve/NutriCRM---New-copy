@@ -263,6 +263,52 @@ serve(async (req: Request) => {
       break;
     }
 
+    case 'payment_intent.succeeded': {
+      // Recurrente no manda subscription.renew para cobros recurrentes — el evento real es
+      // payment_intent.succeeded. Su payload no trae fecha de próximo cobro, así que se calcula
+      // desde el billing_interval del precio recurrente en vez de confiar en un campo inexistente.
+      const paymentObj      = (payload.payment as Record<string, unknown> | undefined) ?? (checkout?.payment as Record<string, unknown> | undefined);
+      const paymentable     = paymentObj?.paymentable as Record<string, unknown> | undefined;
+      const isSubscription  = paymentable?.type === 'Subscription';
+
+      if (!isSubscription) {
+        console.log(`payment_intent.succeeded for owner ${ownerId} is not a subscription payment — ignored`);
+        break;
+      }
+
+      const products        = (payload.products as Record<string, unknown>[] | undefined) ?? [];
+      const recurringPrice  = products
+        .flatMap(p => (p.prices as Record<string, unknown>[] | undefined) ?? [])
+        .find(pr => pr.charge_type === 'recurring');
+
+      const intervalCount = (recurringPrice?.billing_interval_count as number) || 1;
+      const interval       = (recurringPrice?.billing_interval as string) || 'month';
+
+      const chargedAt = new Date((payload.created_at as string) ?? Date.now());
+      const periodEnd = new Date(chargedAt);
+      if (interval === 'year')      periodEnd.setFullYear(periodEnd.getFullYear() + intervalCount);
+      else if (interval === 'week') periodEnd.setDate(periodEnd.getDate() + 7 * intervalCount);
+      else if (interval === 'day')  periodEnd.setDate(periodEnd.getDate() + intervalCount);
+      else                          periodEnd.setMonth(periodEnd.getMonth() + intervalCount); // 'month' default
+
+      await supabase.from('subscriptions').upsert({
+        owner_id: ownerId, plan: 'pro', status: 'active',
+        recurrente_subscription_id: (paymentable?.id as string) ?? recurrenteSubId ?? null,
+        current_period_start: chargedAt.toISOString(),
+        current_period_end:   periodEnd.toISOString(),
+        updated_at:           new Date().toISOString(),
+      }, { onConflict: 'owner_id' });
+      await supabase.from('profiles').update({ plan: 'pro' }).eq('id', ownerId);
+      console.log(`Renewed (payment_intent.succeeded) for owner ${ownerId}: ${chargedAt.toISOString()} → ${periodEnd.toISOString()}`);
+      break;
+    }
+
+    case 'intent.succeeded': {
+      // Mismo cobro que payment_intent.succeeded bajo otro nombre de evento — no reprocesar.
+      console.log(`intent.succeeded for owner ${ownerId} — duplicate of payment_intent.succeeded, ignored`);
+      break;
+    }
+
     case 'subscription.past_due': {
       await supabase.from('subscriptions').upsert({
         owner_id: ownerId, plan: 'pro', status: 'past_due', updated_at: new Date().toISOString(),
