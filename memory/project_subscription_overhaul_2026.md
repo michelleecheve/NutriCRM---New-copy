@@ -48,7 +48,7 @@ Ver regla de trial en [[feedback_trial_activation]].
 | 4 | Webhook llena `current_period_end` | ⚠️ Reabierto y corregido de verdad (2026-07-07) — ver nota abajo |
 | 5 | Configuración en dashboard de Recurrente (manual) | ⬜ Pendiente — hacer en Recurrente dashboard |
 | 6 | Emails transaccionales con Resend | ⏸️ Diferido — retomar cuando haya API key de Resend |
-| 7 | Botón "Cambiar tarjeta" con explicación clara | ✅ Hecho (2026-05-14) |
+| 7 | Botón "Cambiar tarjeta" — ahora cambia la tarjeta de verdad, sin cancelar | ✅ Rehecho (2026-07-07) — ver nota abajo |
 | 8 | Timing fix checkout-success | ✅ Hecho (2026-05-14) — polling 2s × 5 intentos |
 | 9 | Manejo correcto de `past_due` | ✅ Hecho (2026-05-14) — isPro() incluye past_due |
 | 10 | Limpieza de código legacy | ✅ Hecho (2026-05-14) |
@@ -130,6 +130,34 @@ Además, el payload de `payment_intent.succeeded` **no trae ningún campo de fec
 2. `services/authStore.tsx` (`handleSupabaseSession`) — agregado safety-net: si `status` es `active`/`past_due` y `current_period_end` venció hace más de 5 días, hace auto-downgrade a `free` en vez de confiar ciegamente en `status`. Antes esto solo existía para `cancelled_pending`. Antes de desplegar este cambio en frontend, se corrigió manualmente la fila de Michelle (`current_period_start`/`current_period_end` = 15 jun → 15 jul) para que este safety-net no la bajara de plan por error.
 
 **Pendiente de verificar:** confirmar en el dashboard de Recurrente si esta suscripción específica (`su_5kjl9lj5`) sigue anclada a `billing_cycle_anchor_day: 1` en el precio — eso fue probablemente la causa del problema original ("cobro el 1ro del mes"). El campo seguía apareciendo en el payload del 15 de junio pese a que Michelle dice haber corregido la configuración.
+
+---
+
+## FEATURE — Cambiar tarjeta sin cancelar (2026-07-07)
+
+**Problema del flujo viejo (Bloque 7 original):** el botón "Cambiar tarjeta" solo mostraba instrucciones — cancelar y volver a suscribirse. Michelle detectó el riesgo real: si cancelás y volvés a suscribirte antes de que termine tu período pagado, ¿te cobra dos veces? (Resulta que no — `startCheckout()` bloquea re-suscripción mientras `status` sea `active`/`cancelled_pending` — pero igual es una UX mala: hay que esperar exactamente hasta `current_period_end` para poder cambiar de tarjeta, y se pierde el cupón/precio original al crear una suscripción nueva desde cero.)
+
+**Solución implementada:** Recurrente soporta actualizar el método de pago de una suscripción existente sin cancelarla — guía oficial: https://docs.recurrente.com/guias-espanol/guias/cambiar-tarjeta-de-suscripcion.md
+
+Flujo: (1) checkout `mode: "setup"` con `user_id` del cliente en Recurrente → tokeniza tarjeta nueva sin cobrar nada; (2) webhook recibe `setup_intent.succeeded` con `checkout.payment_method.id`; (3) `PUT /api/subscriptions/{id}` con `payment_method_id` → reemplaza la tarjeta en la suscripción activa, mismo ciclo de facturación, sin tocar `current_period_end`.
+
+**Archivos:**
+- `supabase/functions/update-payment-method/index.ts` (nueva) — crea el checkout `mode=setup`, requiere `RECURRENTE_API_SECRET_KEY` (secret nuevo, **distinto** de `RECURRENTE_SECRET_KEY` que es el secret de firma Svix del webhook)
+- `supabase/functions/recurrente-webhook/index.ts` — el case `setup_intent.succeeded`/`subscription.create` ahora revisa `metadata.purpose === 'update_card'` primero; si es así, hace el PUT a Recurrente y no toca plan/status/período. También captura `recurrente_customer_id` (`payload.user_id`, formato `us_...`) en cada upsert — se necesita para poder armar el checkout `mode=setup` la próxima vez.
+- `services/authStore.tsx` — nuevo método `updatePaymentMethod()`
+- `components/profile_config/ProfileSubscription.tsx` — el botón "Cambiar tarjeta" ahora llama directo al flujo nuevo (se eliminó el modal de instrucciones manual); habilitado también para `status === 'past_due'`
+- `pages/CheckoutSuccess.tsx` — detecta `?type=card_update` en la URL y muestra mensaje distinto ("Tarjeta actualizada" en vez de "Pago exitoso")
+
+**Migración BD requerida (pendiente confirmar que Michelle la corrió):**
+```sql
+alter table subscriptions add column if not exists recurrente_customer_id text;
+update subscriptions set recurrente_customer_id = 'us_8hehsrlf'
+where owner_id = '2200646d-db1f-4764-83cd-0e4a901b86ea';
+```
+
+**Secret nuevo requerido:** `RECURRENTE_API_SECRET_KEY` (Secret Key real de Recurrente, `sk_...`, sacarla del dashboard de Recurrente) — sin esto ni `update-payment-method` ni el nuevo branch del webhook funcionan.
+
+**Riesgo sin verificar todavía:** no hay confirmación de que Recurrente efectivamente eche de vuelta `checkout.metadata` en el payload de `setup_intent.succeeded` para checkouts `mode=setup` (la guía oficial no lo muestra en su ejemplo abreviado). Si `metadata.purpose` no llega, el evento cae en la rama de "activar Pro" en vez de la de cambio de tarjeta — no cobra ni cancela nada, pero sí resetearía `current_period_start`/`current_period_end` incorrectamente (+30 días desde hoy). **Probar el flujo completo una vez y revisar el payload real en `subscription_events` antes de confiar en él.**
 
 ---
 

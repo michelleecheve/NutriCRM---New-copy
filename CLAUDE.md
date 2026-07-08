@@ -228,11 +228,12 @@ calendar_id, created_at, updated_at
 ### `subscriptions`
 ```
 id, owner_id, plan (default 'free'), status (default 'free'),
-recurrente_subscription_id, recurrente_product_id,
+recurrente_subscription_id, recurrente_product_id, recurrente_customer_id,
 trial_started_at, trial_ends_at,
 current_period_start, current_period_end,
 created_at, updated_at, cancelled_at
 ```
+> ⚠️ `recurrente_customer_id` (columna `us_...`) agregada 2026-07-07 — necesaria para el flujo de "cambiar tarjeta sin cancelar" (`update-payment-method`). Se llena automáticamente desde `payload.user_id` en cada evento del webhook.
 
 ### `subscription_events`
 ```

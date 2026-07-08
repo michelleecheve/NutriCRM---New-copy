@@ -6,9 +6,17 @@ type VerifyStatus = 'checking' | 'confirmed' | 'timeout';
 
 export const CheckoutSuccess: React.FC<{ onGoToProfile: () => void }> = ({ onGoToProfile }) => {
   const [verifyStatus, setVerifyStatus] = useState<VerifyStatus>('checking');
+  const [isCardUpdate] = useState(() => new URLSearchParams(window.location.search).get('type') === 'card_update');
 
   useEffect(() => {
     window.history.replaceState({}, '', '/checkout-success');
+
+    // Cambio de tarjeta: no hay status de suscripción que esperar, solo refrescamos
+    // por si acaso y confirmamos de una vez — el swap real lo hace el webhook aparte.
+    if (isCardUpdate) {
+      authStore.refreshSubscription().finally(() => setVerifyStatus('confirmed'));
+      return;
+    }
 
     let attempts = 0;
     const MAX_ATTEMPTS = 5; // 5 × 2s = 10s
@@ -29,7 +37,7 @@ export const CheckoutSuccess: React.FC<{ onGoToProfile: () => void }> = ({ onGoT
     };
 
     poll();
-  }, []);
+  }, [isCardUpdate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-slate-50 flex items-center justify-center p-6">
@@ -48,25 +56,34 @@ export const CheckoutSuccess: React.FC<{ onGoToProfile: () => void }> = ({ onGoT
         {/* Título */}
         <div className="space-y-2">
           <h1 className="text-2xl font-black text-slate-800">
-            {verifyStatus === 'checking'  ? 'Verificando tu pago...'    : 'Pago exitoso'}
+            {isCardUpdate
+              ? (verifyStatus === 'checking' ? 'Actualizando tarjeta...' : 'Tarjeta actualizada')
+              : (verifyStatus === 'checking' ? 'Verificando tu pago...'  : 'Pago exitoso')}
           </h1>
           <p className="text-slate-500 text-sm leading-relaxed">
-            {verifyStatus === 'checking' && 'Estamos confirmando tu suscripción. Esto toma unos segundos.'}
-            {verifyStatus === 'confirmed' && <>Tu suscripción <span className="font-bold text-emerald-600">NutriFlow Pro</span> está activa. ¡Bienvenida al plan completo!</>}
-            {verifyStatus === 'timeout'  && 'Tu pago fue procesado. Si tu plan no aparece actualizado, recarga la página en unos minutos.'}
+            {isCardUpdate
+              ? (verifyStatus === 'confirmed' ? 'Tu método de pago fue actualizado. Los próximos cobros usarán esta nueva tarjeta.' : 'Confirmando el cambio...')
+              : <>
+                  {verifyStatus === 'checking' && 'Estamos confirmando tu suscripción. Esto toma unos segundos.'}
+                  {verifyStatus === 'confirmed' && <>Tu suscripción <span className="font-bold text-emerald-600">NutriFlow Pro</span> está activa. ¡Bienvenida al plan completo!</>}
+                  {verifyStatus === 'timeout'  && 'Tu pago fue procesado. Si tu plan no aparece actualizado, recarga la página en unos minutos.'}
+                </>
+            }
           </p>
         </div>
 
         {/* Beneficios */}
-        <div className="bg-emerald-50 rounded-xl p-4 text-left space-y-2">
-          <p className="text-xs font-bold text-emerald-700 uppercase tracking-wide flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5" /> Lo que tienes ahora
-          </p>
-          <ul className="space-y-1.5 text-sm text-emerald-800">
-            <li>Pacientes ilimitados</li>
-            <li>Citas y facturas ilimitadas</li>
-          </ul>
-        </div>
+        {!isCardUpdate && (
+          <div className="bg-emerald-50 rounded-xl p-4 text-left space-y-2">
+            <p className="text-xs font-bold text-emerald-700 uppercase tracking-wide flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5" /> Lo que tienes ahora
+            </p>
+            <ul className="space-y-1.5 text-sm text-emerald-800">
+              <li>Pacientes ilimitados</li>
+              <li>Citas y facturas ilimitadas</li>
+            </ul>
+          </div>
+        )}
 
         {/* CTA — solo visible cuando ya confirmado o timeout */}
         {verifyStatus !== 'checking' && (

@@ -10,7 +10,6 @@ export const ProfileSubscription: React.FC = () => {
   const [isLoading, setIsLoading]             = useState(false);
   const [msg, setMsg]                         = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [showCardModal, setShowCardModal]         = useState(false);
 
   const formatDate = (iso: string | null) => {
     if (!iso) return '';
@@ -40,6 +39,17 @@ export const ProfileSubscription: React.FC = () => {
     setIsLoading(false);
   };
 
+  const handleUpdateCard = async () => {
+    setIsLoading(true);
+    setMsg(null);
+    const result = await authStore.updatePaymentMethod();
+    if (!result.ok) {
+      setMsg(result.message ?? 'Error al actualizar tarjeta.');
+      setIsLoading(false);
+    }
+    // En éxito, updatePaymentMethod ya redirige — no hace falta setIsLoading(false) aquí.
+  };
+
   const handleCancel = async () => {
     setIsLoading(true);
     setMsg(null);
@@ -55,7 +65,7 @@ export const ProfileSubscription: React.FC = () => {
 
   const isCancelledPending = sub?.status === 'cancelled_pending';
   const showCancelButton   = (sub?.status === 'active' || sub?.status === 'past_due') && !isCancelledPending && !showCancelConfirm;
-  const showCardButton     = !!sub?.recurrente_subscription_id && (sub?.status === 'active' || isCancelledPending);
+  const showCardButton     = !!sub?.recurrente_subscription_id && (sub?.status === 'active' || sub?.status === 'past_due' || isCancelledPending);
 
   return (
     <div className="space-y-4">
@@ -138,7 +148,7 @@ export const ProfileSubscription: React.FC = () => {
               <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-bold text-red-700">Pago pendiente</p>
-                <p className="text-xs text-red-600">Tu suscripción tiene un pago sin completar. Para resolverlo, cancela tu suscripción actual y vuelve a suscribirte con un método de pago válido.</p>
+                <p className="text-xs text-red-600">Tu suscripción tiene un pago sin completar. Para resolverlo, actualiza tu tarjeta de pago abajo.</p>
               </div>
             </div>
           )}
@@ -157,33 +167,16 @@ export const ProfileSubscription: React.FC = () => {
           )}
 
           {/* Cambiar tarjeta */}
-          {showCardButton && !showCardModal && (
+          {showCardButton && (
             <button
               type="button"
-              onClick={() => setShowCardModal(true)}
-              className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+              onClick={handleUpdateCard}
+              disabled={isLoading}
+              className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors disabled:opacity-50"
             >
               <RefreshCw className="w-4 h-4" />
-              Cambiar tarjeta de pago
+              {isLoading ? 'Redirigiendo...' : 'Cambiar tarjeta de pago'}
             </button>
-          )}
-
-          {showCardModal && (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-bold text-slate-700">¿Cómo cambiar tu tarjeta?</p>
-              <ol className="text-xs text-slate-600 space-y-1.5 list-decimal list-inside">
-                <li>Cancela tu suscripción actual (seguirás con acceso Pro hasta el {formatDate(sub?.current_period_end ?? null)}).</li>
-                <li>Cuando expire, vuelve a suscribirte aquí con la nueva tarjeta.</li>
-              </ol>
-              <p className="text-xs text-slate-400">Tus datos y pacientes nunca se eliminan.</p>
-              <button
-                type="button"
-                onClick={() => setShowCardModal(false)}
-                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                Cerrar
-              </button>
-            </div>
           )}
 
           {/* Cancel confirmation */}

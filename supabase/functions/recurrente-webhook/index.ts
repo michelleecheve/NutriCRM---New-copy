@@ -180,8 +180,9 @@ serve(async (req: Request) => {
     ?? (eventType === 'subscription.create' ? eventId : undefined)
   );
 
-  const metadataOwnerId = metadata?.owner_id as string | undefined;
-  const customerEmail   = (payload.customer_email as string | undefined) ?? (customer?.email as string | undefined);
+  const metadataOwnerId     = metadata?.owner_id as string | undefined;
+  const customerEmail       = (payload.customer_email as string | undefined) ?? (customer?.email as string | undefined);
+  const recurrenteCustomerId = payload.user_id as string | undefined;
 
   let ownerId: string | null = metadataOwnerId ?? null;
   if (!ownerId && customerEmail?.includes('@')) {
@@ -208,10 +209,39 @@ serve(async (req: Request) => {
 
     case 'setup_intent.succeeded':
     case 'subscription.create': {
+      // Cambio de tarjeta sin cancelar: checkout mode=setup creado por update-payment-method,
+      // identificado por metadata.purpose. Solo reemplaza la tarjeta en Recurrente — no toca
+      // plan/status/período, así que se maneja aparte y no sigue al flujo de "activar Pro".
+      if (metadata?.purpose === 'update_card') {
+        const newPaymentMethodId = (checkout?.payment_method as Record<string, unknown> | undefined)?.id as string | undefined;
+        if (!newPaymentMethodId) {
+          console.error(`update_card for owner ${ownerId} — no payment_method.id in payload`);
+          break;
+        }
+        const { data: existingSub } = await supabase.from('subscriptions').select('recurrente_subscription_id').eq('owner_id', ownerId).single();
+        if (!existingSub?.recurrente_subscription_id) {
+          console.error(`update_card for owner ${ownerId} — no recurrente_subscription_id on file`);
+          break;
+        }
+        const RECURRENTE_API_SECRET_KEY = Deno.env.get('RECURRENTE_API_SECRET_KEY')!;
+        const updateRes = await fetch(`https://app.recurrente.com/api/subscriptions/${existingSub.recurrente_subscription_id}`, {
+          method:  'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-SECRET-KEY': RECURRENTE_API_SECRET_KEY },
+          body:    JSON.stringify({ payment_method_id: newPaymentMethodId }),
+        });
+        if (!updateRes.ok) {
+          console.error('Recurrente update payment_method error:', updateRes.status, await updateRes.text());
+        } else {
+          console.log(`Payment method updated for owner ${ownerId}`);
+        }
+        break;
+      }
+
       const periodEnd = extractPeriodEnd(payload, subObj);
       await supabase.from('subscriptions').upsert({
         owner_id: ownerId, plan: 'pro', status: 'active',
         recurrente_subscription_id: recurrenteSubId ?? null,
+        recurrente_customer_id:     recurrenteCustomerId ?? null,
         current_period_start: new Date().toISOString(),
         current_period_end:   periodEnd,
         updated_at:           new Date().toISOString(),
@@ -294,6 +324,7 @@ serve(async (req: Request) => {
       await supabase.from('subscriptions').upsert({
         owner_id: ownerId, plan: 'pro', status: 'active',
         recurrente_subscription_id: (paymentable?.id as string) ?? recurrenteSubId ?? null,
+        recurrente_customer_id:     recurrenteCustomerId ?? null,
         current_period_start: chargedAt.toISOString(),
         current_period_end:   periodEnd.toISOString(),
         updated_at:           new Date().toISOString(),

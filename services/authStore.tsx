@@ -725,6 +725,23 @@ class AuthStore {
     return this.subscription;
   }
 
+  /** Inicia el flujo de cambio de tarjeta (checkout mode=setup) sin cancelar la suscripción actual. */
+  async updatePaymentMethod(): Promise<{ ok: boolean; message?: string }> {
+    const user = this.currentUser;
+    if (!user || user.role !== 'nutricionista') return { ok: false, message: 'No aplica.' };
+
+    try {
+      const { data, error } = await supabase.functions.invoke('update-payment-method');
+      if (error) return { ok: false, message: 'Error de conexión al iniciar la actualización.' };
+      const body = data as { ok: boolean; message?: string; checkout_url?: string };
+      if (!body.ok || !body.checkout_url) return { ok: false, message: body.message ?? 'Error al actualizar tarjeta.' };
+      window.location.href = body.checkout_url;
+      return { ok: true };
+    } catch {
+      return { ok: false, message: 'Error de conexión al iniciar la actualización.' };
+    }
+  }
+
   /** Recarga el estado de suscripción desde Supabase (útil al volver del checkout). */
   async refreshSubscription(): Promise<void> {
     const user = this.currentUser;
