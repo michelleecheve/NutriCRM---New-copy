@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, ArrowRight, AlertCircle, User, Globe, Camera, ArrowLeft, MapPin, Calendar } from 'lucide-react';
+import { Lock, Mail, ArrowRight, AlertCircle, User, Globe, Camera, ArrowLeft, MapPin, Calendar, Coins } from 'lucide-react';
 import { authStore } from '../services/authStore';
 import { supabaseService } from '../services/supabaseService';
 import { compressImage } from '../services/imageUtils';
@@ -38,6 +38,42 @@ const COUNTRIES = [
   'Uzbekistán','Vanuatu','Venezuela','Vietnam','Yemen','Yibuti','Zambia','Zimbabue',
 ];
 
+const CURRENCIES: { symbol: string; label: string }[] = [
+  { symbol: '$',    label: '$ - Dólar (USD)'             },
+  { symbol: 'Q',    label: 'Q - Quetzal (GTQ)'           },
+  { symbol: 'MX$',  label: 'MX$ - Peso Mexicano (MXN)'  },
+  { symbol: 'COP$', label: 'COP$ - Peso Colombiano'      },
+  { symbol: 'S/',   label: 'S/ - Sol Peruano (PEN)'      },
+  { symbol: 'CLP$', label: 'CLP$ - Peso Chileno'         },
+  { symbol: 'ARS$', label: 'ARS$ - Peso Argentino'       },
+  { symbol: 'R$',   label: 'R$ - Real Brasileño (BRL)'   },
+  { symbol: 'L',    label: 'L - Lempira (HNL)'           },
+  { symbol: 'C$',   label: 'C$ - Córdoba (NIO)'          },
+  { symbol: '₡',    label: '₡ - Colón (CRC)'             },
+  { symbol: 'B/.',  label: 'B/. - Balboa (PAB)'          },
+  { symbol: 'RD$',  label: 'RD$ - Peso Dominicano'       },
+  { symbol: 'Bs.',  label: 'Bs. - Boliviano (BOB)'       },
+  { symbol: 'Gs.',  label: 'Gs. - Guaraní (PYG)'         },
+  { symbol: '$U',   label: '$U - Peso Uruguayo (UYU)'    },
+  { symbol: 'Bs.F', label: 'Bs.F - Bolívar (VES)'        },
+  { symbol: '€',    label: '€ - Euro (EUR)'              },
+  { symbol: '£',    label: '£ - Libra Esterlina (GBP)'   },
+  { symbol: 'CA$',  label: 'CA$ - Dólar Canadiense'      },
+  { symbol: 'A$',   label: 'A$ - Dólar Australiano'      },
+  { symbol: '¥',    label: '¥ - Yen (JPY)'               },
+  { symbol: 'CHF',  label: 'CHF - Franco Suizo'          },
+];
+
+const COUNTRY_CURRENCY: Record<string, string> = {
+  'Guatemala': 'Q', 'México': 'MX$', 'Colombia': 'COP$', 'Perú': 'S/',
+  'Chile': 'CLP$', 'Argentina': 'ARS$', 'Brasil': 'R$', 'Honduras': 'L',
+  'Nicaragua': 'C$', 'Costa Rica': '₡', 'Panamá': 'B/.', 'República Dominicana': 'RD$',
+  'Bolivia': 'Bs.', 'Paraguay': 'Gs.', 'Uruguay': '$U', 'Venezuela': 'Bs.F',
+  'España': '€', 'Estados Unidos': '$', 'Canadá': 'CA$', 'Australia': 'A$',
+  'Reino Unido': '£', 'Japón': '¥', 'Suiza': 'CHF', 'Ecuador': '$',
+  'El Salvador': '$', 'Cuba': '$', 'Puerto Rico': '$',
+};
+
 const UTC_TIMEZONES = [
   "UTC-12:00","UTC-11:00","UTC-10:00","UTC-09:30","UTC-09:00","UTC-08:00",
   "UTC-07:00","UTC-06:00","UTC-05:00","UTC-04:00","UTC-03:30","UTC-03:00",
@@ -68,6 +104,7 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
     return UTC_TIMEZONES.includes(local) ? local : 'UTC±00:00';
   });
   const [country, setCountry] = useState('');
+  const [currency, setCurrency] = useState('$');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -102,7 +139,7 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
       // Or we can use a temporary ID or just update after.
       // Actually, my updated authStore.signUp creates the profile.
       
-      const result = await authStore.signUp(email, password, fullName, role, timezone, undefined, country, dateOfBirth);
+      const result = await authStore.signUp(email, password, fullName, role, timezone, undefined, country, dateOfBirth, currency);
       
       if (!result.ok) {
         setError(result.message || 'Error al registrarse.');
@@ -254,7 +291,12 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none z-10" />
                   <select
                     value={country}
-                    onChange={(e) => setCountry(e.target.value)}
+                    onChange={(e) => {
+                      const newCountry = e.target.value;
+                      setCountry(newCountry);
+                      const suggested = COUNTRY_CURRENCY[newCountry];
+                      if (suggested) setCurrency(suggested);
+                    }}
                     className={`w-full pl-12 pr-4 py-3 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all font-medium appearance-none ${country === '' ? 'text-slate-400' : 'text-slate-900'}`}
                   >
                     <option value="" disabled>Selecciona tu país</option>
@@ -277,6 +319,23 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
                   />
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Moneda</label>
+              <div className="relative">
+                <Coins className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-slate-900 font-medium appearance-none"
+                >
+                  {CURRENCIES.map(c => (
+                    <option key={c.symbol} value={c.symbol}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-[10px] text-slate-400 px-1 mt-1">Sugerida según tu país. Podrás cambiarla luego en tu perfil.</p>
             </div>
 
             {error && (

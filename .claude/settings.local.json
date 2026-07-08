@@ -44,7 +44,11 @@
       "Bash(chromium-cli --help)",
       "Bash(pkill -f \"vite\")",
       "Bash(powershell -NoProfile -Command 'Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '\\\\''*vite*'\\\\'' } | Stop-Process -Force')",
-      "Bash(taskkill //F //IM node.exe //FI \"WINDOWTITLE eq *vite*\")"
+      "Bash(taskkill //F //IM node.exe //FI \"WINDOWTITLE eq *vite*\")",
+      "Bash(sed -i \"s/—/-/g\" pages/Register.tsx)",
+      "Bash(grep -n \"symbol: '\\\\$',\" pages/Register.tsx)",
+      "Bash(sed -i \"84,106s/—/-/g\" pages/Profile.tsx)",
+      "Bash(grep -n \"symbol: '\\\\$',\" pages/Profile.tsx)"
     ]
   }
 }

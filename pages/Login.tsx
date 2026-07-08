@@ -236,7 +236,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
               className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-70 mt-4"
             >
               {isLoading ? (
-                <span>Verificando...</span>
+                <span className="flex items-center gap-1.5">
+                  <span>Verificando</span>
+                  <span className="flex items-center gap-0.5">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" />
+                  </span>
+                </span>
               ) : (
                 <>
                   <span>Iniciar Sesión</span>
