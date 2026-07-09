@@ -162,6 +162,14 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
       }
 
       setIsLoading(false);
+
+      if (!authStore.isAuthenticated()) {
+        // Supabase requiere confirmación de correo antes de crear sesión —
+        // no hay usuario autenticado todavía, así que no podemos navegar al panel.
+        setError('Cuenta creada. Revisa tu correo para confirmar tu cuenta antes de iniciar sesión.');
+        return;
+      }
+
       onSuccess();
     } catch (err) {
       setIsLoading(false);

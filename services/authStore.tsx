@@ -380,6 +380,14 @@ class AuthStore {
       return { ok: false, message: 'Error al crear el perfil de usuario.' };
     }
 
+    // Sincronizar currentUser inmediatamente (igual que en login()).
+    // Sin esto, Register.tsx navega antes de que el listener async de
+    // onAuthStateChange termine de poblar el usuario, dejando App.tsx
+    // en pantalla blanca hasta recargar.
+    if (data.session) {
+      await this.handleSupabaseSession(data.session);
+    }
+
     return { ok: true };
   }
 
