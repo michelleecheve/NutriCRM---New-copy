@@ -78,7 +78,7 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
           <SectionHeader icon={Utensils} title="Perfil Dietético Actual" />
           <SaveButton onSave={handleSave} size="sm" />
         </div>
-        <div className="grid grid-cols-1 gap-6">
+        <div data-tour="patient-dietary-preferences" className="grid grid-cols-1 gap-6">
           <ModernTextArea
             label="Preferencias y Aversiones"
             value={localPatient.dietary.preferences}
@@ -104,6 +104,7 @@ export const DietaryTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => 
 
           <div className="flex flex-col items-start sm:items-end gap-1.5">
             <button
+              data-tour="patient-dietary-new-btn"
               type="button"
               onClick={() => { setEditingId(null); setView('edit'); }}
               disabled={patientEvaluations.length === 0}

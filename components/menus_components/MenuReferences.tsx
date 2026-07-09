@@ -1523,7 +1523,7 @@ export const MenuReferences: React.FC<{
                 </h3>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {activeRefTab === "SEMANAL"
-                    ? "Menús semanales de referencia que la IA usa como base."
+                    ? "Menús semanales de referencia que puedes copiar como base."
                     : "Plantillas de intercambio de alimentos reutilizables."}
                 </p>
               </div>
@@ -1591,7 +1591,7 @@ export const MenuReferences: React.FC<{
               <p className="text-slate-500 text-sm max-w-sm mx-auto">
                 {activeRefTab === "INTERCAMBIO"
                   ? "Crea plantillas de intercambio de alimentos para reutilizarlas en futuros menús."
-                  : "Agrega menús reales como referencia. La IA los usará para generar planes personalizados."}
+                  : "Agrega menús reales como referencia para copiarlos como base al crear nuevos planes."}
               </p>
               <button
                 onClick={openNew}

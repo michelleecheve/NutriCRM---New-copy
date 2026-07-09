@@ -62,10 +62,11 @@ export const EvaluationsTab: React.FC<{
   const lastRegisteredId = store.getLatestEvaluationId(patientId);
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+    <div data-tour="patient-evaluations-panel" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <SectionHeader icon={Calendar} title="Evaluaciones" />
         <button
+          data-tour="evaluations-create-today-btn"
           type="button"
           onClick={handleCreateToday}
           className="flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-900 text-white font-bold text-sm hover:bg-slate-800 transition-colors w-fit"
@@ -100,6 +101,7 @@ export const EvaluationsTab: React.FC<{
                     return (
                       <button
                         key={ev.id}
+                        data-tour="evaluations-row"
                         type="button"
                         onClick={() => handleOpenDetail(ev.id)}
                         className="w-full text-left grid grid-cols-12 gap-4 px-6 py-4 hover:bg-slate-50 transition-colors items-center"

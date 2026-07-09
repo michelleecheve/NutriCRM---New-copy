@@ -16,6 +16,8 @@ import { MenuRecommendations } from '../components/menus_components/MenuRecommen
 import { MenuWrapper } from '../components/menus_components/MenuWrapper';
 import { FileText, ClipboardList, History, Smartphone } from 'lucide-react';
 import { MenuPatientPortal } from '../components/menus_components/MenuPatientPortal';
+import { PageGuideButton } from '../components/tour/PageGuideButton';
+import { getMenusGuideSteps } from '../components/tour/pageGuides/menus';
 
 const MOCK_MEAL_ORDER = ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
 
@@ -351,6 +353,10 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
   const dataWithLogo = {
     ...mockData,
     sectionTitles,
+    weeklyMenu: {
+      ...mockData.weeklyMenu,
+      domingoMode: selectedTemplate.startsWith('plantilla_v2') ? 'completo' : 'libre',
+    },
     nutritionist: {
       ...mockData.nutritionist,
       logoUrl: headerMode === 'logo' ? logoUrl : undefined,
@@ -368,7 +374,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
             </div>
             <div>
               <h3 className="font-bold text-slate-900">Plantilla Base del Menú</h3>
-              <p className="text-sm text-slate-500 mt-0.5">Diseño A4 que se usa al generar e imprimir cualquier menú</p>
+              <p className="text-sm text-slate-500 mt-0.5">Edita aquí el diseño default de tu menú (con este diseño empezarás cada nuevo menú)</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -446,29 +452,6 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
           />
         </div>
       )}
-
-      {/* Info cards — dinámicas según plantilla */}
-      <div className="p-6 bg-slate-50/50 border-b border-slate-100">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <span className="text-emerald-600 font-bold text-xs uppercase tracking-wide">Estructura: </span>
-            <span className="text-slate-800 font-semibold text-sm">Hoja 1: Menú + Hoja 2: Recomendaciones</span>
-            <div className="text-slate-500 text-xs mt-0.5">
-              {selectedTemplate.startsWith('plantilla_v2') ? 'Tabla Porciones + Menú 7 días' : 'Tabla Porciones + Menú 6 días'}
-              {selectedTemplate.endsWith('_4col') ? ' · Grid 4 columnas' : ' · Grid 3 columnas'}
-            </div>
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <span className="text-emerald-600 font-bold text-xs uppercase tracking-wide">Versión: </span>
-            <span className="text-slate-800 font-semibold text-sm">
-              {selectedTemplate.startsWith('plantilla_v2') ? 'Plantilla V2' : 'Plantilla V1'}
-            </span>
-            <div className="text-slate-500 text-xs mt-0.5">
-              {selectedTemplate.startsWith('plantilla_v2') ? 'Domingo con tiempos de comida' : 'Domingo día libre'}
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Personalizar Membrete */}
       <div className="border-b border-slate-100">
@@ -568,7 +551,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
 
         {footerOpen && (
         <div className="px-6 pb-6">
-        <p className="text-xs text-slate-500 mb-3">Selecciona qué información aparece en el pie de página del menú.</p>
+        <p className="text-xs text-slate-500 mb-3">Selecciona qué información aparece en el pie de página del menú. Recuerda completar esta información en la página de perfil.</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {FOOTER_FIELDS.map(({ key, label }) => (
             <label
@@ -697,6 +680,7 @@ const PlantillaBaseSection: React.FC<{ hideHeader?: boolean; hideContainer?: boo
               templateDesign={selectedTemplate as any}
               pageLayout={pageLayout}
               visualTheme={visualTheme}
+              domingoMode={selectedTemplate.startsWith('plantilla_v2') ? 'completo' : 'libre'}
               onChange={(updates) => {
                 if (updates.visualTheme) {
                   setVisualTheme(updates.visualTheme);
@@ -742,9 +726,12 @@ export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => v
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Gestión de Menús</h2>
-        <p className="text-slate-500 mt-1">Administra la plantilla base y las referencias que usa la IA para generar menús.</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Gestión de Menús</h2>
+          <p className="text-slate-500 mt-1">Diseño, plantillas, portal digital e historial de tus menús.</p>
+        </div>
+        <PageGuideButton steps={getMenusGuideSteps(() => toggleConfig(true))} />
       </div>
 
       {/* Configuración de Menús — grupo colapsable */}
@@ -759,7 +746,7 @@ export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => v
             </div>
             <div className="text-left">
               <h3 className="font-bold text-slate-900">Configuración de Menús</h3>
-              <p className="text-sm text-slate-500 mt-0.5">Plantilla base, referencias, recomendaciones y portal del paciente</p>
+              <p className="text-sm text-slate-500 mt-0.5">Diseño del menú, guardar plantillas de menú y recomendaciones, configuración del portal digital de pacientes</p>
             </div>
             <div className={`hidden sm:flex ml-2 p-1.5 rounded-lg transition-colors ${configOpen ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
               {configOpen ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -772,53 +759,63 @@ export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => v
 
         {configOpen && (
           <div className="border-t border-slate-200 px-6 py-6 space-y-4 bg-slate-100/70">
-            <MenuWrapper
-              title="Plantilla Base del Menú"
-              icon={<Layout className="w-5 h-5 text-emerald-600" />}
-              description="Diseño A4 que se usa al generar e imprimir cualquier menú"
-              storageKey="plantilla_base"
-            >
-              <PlantillaBaseSection hideHeader hideContainer />
-            </MenuWrapper>
+            <div data-tour="menus-plantilla-base">
+              <MenuWrapper
+                title="Plantilla Base del Menú"
+                icon={<Layout className="w-5 h-5 text-emerald-600" />}
+                description="Edita aquí el diseño default de tu menú (con este diseño empezarás cada nuevo menú)"
+                storageKey="plantilla_base"
+              >
+                <PlantillaBaseSection hideHeader hideContainer />
+              </MenuWrapper>
+            </div>
 
-            <MenuWrapper
-              title="Plantillas de Referencias"
-              icon={<FileText className="w-5 h-5 text-blue-600" />}
-              description="Ingresa un menú de referencia por kcal para usar como base al copiar"
-              storageKey="referencias"
-            >
-              <MenuReferences hideHeader hideContainer />
-            </MenuWrapper>
+            <div data-tour="menus-referencias">
+              <MenuWrapper
+                title="Plantillas de Referencias"
+                icon={<FileText className="w-5 h-5 text-blue-600" />}
+                description="Ingresa un menú de referencia por kcal para usar como base al copiar"
+                storageKey="referencias"
+              >
+                <MenuReferences hideHeader hideContainer />
+              </MenuWrapper>
+            </div>
 
-            <MenuWrapper
-              title="Plantillas de Recomendaciones"
-              icon={<ClipboardList className="w-5 h-5 text-emerald-600" />}
-              description="Gestiona tus notas predefinidas para la página 2 del menú"
-              storageKey="recomendaciones"
-            >
-              <MenuRecommendations hideHeader hideContainer />
-            </MenuWrapper>
+            <div data-tour="menus-recomendaciones">
+              <MenuWrapper
+                title="Plantillas de Recomendaciones"
+                icon={<ClipboardList className="w-5 h-5 text-emerald-600" />}
+                description="Gestiona tus notas predefinidas para la página 2 del menú"
+                storageKey="recomendaciones"
+              >
+                <MenuRecommendations hideHeader hideContainer />
+              </MenuWrapper>
+            </div>
 
-            <MenuWrapper
-              title="Portal Digital de Pacientes"
-              icon={<Smartphone className="w-5 h-5 text-emerald-600" />}
-              description="Configura el comportamiento por defecto del portal móvil para tus pacientes"
-              storageKey="portal_pacientes"
-            >
-              <MenuPatientPortal />
-            </MenuWrapper>
+            <div data-tour="menus-portal-pacientes">
+              <MenuWrapper
+                title="Portal Digital de Pacientes"
+                icon={<Smartphone className="w-5 h-5 text-emerald-600" />}
+                description="Configura el comportamiento por defecto del portal móvil para tus pacientes"
+                storageKey="portal_pacientes"
+              >
+                <MenuPatientPortal />
+              </MenuWrapper>
+            </div>
           </div>
         )}
       </div>
 
-      <MenuWrapper
-        title="Historial de Menús"
-        icon={<History className="w-5 h-5 text-blue-600" />}
-        description="Visualiza y exporta menús creados anteriormente para tus pacientes"
-        storageKey="historial"
-      >
-        <MenuHistory onSelectPatient={onSelectPatient} hideHeader hideContainer />
-      </MenuWrapper>
+      <div data-tour="menus-historial">
+        <MenuWrapper
+          title="Historial de Menús"
+          icon={<History className="w-5 h-5 text-blue-600" />}
+          description="Visualiza y exporta menús creados anteriormente para tus pacientes"
+          storageKey="historial"
+        >
+          <MenuHistory onSelectPatient={onSelectPatient} hideHeader hideContainer />
+        </MenuWrapper>
+      </div>
     </div>
   );
 };

@@ -124,7 +124,7 @@ export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate, onNavigateT
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div data-tour="patient-labs-upload" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <FileGallery
           patientId={patient.id}
           files={labs}
@@ -138,7 +138,7 @@ export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate, onNavigateT
       </div>
 
       {labs.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div data-tour="patient-labs-interpretation" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
             <div>
               <h3 className="text-sm font-bold text-slate-800">Interpretación de Laboratorios</h3>

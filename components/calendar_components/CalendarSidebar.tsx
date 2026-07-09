@@ -30,7 +30,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
     <div className="lg:col-span-1 flex flex-col gap-6">
 
       {/* Today's List */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col max-h-[400px]">
+      <div data-tour="calendar-agenda-hoy" className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col max-h-[400px]">
         <div className="p-5 border-b border-slate-100 bg-white z-10 rounded-t-2xl flex justify-between items-center">
           <h3 className="font-bold text-slate-800 flex items-center gap-2">
             <CalendarDays className="w-5 h-5 text-emerald-600" />
@@ -75,7 +75,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
       </div>
 
       {/* Upcoming List (Next 5 Days) */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col max-h-[400px]">
+      <div data-tour="calendar-proximas-citas" className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col max-h-[400px]">
         <div className="p-5 border-b border-slate-100 bg-white z-10 rounded-t-2xl">
           <div className="flex justify-between items-center">
             <h3 className="font-bold text-slate-800 flex items-center gap-2">

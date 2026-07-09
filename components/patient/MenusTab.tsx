@@ -35,6 +35,7 @@ export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => vo
           <h2 className="text-2xl font-bold text-slate-800">Menús del Paciente</h2>
           <div className="flex flex-col items-start sm:items-end gap-1.5">
             <button
+              data-tour="patient-menus-new-btn"
               onClick={handleStartNew}
               disabled={patientEvaluations.length === 0}
               className={`font-bold px-4 py-2 rounded-xl shadow-lg transition-all flex items-center gap-2 ${
@@ -81,7 +82,9 @@ export const MenusTab: React.FC<{ patient: Patient; onUpdate: (p: Patient) => vo
         )}
 
         {/* Portal digital */}
-        <PatientDigitalMenu patient={patient} onUpdate={onUpdate} />
+        <div data-tour="patient-menus-digital-portal">
+          <PatientDigitalMenu patient={patient} onUpdate={onUpdate} />
+        </div>
       </div>
     );
   }

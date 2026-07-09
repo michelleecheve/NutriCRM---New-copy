@@ -11,6 +11,8 @@ import {
 import { getTodayStr } from '../src/utils/dateUtils';
 import { showPlanLimitModal } from '../components/PlanLimitModal';
 import { authStore } from '../services/authStore';
+import { PageGuideButton } from '../components/tour/PageGuideButton';
+import { getPaymentsGuideSteps } from '../components/tour/pageGuides/payments';
 
 type Tab         = 'ingresos' | 'egresos' | 'resumen';
 type StatusFilter = 'all' | 'Pendiente' | 'Pagado' | 'Vencido';
@@ -336,7 +338,7 @@ export const Payments: React.FC = () => {
   // ── Shared toolbar JSX ────────────────────────────────────────────────────────
   const renderToolbar = (searchPlaceholder: string, hideVencido = false, tab: 'ingresos' | 'egresos' = 'ingresos') => (
     <div className="flex flex-col gap-3">
-      <div className="relative w-full sm:w-96">
+      <div data-tour="payments-search" className="relative w-full sm:w-96">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <input
           type="text"
@@ -349,6 +351,7 @@ export const Payments: React.FC = () => {
 
       <div className="flex flex-row gap-2 items-center flex-wrap">
 
+      <div data-tour="payments-filters" className="flex flex-row gap-2 items-center flex-wrap">
       {/* Date filter */}
       <div className="relative flex-shrink-0" ref={filterRef}>
         <button
@@ -451,9 +454,10 @@ export const Payments: React.FC = () => {
           </div>
         )}
       </div>
+      </div>
 
       {/* Export button */}
-      <div className="relative flex-shrink-0" ref={exportMenuRef}>
+      <div data-tour="payments-export" className="relative flex-shrink-0" ref={exportMenuRef}>
         <button
           onClick={(e) => { e.stopPropagation(); setIsExportMenuOpen(v => !v); }}
           className="bg-white border border-slate-200 text-slate-600 p-2.5 rounded-lg hover:bg-slate-50 shadow-sm transition-colors"
@@ -539,30 +543,33 @@ export const Payments: React.FC = () => {
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Finanzas de la Clínica</h2>
           <p className="text-slate-500 mt-1">Control de ingresos, egresos y balance general.</p>
         </div>
-        {activeTab !== 'resumen' && (
-          <button
-            onClick={handleOpenCreate}
-            className={`px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg transition-all font-semibold text-white ${
-              activeTab === 'ingresos'
-                ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
-                : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'
-            }`}
-          >
-            <Plus className="w-5 h-5" />
-            {activeTab === 'ingresos' ? 'Nuevo Ingreso' : 'Nuevo Egreso'}
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <PageGuideButton steps={getPaymentsGuideSteps(setActiveTab)} />
+          {activeTab !== 'resumen' && (
+            <button
+              onClick={handleOpenCreate}
+              className={`px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg transition-all font-semibold text-white ${
+                activeTab === 'ingresos'
+                  ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                  : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'
+              }`}
+            >
+              <Plus className="w-5 h-5" />
+              {activeTab === 'ingresos' ? 'Nuevo Ingreso' : 'Nuevo Egreso'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl w-fit">
-        <button onClick={() => handleTabChange('ingresos')} className={tabCls('ingresos')}>
+        <button data-tour="payments-tab-ingresos" onClick={() => handleTabChange('ingresos')} className={tabCls('ingresos')}>
           <ArrowUpCircle className="w-4 h-4" /> Ingresos
         </button>
-        <button onClick={() => handleTabChange('egresos')} className={tabCls('egresos')}>
+        <button data-tour="payments-tab-egresos" onClick={() => handleTabChange('egresos')} className={tabCls('egresos')}>
           <ArrowDownCircle className="w-4 h-4" /> Egresos
         </button>
-        <button onClick={() => handleTabChange('resumen')} className={tabCls('resumen')}>
+        <button data-tour="payments-tab-resumen" onClick={() => handleTabChange('resumen')} className={tabCls('resumen')}>
           <BarChart2 className="w-4 h-4" /> Resumen
         </button>
       </div>
@@ -571,7 +578,7 @@ export const Payments: React.FC = () => {
       {activeTab === 'ingresos' && (
         <>
           {/* KPIs */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div data-tour="payments-ingresos-kpis" className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start mb-4">
                 <span className="text-slate-500 font-medium text-sm">Ingresos Cobrados</span>
@@ -604,7 +611,7 @@ export const Payments: React.FC = () => {
 
           {renderToolbar('Buscar por paciente o ID...', false, 'ingresos')}
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div data-tour="payments-ingresos-table" className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -668,7 +675,7 @@ export const Payments: React.FC = () => {
       {activeTab === 'egresos' && (
         <>
           {/* KPIs */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div data-tour="payments-egresos-kpis" className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-start mb-4">
                 <span className="text-slate-500 font-medium text-sm">Total Egresos Pagados</span>
@@ -701,7 +708,7 @@ export const Payments: React.FC = () => {
 
           {renderToolbar('Buscar por categoría o descripción...', true, 'egresos')}
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div data-tour="payments-egresos-table" className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -781,7 +788,7 @@ export const Payments: React.FC = () => {
       {activeTab === 'resumen' && (
         <>
           {/* Date filter strip */}
-          <div className="flex items-center gap-3 flex-wrap">
+          <div data-tour="payments-period-filter" className="flex items-center gap-3 flex-wrap">
             <span className="text-sm font-semibold text-slate-500">Período:</span>
             {(['1m', 'prev_month', '3m', '6m', 'year', 'all'] as DatePreset[]).map(p => (
               <button
@@ -818,7 +825,7 @@ export const Payments: React.FC = () => {
           </div>
 
           {/* Balance cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div data-tour="payments-resumen-summary" className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm">
               <div className="flex justify-between items-start mb-4">
                 <span className="text-slate-500 font-medium text-sm">Ingresos Cobrados</span>
@@ -856,7 +863,7 @@ export const Payments: React.FC = () => {
           </div>
 
           {/* Pending row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div data-tour="payments-pending-row" className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Pendiente por cobrar</h4>
               <div className="text-2xl font-bold text-blue-600">{currency}{totalIngresosPendientes.toFixed(2)}</div>
@@ -880,7 +887,7 @@ export const Payments: React.FC = () => {
 
           {/* Category breakdown */}
           {Object.keys(egresosByCategory).length > 0 ? (
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div data-tour="payments-category-breakdown" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-5">Desglose de Egresos por Categoría</h4>
               <div className="space-y-4">
                 {Object.entries(egresosByCategory)
@@ -911,7 +918,7 @@ export const Payments: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center text-slate-400">
+            <div data-tour="payments-category-breakdown" className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center text-slate-400">
               No hay egresos pagados en este período.
             </div>
           )}

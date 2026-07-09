@@ -6,10 +6,12 @@ import { UserProfile, AppUser } from '../types';
 import {
   Save, User, Mail, Phone, Award, Camera, Check, Loader2,
   MapPin, Globe, ChevronDown, Clock, Link2, UserPlus, Trash2, Copy, Users, AlertTriangle, LogOut, Calendar,
-  PanelLeft, LayoutTemplate, LifeBuoy
+  PanelLeft, LayoutTemplate
 } from 'lucide-react';
 
 import { ProfileSubscription } from '../components/profile_config/ProfileSubscription';
+import { PageGuideButton } from '../components/tour/PageGuideButton';
+import { profileGuideSteps } from '../components/tour/pageGuides/profile';
 
 const InputField = ({ label, icon: Icon, value, onChange, type = "text", readOnly = false, placeholder = "" }: any) => (
   <div className="space-y-2">
@@ -177,7 +179,7 @@ const VinculacionNutricionista: React.FC<{
   };
 
   return (
-    <div className="space-y-6">
+    <div data-tour="profile-vinculacion-recepcionistas" className="space-y-6">
       <button
         type="button"
         onClick={() => setIsOpen(o => !o)}
@@ -469,7 +471,6 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isProcessingImg, setIsProcessingImg] = useState(false);
   const [isSistemaOpen, setIsSistemaOpen] = useState(false);
-  const [isSoporteOpen, setIsSoporteOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Estados para modal de desvinculación
@@ -536,15 +537,18 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-          {role === 'recepcionista' ? 'Mi Perfil' : 'Perfil Profesional'}
-        </h2>
-        <p className="text-slate-500 mt-1">
-          {role === 'recepcionista'
-            ? 'Gestiona tu información de contacto y vinculaciones.'
-            : 'Gestiona tu información pública y credenciales.'}
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+            {role === 'recepcionista' ? 'Mi Perfil' : 'Perfil Profesional'}
+          </h2>
+          <p className="text-slate-500 mt-1">
+            {role === 'recepcionista'
+              ? 'Gestiona tu información de contacto y vinculaciones.'
+              : 'Gestiona tu información pública y credenciales.'}
+          </p>
+        </div>
+        <PageGuideButton steps={profileGuideSteps} />
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -553,7 +557,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         </div>
 
         <div className="px-8 pb-8">
-          <div className="flex flex-col items-center -mt-12 mb-8 gap-3">
+          <div data-tour="profile-logo" className="flex flex-col items-center -mt-12 mb-8 gap-3">
             <div className="relative group">
               <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-lg relative overflow-hidden">
                 {isProcessingImg ? (
@@ -586,7 +590,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           </div>
 
           <form onSubmit={handleSave} className="space-y-10">
-            <div className="space-y-6">
+            <div data-tour="profile-nutri-data" className="space-y-6">
               <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                 <User className="w-5 h-5 text-emerald-600" />
                 <h3 className="font-bold text-slate-800">
@@ -638,13 +642,13 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               </div>
             </div>
 
-            {showSubscription && <ProfileSubscription />}
+            {showSubscription && <div data-tour="profile-subscription"><ProfileSubscription /></div>}
 
             {showVinculacionRecepcionistas && <VinculacionNutricionista onUnlinkRequest={handleUnlinkRequest} />}
             {showVinculacionNutricionistas && <VinculacionRecepcionista onUnlinkRequest={handleUnlinkRequest} />}
 
             {showSistema && (
-              <div className="space-y-6">
+              <div data-tour="profile-sistema" className="space-y-6">
                 <button
                   type="button"
                   onClick={() => setIsSistemaOpen(o => !o)}
@@ -796,35 +800,6 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               </div>
             )}
 
-            <div className="space-y-6">
-              <button
-                type="button"
-                onClick={() => setIsSoporteOpen(o => !o)}
-                className="w-full flex items-center justify-between pb-2 border-b border-slate-100 group"
-              >
-                <div className="flex items-center gap-2">
-                  <LifeBuoy className="w-5 h-5 text-emerald-600" />
-                  <h3 className="font-bold text-slate-800">Soporte</h3>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isSoporteOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {isSoporteOpen && (
-                <div className="space-y-4 px-1">
-                  <p className="text-sm text-slate-600">
-                    ¿Tienes dudas o quieres reportar un problema? Contáctanos a{' '}
-                    <a href="mailto:nutrifollow.app@outlook.com" className="font-bold text-emerald-700 hover:text-emerald-800">
-                      nutrifollow.app@outlook.com
-                    </a>
-                    {' '}y con gusto te ayudamos.
-                  </p>
-                  <p className="text-sm text-slate-400">
-                    Tip: estamos trabajando de forma continua para hacer de NutriFlow una plataforma cada vez más rápida y fácil de usar. Si en algún momento notas información o alguna función que no carga correctamente, te recomendamos recargar la página, ya que en la mayoría de los casos esto resuelve el inconveniente. Asegúrate también de contar con una buena conexión a internet, y si sientes la plataforma lenta, borrar la caché de tu navegador suele ayudar. Si el problema persiste, no dudes en reportarlo para que podamos solucionarlo lo antes posible.
-                  </p>
-                </div>
-              )}
-            </div>
-
             <div className="fixed bottom-6 right-8 z-50">
               <button
                 type="submit"
@@ -844,7 +819,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       </div>
 
       {/* Logout Section */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col items-center gap-4">
+      <div data-tour="profile-logout" className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col items-center gap-4">
         <div className="text-center">
           <h3 className="font-bold text-slate-900">Sesión</h3>
           <p className="text-sm text-slate-500">¿Deseas salir de tu cuenta?</p>

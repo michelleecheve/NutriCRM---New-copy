@@ -241,9 +241,9 @@ export const MenuDesignPanel: React.FC<MenuDesignPanelProps> = ({
             <p className="text-[11px] text-slate-400">Define cómo se distribuyen los días de la semana en el PDF.</p>
             <div className="flex gap-2">
               {([
-                { value: '3col', label: '3 columnas', desc: 'Lun-Mar-Mié / Jue-Vie-Sáb' },
-                { value: '4col', label: '4 columnas', desc: 'Lun-Mar-Mié-Jue / Vie-Sáb + split' },
-              ] as { value: string; label: string; desc: string }[]).map(opt => {
+                { value: '3col', label: '3 columnas' },
+                { value: '4col', label: '4 columnas' },
+              ] as { value: string; label: string }[]).map(opt => {
                 const isActive = opt.value === '4col' ? templateDesign.endsWith('_4col') : !templateDesign.endsWith('_4col');
                 return (
                   <button
@@ -253,14 +253,13 @@ export const MenuDesignPanel: React.FC<MenuDesignPanelProps> = ({
                       const next = (opt.value === '4col' ? `${base}_4col` : base) as MenuTemplateDesign;
                       onChange({ templateDesign: next });
                     }}
-                    className={`flex-1 flex flex-col items-start gap-0.5 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
+                    className={`flex-1 px-4 py-3 rounded-xl border text-sm font-medium transition-all ${
                       isActive
                         ? 'bg-emerald-50 border-emerald-400 text-emerald-700'
                         : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
-                    <span>{opt.label}</span>
-                    <span className="text-[10px] text-slate-400 font-normal leading-tight">{opt.desc}</span>
+                    {opt.label}
                   </button>
                 );
               })}
@@ -272,8 +271,8 @@ export const MenuDesignPanel: React.FC<MenuDesignPanelProps> = ({
             <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Formato del Domingo</label>
             <div className="flex gap-2">
               {([
-                { value: 'libre', label: 'V1 · Día Libre', desc: 'Solo nota de día libre' },
-                { value: 'completo', label: 'V2 · Completo',  desc: 'Domingo con menú completo' },
+                { value: 'libre', label: 'V1 · Día Libre', desc: 'Menú de lunes a sábado. Domingo será día libre' },
+                { value: 'completo', label: 'V2 · Semana Completa', desc: 'Menú de lunes a domingo' },
               ] as { value: 'libre' | 'completo'; label: string; desc: string }[]).map(opt => {
                 const isActive = domingoMode === opt.value;
                 return (

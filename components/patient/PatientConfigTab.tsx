@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Download, Upload, Settings, AlertCircle, CheckCircle2, Trash2, X, FileDown, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Patient } from '../../types';
 import { store } from '../../services/store';
+import { prefsService } from '../../services/prefsService';
 import { supabaseService } from '../../services/supabaseService';
 import { getTodayStr } from '../../src/utils/dateUtils';
 import { exportClinicalDoc } from '../../services/exportClinicalDoc';
@@ -33,6 +34,8 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
 
   const fullName = `${patient.firstName} ${patient.lastName}`;
   const nameMatches = deleteConfirmName.trim().toLowerCase() === fullName.toLowerCase();
+  const isExamplePatient = patient.id === prefsService.get<string | null>('onboarding.examplePatientId', null);
+  const isDemoPatient = patient.id === prefsService.get<string | null>('onboarding.demoPatientId', null);
 
   const handleDeleteConfirmed = async () => {
     if (!nameMatches) return;
@@ -40,6 +43,8 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
     setDeleteError('');
     try {
       await store.deletePatientCompletely(patient.id);
+      if (isExamplePatient) prefsService.set('onboarding.examplePatientId', null);
+      if (isDemoPatient) prefsService.set('onboarding.demoPatientId', null);
       onPatientDeleted?.();
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Error al eliminar el paciente.');
@@ -141,7 +146,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
 
         <div className="p-8 space-y-4">
           {/* ── Exportar Perfil Completo ── */}
-          <div className="p-6 rounded-2xl border border-teal-100 bg-teal-50/40 space-y-4">
+          <div data-tour="patient-config-export" className="p-6 rounded-2xl border border-teal-100 bg-teal-50/40 space-y-4">
             <div className="flex items-center gap-3 mb-2">
               <div className="bg-teal-100 p-2 rounded-lg">
                 <FileDown className="w-5 h-5 text-teal-600" />
@@ -267,7 +272,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
           </div>
 
           {/* ── Eliminar Paciente (desplegable) ── */}
-          <div className="rounded-2xl border border-red-200 overflow-hidden">
+          <div data-tour="patient-config-delete" className="rounded-2xl border border-red-200 overflow-hidden">
             <button
               onClick={() => setShowDeleteSection(v => !v)}
               className="w-full flex items-center justify-between gap-3 px-6 py-4 bg-red-50 hover:bg-red-100 transition-colors text-left"
@@ -441,6 +446,16 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
               </button>
             </div>
 
+            {isExamplePatient && (
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-3 leading-relaxed">
+                Este es tu paciente de ejemplo — puedes eliminarlo si ya no lo necesitas.
+              </p>
+            )}
+            {isDemoPatient && (
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-3 leading-relaxed">
+                Este es el paciente de prueba que creaste durante el recorrido guiado.
+              </p>
+            )}
             <p className="text-sm text-slate-600 mb-2 leading-relaxed">
               Estás a punto de eliminar permanentemente a <span className="font-bold text-slate-900">{fullName}</span> y todos sus registros vinculados. Esta acción es irreversible.
             </p>

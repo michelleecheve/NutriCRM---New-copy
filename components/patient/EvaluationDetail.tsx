@@ -461,7 +461,7 @@ export const EvaluationDetail: React.FC<{
         </div>
 
         {/* Card: Evaluation Notes */}
-        <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-sm">
+        <div data-tour="evaluation-notes-section" className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-sm">
           <button
             type="button"
             onClick={() => setNotesExpanded(!notesExpanded)}
@@ -494,7 +494,7 @@ export const EvaluationDetail: React.FC<{
         </div>
 
         {/* Card 2: Dietary */}
-        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+        <div data-tour="evaluation-dietary-section" className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-50 p-2 rounded-lg">
@@ -566,7 +566,7 @@ export const EvaluationDetail: React.FC<{
         </div>
 
         {/* Card 3: Measurements */}
-        <div id="evaluation-measurements" className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+        <div id="evaluation-measurements" data-tour="evaluation-measurements-section" className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-50 p-2 rounded-lg shrink-0">
@@ -640,7 +640,7 @@ export const EvaluationDetail: React.FC<{
         </div>
 
         {/* Card 4: Somatocarta */}
-        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+        <div data-tour="evaluation-somatocarta-section" className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-50 p-2 rounded-lg">
@@ -696,7 +696,7 @@ export const EvaluationDetail: React.FC<{
         </div>
 
         {/* Card 5: Menus */}
-        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+        <div data-tour="evaluation-menu-section" className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-50 p-2 rounded-lg">
@@ -737,7 +737,7 @@ export const EvaluationDetail: React.FC<{
         </div>
 
         {/* Card 6: Labs */}
-        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+        <div data-tour="evaluation-labs-section" className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-50 p-2 rounded-lg">
@@ -779,7 +779,7 @@ export const EvaluationDetail: React.FC<{
         </div>
 
         {/* Card 7: Photos */}
-        <div className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
+        <div data-tour="evaluation-photos-section" className="border border-slate-200 rounded-2xl bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4 mb-5">
             <div className="flex items-center gap-3">
               <div className="bg-emerald-50 p-2 rounded-lg">

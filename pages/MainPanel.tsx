@@ -7,6 +7,8 @@ import { CreditCard, Calendar, ChefHat, Clock, ChevronRight, AlertCircle, Calend
 import { ComposedChart, Bar, Line, ReferenceLine, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getTodayStr } from '../src/utils/dateUtils';
 import { CalendarAppointmentModal } from '../components/calendar_components/CalendarAppointmentModal';
+import { PageGuideButton } from '../components/tour/PageGuideButton';
+import { mainPanelGuideSteps } from '../components/tour/pageGuides/mainPanel';
 
 interface MainPanelProps {
   onSelectPatient: (patientId: string, tab?: string) => void;
@@ -171,15 +173,18 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Hola, {user.name}</h1>
           <p className="text-slate-500 text-xs">Aquí tienes el resumen de tu clínica.</p>
         </div>
-        <div className="bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2">
-          <div className="hidden md:flex items-center gap-1.5 px-2 border-r border-slate-100">
-            <CalendarDays className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="text-xs font-bold text-slate-400 uppercase">Filtrar:</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <input type="date" value={dateRange.start} onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })} className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2 py-1 outline-none focus:border-emerald-500 transition-colors" />
-            <span className="text-slate-300 font-bold">-</span>
-            <input type="date" value={dateRange.end} onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })} className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2 py-1 outline-none focus:border-emerald-500 transition-colors" />
+        <div className="flex items-center gap-2">
+          <PageGuideButton steps={mainPanelGuideSteps} />
+          <div data-tour="mainpanel-date-filter" className="bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-1.5 px-2 border-r border-slate-100">
+              <CalendarDays className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="text-xs font-bold text-slate-400 uppercase">Filtrar:</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <input type="date" value={dateRange.start} onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })} className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2 py-1 outline-none focus:border-emerald-500 transition-colors" />
+              <span className="text-slate-300 font-bold">-</span>
+              <input type="date" value={dateRange.end} onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })} className="bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2 py-1 outline-none focus:border-emerald-500 transition-colors" />
+            </div>
           </div>
         </div>
       </div>
@@ -296,7 +301,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
         <div className="lg:col-span-2 space-y-3">
 
           {/* KPIs — desktop only */}
-          <div className="hidden lg:grid grid-cols-3 gap-3">
+          <div data-tour="mainpanel-kpis" className="hidden lg:grid grid-cols-3 gap-3">
             <div className="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 group hover:border-indigo-200 transition-all">
               <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors shrink-0">
                 <Users className="w-4 h-4" />
@@ -329,7 +334,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <div data-tour="mainpanel-income-chart" className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-slate-800 text-sm">Comportamiento de Ingresos</h3>
               <div className="flex items-center gap-2">
@@ -442,7 +447,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
             </div>
           </div>
 
-          <div className="hidden md:flex bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-col">
+          <div data-tour="mainpanel-priority-menus" className="hidden md:flex bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-col">
             <div className="p-3 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
               <AlertCircle className="w-4 h-4 text-amber-500" />
               <h3 className="font-bold text-slate-800 text-sm">Atención Prioritaria: Menús Pendientes</h3>
@@ -474,7 +479,7 @@ export const MainPanel: React.FC<MainPanelProps> = ({ onSelectPatient }) => {
         </div>
 
         {/* Right column */}
-        <div className="hidden md:block lg:col-span-1">
+        <div data-tour="mainpanel-agenda" className="hidden md:block lg:col-span-1">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
             <div className="p-3 bg-slate-900 text-white">
               <div className="flex justify-between items-center">

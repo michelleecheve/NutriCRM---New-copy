@@ -53,7 +53,11 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       onMenuDataChange(null);
     } else if (pendingDelete === 1) {
       const blank = buildBlankMenuPlanData(patient, vetData, getNutritionistData(), evaluationId);
-      onMenuDataChange({ ...menuPreviewData, weeklyMenu: blank.weeklyMenu, portions: blank.portions });
+      onMenuDataChange({
+        ...menuPreviewData,
+        weeklyMenu: { ...blank.weeklyMenu, domingoMode: menuPreviewData.weeklyMenu?.domingoMode },
+        portions: blank.portions,
+      });
       onRemountTable();
     } else if (pendingDelete === 2) {
       onMenuDataChange({ ...menuPreviewData, recommendations: { preparacion: [], restricciones: [], habitos: [], organizacion: [] } });

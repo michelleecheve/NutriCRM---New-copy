@@ -152,6 +152,7 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
 
   return (
     <div
+      data-tour="calendar-historial"
       className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-visible relative"
       onClick={() => setIsExportMenuOpen(false)}
     >

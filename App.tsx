@@ -6,18 +6,22 @@ import { ResetPassword } from './pages/ResetPassword';
 import { MainPanel } from './pages/MainPanel';
 import { MainPanelReceptionist } from './pages/MainPanelReceptionist';
 import { Dashboard } from './pages/Dashboard';
-import { PatientDetail } from './pages/PatientDetail';
+import { PatientDetail, TabType } from './pages/PatientDetail';
 import { Payments } from './pages/Payments';
 import { CalendarPage } from './pages/Calendar';
 import { Profile } from './pages/Profile';
 import { CheckoutSuccess } from './pages/CheckoutSuccess';
 import { Menus } from './pages/Menus';
+import { Ayuda } from './pages/Ayuda';
 import { AdminPanel } from './pages/Admin';
 import { AppRoute, UserRole } from './types';
 import { authStore } from './services/authStore';
 import { Landing } from './pages/Landing';
 import { PlanLimitModal } from './components/PlanLimitModal';
 import { SupabaseStatusBanner } from './components/SupabaseStatusBanner';
+import { store } from './services/store';
+import { seedExamplePatientIfNeeded } from './services/exampleSeed';
+import { TourOverlay } from './components/tour/TourOverlay';
 
 const OAUTH_CALLBACK_ROUTE = '__oauth_callback__';
 
@@ -71,7 +75,8 @@ function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [currentRoute, setCurrentRoute] = useState<string>(getInitialRoute());
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
+  const [initialTab, setInitialTab] = useState<TabType | undefined>(undefined);
+  const [patientDetailTab, setPatientDetailTab] = useState<TabType | undefined>(undefined);
 
   useEffect(() => {
     // Suscribirse a cuando authStore termina de cargar
@@ -91,6 +96,11 @@ function App() {
           }
           return prev;
         });
+
+        // Cuenta nueva sin pacientes aún: siembra el paciente de ejemplo (una sola vez, silencioso)
+        if ((user.role === 'nutricionista' || user.role === 'admin') && store.getPatients().length === 0) {
+          seedExamplePatientIfNeeded();
+        }
       } else {
         setCurrentRoute(prev => {
           if (
@@ -126,12 +136,17 @@ function App() {
   const handleNavigate = (page: string) => {
     if (!authStore.canAccessPage(page)) return;
     setCurrentRoute(page);
-    if (page === AppRoute.DASHBOARD) setSelectedPatientId(null);
+    if (page === AppRoute.DASHBOARD) {
+      setSelectedPatientId(null);
+      setPatientDetailTab(undefined);
+    }
   };
 
   const handleSelectPatient = (id: string, tab?: string) => {
+    const asTab = tab as TabType | undefined;
     setSelectedPatientId(id);
-    setInitialTab(tab);
+    setInitialTab(asTab);
+    setPatientDetailTab(asTab ?? 'clinical');
     setCurrentRoute(AppRoute.PATIENT_DETAIL);
   };
 
@@ -192,6 +207,7 @@ function App() {
           <PatientDetail
             patientId={selectedPatientId}
             initialTab={initialTab}
+            onTabChange={setPatientDetailTab}
             onBack={() => handleNavigate(AppRoute.DASHBOARD)}
           />
         );
@@ -210,6 +226,9 @@ function App() {
 
       case AppRoute.PROFILE:
         return <Profile onLogout={handleLogout} />;
+
+      case AppRoute.AYUDA:
+        return <Ayuda />;
 
       case AppRoute.ADMIN:
         return <AdminPanel />;
@@ -246,6 +265,12 @@ function App() {
         {renderContent()}
       </Layout>
       <PlanLimitModal />
+      <TourOverlay
+        currentRoute={currentRoute}
+        currentPatientTab={patientDetailTab}
+        onNavigate={handleNavigate}
+        onSelectPatient={handleSelectPatient}
+      />
     </>
   );
 }

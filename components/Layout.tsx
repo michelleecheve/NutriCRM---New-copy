@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Calendar, Users, LogOut, HeartPulse, Settings,
+  Calendar, Users, LogOut, HeartPulse,
   ChevronDown, CreditCard, User, Eye, EyeOff, Home,
-  ClipboardList, ShieldCheck, Menu, X
+  ClipboardList, ShieldCheck, Menu, X, HelpCircle
 } from 'lucide-react';
 import { AppRoute, UserProfile } from '../types';
 import { authStore } from '../services/authStore';
@@ -61,16 +61,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate
     label,
     extraActiveRoutes = [],
     compact = false,
+    tourId,
   }: {
     route: string;
     icon: React.ElementType;
     label: string;
     extraActiveRoutes?: string[];
     compact?: boolean;
+    tourId?: string;
   }) => {
     const isActive = activePage === route || extraActiveRoutes.includes(activePage);
     return (
       <button
+        data-tour={tourId}
         onClick={() => handleNavigate(route)}
         className={`flex items-center gap-3 rounded-xl transition-all duration-200 font-medium
           ${compact
@@ -98,16 +101,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate
         <NavItem route={AppRoute.MAIN_RECEPTIONIST} icon={Home} label="Inicio" compact={compact} />
       )}
       {(role === 'nutricionista' || role === 'admin') && (
-        <NavItem route={AppRoute.DASHBOARD} icon={Users} label="Pacientes" extraActiveRoutes={[AppRoute.PATIENT_DETAIL]} compact={compact} />
+        <NavItem route={AppRoute.DASHBOARD} icon={Users} label="Pacientes" extraActiveRoutes={[AppRoute.PATIENT_DETAIL]} compact={compact} tourId="nav-patients" />
       )}
-      {(role === 'nutricionista' || role === 'admin') && (
-        <NavItem route={AppRoute.MENUS} icon={ClipboardList} label="Menús" compact={compact} />
-      )}
+      <NavItem route={AppRoute.CALENDAR} icon={Calendar} label="Calendario" compact={compact} />
       {(role === 'nutricionista' || role === 'admin') && (
         <NavItem route={AppRoute.PAYMENTS} icon={CreditCard} label="Pagos" compact={compact} />
       )}
-      <NavItem route={AppRoute.CALENDAR} icon={Calendar} label="Calendario" compact={compact} />
-      <NavItem route={AppRoute.PROFILE} icon={Settings} label="Configuración" compact={compact} />
+      {(role === 'nutricionista' || role === 'admin') && (
+        <NavItem route={AppRoute.MENUS} icon={ClipboardList} label="Config. Menús" compact={compact} />
+      )}
+      <NavItem route={AppRoute.PROFILE} icon={User} label="Perfil" compact={compact} />
+      {(role === 'nutricionista' || role === 'admin') && (
+        <NavItem route={AppRoute.AYUDA} icon={HelpCircle} label="Ayuda" compact={compact} />
+      )}
       {role === 'admin' && (
         <NavItem route={AppRoute.ADMIN} icon={ShieldCheck} label="Administración" compact={compact} />
       )}

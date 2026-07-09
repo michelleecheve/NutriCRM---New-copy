@@ -102,7 +102,12 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
 
   const handleStartBlank = () => {
     const blank = buildBlankMenuPlanData(patient, vetData, getNutritionistData(), evaluationId);
-    handleSetMenuPreviewData(withTemplateTitles(blank));
+    const defaultDomingoMode: 'libre' | 'completo' = localDesignConfig.templateDesign.startsWith('plantilla_v2') ? 'completo' : 'libre';
+    const withDefaultDomingoMode = {
+      ...blank,
+      weeklyMenu: { ...blank.weeklyMenu, domingoMode: defaultDomingoMode },
+    };
+    handleSetMenuPreviewData(withTemplateTitles(withDefaultDomingoMode));
     setEditTablaKey(k => k + 1);
   };
 

@@ -5,6 +5,8 @@ import { Search, Plus, User, ChevronRight, Filter, Check, Settings, Trash2, X as
 import { showPlanLimitModal } from '../components/PlanLimitModal';
 import { authStore } from '../services/authStore';
 import { prefsService } from '../services/prefsService';
+import { PageGuideButton } from '../components/tour/PageGuideButton';
+import { dashboardGuideSteps } from '../components/tour/pageGuides/dashboard';
 
 interface DashboardProps {
   onSelectPatient: (patientId: string, tab?: string) => void;
@@ -12,6 +14,7 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
   const [patients, setPatients] = useState<Patient[]>(store.getPatients());
+  const examplePatientId = prefsService.get<string | null>('onboarding.examplePatientId', null);
   const [searchTerm, setSearchTerm] = useState<string>(() => prefsService.get('dashboard.searchTerm', ''));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
@@ -181,7 +184,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
           <p className="text-slate-500 mt-1">Gestión clínica y seguimiento personalizado.</p>
         </div>
         <div className="flex gap-3">
+          <PageGuideButton steps={dashboardGuideSteps} />
           <button
+            data-tour="dashboard-new-patient-btn"
             onClick={() => {
               if (authStore.patientLimitReached(patients.length)) { showPlanLimitModal(); return; }
               setIsModalOpen(true);
@@ -197,7 +202,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-visible">
         {/* Table Toolbar */}
         <div className="p-5 border-b border-slate-100 flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative w-full md:flex-1 order-last md:order-first">
+          <div data-tour="dashboard-search" className="relative w-full md:flex-1 order-last md:order-first">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
@@ -211,7 +216,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
           <div className="flex items-center gap-2 order-first md:order-last self-start">
 
           {/* Sort Button */}
-          <div className="relative">
+          <div data-tour="dashboard-sort" className="relative">
             <button
               onClick={(e) => { e.stopPropagation(); setIsSortMenuOpen(!isSortMenuOpen); setIsFilterMenuOpen(false); }}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border transition-all ${
@@ -270,7 +275,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
           </div>
 
           {/* Filter Button */}
-          <div className="relative">
+          <div data-tour="dashboard-filter-status" className="relative">
             <button
               onClick={(e) => { e.stopPropagation(); setIsFilterMenuOpen(!isFilterMenuOpen); setIsSortMenuOpen(false); }}
               className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm border transition-all ${
@@ -339,6 +344,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
             )}
           </div>
           <button
+            data-tour="dashboard-config-status"
             onClick={() => setIsConfigModalOpen(true)}
             className="bg-white hover:bg-slate-50 text-slate-600 p-3 rounded-xl border border-slate-200 shadow-sm transition-all"
             title="Configurar Status"
@@ -348,7 +354,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div data-tour="dashboard-patients-table" className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/50 text-slate-400 text-xs uppercase tracking-wider font-bold border-b border-slate-100">
@@ -367,8 +373,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
                 >
                   <td className="px-8 py-5">
                     <div>
-                      <div className="font-bold text-slate-900 text-base mb-1">
+                      <div className="font-bold text-slate-900 text-base mb-1 flex items-center gap-2">
                         {patient.firstName} {patient.lastName}
+                        {patient.id === examplePatientId && (
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                            Ejemplo
+                          </span>
+                        )}
                       </div>
                       <div className="text-sm text-slate-500 flex items-center gap-2 flex-wrap">
                         <span>{patient.clinical.email}</span>
@@ -453,7 +464,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
       {/* Add Patient Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100 flex flex-col max-h-[90dvh]">
+          <div data-tour="dashboard-new-patient-modal" className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-slate-100 flex flex-col max-h-[90dvh]">
             <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center flex-shrink-0">
               <div>
                 <h3 className="text-xl font-bold text-slate-900">Nuevo Paciente</h3>

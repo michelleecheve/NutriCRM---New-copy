@@ -83,6 +83,7 @@ export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient
     <div className="space-y-6">
       {/* Medidas Antropométricas Card */}
       <div
+        data-tour="patient-measurements-anthro-card"
         onClick={() => setShowAnthro(!showAnthro)}
         className="flex flex-col sm:flex-row sm:items-center gap-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors"
       >
@@ -150,6 +151,7 @@ export const MeasurementsTab: React.FC<{ patient: Patient; onUpdate: (p: Patient
 
       {/* Medidas Bioimpedancia Card */}
       <div
+        data-tour="patient-measurements-bio-card"
         onClick={() => setShowBio(!showBio)}
         className="flex flex-col sm:flex-row sm:items-center gap-3 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors"
       >

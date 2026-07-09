@@ -15,8 +15,10 @@ import { LabsTab } from '../components/patient/LabsTab';
 import { PhotosTab } from '../components/patient/PhotosTab';
 import { PatientConfigTab } from '../components/patient/PatientConfigTab';
 import { EvaluationsTab } from '../components/patient/EvaluationsTab';
+import { PageGuideButton } from '../components/tour/PageGuideButton';
+import { getPatientGuideSteps } from '../components/tour/pageGuides/patient';
 
-type TabType =
+export type TabType =
   | 'clinical'
   | 'appointments'
   | 'dietary'
@@ -29,12 +31,25 @@ type TabType =
 interface PatientDetailProps {
   patientId: string;
   onBack: () => void;
+  initialTab?: TabType;
+  onTabChange?: (tab: TabType) => void;
 }
 
-export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack }) => {
+export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack, initialTab, onTabChange }) => {
   const [patient, setPatient] = useState<Patient | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('clinical');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab ?? 'clinical');
   const [loading, setLoading] = useState(true); // ✅ NUEVO: estado de carga
+
+  useEffect(() => {
+    onTabChange?.(activeTab);
+  }, [activeTab]);
+
+  // Reacciona a cambios de patientId/initialTab (ej. el tour navegando a otra
+  // pestaña del mismo paciente) — antes solo se leía una vez al montar.
+  useEffect(() => {
+    setActiveTab(initialTab ?? 'clinical');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patientId, initialTab]);
 
   // ✅ ANTES:
   // useEffect(() => {
@@ -123,16 +138,17 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack 
           </h1>
         </div>
         <div className="ml-auto flex gap-3">
-          {/* Actions */}
+          <PageGuideButton steps={getPatientGuideSteps(setActiveTab)} />
         </div>
       </div>
 
       {/* Tabs */}
       <div className="overflow-x-auto -mx-1 px-1">
-        <div className="flex gap-1 bg-slate-100/50 p-1 rounded-xl w-max">
+        <div data-tour="patient-tabs-bar" className="flex gap-1 bg-slate-100/50 p-1 rounded-xl w-max">
           {tabs.map(tab => (
             <button
               key={tab.id}
+              data-tour={`patient-tab-${tab.id}`}
               onClick={() => setActiveTab(tab.id as TabType)}
               className={`px-4 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all whitespace-nowrap ${
                 activeTab === tab.id

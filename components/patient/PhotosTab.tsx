@@ -16,7 +16,7 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({ patient, onUpdate, onNavig
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm min-h-[400px]">
+      <div data-tour="patient-photos-gallery" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm min-h-[400px]">
         <FileGallery
           patientId={patient.id}
           files={patient.photos}

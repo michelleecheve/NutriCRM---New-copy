@@ -130,7 +130,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   const todayStr = toDateStr(new Date());
 
   return (
-    <div className="lg:col-span-2 lg:order-first flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden min-h-[500px]">
+    <div data-tour="calendar-grid" className="lg:col-span-2 lg:order-first flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden min-h-[500px]">
 
       {/* Controls — stays fixed, no horizontal scroll */}
       <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">

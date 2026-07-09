@@ -10,6 +10,7 @@ export const DEFAULT_PERMISSIONS: PagePermission[] = [
   { pageId: 'dashboard', label: 'Pacientes', roles: ['admin', 'nutricionista'] },
   { pageId: 'menus', label: 'Menús', roles: ['admin', 'nutricionista'] },
   { pageId: 'payments', label: 'Pagos', roles: ['admin', 'nutricionista'] },
+  { pageId: 'ayuda', label: 'Ayuda', roles: ['admin', 'nutricionista'] },
   {
     pageId: 'calendar',
     label: 'Calendario',
@@ -46,11 +47,6 @@ export const DEFAULT_PERMISSIONS: PagePermission[] = [
         moduleId: 'profile-vinculacion-nutricionistas',
         label: 'Vinculación con Nutricionistas',
         roles: ['admin', 'recepcionista'],
-      },
-      {
-        moduleId: 'profile-ai-config',
-        label: 'Configurador de IA (AI Configurator)',
-        roles: ['admin', 'nutricionista'],
       },
     ],
   },
@@ -673,11 +669,6 @@ class AuthStore {
     } catch {
       return { ok: false, message: 'Error de conexión.' };
     }
-  }
-
-  /** True si puede usar features de IA (Gemini). Todos los usuarios tienen acceso; los límites se aplican por tokens. */
-  canUseAI(): boolean {
-    return !!this.currentUser;
   }
 
   /** True si alcanzó el límite de 10 pacientes activos en plan Free. */

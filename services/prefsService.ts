@@ -25,6 +25,21 @@ export interface StorageSaved {
     locked?: boolean;
     bannerPinned?: boolean;
   };
+  onboarding?: {
+    active?: boolean;
+    currentChapter?: number;
+    currentStepIndex?: number;
+    chaptersCompleted?: number[];
+    chaptersSkipped?: number[];
+    demoPatientId?: string | null;
+    demoPatientName?: string;
+    examplePatientId?: string | null;
+    examplePatientSeeded?: boolean;
+    finishedAt?: string;
+    lastSeenVersion?: number;
+    pageGuidesEnabled?: boolean;
+    welcomeDismissedForever?: boolean;
+  };
 }
 
 const LOCAL_KEY = 'nutriflow_prefs_v1';
@@ -72,10 +87,27 @@ class PrefsService {
   private cache: StorageSaved = {};
   private userId: string | null = null;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
+  private unloadFlushAttached = false;
+
+  // Adelanta el guardado pendiente (sin esperar los 800ms del debounce) cuando el
+  // usuario cambia de pestaña o cierra el navegador, para no perder el último cambio.
+  private attachUnloadFlush(): void {
+    if (this.unloadFlushAttached) return;
+    this.unloadFlushAttached = true;
+    const flushNow = () => {
+      if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; }
+      this.flushToDB();
+    };
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flushNow();
+    });
+    window.addEventListener('pagehide', flushNow);
+  }
 
   // Called synchronously before components mount — reads localStorage so useState initializers work
   initSync(userId: string): void {
     this.userId = userId;
+    this.attachUnloadFlush();
     try {
       const raw = localStorage.getItem(`${LOCAL_KEY}_${userId}`);
       if (raw) {
@@ -217,11 +249,14 @@ class PrefsService {
   async flushToDB(): Promise<void> {
     if (!this.userId || this.userId === 'guest') return;
     try {
-      await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({ storage_saved: this.cache })
         .eq('id', this.userId);
-    } catch {}
+      if (error) console.error('prefsService: error guardando storage_saved en Supabase:', error);
+    } catch (err) {
+      console.error('prefsService: excepción guardando storage_saved en Supabase:', err);
+    }
   }
 
   reset(): void {

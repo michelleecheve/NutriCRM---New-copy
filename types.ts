@@ -622,6 +622,7 @@ export enum AppRoute {
   PAYMENTS          = 'payments',
   PROFILE           = 'profile',
   MENUS             = 'menus',
+  AYUDA             = 'ayuda',
   ADMIN             = 'admin',
   CHECKOUT_SUCCESS  = 'checkout-success',
 }

@@ -23,6 +23,8 @@ import { CalendarHistorialTable } from "../components/calendar_components/Calend
 import { CalendarFollowUpTable } from "../components/calendar_components/CalendarFollowUpTable";
 import { CalendarSelector } from "../components/calendar_components/CalendarSelector";
 import { CalendarGoogleSync } from "../components/calendar_components/CalendarGoogleSync";
+import { PageGuideButton } from "../components/tour/PageGuideButton";
+import { calendarGuideSteps } from "../components/tour/pageGuides/calendar";
 
 const GC_COPY_TEXT = `Tipo: Primera Consulta o Seguimiento
 Modalidad: Presencial o Video
@@ -577,8 +579,10 @@ export const CalendarPage: React.FC = () => {
             <p className="text-slate-500 mt-1">Gestiona tus citas y agenda</p>
           </div>
           <div className="flex items-center gap-2 lg:gap-3">
+            <PageGuideButton steps={calendarGuideSteps} />
             {canCreateAppointments && (
               <button
+                data-tour="calendar-new-appt-btn"
                 onClick={() => handleCreateAppointment()}
                 className="flex items-center gap-1.5 lg:gap-2 px-3 py-2 lg:px-6 lg:py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold text-xs lg:text-sm hover:shadow-lg hover:shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
               >
@@ -598,7 +602,7 @@ export const CalendarPage: React.FC = () => {
                   <GoogleCalendarTip iconOnly />
                 </span>
                 {/* Desktop: botones completos */}
-                <span className="hidden lg:contents">
+                <span data-tour="calendar-google-tools" className="hidden lg:flex items-center gap-2 lg:gap-3">
                   <CalendarGoogleSync
                     userId={currentAppUser.id}
                     appointments={appointments}
