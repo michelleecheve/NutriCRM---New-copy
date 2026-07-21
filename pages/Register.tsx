@@ -399,6 +399,18 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
                 </>
               )}
             </button>
+
+            <p className="text-center text-[11px] text-slate-400 pt-1">
+              Al registrarte aceptas los{' '}
+              <a href="/terms-of-service.html" target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-500 hover:text-emerald-600 transition-colors underline">
+                Términos de Servicio
+              </a>{' '}
+              y la{' '}
+              <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-500 hover:text-emerald-600 transition-colors underline">
+                Política de Privacidad
+              </a>
+              .
+            </p>
           </form>
         </div>
       </div>

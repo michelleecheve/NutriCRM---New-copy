@@ -14,6 +14,7 @@ type LoginView = 'login' | 'forgot' | 'forgot-sent';
 
 export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onNavigateToLanding }) => {
   const [view, setView] = useState<LoginView>('login');
+  const [showHelp, setShowHelp] = useState(false);
 
   // Login state
   const [email, setEmail] = useState('');
@@ -168,33 +169,36 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
 
   // ── Vista: login principal ────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundImage: 'url(/backgroundimage.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <div className="min-h-screen flex flex-col items-center p-4 sm:p-6" style={{ backgroundImage: 'url(/backgroundimage.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
       {onNavigateToLanding && (
-        <button
-          onClick={onNavigateToLanding}
-          className="absolute top-5 left-5 flex items-center gap-1.5 text-slate-900 hover:text-slate-700 text-base font-medium transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Ir a Inicio
-        </button>
+        <div className="w-full max-w-md pt-2 sm:pt-3">
+          <button
+            onClick={onNavigateToLanding}
+            className="flex items-center gap-1.5 text-slate-900 hover:text-slate-700 text-sm sm:text-base font-medium transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Ir a Inicio
+          </button>
+        </div>
       )}
+      <div className="flex-1 w-full flex items-center justify-center">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
-        <div className="p-10 text-center">
+        <div className="p-6 sm:p-10 text-center">
           <div
-            className="w-16 h-16 mx-auto mb-6 cursor-pointer"
+            className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-6 cursor-pointer"
             onClick={onNavigateToLanding}
             title="Ir a Inicio"
           >
             <img src="/logo_nutrifollow.png" alt="NutriFollow" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Bienvenido a NutriFollow</h1>
-          <p className="text-slate-500 text-sm">Ingresa tus credenciales para acceder al panel.</p>
+          <h1 className="text-lg sm:text-2xl font-bold text-slate-900 mb-1 sm:mb-2 tracking-tight whitespace-nowrap">Bienvenido a NutriFollow</h1>
+          <p className="text-slate-500 text-xs sm:text-sm">Inicia sesión para acceder al panel.</p>
         </div>
 
-        <div className="px-10 pb-10">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="px-6 pb-6 sm:px-10 sm:pb-10">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-5">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Correo Electrónico</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 sm:mb-2">Correo Electrónico</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
@@ -202,14 +206,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-slate-900 font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-2.5 sm:py-3.5 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-slate-900 font-medium placeholder:text-slate-400"
                   placeholder="doctor@nutricrm.com"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Contraseña</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 sm:mb-2">Contraseña</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
@@ -217,7 +221,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-slate-900 font-medium placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-2.5 sm:py-3.5 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-slate-900 font-medium placeholder:text-slate-400"
                   placeholder="••••••••"
                 />
               </div>
@@ -233,7 +237,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-70 mt-4"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 sm:py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-70 mt-2 sm:mt-4"
             >
               {isLoading ? (
                 <span className="flex items-center gap-1.5">
@@ -253,7 +257,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
             </button>
           </form>
 
-          <div className="mt-6 text-center space-y-4">
+          <div className="mt-4 sm:mt-6 text-center space-y-3 sm:space-y-4">
             <button
               type="button"
               onClick={() => { setView('forgot'); setForgotEmail(email); setForgotError(''); }}
@@ -261,7 +265,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
             >
               ¿Olvidaste tu contraseña?
             </button>
-            <div className="pt-4 border-t border-slate-100">
+            <div className="pt-3 sm:pt-4 border-t border-slate-100">
               <p className="text-sm text-slate-500">
                 ¿No tienes una cuenta?{' '}
                 <button
@@ -272,8 +276,27 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
                 </button>
               </p>
             </div>
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowHelp((v) => !v)}
+                className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
+              >
+                Ayuda
+              </button>
+              {showHelp && (
+                <p className="mt-2 text-sm text-slate-500">
+                  ¿Tienes problemas para ingresar? Comunícate a{' '}
+                  <a href="mailto:nutrifollow.app@outlook.com" className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
+                    nutrifollow.app@outlook.com
+                  </a>{' '}
+                  y rápidamente te apoyaremos.
+                </p>
+              )}
+            </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
