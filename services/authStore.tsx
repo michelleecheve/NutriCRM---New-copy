@@ -58,6 +58,7 @@ export const DEFAULT_PERMISSIONS: PagePermission[] = [
 const SESSION_KEY = 'nutricrm_session_v1';
 const PERMISSIONS_KEY = 'nutricrm_permissions_v1.1';
 const SUBSCRIPTION_CACHE_KEY = 'nutricrm_subscription_v1';
+const PENDING_LINK_CODE_KEY = 'nutricrm_pending_link_code';
 
 // ─── Utils ───────────────────────────────────────────────────────────────────
 
@@ -343,9 +344,26 @@ class AuthStore {
       localStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
     }
 
+    // Si la cuenta se creó desde un link de invitación de recepcionista
+    // (con el código de vinculación de la nutricionista embebido), completar
+    // la vinculación automáticamente ahora que ya hay sesión activa.
+    if (user.role === 'recepcionista') {
+      const pendingLinkCode = localStorage.getItem(PENDING_LINK_CODE_KEY);
+      if (pendingLinkCode) {
+        localStorage.removeItem(PENDING_LINK_CODE_KEY);
+        this.linkNutritionistToReceptionistByCode(pendingLinkCode).catch(err =>
+          console.error('Error al vincular automáticamente con la nutricionista:', err)
+        );
+      }
+    }
+
     await store.initForUser(user.id);
     this.isLoading = false;
     this.notifyListeners();
+  }
+
+  savePendingLinkCode(code: string): void {
+    localStorage.setItem(PENDING_LINK_CODE_KEY, code);
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────

@@ -148,11 +148,15 @@ const VinculacionNutricionista: React.FC<{
   const [isOpen, setIsOpen] = useState(false);
   const [linkCode, setLinkCode] = useState('');
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [linkedReceptionists, setLinkedReceptionists] = useState<AppUser[]>([]);
 
   const myLinkCode = currentUser?.linkCode || '';
+  const inviteLink = myLinkCode
+    ? `${window.location.origin}/register?role=recepcionista&nutriCode=${encodeURIComponent(myLinkCode)}`
+    : '';
 
   useEffect(() => {
     authStore.getLinkedReceptionists().then(setLinkedReceptionists);
@@ -162,6 +166,12 @@ const VinculacionNutricionista: React.FC<{
     navigator.clipboard.writeText(myLinkCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyInviteLink = () => {
+    navigator.clipboard.writeText(inviteLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   };
 
   const handleLinkReceptionist = async () => {
@@ -194,6 +204,37 @@ const VinculacionNutricionista: React.FC<{
 
       {isOpen && (
         <div className="space-y-6">
+          <p className="text-sm text-slate-500 -mt-2">
+            Aquí podrás encontrar tu código para compartirlo con tu recepcionista y que te administre el calendario.
+            Recuerda que tu recepcionista primero debe crear su cuenta con el rol Recepcionista para poder vincularse a ti.
+          </p>
+
+          {myLinkCode && (
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-3">
+              <div>
+                <p className="text-sm font-bold text-slate-800">Link de invitación para tu recepcionista</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Comparte este link con tu recepcionista para que cree su perfil y automáticamente se vincule contigo.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-600 truncate select-all">
+                  {inviteLink}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyInviteLink}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${
+                    linkCopied ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {linkCopied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+                  {linkCopied ? 'Copiado' : 'Copiar link'}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 space-y-3">
             <div>
               <p className="text-sm font-bold text-emerald-800">Tu código de vinculación</p>

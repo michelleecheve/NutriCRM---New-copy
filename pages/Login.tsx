@@ -52,13 +52,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
     setForgotError('');
     setForgotLoading(true);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
-      redirectTo: window.location.origin,
+    const { data, error } = await supabase.functions.invoke('send-password-reset', {
+      body: { email: forgotEmail.trim(), redirectTo: window.location.origin },
     });
 
     setForgotLoading(false);
 
-    if (error) {
+    if (error || !data?.ok) {
       setForgotError('No se pudo enviar el correo. Verifica la dirección e intenta de nuevo.');
       return;
     }

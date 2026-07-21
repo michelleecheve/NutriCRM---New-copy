@@ -10,6 +10,16 @@ interface RegisterProps {
   onSuccess: () => void;
 }
 
+// Lee los parámetros del link de invitación (?role=recepcionista&nutriCode=NUTRI-XXXXXX)
+// que una nutricionista comparte con su recepcionista desde Perfil.
+function getInviteParams() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    role: params.get('role') === 'recepcionista' ? ('recepcionista' as UserRole) : null,
+    nutriCode: params.get('nutriCode') || '',
+  };
+}
+
 const COUNTRIES = [
   'Afganistán','Albania','Alemania','Andorra','Angola','Antigua y Barbuda','Arabia Saudita',
   'Argelia','Argentina','Armenia','Australia','Austria','Azerbaiyán','Bahamas','Bahrein',
@@ -98,7 +108,8 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<UserRole>('nutricionista');
+  const [role, setRole] = useState<UserRole>(() => getInviteParams().role || 'nutricionista');
+  const [nutriCode] = useState<string>(() => getInviteParams().nutriCode);
   const [timezone, setTimezone] = useState(() => {
     const local = getLocalTimezone();
     return UTC_TIMEZONES.includes(local) ? local : 'UTC±00:00';
@@ -158,6 +169,20 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
         } catch (uploadErr) {
           console.error('Error uploading avatar:', uploadErr);
           // Don't fail the whole registration if just the avatar fails
+        }
+      }
+
+      // Si viene de un link de invitación de recepcionista, vincular con la nutricionista.
+      if (nutriCode && role === 'recepcionista') {
+        if (authStore.isAuthenticated()) {
+          try {
+            await authStore.linkNutritionistToReceptionistByCode(nutriCode);
+          } catch (linkErr) {
+            console.error('Error al vincular automáticamente con la nutricionista:', linkErr);
+          }
+        } else {
+          // Sin sesión todavía (falta confirmar correo) — se completará al iniciar sesión.
+          authStore.savePendingLinkCode(nutriCode);
         }
       }
 
