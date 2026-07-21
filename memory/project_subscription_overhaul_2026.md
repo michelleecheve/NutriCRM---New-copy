@@ -229,7 +229,7 @@ Esto se hace en el panel de Recurrente, no en código:
 - [ ] 7.2 Al hacer click, mostrar modal/alert con pasos claros:
   1. Cancela tu suscripción actual (seguirás con acceso Pro hasta el [fecha])
   2. Cuando expire, vuelve a suscribirte con la nueva tarjeta
-  "Tus datos y pacientes nunca se eliminan."
+  "Tus datos y pacientes están a salvo: solo vuelves a los límites del Plan Básico."
 - [x] 7.3 (revertido 2026-07-07) El botón "Cambiar tarjeta" NO aparece en `cancelled_pending` — no tiene sentido actualizar la tarjeta de una suscripción que ya está en cuenta regresiva para cancelarse. Solo `status === 'active'` o `'past_due'` con `recurrente_subscription_id`.
 
 ---

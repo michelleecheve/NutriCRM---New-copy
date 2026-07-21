@@ -110,7 +110,7 @@ export function emailPastDue(name: string): string {
       <li style="margin-bottom:8px;">Vuelve a suscribirte con un método de pago válido.</li>
     </ol>
     ${btn('Ir a mi perfil', `${APP_URL}/profile`)}
-    <p style="color:#64748b;font-size:13px;">Tus datos y pacientes están seguros — nunca se eliminan.</p>
+    <p style="color:#64748b;font-size:13px;">Tus datos y pacientes están seguros, sin importar lo que pase con tu plan.</p>
   `);
 }
 
@@ -123,7 +123,7 @@ export function emailCancellationConfirmed(name: string, accessUntil: string): s
       📅 Tu acceso Pro continuará activo hasta el <strong>${accessUntil}</strong>. Después pasarás al Plan Básico automáticamente.
     </p>
     <p>Si cambias de opinión, cuando finalice tu acceso Pro y pases al Plan Básico podrás volver a suscribirte desde tu perfil cuando quieras.</p>
-    <p style="color:#64748b;font-size:13px;">Tus datos y pacientes nunca se eliminan, independientemente de tu plan.</p>
+    <p style="color:#64748b;font-size:13px;">Tus datos y pacientes están a salvo: solo vuelves a los límites del Plan Básico.</p>
   `);
 }
 

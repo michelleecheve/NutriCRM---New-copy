@@ -42,7 +42,7 @@ function emailCancellationConfirmed(name: string, accessUntil: string): string {
     📅 Tu acceso Pro continuará activo hasta el <strong>${accessUntil}</strong>. Después pasarás al Plan Básico automáticamente.
   </p>
   <p>Si cambias de opinión, cuando finalice tu acceso Pro y pases al Plan Básico podrás volver a suscribirte cuando quieras.</p>
-  <p style="color:#64748b;font-size:13px;">Tus datos y pacientes nunca se eliminan, independientemente de tu plan.</p>
+  <p style="color:#64748b;font-size:13px;">Tus datos y pacientes están a salvo: solo vuelves a los límites del Plan Básico.</p>
 </td></tr>
 <tr><td style="background:#f1f5f9;padding:20px 40px;text-align:center;"><p style="margin:0;color:#94a3b8;font-size:12px;">NutriFollow · La herramienta de los nutricionistas modernos</p></td></tr>
 </table></td></tr></table></body></html>`;
