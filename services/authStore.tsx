@@ -153,9 +153,6 @@ const mapProfileToAppUser = (p: any): AppUser => ({
 // Listeners para que App.tsx pueda reaccionar cuando la sesión termina de cargar
 type AuthListener = () => void;
 
-const RECURRENTE_PUBLIC_KEY  = 'pk_live_RNJkUyeRm9FOF1d5zOD9OwqieXUUB32E5FRwzTG85SCvkArmp4EnDPD9N';
-const RECURRENTE_PRODUCT_ID  = 'prod_22uktkdj';
-
 interface SubscriptionState {
   plan:                       string;
   status:                     string;
@@ -659,20 +656,10 @@ class AuthStore {
     }
 
     try {
-      const res = await fetch('https://app.recurrente.com/api/checkouts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-PUBLIC-KEY': RECURRENTE_PUBLIC_KEY },
-        body: JSON.stringify({
-          items: [{ product_id: RECURRENTE_PRODUCT_ID }],
-          success_url: `${window.location.origin}/checkout-success`,
-          cancel_url:  `${window.location.origin}/profile`,
-          locale: 'es',
-          metadata: { owner_id: user.id, email: user.email },
-        }),
-      });
-      if (!res.ok) return { ok: false, message: 'Error al crear el checkout.' };
-      const { checkout_url } = await res.json();
-      if (checkout_url) { window.location.href = `${checkout_url}?lang=es`; return { ok: true }; }
+      const { data, error } = await supabase.functions.invoke('create-checkout');
+      if (error) return { ok: false, message: 'Error al crear el checkout.' };
+      if (!data?.ok) return { ok: false, message: data?.message || 'Error al crear el checkout.' };
+      if (data.checkout_url) { window.location.href = `${data.checkout_url}?lang=es`; return { ok: true }; }
       return { ok: false, message: 'No se recibió URL de pago.' };
     } catch {
       return { ok: false, message: 'Error de conexión.' };
