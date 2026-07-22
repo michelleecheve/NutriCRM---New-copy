@@ -3,7 +3,7 @@ import { Patient, Measurement, PatientEvaluation } from '../../types';
 import { store } from '../../services/store';
 import {
   Trash2, ChevronRight, Calculator, Info,
-  Star, X, AlertTriangle
+  Star, X, AlertTriangle, Compass
 } from 'lucide-react';
 import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
@@ -385,6 +385,14 @@ export const NewMeasurementForm: React.FC<{
             </div>
           </div>
           <div className="flex items-center gap-3 sm:ml-0">
+            {/* Placeholder — la guía real de este formulario se arma en una fase siguiente */}
+            <button
+              data-tour="measurement-form-guide-btn"
+              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
+            >
+              <Compass className="w-4 h-4" />
+              Guía de este formulario
+            </button>
             <SaveButton onSave={handleSave} />
             <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors flex items-center justify-center gap-1.5">
               Salir

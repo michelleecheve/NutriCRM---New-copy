@@ -19,6 +19,8 @@ export interface TourStep {
   body: string;
   placement?: 'top' | 'bottom' | 'left' | 'right' | 'auto';
   advanceOn: TourAdvanceRule;
+  /** texto del botón de avance manual, en vez de "Siguiente" (ej. cierre de un capítulo con una invitación distinta) */
+  nextLabel?: string;
   pinnedReminder?: boolean;
   optional?: boolean;
   /** tarjeta sin spotlight, no bloquea ningún elemento real (bienvenida, cierres de capítulo, "explora esta página") */

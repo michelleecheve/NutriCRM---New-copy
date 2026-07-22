@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, PatientEvaluation, GeneratedMenu, MenuDesignConfig, DEFAULT_VISUAL_THEME } from '../../types';
 import { store } from '../../services/store';
 import { supabaseService } from '../../services/supabaseService';
-import { Calculator, Eye, EyeOff, ArrowLeft, Edit2, Pencil, X, Trash2, AlertTriangle } from 'lucide-react';
+import { Calculator, Eye, EyeOff, ArrowLeft, Edit2, Pencil, X, Trash2, AlertTriangle, Compass } from 'lucide-react';
 import { SaveButton } from '../SaveButton';
 
 import { MenuAddReadSec1 } from './MenuAddReadSec1';
@@ -505,6 +505,15 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 sm:justify-end">
+            {/* Placeholder — la guía real de este formulario se arma en una fase siguiente */}
+            <button
+              data-tour="menu-form-guide-btn"
+              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
+            >
+              <Compass className="w-4 h-4" />
+              Guía de este formulario
+            </button>
+
             <button
               onClick={onClose}
               className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"

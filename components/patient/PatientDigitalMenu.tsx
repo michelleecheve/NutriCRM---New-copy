@@ -519,9 +519,17 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
           <p className="text-sm font-medium text-slate-500">
             Portal desactivado
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-400 mt-1 mb-4">
             Actívalo para compartir el acceso con el paciente.
           </p>
+          <button
+            onClick={handleTogglePortal}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all"
+          >
+            <Power className="w-4 h-4" />
+            {loading ? "Activando..." : "Click para activar aquí"}
+          </button>
         </div>
       ) : (
         <div className="px-5 py-5 space-y-4">

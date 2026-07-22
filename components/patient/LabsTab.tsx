@@ -137,27 +137,31 @@ export const LabsTab: React.FC<LabsTabProps> = ({ patient, onUpdate, onNavigateT
         />
       </div>
 
-      {labs.length > 0 && (
-        <div data-tour="patient-labs-interpretation" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
-            <div>
-              <h3 className="text-sm font-bold text-slate-800">Interpretación de Laboratorios</h3>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">
-                Notas clínicas por archivo
-              </p>
-            </div>
+      <div data-tour="patient-labs-interpretation" className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">Interpretación de Laboratorios</h3>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">
+              Notas clínicas por archivo
+            </p>
           </div>
-          <div className="p-5 space-y-3">
-            {labs.map(file => (
+        </div>
+        <div className="p-5 space-y-3">
+          {labs.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-4">
+              Aún no tienes archivos para agregar análisis.
+            </p>
+          ) : (
+            labs.map(file => (
               <LabInterpretationPanel
                 key={file.id}
                 file={file}
                 onSave={handleSaveInterpretation}
               />
-            ))}
-          </div>
+            ))
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

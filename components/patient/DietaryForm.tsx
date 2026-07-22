@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { DietaryEvaluation, MealEntry, Patient, PatientEvaluation } from '../../types';
-import { Utensils, Plus, X, Trash2, AlertTriangle } from 'lucide-react';
+import { Utensils, Plus, X, Trash2, AlertTriangle, Compass } from 'lucide-react';
 import { SaveButton } from '../SaveButton';
 import { GridInput, ModernTextArea } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
@@ -217,6 +217,14 @@ export const DietaryForm: React.FC<{
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Placeholder — la guía real de este formulario se arma en una fase siguiente */}
+            <button
+              data-tour="dietary-form-guide-btn"
+              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
+            >
+              <Compass className="w-4 h-4" />
+              Guía de este formulario
+            </button>
             <SaveButton onSave={handleSave} />
             <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full text-slate-400">
               <X className="w-6 h-6" />

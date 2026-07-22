@@ -157,6 +157,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
               </div>
             </div>
             <button
+              data-tour="patient-config-export-profile-btn"
               onClick={() => setShowExportProfileModal(true)}
               className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-sm shadow-teal-600/20"
             >
@@ -179,7 +180,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
           </div>
 
           {/* ── Exportar/Importar datos crudos (desplegable) ── */}
-          <div className="rounded-2xl border border-slate-200 overflow-hidden">
+          <div data-tour="patient-config-raw-data" className="rounded-2xl border border-slate-200 overflow-hidden">
             <button
               onClick={() => setShowRawDataSection(v => !v)}
               className="w-full flex items-center justify-between gap-3 px-6 py-4 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
@@ -320,7 +321,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
       {/* Modal Exportar Perfil Completo */}
       {showExportProfileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200">
+          <div data-tour="patient-config-export-modal" className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="bg-teal-100 p-2 rounded-xl">
@@ -342,6 +343,7 @@ export const PatientConfigTab: React.FC<PatientConfigTabProps> = ({ patient, onU
             <div className="space-y-3">
               {/* Exportar Todo */}
               <button
+                data-tour="patient-config-export-all-btn"
                 onClick={handleExportAll}
                 disabled={isExportingAll || isGeneratingDoc || exportingEvaluationId !== null}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"

@@ -15,6 +15,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
   const [patients, setPatients] = useState<Patient[]>(store.getPatients());
   const examplePatientId = prefsService.get<string | null>('onboarding.examplePatientId', null);
+  const demoPatientId = prefsService.get<string | null>('onboarding.demoPatientId', null);
   const [searchTerm, setSearchTerm] = useState<string>(() => prefsService.get('dashboard.searchTerm', ''));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
@@ -378,6 +379,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectPatient }) => {
                         {patient.id === examplePatientId && (
                           <span className="text-[10px] font-bold uppercase tracking-wide text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
                             Ejemplo
+                          </span>
+                        )}
+                        {patient.id === demoPatientId && (
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-amber-600">
+                            Paciente de prueba
                           </span>
                         )}
                       </div>

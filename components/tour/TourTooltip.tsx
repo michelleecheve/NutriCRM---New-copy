@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { ChevronRight, ChevronLeft, Clock } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Clock, EyeOff, X } from 'lucide-react';
 
 interface TourTooltipProps {
   rect: DOMRect | null;
@@ -15,9 +15,29 @@ interface TourTooltipProps {
   onBack: () => void;
   onPauseLater: () => void;
   dismissLabel?: string;
+  dismissIcon?: 'clock' | 'eye-off';
+  nextLabel?: string;
+  /** si se pasa, muestra una X en la esquina superior derecha para cerrar la tarjeta */
+  onCloseCorner?: () => void;
 }
 
 const MARGIN = 14;
+
+// Permite resaltar partes del body envolviéndolas en ==texto==, sin afectar
+// los steps que no usan esta marca (se renderizan igual que antes).
+function renderBody(body: string): React.ReactNode {
+  const parts = body.split(/(==[^=]+==)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('==') && part.endsWith('==')) {
+      return (
+        <mark key={i} className="bg-yellow-200 text-slate-900 rounded px-0.5">
+          {part.slice(2, -2)}
+        </mark>
+      );
+    }
+    return part;
+  });
+}
 
 function computePosition(
   rect: DOMRect,
@@ -57,6 +77,7 @@ function computePosition(
 export const TourTooltip: React.FC<TourTooltipProps> = ({
   rect, standalone, standalonePosition = 'center', placement, title, body, stepLabel,
   showManualNext, canGoBack, onNext, onBack, onPauseLater, dismissLabel = 'Continuar después',
+  dismissIcon = 'clock', nextLabel = 'Siguiente', onCloseCorner,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -102,19 +123,27 @@ export const TourTooltip: React.FC<TourTooltipProps> = ({
     <div
       ref={cardRef}
       style={{ ...style, zIndex: 9999 }}
-      className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-5 w-[320px] max-w-[90vw]"
+      className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 p-5 w-[320px] max-w-[90vw]"
     >
-      <div className="mb-2">
+      {onCloseCorner && (
+        <button
+          onClick={onCloseCorner}
+          className="absolute top-3 right-3 p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
+      <div className="mb-2 pr-6">
         <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-600">{stepLabel}</span>
       </div>
       <h3 className="font-bold text-slate-900 text-base mb-1.5">{title}</h3>
-      <p className="text-sm text-slate-600 leading-relaxed mb-4">{body}</p>
+      <p className="text-sm text-slate-600 leading-relaxed mb-4">{renderBody(body)}</p>
       <div className="flex items-center justify-between gap-2">
         <button
           onClick={onPauseLater}
           className="text-xs text-slate-400 hover:text-slate-600 font-semibold flex items-center gap-1 transition-colors"
         >
-          <Clock className="w-3.5 h-3.5" /> {dismissLabel}
+          {dismissIcon === 'eye-off' ? <EyeOff className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />} {dismissLabel}
         </button>
         <div className="flex items-center gap-2">
           {canGoBack && (
@@ -130,7 +159,7 @@ export const TourTooltip: React.FC<TourTooltipProps> = ({
               onClick={onNext}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 transition-all"
             >
-              Siguiente <ChevronRight className="w-4 h-4" />
+              {nextLabel} <ChevronRight className="w-4 h-4" />
             </button>
           )}
         </div>

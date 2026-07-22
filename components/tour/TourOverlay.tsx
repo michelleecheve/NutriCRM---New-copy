@@ -9,6 +9,8 @@ import { TourSpotlight } from './TourSpotlight';
 import { TourTooltip } from './TourTooltip';
 import { WelcomeAnnouncement } from './WelcomeAnnouncement';
 import { TourResumeNotice } from './TourResumeNotice';
+import { TourDemoPatientMissingNotice } from './TourDemoPatientMissingNotice';
+import { TourDemoPatientExistsNotice } from './TourDemoPatientExistsNotice';
 import { TourPollCtx } from '../../services/tourSteps/types';
 
 interface TourOverlayProps {
@@ -27,6 +29,7 @@ export const TourOverlay: React.FC<TourOverlayProps> = ({
 }) => {
   const [, setVersion] = useState(0);
   const [showPauseNotice, setShowPauseNotice] = useState(false);
+  const [dismissedPatientExistsNotice, setDismissedPatientExistsNotice] = useState(false);
 
   useEffect(() => tourService.subscribe(() => setVersion(v => v + 1)), []);
 
@@ -48,6 +51,7 @@ export const TourOverlay: React.FC<TourOverlayProps> = ({
   }, []);
 
   const step = tourService.isActive() ? tourService.getCurrentStep() : null;
+  useEffect(() => setDismissedPatientExistsNotice(false), [step?.id]);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Navegación automática para pasos que el tour dirige él mismo (saltos entre páginas)
@@ -144,6 +148,35 @@ export const TourOverlay: React.FC<TourOverlayProps> = ({
     );
   }
 
+  // El paso necesita saltar automáticamente al paciente de prueba pero ya no existe
+  // (se eliminó desde su pestaña Configuración) — sin este aviso el overlay
+  // simplemente desaparecía sin explicación, dejando el recorrido "atorado".
+  const demoPatientMissing =
+    !!step && step.autoNavigate && step.route === AppRoute.PATIENT_DETAIL && !tourService.getDemoPatientId();
+  if (demoPatientMissing) {
+    return (
+      <TourDemoPatientMissingNotice
+        onCreateNew={() => tourService.resumeChapter(1)}
+        onPauseLater={() => setShowPauseNotice(true)}
+      />
+    );
+  }
+
+  // Al llegar al paso de "crear paciente" del Cap 1, si ya existe uno (ej. se
+  // reinició el capítulo sin eliminar el paciente anterior), se ofrece saltarlo
+  // en vez de forzar a crear un duplicado solo para poder avanzar.
+  const alreadyHasDemoPatient =
+    !!step && step.id === 'ch1-new-patient-btn' && !!tourService.getDemoPatientId() && !dismissedPatientExistsNotice;
+  if (alreadyHasDemoPatient) {
+    return (
+      <TourDemoPatientExistsNotice
+        patientName={tourService.getDemoPatientName() ?? 'tu paciente de prueba'}
+        onSkip={() => tourService.completeChapter(1)}
+        onCreateNew={() => setDismissedPatientExistsNotice(true)}
+      />
+    );
+  }
+
   const atRoute = !!step && currentRoute === step.route;
   const atTab = !!step && (!step.tab || currentPatientTab === step.tab);
   const showingStep = !!step && atRoute && atTab;
@@ -170,6 +203,7 @@ export const TourOverlay: React.FC<TourOverlayProps> = ({
         body={step.body}
         stepLabel={`Capítulo ${chapter?.id ?? 1} · Paso ${stepNumber} de ${totalSteps}`}
         showManualNext={step.advanceOn.type === 'manual'}
+        nextLabel={step.nextLabel}
         canGoBack={tourService.getCurrentStepIndex() > 0}
         onNext={() => tourService.advanceStep()}
         onBack={() => tourService.prevStep()}

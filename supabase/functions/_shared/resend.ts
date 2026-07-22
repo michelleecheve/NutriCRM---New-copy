@@ -91,7 +91,7 @@ export function emailWelcomePro(name: string, nextBilling: string): string {
       📅 Tu próximo cobro es el <strong>${nextBilling}</strong>.
     </p>
     ${btn('Ir a NutriFollow', APP_URL)}
-    <p style="color:#64748b;font-size:13px;">Si tienes alguna pregunta, responde este correo y te ayudamos.</p>
+    <p style="color:#64748b;font-size:13px;">Si tienes dudas, escribe a nutrifollow.app@outlook.com</p>
   `);
 }
 

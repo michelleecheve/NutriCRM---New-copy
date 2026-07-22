@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Patient } from '../../types';
-import { X, Activity, ChevronRight, Trash2, Star, Info } from 'lucide-react';
+import { X, Activity, ChevronRight, Trash2, Star, Info, Compass } from 'lucide-react';
 import { SaveButton } from '../SaveButton';
 import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
@@ -226,6 +226,14 @@ export const BioimpedanciaForm: React.FC<{
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {/* Placeholder — la guía real de este formulario se arma en una fase siguiente */}
+          <button
+            data-tour="bioimpedancia-form-guide-btn"
+            className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
+          >
+            <Compass className="w-4 h-4" />
+            Guía de este formulario
+          </button>
           <SaveButton onSave={handleSave} />
           <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors text-center">
             Salir

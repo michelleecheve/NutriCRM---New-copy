@@ -2,7 +2,7 @@ import { prefsService } from './prefsService';
 import { chapters, getChapter } from './tourSteps';
 import { TourStep } from './tourSteps/types';
 
-const TOTAL_CHAPTERS = 5;
+const TOTAL_CHAPTERS = 7;
 
 class TourService {
   private listeners: Set<() => void> = new Set();
@@ -20,10 +20,21 @@ class TourService {
     return prefsService.get('onboarding.active', false);
   }
 
+  // Marca un capítulo como "empezado" de forma independiente del puntero currentChapter,
+  // para que el status "En progreso" de otros capítulos no se pierda solo porque el
+  // usuario está ahora mismo repasando un capítulo distinto (ej. reiniciar el cap 1).
+  private markStarted(chapterId: number): void {
+    const started = prefsService.get<number[]>('onboarding.chaptersStarted', []);
+    if (!started.includes(chapterId)) {
+      prefsService.set('onboarding.chaptersStarted', [...started, chapterId]);
+    }
+  }
+
   start(): void {
     prefsService.set('onboarding.active', true);
     prefsService.set('onboarding.currentChapter', 1);
     prefsService.set('onboarding.currentStepIndex', 0);
+    this.markStarted(1);
     this.notify();
   }
 
@@ -79,6 +90,7 @@ class TourService {
     if (nextChapterId <= TOTAL_CHAPTERS) {
       prefsService.set('onboarding.currentChapter', nextChapterId);
       prefsService.set('onboarding.currentStepIndex', 0);
+      this.markStarted(nextChapterId);
       // Si ese capítulo todavía no está construido, se pausa en vez de marcar "terminado"
       // (evita romper el chip de reanudar mientras se van agregando capítulos por fases).
       prefsService.set('onboarding.active', !!getChapter(nextChapterId));
@@ -93,6 +105,7 @@ class TourService {
     prefsService.set('onboarding.currentChapter', chapterId);
     prefsService.set('onboarding.currentStepIndex', 0);
     prefsService.set('onboarding.active', true);
+    this.markStarted(chapterId);
     this.notify();
   }
 
@@ -110,6 +123,7 @@ class TourService {
     prefsService.set('onboarding.currentStepIndex', 0);
     prefsService.set('onboarding.chaptersCompleted', []);
     prefsService.set('onboarding.chaptersSkipped', []);
+    prefsService.set('onboarding.chaptersStarted', []);
     prefsService.set('onboarding.finishedAt', undefined);
     this.notify();
   }
@@ -117,14 +131,19 @@ class TourService {
   getChapterStatus(chapterId: number): 'completed' | 'skipped' | 'in_progress' | 'not_started' {
     const completed = prefsService.get<number[]>('onboarding.chaptersCompleted', []);
     const skipped = prefsService.get<number[]>('onboarding.chaptersSkipped', []);
+    const started = prefsService.get<number[]>('onboarding.chaptersStarted', []);
     if (skipped.includes(chapterId)) return 'skipped';
     if (completed.includes(chapterId)) return 'completed';
-    if (this.getCurrentChapterId() === chapterId) return 'in_progress';
+    if (started.includes(chapterId) || this.getCurrentChapterId() === chapterId) return 'in_progress';
     return 'not_started';
   }
 
   getDemoPatientId(): string | null {
     return prefsService.get('onboarding.demoPatientId', null);
+  }
+
+  getDemoPatientName(): string | null {
+    return prefsService.get('onboarding.demoPatientName', null);
   }
 
   setDemoPatient(id: string, name: string): void {

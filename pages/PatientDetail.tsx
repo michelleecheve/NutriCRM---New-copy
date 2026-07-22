@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Patient } from '../types';
 import { store } from '../services/store';
+import { prefsService } from '../services/prefsService';
 import { supabaseService } from '../services/supabaseService'; // ✅ NUEVO IMPORT
 import {
   ArrowLeft, AlertCircle, Activity, Calendar, Utensils, ChefHat,
@@ -133,8 +134,13 @@ export const PatientDetail: React.FC<PatientDetailProps> = ({ patientId, onBack,
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             {patient.firstName} {patient.lastName}
+            {patient.id === prefsService.get<string | null>('onboarding.demoPatientId', null) && (
+              <span className="text-[11px] font-bold uppercase tracking-wide text-amber-600">
+                Paciente de prueba
+              </span>
+            )}
           </h1>
         </div>
         <div className="ml-auto flex gap-3">

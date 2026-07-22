@@ -3,6 +3,7 @@ import { Compass } from 'lucide-react';
 import { useTourTarget } from './useTourTarget';
 import { TourSpotlight } from './TourSpotlight';
 import { TourTooltip } from './TourTooltip';
+import { HideGuidesNotice } from './HideGuidesNotice';
 import { PageGuideStep } from './pageGuideTypes';
 import { isPageGuidesEnabled, subscribePageGuidesEnabled } from '../../services/pageGuidePrefs';
 
@@ -22,6 +23,7 @@ export const PageGuideButton: React.FC<PageGuideButtonProps> = ({
   const [active, setActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [enabled, setEnabled] = useState(() => isPageGuidesEnabled());
+  const [showHideGuidesNote, setShowHideGuidesNote] = useState(false);
 
   const step = active ? steps[stepIndex] : null;
   const rect = useTourTarget(step?.target ?? null);
@@ -66,10 +68,16 @@ export const PageGuideButton: React.FC<PageGuideButtonProps> = ({
             canGoBack={stepIndex > 0}
             onNext={handleNext}
             onBack={() => setStepIndex(i => Math.max(0, i - 1))}
-            onPauseLater={close}
-            dismissLabel="Cerrar guía"
+            onPauseLater={() => setShowHideGuidesNote(true)}
+            dismissLabel="Ocultar guías"
+            dismissIcon="eye-off"
+            onCloseCorner={close}
           />
         </>
+      )}
+
+      {showHideGuidesNote && (
+        <HideGuidesNotice onClose={() => setShowHideGuidesNote(false)} />
       )}
     </>
   );

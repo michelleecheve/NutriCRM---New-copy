@@ -26,8 +26,6 @@ export const TourProfileSection: React.FC = () => {
 
   useEffect(() => tourService.subscribe(() => setVersion(v => v + 1)), []);
 
-  const currentChapter = tourService.getCurrentChapterId();
-
   const handleChapterAction = (chapterId: number) => {
     const status = tourService.getChapterStatus(chapterId);
     if (status === 'completed' || status === 'skipped') {
@@ -84,6 +82,12 @@ export const TourProfileSection: React.FC = () => {
           Te lleva a crear un paciente de prueba de principio a fin, para que conozcas el sistema haciendo. Retómalo por capítulos o reinícialo si quieres repasar algún tema.
         </p>
 
+        {tourService.getDemoPatientId() && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            Paciente de prueba creado: <span className="font-bold">{tourService.getDemoPatientName()}</span>
+          </p>
+        )}
+
         <div className="space-y-2">
           {Array.from({ length: tourService.totalChapters }, (_, i) => i + 1).map(chapterId => {
             const status = tourService.getChapterStatus(chapterId);
@@ -107,7 +111,7 @@ export const TourProfileSection: React.FC = () => {
                   {status === 'completed' || status === 'skipped' ? (
                     <><RotateCcw className="w-3.5 h-3.5" /> Reiniciar</>
                   ) : (
-                    <><PlayCircle className="w-3.5 h-3.5" /> {status === 'in_progress' && chapterId === currentChapter ? 'Reanudar' : 'Comenzar'}</>
+                    <><PlayCircle className="w-3.5 h-3.5" /> {status === 'in_progress' ? 'Reanudar' : 'Comenzar'}</>
                   )}
                 </button>
               </div>

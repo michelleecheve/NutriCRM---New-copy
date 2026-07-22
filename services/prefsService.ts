@@ -31,6 +31,7 @@ export interface StorageSaved {
     currentStepIndex?: number;
     chaptersCompleted?: number[];
     chaptersSkipped?: number[];
+    chaptersStarted?: number[];
     demoPatientId?: string | null;
     demoPatientName?: string;
     examplePatientId?: string | null;
