@@ -8,6 +8,8 @@ interface MenuAddReadSec2Props {
   setSelectedReferenceIds: (ids: string[]) => void;
   selectedRecommendationIds: string[];
   setSelectedRecommendationIds: (ids: string[]) => void;
+  isVisible: boolean;
+  onToggleVisible: () => void;
   onDirty?: () => void;
 }
 
@@ -16,9 +18,10 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
   setSelectedReferenceIds,
   selectedRecommendationIds,
   setSelectedRecommendationIds,
+  isVisible,
+  onToggleVisible,
   onDirty
 }) => {
-  const [isVisible, setIsVisible] = useState(false);
   const [showSelector, setShowSelector] = useState(false);
   const [selectorType, setSelectorType] = useState<'references' | 'recommendations'>('references');
   const [tempSelectedIds, setTempSelectedIds] = useState<string[]>([]);
@@ -74,7 +77,8 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
   return (
     <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
       <div
-        onClick={() => setIsVisible(!isVisible)}
+        data-tour="menu-sec2-header"
+        onClick={onToggleVisible}
         className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors"
       >
         <div className="flex items-center gap-3">
@@ -95,7 +99,7 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
       {isVisible && (
         <div className="p-8 space-y-8 animate-in slide-in-from-top-2 duration-300">
           {/* B) Referencias Seleccionadas */}
-          <div className="space-y-3">
+          <div data-tour="menu-sec2-referencias" className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-500 uppercase ml-1">Referencias seleccionadas</label>
               <button 
@@ -130,7 +134,7 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
           </div>
 
           {/* C) Recomendaciones Seleccionadas */}
-          <div className="space-y-3">
+          <div data-tour="menu-sec2-recomendaciones" className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-500 uppercase ml-1">Recomendaciones seleccionadas</label>
               <button 

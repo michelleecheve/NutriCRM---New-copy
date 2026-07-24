@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Patient } from '../../types';
-import { X, Activity, ChevronRight, Trash2, Star, Info, Compass } from 'lucide-react';
+import { X, Activity, ChevronRight, Trash2, Star, Info } from 'lucide-react';
 import { SaveButton } from '../SaveButton';
 import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
 import { store } from '../../services/store';
 import { BioimpedanciaInterpretation } from './BioimpedanciaInterpretation';
+import { PageGuideButton } from '../tour/PageGuideButton';
+import { getBioimpedanciaFormGuideSteps } from '../tour/pageGuides/bioimpedanciaForm';
 
 const calcDecimalAge = (birthdate: string, refDate: string): number => {
   const birth = new Date(birthdate);
@@ -226,14 +228,7 @@ export const BioimpedanciaForm: React.FC<{
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {/* Placeholder — la guía real de este formulario se arma en una fase siguiente */}
-          <button
-            data-tour="bioimpedancia-form-guide-btn"
-            className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
-          >
-            <Compass className="w-4 h-4" />
-            Guía de este formulario
-          </button>
+          <PageGuideButton steps={getBioimpedanciaFormGuideSteps()} label="Guía de este formulario" variant="light" />
           <SaveButton onSave={handleSave} />
           <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors text-center">
             Salir
@@ -243,7 +238,7 @@ export const BioimpedanciaForm: React.FC<{
 
       <div className="p-8 space-y-8">
         {/* Evaluación Asignada Section */}
-        <div className="space-y-3">
+        <div data-tour="bioimpedancia-evaluation-link" className="space-y-3">
           <EvaluationLink
             patientId={patient.id}
             patientEvaluations={patientEvaluations}
@@ -256,7 +251,7 @@ export const BioimpedanciaForm: React.FC<{
         </div>
 
         {/* Datos Generales Section */}
-        <div className="space-y-6">
+        <div data-tour="bioimpedancia-datos-generales" className="space-y-6">
           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
             DATOS GENERALES
           </h4>
@@ -371,7 +366,7 @@ export const BioimpedanciaForm: React.FC<{
         </div>
 
         {/* Perímetros Corporales Section */}
-        <div className="space-y-6">
+        <div data-tour="bioimpedancia-perimetros" className="space-y-6">
           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
             PERÍMETROS CORPORALES (CM)
           </h4>
@@ -435,7 +430,7 @@ export const BioimpedanciaForm: React.FC<{
         </div>
 
         {/* Notas */}
-        <div className="space-y-4">
+        <div data-tour="bioimpedancia-notas" className="space-y-4">
           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
             NOTAS
           </h4>
@@ -449,7 +444,9 @@ export const BioimpedanciaForm: React.FC<{
         </div>
 
         {/* Visual Interpretation */}
-        <BioimpedanciaInterpretation formData={formData} />
+        <div data-tour="bioimpedancia-interpretation">
+          <BioimpedanciaInterpretation formData={formData} />
+        </div>
 
         {/* Footer */}
         <div className="pt-8 border-t border-slate-100 flex items-center justify-between gap-3">
@@ -483,7 +480,9 @@ export const BioimpedanciaForm: React.FC<{
             ))}
           </div>
           <div className="flex items-center gap-3">
-            <SaveButton onSave={handleSave} />
+            <div data-tour="bioimpedancia-save-btn">
+              <SaveButton onSave={handleSave} />
+            </div>
             <button onClick={onClose} className="px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-colors">
               Salir
             </button>

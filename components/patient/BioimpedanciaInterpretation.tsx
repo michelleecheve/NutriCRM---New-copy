@@ -570,18 +570,6 @@ export const BioimpedanciaInterpretation: React.FC<{
   const age = parseInt(s(formData.age)) || 0;
   const sex = s(formData.gender) || '';
 
-  const hasAnyValue = [
-    formData.bodyFat,
-    formData.visceralFat,
-    formData.totalBodyWater,
-    formData.physiqueRating,
-    formData.metabolicAge,
-    formData.imc,
-    formData.boneMass,
-  ].some(v => s(v).trim() !== '');
-
-  if (!hasAnyValue) return null;
-
   const bodyFatZones = getBodyFatZones(sex, age);
   const bodyFatMax = sex === 'Masculino' ? 40 : 55;
 

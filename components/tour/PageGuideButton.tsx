@@ -11,6 +11,8 @@ interface PageGuideButtonProps {
   steps: PageGuideStep[];
   label?: string;
   className?: string;
+  /** 'dark' (default) es el botón sólido usado en la mayoría de páginas. 'light' es un botón discreto blanco/gris, usado en formularios donde no debe competir con el botón de Guardar. */
+  variant?: 'dark' | 'light';
 }
 
 // Guía interactiva de una sola página, autocontenida: no depende del recorrido
@@ -18,7 +20,7 @@ interface PageGuideButtonProps {
 // desde el paso 1. Pensado para poder repetirse cuando el usuario quiera,
 // sin necesidad de "recordar" en qué paso se quedó.
 export const PageGuideButton: React.FC<PageGuideButtonProps> = ({
-  steps, label = 'Guía de esta página', className = '',
+  steps, label = 'Guía de esta página', className = '', variant = 'dark',
 }) => {
   const [active, setActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
@@ -47,9 +49,13 @@ export const PageGuideButton: React.FC<PageGuideButtonProps> = ({
     <>
       <button
         onClick={() => { setActive(true); setStepIndex(0); }}
-        className={`flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-sm transition-all ${className}`}
+        className={
+          variant === 'light'
+            ? `flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all ${className}`
+            : `flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-sm transition-all ${className}`
+        }
       >
-        <Compass className="w-4 h-4 text-emerald-400" />
+        <Compass className={variant === 'light' ? 'w-4 h-4' : 'w-4 h-4 text-emerald-400'} />
         {label}
       </button>
 
@@ -64,6 +70,7 @@ export const PageGuideButton: React.FC<PageGuideButtonProps> = ({
             title={step.title}
             body={step.body}
             stepLabel={`Paso ${stepIndex + 1} de ${steps.length}`}
+            nextLabel={step.nextLabel}
             showManualNext
             canGoBack={stepIndex > 0}
             onNext={handleNext}

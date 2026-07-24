@@ -3,12 +3,24 @@ import { Patient, Measurement, PatientEvaluation } from '../../types';
 import { store } from '../../services/store';
 import {
   Trash2, ChevronRight, Calculator, Info,
-  Star, X, AlertTriangle, Compass
+  Star, X, AlertTriangle
 } from 'lucide-react';
 import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
 import { calculateAnthropometry } from '../../services/MeasurementsFormulas';
 import { SaveButton } from '../SaveButton';
+import { PageGuideButton } from '../tour/PageGuideButton';
+import { getMeasurementFormGuideSteps } from '../tour/pageGuides/measurementForm';
+
+const SECTION_TOUR_TAGS: Record<string, string> = {
+  'DATOS GENERALES': 'measurement-datos-generales',
+  'PLIEGUES CUTÁNEOS (MM)': 'measurement-pliegues',
+  'DIÁMETROS ÓSEOS (CM)': 'measurement-diametros',
+  'PERÍMETROS CORPORALES (CM)': 'measurement-perimetros',
+  'COMPOSICIÓN CORPORAL': 'measurement-composicion',
+  'SOMATOTIPO': 'measurement-somatotipo',
+  'NOTAS': 'measurement-notas',
+};
 
 
 const FORM_SECTIONS: any[] = [
@@ -385,14 +397,7 @@ export const NewMeasurementForm: React.FC<{
             </div>
           </div>
           <div className="flex items-center gap-3 sm:ml-0">
-            {/* Placeholder — la guía real de este formulario se arma en una fase siguiente */}
-            <button
-              data-tour="measurement-form-guide-btn"
-              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
-            >
-              <Compass className="w-4 h-4" />
-              Guía de este formulario
-            </button>
+            <PageGuideButton steps={getMeasurementFormGuideSteps()} label="Guía de este formulario" variant="light" />
             <SaveButton onSave={handleSave} />
             <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg border border-slate-200 transition-colors flex items-center justify-center gap-1.5">
               Salir
@@ -402,7 +407,7 @@ export const NewMeasurementForm: React.FC<{
 
         <div className="p-6 space-y-8">
           {/* ✅ EvaluationLink — mismo componente que Somatocarta y Menu */}
-          <div className="space-y-3">
+          <div data-tour="measurement-evaluation-link" className="space-y-3">
             <EvaluationLink
               patientId={patient.id}
               patientEvaluations={patientEvaluations}
@@ -416,7 +421,7 @@ export const NewMeasurementForm: React.FC<{
 
           {/* Secciones del form */}
           {FORM_SECTIONS.map((section, sIdx) => (
-            <div key={sIdx} className="space-y-4">
+            <div key={sIdx} data-tour={SECTION_TOUR_TAGS[section.title]} className="space-y-4">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
                 {section.title}
               </h4>
@@ -428,7 +433,11 @@ export const NewMeasurementForm: React.FC<{
                     const val = (formData as any)[field.key];
                     const displayVal = (val === undefined || val === null || isNaN(val)) ? '-' : val.toFixed(2);
                     return (
-                      <div key={field.key} className={`bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50 ${fieldWrapperClass}`}>
+                      <div
+                        key={field.key}
+                        data-tour={field.key === 'imc' ? 'measurement-formula-icon' : undefined}
+                        className={`bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50 ${fieldWrapperClass}`}
+                      >
                         <label className="text-xs font-bold text-emerald-800 mb-1 block uppercase">{field.label}</label>
                         <div className="flex items-center gap-1.5">
                           <div className="text-lg font-bold text-emerald-700">{displayVal}</div>
@@ -539,7 +548,9 @@ export const NewMeasurementForm: React.FC<{
           ) : <div />}
 
           <div className="flex items-center gap-2">
-            <SaveButton onSave={handleSave} />
+            <div data-tour="measurement-save-btn">
+              <SaveButton onSave={handleSave} />
+            </div>
             <button onClick={onClose} className="px-2.5 py-1.5 sm:px-4 sm:py-2 text-slate-500 font-bold hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors text-xs sm:text-sm flex items-center gap-1.5">
               Salir
             </button>

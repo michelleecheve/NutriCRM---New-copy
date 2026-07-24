@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { DietaryEvaluation, MealEntry, Patient, PatientEvaluation } from '../../types';
-import { Utensils, Plus, X, Trash2, AlertTriangle, Compass } from 'lucide-react';
+import { Utensils, Plus, X, Trash2, AlertTriangle } from 'lucide-react';
 import { SaveButton } from '../SaveButton';
 import { GridInput, ModernTextArea } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
 import { store } from '../../services/store';
+import { PageGuideButton } from '../tour/PageGuideButton';
+import { getDietaryFormGuideSteps } from '../tour/pageGuides/dietaryForm';
 
 const FOOD_GROUPS = [
   'Carne, Pollo, Cerdo', 'Pescado, Mariscos', 'Queso, Huevo', 'Leche / Yogurt', 'Incaparina',
@@ -217,14 +219,7 @@ export const DietaryForm: React.FC<{
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Placeholder — la guía real de este formulario se arma en una fase siguiente */}
-            <button
-              data-tour="dietary-form-guide-btn"
-              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
-            >
-              <Compass className="w-4 h-4" />
-              Guía de este formulario
-            </button>
+            <PageGuideButton steps={getDietaryFormGuideSteps()} label="Guía de este formulario" variant="light" />
             <SaveButton onSave={handleSave} />
             <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full text-slate-400">
               <X className="w-6 h-6" />
@@ -234,15 +229,17 @@ export const DietaryForm: React.FC<{
       </div>
 
       {/* ✅ EvaluationLink — mismo componente que Somatocarta, Measurements y Menu */}
-      <EvaluationLink
-        patientId={patient.id}
-        patientEvaluations={patientEvaluations}
-        evaluationId={evaluationId}
-        onChangeEvaluationId={setEvaluationId}
-      />
+      <div data-tour="dietary-evaluation-link">
+        <EvaluationLink
+          patientId={patient.id}
+          patientEvaluations={patientEvaluations}
+          evaluationId={evaluationId}
+          onChangeEvaluationId={setEvaluationId}
+        />
+      </div>
 
       {/* Datos generales */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div data-tour="dietary-general-data" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <div className="md:col-span-2">
             <GridInput
@@ -273,7 +270,7 @@ export const DietaryForm: React.FC<{
       </div>
 
       {/* 24H Recall */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div data-tour="dietary-recall-24h" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-2">
           <h3 className="font-bold text-slate-400 text-sm uppercase tracking-wider">Recordatorio de 24 Horas</h3>
           <button onClick={addMeal} className="bg-emerald-50 text-emerald-700 text-xs font-bold flex items-center gap-1 hover:bg-emerald-100 px-4 py-2 rounded-full transition-colors">
@@ -327,7 +324,7 @@ export const DietaryForm: React.FC<{
       </div>
 
       {/* Food Frequency */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div data-tour="dietary-food-frequency" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <h3 className="font-bold text-slate-400 text-sm uppercase tracking-wider mb-6">Frecuencia de Consumo de Alimentos</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse min-w-[800px]">
@@ -393,7 +390,9 @@ export const DietaryForm: React.FC<{
         ) : <div />}
 
         <div className="flex gap-2 sm:gap-3 items-center">
-          <SaveButton onSave={handleSave} />
+          <div data-tour="dietary-save-btn">
+            <SaveButton onSave={handleSave} />
+          </div>
           <button type="button" onClick={onCancel} className="px-3 py-2 sm:px-6 sm:py-3 text-sm bg-white text-slate-500 font-bold rounded-full shadow-lg border border-slate-100 hover:bg-slate-50 transition-colors">
             Cerrar
           </button>

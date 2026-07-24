@@ -2,13 +2,14 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Patient, VetCalculation, MacrosRecord, PortionsRecord, PatientEvaluation, GeneratedMenu, MenuDesignConfig, DEFAULT_VISUAL_THEME } from '../../types';
 import { store } from '../../services/store';
 import { supabaseService } from '../../services/supabaseService';
-import { Calculator, Eye, EyeOff, ArrowLeft, Edit2, Pencil, X, Trash2, AlertTriangle, Compass } from 'lucide-react';
+import { Calculator, Eye, EyeOff, ArrowLeft, Edit2, Pencil, X, Trash2, AlertTriangle } from 'lucide-react';
 import { SaveButton } from '../SaveButton';
 
 import { MenuAddReadSec1 } from './MenuAddReadSec1';
 import { MenuAddReadSec2 } from './MenuAddReadSec2';
 import { MenuAddReadSec3 } from './MenuAddReadSec3';
 import { MenuPlanData } from '../menus_components/MenuDesignTemplates';
+import { MenuFormGuideButton } from '../tour/MenuFormGuideButton';
 
 const calcDecimalAge = (birthdate: string, refDate: string): number => {
   const birth = new Date(birthdate);
@@ -106,6 +107,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
   const currentMenuIdRef = useRef<string | null>(editingMenuId);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isCalculationVisible, setIsCalculationVisible] = useState(false);
+  const [isSec2Visible, setIsSec2Visible] = useState(false);
+  const [isSec3Visible, setIsSec3Visible] = useState(true);
   const patientEvaluations: PatientEvaluation[] = useMemo(
     () => store.getEvaluations(patient.id),
     [patient.id]
@@ -505,14 +508,11 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 sm:justify-end">
-            {/* Placeholder — la guía real de este formulario se arma en una fase siguiente */}
-            <button
-              data-tour="menu-form-guide-btn"
-              className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
-            >
-              <Compass className="w-4 h-4" />
-              Guía de este formulario
-            </button>
+            <MenuFormGuideButton
+              expandSec1={() => setIsCalculationVisible(true)}
+              expandSec2={() => setIsSec2Visible(true)}
+              expandSec3={() => setIsSec3Visible(true)}
+            />
 
             <button
               onClick={onClose}
@@ -533,7 +533,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         {/* Info Section */}
         <section className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-8">
           {/* ✅ Vinculación con Evaluación */}
-          <div className="space-y-2">
+          <div data-tour="menu-evaluation-link" className="space-y-2">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Evaluación asignada</p>
 
             {!evalSelectorOpen ? (
@@ -603,6 +603,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
 
         <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
           <div
+            data-tour="menu-sec1-header"
             onClick={() => setIsCalculationVisible(!isCalculationVisible)}
             className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors"
           >
@@ -642,6 +643,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           setSelectedReferenceIds={setSelectedReferenceIds}
           selectedRecommendationIds={selectedRecommendationIds}
           setSelectedRecommendationIds={setSelectedRecommendationIds}
+          isVisible={isSec2Visible}
+          onToggleVisible={() => setIsSec2Visible(v => !v)}
         />
 
         <MenuAddReadSec3
@@ -665,6 +668,8 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           }}
           localDesignConfig={localDesignConfig}
           setLocalDesignConfig={setLocalDesignConfig}
+          isVisible={isSec3Visible}
+          onToggleVisible={() => setIsSec3Visible(v => !v)}
         />
 
         {/* Sticky Save Button */}

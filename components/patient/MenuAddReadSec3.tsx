@@ -36,6 +36,8 @@ interface MenuAddReadSec3Props {
   setSelectedPreviewTemplate: (id: string) => void;
   localDesignConfig: MenuDesignConfig;
   setLocalDesignConfig: (cfg: MenuDesignConfig) => void;
+  isVisible: boolean;
+  onToggleVisible: () => void;
   onDirty?: () => void;
 }
 
@@ -56,9 +58,10 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   localDesignConfig,
   setLocalDesignConfig,
   evaluationId,
+  isVisible,
+  onToggleVisible,
   onDirty
 }) => {
-  const [isVisible, setIsVisible] = useState(true);
   const [editMode, setEditMode] = useState<'tabla' | 'preview'>('tabla');
   const [editTablaKey, setEditTablaKey] = useState(0);
   const [isLocked, setIsLocked] = useState<boolean>(() => prefsService.get('menus.locked', false));
@@ -114,7 +117,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   return (
     <section className="bg-white rounded-3xl border border-slate-200 shadow-sm">
       <div
-        onClick={() => setIsVisible(!isVisible)}
+        data-tour="menu-sec3-header"
+        onClick={onToggleVisible}
         className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors rounded-t-3xl overflow-hidden"
       >
         <div className="flex items-center gap-3">
@@ -185,75 +189,77 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         )}
 
         {/* Botones de acción */}
-        {!menuPreviewData ? (
-          <div className="flex gap-3">
-            <button
-              onClick={handleStartBlank}
-              disabled={isLocked}
-              className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold transition-all border-2 text-sm ${
-                isLocked
-                  ? 'border-slate-100 text-slate-300 cursor-not-allowed'
-                  : 'border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
-              }`}
-            >
-              <FileText className="w-5 h-5" />
-              Iniciar Menú en Blanco
-            </button>
-            <CopyButton
-              selectedReferenceIds={selectedReferenceIds}
-              selectedRecommendationIds={selectedRecommendationIds}
-              menuPreviewData={menuPreviewData}
-              patient={patient}
-              vetData={vetData}
-              evaluationId={evaluationId}
-              isLocked={isLocked}
-              onMenuDataChange={(data) => {
-                handleSetMenuPreviewData(data);
-                setEditTablaKey(k => k + 1);
-              }}
-              label="Iniciar copiando de plantillas cargadas"
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-4 rounded-2xl font-bold transition-all border-2 text-sm border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50 disabled:border-slate-100 disabled:text-slate-300 disabled:cursor-not-allowed"
-            />
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-3">
-            <ActionButtons
-              patient={patient}
-              vetData={vetData}
-              evaluationId={evaluationId}
-              menuPreviewData={menuPreviewData}
-              onMenuDataChange={handleSetMenuPreviewData}
-              onRemountTable={() => setEditTablaKey(k => k + 1)}
-            />
-            <CopyButton
-              selectedReferenceIds={selectedReferenceIds}
-              selectedRecommendationIds={selectedRecommendationIds}
-              menuPreviewData={menuPreviewData}
-              patient={patient}
-              vetData={vetData}
-              evaluationId={evaluationId}
-              isLocked={isLocked}
-              onMenuDataChange={(data) => {
-                handleSetMenuPreviewData(data);
-                setEditTablaKey(k => k + 1);
-              }}
-            />
-            <SaveAsTemplateButton menuPreviewData={menuPreviewData} />
-            <MenuExportPDF
-              elementId="menu-print-area"
-              filename={`Menu_${patient.firstName}_${new Date().toISOString().split('T')[0]}`}
-              disabled={!menuPreviewData}
-              className="shrink-0 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all border-2 text-sm border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50"
-            />
-          </div>
-        )}
+        <div data-tour="menu-sec3-start-buttons">
+          {!menuPreviewData ? (
+            <div className="flex gap-3">
+              <button
+                onClick={handleStartBlank}
+                disabled={isLocked}
+                className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold transition-all border-2 text-sm ${
+                  isLocked
+                    ? 'border-slate-100 text-slate-300 cursor-not-allowed'
+                    : 'border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50'
+                }`}
+              >
+                <FileText className="w-5 h-5" />
+                Iniciar Menú en Blanco
+              </button>
+              <CopyButton
+                selectedReferenceIds={selectedReferenceIds}
+                selectedRecommendationIds={selectedRecommendationIds}
+                menuPreviewData={menuPreviewData}
+                patient={patient}
+                vetData={vetData}
+                evaluationId={evaluationId}
+                isLocked={isLocked}
+                onMenuDataChange={(data) => {
+                  handleSetMenuPreviewData(data);
+                  setEditTablaKey(k => k + 1);
+                }}
+                label="Iniciar copiando de plantillas cargadas"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-4 rounded-2xl font-bold transition-all border-2 text-sm border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50 disabled:border-slate-100 disabled:text-slate-300 disabled:cursor-not-allowed"
+              />
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              <ActionButtons
+                patient={patient}
+                vetData={vetData}
+                evaluationId={evaluationId}
+                menuPreviewData={menuPreviewData}
+                onMenuDataChange={handleSetMenuPreviewData}
+                onRemountTable={() => setEditTablaKey(k => k + 1)}
+              />
+              <CopyButton
+                selectedReferenceIds={selectedReferenceIds}
+                selectedRecommendationIds={selectedRecommendationIds}
+                menuPreviewData={menuPreviewData}
+                patient={patient}
+                vetData={vetData}
+                evaluationId={evaluationId}
+                isLocked={isLocked}
+                onMenuDataChange={(data) => {
+                  handleSetMenuPreviewData(data);
+                  setEditTablaKey(k => k + 1);
+                }}
+              />
+              <SaveAsTemplateButton menuPreviewData={menuPreviewData} />
+              <MenuExportPDF
+                elementId="menu-print-area"
+                filename={`Menu_${patient.firstName}_${new Date().toISOString().split('T')[0]}`}
+                disabled={!menuPreviewData}
+                className="shrink-0 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all border-2 text-sm border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50"
+              />
+            </div>
+          )}
+        </div>
 
         {/* Área de edición y preview */}
         {menuPreviewData && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
             {/* Barra sticky de modo edición */}
-            <div className={`${isBannerPinned ? 'sticky top-0 z-20' : ''} bg-white/95 backdrop-blur-sm -mx-8 px-8 py-2.5 border-b border-slate-100 shadow-sm flex items-center gap-2 flex-wrap`}>
+            <div data-tour="menu-sec3-tabla-preview" className={`${isBannerPinned ? 'sticky top-0 z-20' : ''} bg-white/95 backdrop-blur-sm -mx-8 px-8 py-2.5 border-b border-slate-100 shadow-sm flex items-center gap-2 flex-wrap`}>
               <div className="flex items-center gap-1">
                 <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl w-full sm:w-fit">
                   <button

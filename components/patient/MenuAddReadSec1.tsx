@@ -295,7 +295,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
   return (
     <div className="p-8 space-y-12 animate-in slide-in-from-top-2 duration-300">
       {/* Sub-sección 1: Cálculo VET */}
-      <div className="space-y-6">
+      <div data-tour="menu-sec1-sub1" className="space-y-6">
         <div className="flex items-center gap-4">
           <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Sub-sección 1 — Cálculo VET</h3>
           <div className="h-px flex-1 bg-slate-100"></div>
@@ -434,7 +434,7 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
       </div>
 
       {/* Sub-sección 2: Distribución de Calorías */}
-      <div className="space-y-6">
+      <div data-tour="menu-sec1-sub2" className="space-y-6">
         <div className="flex items-center gap-4">
           <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Sub-sección 2 — Distribución de Calorías</h3>
           <div className="h-px flex-1 bg-slate-100"></div>
@@ -472,7 +472,9 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm font-medium text-slate-600">{Math.round(macros.cho.kcal)}</span>
-                    <Tooltip content={FORMULAS.MACRO_KCAL}><Variable className="w-3 h-3 text-slate-300" /></Tooltip>
+                    <span data-tour="menu-sec1-formula-icon">
+                      <Tooltip content={FORMULAS.MACRO_KCAL}><Variable className="w-3 h-3 text-slate-300" /></Tooltip>
+                    </span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -606,13 +608,14 @@ export const MenuAddReadSec1: React.FC<MenuAddReadSec1Props> = ({
       </div>
 
       {/* Sub-sección 3: Distribución de Nutrientes */}
-      <div className="space-y-6">
+      <div data-tour="menu-sec1-sub3" className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center gap-4 flex-1">
             <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider">Sub-sección 3 — Distribución de Nutrientes</h3>
             <div className="h-px flex-1 bg-slate-100 hidden sm:block"></div>
           </div>
           <button
+            data-tour="menu-sec1-exchange-btn"
             onClick={() => setShowExchangeModal(true)}
             className="self-start sm:self-auto flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors"
           >
