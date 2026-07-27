@@ -46,17 +46,19 @@ export const MenuIllustratedStepCard: React.FC<MenuIllustratedStepCardProps> = (
       </div>
     </div>
 
-    <div className="flex items-center justify-between gap-2 mt-4">
-      <button
-        onClick={onPauseLater}
-        className="text-xs text-slate-400 hover:text-slate-600 font-semibold flex items-center gap-1 transition-colors"
-      >
-        <EyeOff className="w-3.5 h-3.5" /> Ocultar guías
-      </button>
+    <div className={`flex items-center gap-2 mt-4 ${canGoBack ? 'justify-end' : 'justify-between'}`}>
+      {!canGoBack && (
+        <button
+          onClick={onPauseLater}
+          className="text-xs text-slate-400 hover:text-slate-600 font-semibold flex items-center gap-1 transition-colors"
+        >
+          <EyeOff className="w-3.5 h-3.5" /> Ocultar guías
+        </button>
+      )}
       <div className="flex items-center gap-2">
         {canGoBack && (
-          <button onClick={onBack} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors">
-            <ChevronLeft className="w-4 h-4" />
+          <button onClick={onBack} className="flex items-center gap-1 px-2 py-2 rounded-lg text-slate-500 hover:bg-slate-100 text-sm font-semibold transition-colors">
+            <ChevronLeft className="w-4 h-4" /> Atrás
           </button>
         )}
         <button

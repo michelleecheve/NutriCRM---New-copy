@@ -145,6 +145,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
   return (
     <>
       <button
+        data-tour="menu-sec3-btn-copiar-plantillas"
         onClick={handleOpen}
         disabled={isLocked || (availableRefs.length === 0 && availableRecs.length === 0)}
         title={

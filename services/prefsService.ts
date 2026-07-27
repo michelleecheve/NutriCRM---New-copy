@@ -39,6 +39,7 @@ export interface StorageSaved {
     finishedAt?: string;
     lastSeenVersion?: number;
     pageGuidesEnabled?: boolean;
+    formGuidesEnabled?: boolean;
     welcomeDismissedForever?: boolean;
   };
 }

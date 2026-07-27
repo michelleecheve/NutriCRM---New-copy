@@ -48,7 +48,9 @@
       "Bash(sed -i \"s/—/-/g\" pages/Register.tsx)",
       "Bash(grep -n \"symbol: '\\\\$',\" pages/Register.tsx)",
       "Bash(sed -i \"84,106s/—/-/g\" pages/Profile.tsx)",
-      "Bash(grep -n \"symbol: '\\\\$',\" pages/Profile.tsx)"
+      "Bash(grep -n \"symbol: '\\\\$',\" pages/Profile.tsx)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill *)"
     ]
   }
 }

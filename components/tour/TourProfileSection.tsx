@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Compass, CheckCircle2, SkipForward, PlayCircle, RotateCcw, Circle } from 'lucide-react';
 import { tourService } from '../../services/tourService';
 import { CHAPTER_TITLES } from '../../services/tourSteps';
-import { isPageGuidesEnabled, setPageGuidesEnabled } from '../../services/pageGuidePrefs';
+import { isPageGuidesEnabled, setPageGuidesEnabled, isFormGuidesEnabled, setFormGuidesEnabled } from '../../services/pageGuidePrefs';
 
 const STATUS_LABEL: Record<string, string> = {
   completed: 'Completado',
@@ -23,6 +23,7 @@ const STATUS_STYLE: Record<string, string> = {
 export const TourProfileSection: React.FC = () => {
   const [, setVersion] = useState(0);
   const [pageGuidesOn, setPageGuidesOn] = useState(() => isPageGuidesEnabled());
+  const [formGuidesOn, setFormGuidesOn] = useState(() => isFormGuidesEnabled());
 
   useEffect(() => tourService.subscribe(() => setVersion(v => v + 1)), []);
 
@@ -39,6 +40,12 @@ export const TourProfileSection: React.FC = () => {
     const next = !pageGuidesOn;
     setPageGuidesOn(next);
     setPageGuidesEnabled(next);
+  };
+
+  const handleToggleFormGuides = () => {
+    const next = !formGuidesOn;
+    setFormGuidesOn(next);
+    setFormGuidesEnabled(next);
   };
 
   return (
@@ -69,6 +76,27 @@ export const TourProfileSection: React.FC = () => {
         </div>
         <p className="text-xs text-slate-400">
           {pageGuidesOn ? 'Los botones de guía están activos en todas las páginas.' : 'Los botones de guía están ocultos en todas las páginas.'}
+        </p>
+
+        <div className="flex items-center justify-between gap-4 bg-slate-50 rounded-xl px-4 py-3">
+          <p className="text-sm text-slate-600">
+            El botón <span className="font-bold text-slate-800">"Guía de este formulario"</span> aparece en Medición de antropometría, Bioimpedancia, Evaluación dietética y Menú.
+          </p>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={formGuidesOn}
+            onClick={handleToggleFormGuides}
+            className={`shrink-0 relative w-11 h-6 rounded-full transition-colors ${formGuidesOn ? 'bg-emerald-600' : 'bg-slate-300'}`}
+            title={formGuidesOn ? 'Ocultar guías de formularios' : 'Mostrar guías de formularios'}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${formGuidesOn ? 'translate-x-5' : 'translate-x-0'}`}
+            />
+          </button>
+        </div>
+        <p className="text-xs text-slate-400">
+          {formGuidesOn ? 'Las guías de formularios están activas.' : 'Las guías de formularios están ocultas.'}
         </p>
       </div>
 

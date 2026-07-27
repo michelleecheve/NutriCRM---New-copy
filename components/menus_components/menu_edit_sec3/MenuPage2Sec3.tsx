@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { MenuPlanData } from "../MenuDesignTemplates";
 import { DEFAULT_SECTION_TITLES, MenuSectionTitles } from "../../../types";
+import { PageGuideButton } from "../../tour/PageGuideButton";
+import { getMenuSec3Page2Steps } from "../../tour/pageGuides/menuForm";
 
 type RecSection = "preparacion" | "restricciones" | "habitos" | "organizacion";
 
@@ -365,23 +367,26 @@ export const MenuPage2Sec3: React.FC<Props> = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div data-tour="menu-sec3-page2" className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       {/* Header */}
       <div className="w-full bg-slate-50 border-b border-slate-100">
         {/* Title row */}
         <div className="px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-slate-900 transition-colors"
-          >
-            <FileText className="w-4 h-4 text-indigo-600" />
-            Sección Recomendaciones y Hábitos
-            {open ? (
-              <ChevronUp className="w-4 h-4 text-slate-400" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-slate-400" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setOpen((v) => !v)}
+              className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-slate-900 transition-colors"
+            >
+              <FileText className="w-4 h-4 text-indigo-600" />
+              Hoja Recomendaciones y Hábitos
+              {open ? (
+                <ChevronUp className="w-4 h-4 text-slate-400" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              )}
+            </button>
+            <PageGuideButton variant="icon" steps={getMenuSec3Page2Steps()} label="Ver guía de esta sección" />
+          </div>
 
           {/* Dropdown Copiar / Pegar — desktop */}
           <div className="relative hidden sm:block">

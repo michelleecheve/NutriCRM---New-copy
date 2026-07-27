@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Eye, EyeOff, Plus, Trash2, ChevronDown, ChevronUp, UtensilsCrossed } from 'lucide-react';
 import { MenuPlanData } from '../MenuDesignTemplates';
 import { EatingOutPageData, EatingOutColumn, DEFAULT_EATING_OUT_PAGE } from '../menudesigntemplates_components/menuTemplateTypes';
+import { PageGuideButton } from '../../tour/PageGuideButton';
+import { getMenuSec3Page3Steps } from '../../tour/pageGuides/menuForm';
 
 // ─── Auto-resize textarea ──────────────────────────────────────────────────────
 const AutoResizeTextarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement>> = ({
@@ -122,31 +124,33 @@ export const MenuPage3Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
         <div className="px-4 py-3 flex items-center justify-between">
           <span className="flex items-center gap-2 text-sm font-bold text-slate-700">
             <UtensilsCrossed className="w-4 h-4 text-orange-500" />
-            Sección Recomendaciones al Comer Fuera
+            Hoja Recomendaciones al Comer Fuera
             {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            <PageGuideButton variant="icon" steps={getMenuSec3Page3Steps()} label="Ver guía de esta sección" />
           </span>
 
           {/* Visibility toggle */}
           <span
+            data-tour="menu-sec3-page3-toggle"
             role="button"
             onClick={e => { e.stopPropagation(); toggleVisible(); }}
-            title={page.visible ? 'Hoja visible en vista previa y portal' : 'Hoja oculta (no aparece en vista previa ni portal)'}
+            title={page.visible ? 'Click para ocultar esta hoja' : 'Click para mostrar esta hoja'}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
               page.visible
-                ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
-                : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100 uppercase tracking-wide'
+                : 'bg-violet-50 text-violet-600 border-violet-100 hover:bg-violet-100'
             }`}
           >
             {page.visible
-              ? <><Eye className="w-3.5 h-3.5" /> Visible</>
-              : <><EyeOff className="w-3.5 h-3.5" /> Oculta</>
+              ? <><Eye className="w-3.5 h-3.5" /> Ocultar hoja</>
+              : <><EyeOff className="w-3.5 h-3.5" /> Hoja oculta - click para activar hoja</>
             }
           </span>
         </div>
       </button>
 
       {open && (
-        <div className="p-4 space-y-5">
+        <div data-tour="menu-sec3-page3-content" className="p-4 space-y-5">
           {/* ── Title ─────────────────────────────────────────────────────────── */}
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -176,7 +180,7 @@ export const MenuPage3Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
           </div>
 
           {/* ── Table ─────────────────────────────────────────────────────────── */}
-          <div className="space-y-2">
+          <div data-tour="menu-sec3-page3-table" className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 Tabla de restaurantes
@@ -280,9 +284,18 @@ export const MenuPage3Sec3: React.FC<Props> = ({ menuPreviewData, setMenuPreview
 
           {/* Visibility hint */}
           {!page.visible && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-600 font-medium">
-              <EyeOff className="w-3.5 h-3.5 flex-shrink-0" />
-              Esta hoja está oculta. No aparecerá en la vista previa, PDF ni en el portal del paciente.
+            <div className="flex items-center justify-between gap-3 px-3 py-2 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-600 font-medium">
+              <span className="flex items-center gap-2">
+                <EyeOff className="w-3.5 h-3.5 flex-shrink-0" />
+                Esta hoja está oculta. No aparecerá en la vista previa, PDF ni en el portal del paciente.
+              </span>
+              <button
+                onClick={toggleVisible}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-violet-600 bg-violet-50 hover:bg-violet-100 rounded-xl transition-all border border-violet-100 flex-shrink-0"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                Click para activar hoja
+              </button>
             </div>
           )}
         </div>

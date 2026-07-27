@@ -95,6 +95,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
   return (
     <>
       <button
+        data-tour="menu-sec3-btn-guardar-plantilla"
         onClick={handleOpen}
         className="flex items-center gap-2 px-4 py-3 rounded-2xl font-bold text-sm border-2 border-slate-200 text-slate-700 hover:border-slate-400 hover:bg-slate-50 transition-all"
       >

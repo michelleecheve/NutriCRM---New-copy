@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { User, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react';
 import { MenuPlanData } from '../MenuDesignTemplates';
 import { DEFAULT_SECTION_TITLES } from '../../../types';
+import { PageGuideButton } from '../../tour/PageGuideButton';
+import { getMenuSec3EncabezadoSteps } from '../../tour/pageGuides/menuForm';
 
 interface Props {
   menuPreviewData: MenuPlanData;
@@ -39,7 +41,7 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
   const inp = "w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all";
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div data-tour="menu-sec3-encabezado" className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       <button
         onClick={() => setOpen(v => !v)}
         className="w-full px-4 py-3 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors"
@@ -47,6 +49,7 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
         <span className="flex items-center gap-2 text-sm font-bold text-slate-700">
           <User className="w-4 h-4 text-indigo-600" />
           Encabezado — Título del Plan y Paciente
+          <PageGuideButton variant="icon" steps={getMenuSec3EncabezadoSteps()} label="Ver guía de esta sección" />
         </span>
         {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
       </button>

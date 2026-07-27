@@ -673,7 +673,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
         />
 
         {/* Sticky Save Button */}
-        <div className="fixed bottom-6 right-6 z-50">
+        <div data-tour="menu-sec3-save-btn" className="fixed bottom-6 right-6 z-50">
           <SaveButton onSave={handleSaveOnly} label="Guardar Menú" />
         </div>
 

@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Table as TableIcon, Plus, Trash2, MoveUp, MoveDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { MenuPlanData, MealPortions } from '../MenuDesignTemplates';
 import { PortionsRecord } from '../../../types';
+import { PageGuideButton } from '../../tour/PageGuideButton';
+import { getMenuSec3PortionsSteps } from '../../tour/pageGuides/menuForm';
 
 interface Props {
   menuPreviewData: MenuPlanData;
@@ -43,6 +45,23 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
 
   useEffect(() => { menuPreviewDataRef.current = menuPreviewData; });
   useEffect(() => { latestRef.current = { localPortions, meals }; });
+
+  // Sincroniza los nombres (label) de los tiempos de comida cuando se renombran
+  // desde Menú Semanal. Agregar/quitar/reordenar ya sincroniza vía remount (key
+  // en MenuEditSec3), pero un renombrado puro no cambia esa key.
+  const externalLabelsSignature = meals
+    .map(m => `${m.id}:${(menuPreviewData.weeklyMenu.lunes as any)[m.id]?.label ?? ''}`)
+    .join('|');
+  useEffect(() => {
+    let changed = false;
+    const next = meals.map(m => {
+      const freshLabel = (menuPreviewData.weeklyMenu.lunes as any)[m.id]?.label;
+      if (freshLabel !== undefined && freshLabel !== m.label) { changed = true; return { ...m, label: freshLabel }; }
+      return m;
+    });
+    if (changed) setMeals(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalLabelsSignature]);
 
   // Builds and commits the current portions state to the parent
   const buildAndCommit = (lp: typeof localPortions, ms: typeof meals) => {
@@ -153,17 +172,20 @@ export const MenuTablePortionsSec3: React.FC<Props> = ({ menuPreviewData, setMen
   }, []);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div data-tour="menu-sec3-portions" className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       <div className="bg-slate-50">
         <div className="px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => setOpen(v => !v)}
-            className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-indigo-600 transition-colors"
-          >
-            <TableIcon className="w-4 h-4 text-indigo-600" />
-            Tabla de Porciones
-            {open ? <ChevronUp className="w-4 h-4 text-slate-400 ml-1" /> : <ChevronDown className="w-4 h-4 text-slate-400 ml-1" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setOpen(v => !v)}
+              className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-indigo-600 transition-colors"
+            >
+              <TableIcon className="w-4 h-4 text-indigo-600" />
+              Tabla de Porciones
+              {open ? <ChevronUp className="w-4 h-4 text-slate-400 ml-1" /> : <ChevronDown className="w-4 h-4 text-slate-400 ml-1" />}
+            </button>
+            <PageGuideButton variant="icon" steps={getMenuSec3PortionsSteps()} label="Ver guía de esta sección" />
+          </div>
           {open && (
             <button
               onClick={addMeal}

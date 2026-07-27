@@ -5,18 +5,21 @@ type TourTargetSelector = string | string[] | null | undefined;
 function measureUnion(selectors: string[]): DOMRect | null {
   let union: DOMRect | null = null;
   for (const sel of selectors) {
-    const el = document.querySelector(sel);
-    if (!el) continue;
-    const r = el.getBoundingClientRect();
-    if (r.width === 0 && r.height === 0) continue;
-    union = union
-      ? new DOMRect(
-          Math.min(union.left, r.left),
-          Math.min(union.top, r.top),
-          Math.max(union.right, r.right) - Math.min(union.left, r.left),
-          Math.max(union.bottom, r.bottom) - Math.min(union.top, r.top),
-        )
-      : r;
+    // querySelectorAll (no solo el primer match) para poder resaltar una columna
+    // completa de una tabla cuando varias celdas comparten el mismo data-tour.
+    const els = document.querySelectorAll(sel);
+    els.forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) return;
+      union = union
+        ? new DOMRect(
+            Math.min(union.left, r.left),
+            Math.min(union.top, r.top),
+            Math.max(union.right, r.right) - Math.min(union.left, r.left),
+            Math.max(union.bottom, r.bottom) - Math.min(union.top, r.top),
+          )
+        : r;
+    });
   }
   return union;
 }
@@ -36,7 +39,31 @@ export function useTourTarget(selector: TourTargetSelector): DOMRect | null {
     }
 
     let raf: number | null = null;
-    const measure = () => setRect(measureUnion(selectors));
+    let scrolledForThisStep = false;
+
+    // Al entrar a un paso nuevo, si su elemento no está totalmente visible, hace
+    // scroll automático hacia él (una sola vez por paso) para que la usuaria no
+    // tenga que desplazarse manualmente para ver el siguiente punto de la guía.
+    const scrollIntoViewIfNeeded = () => {
+      if (scrolledForThisStep) return;
+      let el: Element | null = null;
+      for (const sel of selectors) {
+        el = document.querySelector(sel);
+        if (el) break;
+      }
+      if (!el) return;
+      scrolledForThisStep = true;
+      const r = el.getBoundingClientRect();
+      const fullyVisible = r.top >= 0 && r.bottom <= window.innerHeight;
+      if (!fullyVisible) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+
+    const measure = () => {
+      setRect(measureUnion(selectors));
+      scrollIntoViewIfNeeded();
+    };
 
     const scheduleMeasure = () => {
       if (raf) cancelAnimationFrame(raf);

@@ -12,4 +12,8 @@ export interface PageGuideStep {
   illustration?: 'hoja1' | 'hoja2' | 'hoja3';
   /** se ejecuta al mostrar este paso — para expandir un panel colapsado antes de resaltarlo */
   onBeforeShow?: () => void;
+  /** si se define, este paso no muestra el botón "Siguiente": espera a que el usuario haga click en el selector indicado (el elemento real de la app) para avanzar solo */
+  waitForClickTarget?: string;
+  /** si es true junto con waitForClickTarget, además del click real muestra el botón "Siguiente" como respaldo (ej. cuando el elemento esperado podría ya no estar visible porque la usuaria adelantó ese paso) */
+  waitForClickShowManualNext?: boolean;
 }

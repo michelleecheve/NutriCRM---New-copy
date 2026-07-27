@@ -156,13 +156,13 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
         {/* Design Config Modal */}
         {designModalOpen && (
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div data-tour="menu-sec3-design-modal" className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
               <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl flex-shrink-0">
                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                   <Palette className="w-5 h-5 text-violet-600" />
                   Configurar diseño para este menú
                 </h3>
-                <button onClick={() => setDesignModalOpen(false)} className="p-2 hover:bg-white rounded-xl transition-colors">
+                <button data-tour="menu-sec3-design-modal-close-btn" onClick={() => setDesignModalOpen(false)} className="p-2 hover:bg-white rounded-xl transition-colors">
                   <X className="w-5 h-5 text-slate-400" />
                 </button>
               </div>
@@ -178,6 +178,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               </div>
               <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex-shrink-0">
                 <button
+                  data-tour="menu-sec3-design-modal-listo-btn"
                   onClick={() => setDesignModalOpen(false)}
                   className="w-full py-2 font-bold text-slate-500 hover:bg-white rounded-xl transition-all"
                 >
@@ -193,6 +194,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
           {!menuPreviewData ? (
             <div className="flex gap-3">
               <button
+                data-tour="menu-sec3-start-blank-btn"
                 onClick={handleStartBlank}
                 disabled={isLocked}
                 className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold transition-all border-2 text-sm ${
@@ -263,6 +265,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               <div className="flex items-center gap-1">
                 <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl w-full sm:w-fit">
                   <button
+                    data-tour="menu-sec3-editar-tabla-btn"
                     onClick={() => setEditMode('tabla')}
                     className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                       editMode === 'tabla'
@@ -273,6 +276,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                     ✏️ Editar en Tabla
                   </button>
                   <button
+                    data-tour="menu-sec3-vista-previa-btn"
                     onClick={() => setEditMode('preview')}
                     className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                       editMode === 'preview'
@@ -301,6 +305,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
               </div>
               {editMode === 'preview' && (
                 <button
+                  data-tour="menu-sec3-config-diseno-btn"
                   onClick={() => setDesignModalOpen(true)}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-violet-600 hover:bg-violet-100 hover:text-violet-700"
                 >

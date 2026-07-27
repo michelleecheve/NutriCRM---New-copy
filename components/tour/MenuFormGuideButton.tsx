@@ -7,7 +7,7 @@ import { HideGuidesNotice } from './HideGuidesNotice';
 import { MenuGuideHub } from './MenuGuideHub';
 import { MenuIllustratedStepCard } from './MenuIllustratedStepCard';
 import { PageGuideStep } from './pageGuideTypes';
-import { isPageGuidesEnabled, subscribePageGuidesEnabled } from '../../services/pageGuidePrefs';
+import { isFormGuidesEnabled, subscribeFormGuidesEnabled } from '../../services/pageGuidePrefs';
 import { getMenuIntroSteps, getMenuSec1Steps, getMenuSec2Steps, getMenuSec3Steps } from './pageGuides/menuForm';
 
 type Phase = 'intro' | 'hub' | 'sec1' | 'sec2' | 'sec3';
@@ -30,7 +30,7 @@ export const MenuFormGuideButton: React.FC<MenuFormGuideButtonProps> = ({
   const [active, setActive] = useState(false);
   const [phase, setPhase] = useState<Phase>('intro');
   const [stepIndex, setStepIndex] = useState(0);
-  const [enabled, setEnabled] = useState(() => isPageGuidesEnabled());
+  const [enabled, setEnabled] = useState(() => isFormGuidesEnabled());
   const [showHideGuidesNote, setShowHideGuidesNote] = useState(false);
 
   const stepsByPhase: Record<Exclude<Phase, 'hub'>, PageGuideStep[]> = {
@@ -48,7 +48,21 @@ export const MenuFormGuideButton: React.FC<MenuFormGuideButtonProps> = ({
     step?.onBeforeShow?.();
   }, [step?.id]);
 
-  useEffect(() => subscribePageGuidesEnabled(() => setEnabled(isPageGuidesEnabled())), []);
+  useEffect(() => subscribeFormGuidesEnabled(() => setEnabled(isFormGuidesEnabled())), []);
+
+  // Pasos con waitForClickTarget no tienen botón "Siguiente": avanzan solos cuando
+  // el usuario hace click en el elemento real de la app (no en la tarjeta de la guía).
+  useEffect(() => {
+    const selector = step?.waitForClickTarget;
+    if (!selector) return;
+    const handleRealClick = (e: MouseEvent) => {
+      if ((e.target as HTMLElement | null)?.closest(selector)) {
+        setStepIndex(i => i + 1);
+      }
+    };
+    document.addEventListener('click', handleRealClick, true);
+    return () => document.removeEventListener('click', handleRealClick, true);
+  }, [step?.id, step?.waitForClickTarget]);
 
   const close = () => { setActive(false); setPhase('intro'); setStepIndex(0); };
   const goToHub = () => { setPhase('hub'); setStepIndex(0); };
@@ -68,6 +82,7 @@ export const MenuFormGuideButton: React.FC<MenuFormGuideButtonProps> = ({
   return (
     <>
       <button
+        data-tour="menu-form-guide-btn"
         onClick={() => { setActive(true); setPhase('intro'); setStepIndex(0); }}
         className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all ${className}`}
       >
@@ -106,7 +121,7 @@ export const MenuFormGuideButton: React.FC<MenuFormGuideButtonProps> = ({
             body={step.body}
             stepLabel={`Paso ${stepIndex + 1} de ${currentSteps.length}`}
             nextLabel={step.nextLabel}
-            showManualNext
+            showManualNext={!step.waitForClickTarget || !!step.waitForClickShowManualNext}
             canGoBack={stepIndex > 0}
             onNext={handleNext}
             onBack={() => setStepIndex(i => Math.max(0, i - 1))}

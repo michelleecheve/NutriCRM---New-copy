@@ -138,20 +138,22 @@ export const TourTooltip: React.FC<TourTooltipProps> = ({
       </div>
       <h3 className="font-bold text-slate-900 text-base mb-1.5">{title}</h3>
       <p className="text-sm text-slate-600 leading-relaxed mb-4">{renderBody(body)}</p>
-      <div className="flex items-center justify-between gap-2">
-        <button
-          onClick={onPauseLater}
-          className="text-xs text-slate-400 hover:text-slate-600 font-semibold flex items-center gap-1 transition-colors"
-        >
-          {dismissIcon === 'eye-off' ? <EyeOff className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />} {dismissLabel}
-        </button>
+      <div className={`flex items-center gap-2 ${canGoBack ? 'justify-end' : 'justify-between'}`}>
+        {!canGoBack && (
+          <button
+            onClick={onPauseLater}
+            className="text-xs text-slate-400 hover:text-slate-600 font-semibold flex items-center gap-1 transition-colors"
+          >
+            {dismissIcon === 'eye-off' ? <EyeOff className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />} {dismissLabel}
+          </button>
+        )}
         <div className="flex items-center gap-2">
           {canGoBack && (
             <button
               onClick={onBack}
-              className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+              className="flex items-center gap-1 px-2 py-2 rounded-lg text-slate-500 hover:bg-slate-100 text-sm font-semibold transition-colors"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" /> Atrás
             </button>
           )}
           {showManualNext && (

@@ -72,7 +72,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 
   return (
     <>
-      <div className="relative" ref={deleteDropdownRef}>
+      <div data-tour="menu-sec3-btn-borrar-pagina" className="relative" ref={deleteDropdownRef}>
         <button
           onClick={() => setShowDeleteDropdown(prev => !prev)}
           disabled={!menuPreviewData}

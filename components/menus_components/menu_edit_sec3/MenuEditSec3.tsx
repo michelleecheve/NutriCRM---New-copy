@@ -48,7 +48,7 @@ export const MenuEditSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewD
   return (
     <div className="space-y-3">
       {/* Tab switch */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+      <div data-tour="menu-sec3-tipo-menu" className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Tipo de menú:</span>
         <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
           <button

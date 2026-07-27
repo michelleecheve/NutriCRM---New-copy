@@ -158,7 +158,7 @@ export const MenuExportPDF: React.FC<MenuExportPDFProps> = ({
   }
 
   return (
-    <div ref={dropdownRef} className="relative inline-block">
+    <div data-tour="menu-sec3-btn-exportar-pdf" ref={dropdownRef} className="relative inline-block">
       <button
         onClick={handleButtonClick}
         disabled={disabled || exporting}

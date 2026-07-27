@@ -15,6 +15,8 @@ import {
   FileText,
 } from "lucide-react";
 import { MenuPlanData, DomingoV2 } from "../MenuDesignTemplates";
+import { PageGuideButton } from "../../tour/PageGuideButton";
+import { getMenuSec3WeeklySteps } from "../../tour/pageGuides/menuForm";
 
 const WEEKDAYS = [
   "lunes",
@@ -178,6 +180,23 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
     menuPreviewData.weeklyMenu.domingoMode ??
       (hasV2Data ? "completo" : "libre"),
   );
+
+  // Sincroniza los nombres (label) de los tiempos de comida cuando se renombran
+  // desde Tabla de Porciones. Agregar/quitar/reordenar ya sincroniza vía remount
+  // (key en MenuEditSec3), pero un renombrado puro no cambia esa key.
+  const externalLabelsSignature = meals
+    .map((m) => `${m.id}:${(menuPreviewData.weeklyMenu.lunes as any)[m.id]?.label ?? ""}`)
+    .join("|");
+  useEffect(() => {
+    let changed = false;
+    const next = meals.map((m) => {
+      const freshLabel = (menuPreviewData.weeklyMenu.lunes as any)[m.id]?.label;
+      if (freshLabel !== undefined && freshLabel !== m.label) { changed = true; return { ...m, label: freshLabel }; }
+      return m;
+    });
+    if (changed) setMeals(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalLabelsSignature]);
 
   const textareaRefs = useRef<
     Record<string, Record<string, HTMLTextAreaElement | null>>
@@ -677,29 +696,33 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
       : TABLE_MIN_WIDTH_LIBRE;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div data-tour="menu-sec3-weekly" className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       {/* Header */}
       <div className="w-full bg-slate-50 border-b border-slate-100">
         {/* Title row */}
         <div className="px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-slate-900 transition-colors"
-          >
-            <Calendar className="w-4 h-4 text-indigo-600" />
-            Menú Semanal
-            {open ? (
-              <ChevronUp className="w-4 h-4 text-slate-400" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-slate-400" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setOpen((v) => !v)}
+              className="flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-slate-900 transition-colors"
+            >
+              <Calendar className="w-4 h-4 text-indigo-600" />
+              Menú Semanal
+              {open ? (
+                <ChevronUp className="w-4 h-4 text-slate-400" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              )}
+            </button>
+            <PageGuideButton variant="icon" steps={getMenuSec3WeeklySteps()} label="Ver guía de esta sección" />
+          </div>
 
           {/* Controls — desktop only */}
           <div className="hidden sm:flex items-center gap-2">
             {/* Dropdown Copiar / Pegar */}
             <div className="relative">
               <button
+                data-tour="menu-sec3-weekly-copypaste-desktop"
                 onClick={() => setCopyPasteOpen((v) => !v)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border bg-white text-slate-500 border-slate-200 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
               >
@@ -749,7 +772,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
             </div>
 
             {/* Domingo toggle */}
-            <div className="flex items-center gap-1.5 bg-slate-100 rounded-xl p-1">
+            <div data-tour="menu-sec3-weekly-domingo-toggle-desktop" className="flex items-center gap-1.5 bg-slate-100 rounded-xl p-1">
               <button
                 onClick={() => switchDomingoMode("libre")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
@@ -770,7 +793,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                 }`}
               >
                 <CalendarDays className="w-3 h-3" />
-                Dom. Completo
+                Semana Completa
               </button>
             </div>
           </div>
@@ -781,6 +804,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
           {/* Dropdown Copiar / Pegar */}
           <div className="relative">
             <button
+              data-tour="menu-sec3-weekly-copypaste-mobile"
               onClick={() => setCopyPasteOpen((v) => !v)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border bg-white text-slate-500 border-slate-200 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50"
             >
@@ -830,7 +854,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
           </div>
 
           {/* Domingo toggle */}
-          <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+          <div data-tour="menu-sec3-weekly-domingo-toggle-mobile" className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
             <button
               onClick={() => switchDomingoMode("libre")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
@@ -851,7 +875,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
               }`}
             >
               <CalendarDays className="w-3 h-3" />
-              Dom. Completo
+              Semana Completa
             </button>
           </div>
         </div>
@@ -882,6 +906,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th
+                    data-tour="menu-sec3-weekly-tiempo-col"
                     className="px-3 py-2 text-left text-[10px] font-black text-slate-400 uppercase tracking-wider"
                     style={{ minWidth: 120, width: 120 }}
                   >
@@ -891,12 +916,13 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                   {WEEKDAYS.map((day) => (
                     <th
                       key={day}
+                      data-tour={day === "lunes" ? "menu-sec3-weekly-lunes-col" : undefined}
                       className="px-2 py-2 text-[10px] font-black text-slate-600 uppercase tracking-wider"
                       style={{ minWidth: 210, width: 210 }}
                     >
                       <div className="flex items-center justify-between gap-1">
                         <span>{DAY_LABEL[day]}</span>
-                        <div className="flex items-center gap-0.5">
+                        <div data-tour={day === "lunes" ? "menu-sec3-weekly-daycopy" : undefined} className="flex items-center gap-0.5">
                           <button
                             onClick={() => copyDay(day)}
                             title={`Copiar ${DAY_LABEL[day]}`}
@@ -973,7 +999,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                     key={meal.id}
                     className="hover:bg-slate-50/40 transition-colors"
                   >
-                    <td className="px-2 py-2 align-top">
+                    <td data-tour="menu-sec3-weekly-tiempo-col" className="px-2 py-2 align-top">
                       <div className="flex items-start gap-1">
                         {/* Flechas reordenar */}
                         <div className="flex flex-col shrink-0 pt-0.5">
@@ -1016,7 +1042,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                     </td>
 
                     {WEEKDAYS.map((day) => (
-                      <td key={day} className="px-1.5 py-1.5 align-top">
+                      <td key={day} data-tour={day === "lunes" ? "menu-sec3-weekly-lunes-col" : undefined} className="px-1.5 py-1.5 align-top">
                         <textarea
                           value={grid[meal.id]?.[day] || ""}
                           rows={1}
@@ -1088,7 +1114,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
 
           {/* Domingo Libre section */}
           {domingoMode === "libre" && (
-            <div className="mx-4 my-3 rounded-2xl border border-amber-200 bg-amber-50/40 overflow-hidden">
+            <div data-tour="menu-sec3-domingo-notes" className="mx-4 my-3 rounded-2xl border border-amber-200 bg-amber-50/40 overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-2.5 border-b border-amber-100 bg-amber-50/60">
                 <Sun className="w-3.5 h-3.5 text-amber-500" />
                 <span className="text-xs font-black text-amber-600 uppercase tracking-wide">
@@ -1150,11 +1176,11 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
 
           {/* Domingo Completo — nota + hidratación complementarias */}
           {domingoMode === "completo" && (
-            <div className="mx-4 my-3 rounded-2xl border border-indigo-100 bg-indigo-50/30 overflow-hidden">
+            <div data-tour="menu-sec3-domingo-notes" className="mx-4 my-3 rounded-2xl border border-indigo-100 bg-indigo-50/30 overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-2.5 border-b border-indigo-100 bg-indigo-50/50">
                 <CalendarDays className="w-3.5 h-3.5 text-indigo-500" />
                 <span className="text-xs font-black text-indigo-600 uppercase tracking-wide">
-                  Domingo — Nota e Hidratación
+                  Nota e Hidratación
                 </span>
               </div>
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1236,7 +1262,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                 }`}
               >
                 <CalendarDays className="w-2.5 h-2.5" />
-                Dom. Completo
+                Semana Completa
               </button>
             </div>
           </div>
