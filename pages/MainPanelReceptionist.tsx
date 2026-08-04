@@ -3,6 +3,8 @@ import { CalendarDays, Clock, Users, TrendingUp } from 'lucide-react';
 import { authStore } from '../services/authStore';
 import { store } from '../services/store';
 import { AppRoute, Appointment, AppUser } from '../types';
+import { PageGuideButton } from '../components/tour/PageGuideButton';
+import { mainPanelReceptionistGuideSteps } from '../components/tour/pageGuides/mainPanelReceptionist';
 
 interface Props {
   onNavigate: (page: string) => void;
@@ -41,15 +43,18 @@ export const MainPanelReceptionist: React.FC<Props> = ({ onNavigate }) => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          Bienvenida, {currentUser?.profile?.name?.split(' ')[0] || 'Usuario'} 👋
-        </h1>
-        <p className="text-slate-500 mt-1">Vista general de la agenda de tus nutricionistas.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Bienvenida, {currentUser?.profile?.name?.split(' ')[0] || 'Usuario'} 👋
+          </h1>
+          <p className="text-slate-500 mt-1">Vista general de la agenda de tus nutricionistas.</p>
+        </div>
+        <PageGuideButton steps={mainPanelReceptionistGuideSteps} />
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div data-tour="mp-recep-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { icon: <Users className="w-5 h-5 text-emerald-600" />, bg: 'bg-emerald-50', label: 'Nutricionistas', value: linkedNutris.length },
           { icon: <CalendarDays className="w-5 h-5 text-indigo-600" />, bg: 'bg-indigo-50', label: 'Citas Hoy', value: todayAppts.length },
@@ -70,7 +75,7 @@ export const MainPanelReceptionist: React.FC<Props> = ({ onNavigate }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Nutricionistas vinculadas */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6">
+        <div data-tour="mp-recep-nutris" className="bg-white border border-slate-200 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-bold text-slate-800">Mis Nutricionistas</h3>
             <button
@@ -109,7 +114,7 @@ export const MainPanelReceptionist: React.FC<Props> = ({ onNavigate }) => {
         </div>
 
         {/* Citas recientes */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6">
+        <div data-tour="mp-recep-citas" className="bg-white border border-slate-200 rounded-2xl p-6">
           <h3 className="font-bold text-slate-800 mb-5">Citas Recientes</h3>
           {appointments.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-6">No hay citas registradas.</p>

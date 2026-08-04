@@ -12,6 +12,7 @@ import {
 import { ProfileSubscription } from '../components/profile_config/ProfileSubscription';
 import { PageGuideButton } from '../components/tour/PageGuideButton';
 import { profileGuideSteps } from '../components/tour/pageGuides/profile';
+import { profileReceptionistGuideSteps } from '../components/tour/pageGuides/profileReceptionist';
 
 const InputField = ({ label, icon: Icon, value, onChange, type = "text", readOnly = false, placeholder = "" }: any) => (
   <div className="space-y-2">
@@ -390,7 +391,7 @@ const VinculacionRecepcionista: React.FC<{
   };
 
   return (
-    <div className="space-y-6">
+    <div data-tour="profile-vinculacion-nutricionistas" className="space-y-6">
       <button
         type="button"
         onClick={() => setIsOpen(o => !o)}
@@ -589,7 +590,9 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               : 'Gestiona tu información pública y credenciales.'}
           </p>
         </div>
-        <PageGuideButton steps={profileGuideSteps} />
+        <PageGuideButton
+          steps={role === 'recepcionista' ? profileReceptionistGuideSteps : profileGuideSteps}
+        />
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -621,7 +624,9 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             </div>
             <div className="text-center">
               <p className="text-xs font-bold text-slate-700">Logo del consultorio</p>
-              <p className="text-xs text-slate-400">Se muestra en los menús PDF</p>
+              {role !== 'recepcionista' && (
+                <p className="text-xs text-slate-400">Se muestra en los menús PDF</p>
+              )}
             </div>
             {isSaved && (
               <div className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 animate-in fade-in">
@@ -841,7 +846,7 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               </div>
             )}
 
-            <div className="fixed bottom-6 right-8 z-50">
+            <div data-tour="profile-save-button" className="fixed bottom-6 right-8 z-50">
               <button
                 type="submit"
                 disabled={isProcessingImg || isSaved}

@@ -25,6 +25,7 @@ import { CalendarSelector } from "../components/calendar_components/CalendarSele
 import { CalendarGoogleSync } from "../components/calendar_components/CalendarGoogleSync";
 import { PageGuideButton } from "../components/tour/PageGuideButton";
 import { calendarGuideSteps } from "../components/tour/pageGuides/calendar";
+import { calendarReceptionistGuideSteps } from "../components/tour/pageGuides/calendarReceptionist";
 
 const GC_COPY_TEXT = `Tipo: Primera Consulta o Seguimiento
 Modalidad: Presencial o Video
@@ -395,6 +396,20 @@ export const CalendarPage: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
 
+  // Plan del dueño del calendario que se está viendo — no el del usuario logueado.
+  // Necesario para que la recepcionista herede correctamente el plan Pro de su nutri vinculada.
+  const [targetIsPro, setTargetIsPro] = useState(false);
+  useEffect(() => {
+    if (!targetNutritionistId || targetNutritionistId === "guest") return;
+    let cancelled = false;
+    authStore.isOwnerPro(targetNutritionistId).then((isPro) => {
+      if (!cancelled) setTargetIsPro(isPro);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [targetNutritionistId]);
+
   const [statusFilter, setStatusFilter] = useState<string[]>(() =>
     prefsService.get("calendar.statusFilter", DEFAULT_STATUS_FILTER),
   );
@@ -499,7 +514,7 @@ export const CalendarPage: React.FC = () => {
   const handleNavigateTo = (date: Date) => setCurrentDate(date);
 
   const handleCreateAppointment = (dateStr?: string) => {
-    if (authStore.appointmentLimitReached(appointments.length)) { showPlanLimitModal(); return; }
+    if (authStore.appointmentLimitReached(appointments.length, targetIsPro)) { showPlanLimitModal(); return; }
     const resolvedDateStr = dateStr ?? todayStr;
     setSelectedAppointment({
       date: resolvedDateStr,
@@ -579,7 +594,13 @@ export const CalendarPage: React.FC = () => {
             <p className="text-slate-500 mt-1">Gestiona tus citas y agenda</p>
           </div>
           <div className="flex items-center gap-2 lg:gap-3">
-            <PageGuideButton steps={calendarGuideSteps} />
+            <PageGuideButton
+              steps={
+                currentAppUser?.role === "recepcionista"
+                  ? calendarReceptionistGuideSteps
+                  : calendarGuideSteps
+              }
+            />
             {canCreateAppointments && (
               <button
                 data-tour="calendar-new-appt-btn"

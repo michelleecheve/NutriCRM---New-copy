@@ -29,7 +29,7 @@ export const CalendarSelector: React.FC<CalendarSelectorProps> = ({
       : 'Mi Calendario';
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl px-5 py-4 flex items-center gap-4 flex-wrap shadow-sm">
+    <div data-tour="calendar-nutri-selector" className="bg-white border border-slate-200 rounded-2xl px-5 py-4 flex items-center gap-4 flex-wrap shadow-sm">
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
           <CalendarDays className="w-5 h-5 text-emerald-600" />

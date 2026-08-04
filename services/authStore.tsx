@@ -657,6 +657,9 @@ class AuthStore {
   async startCheckout(): Promise<{ ok: boolean; message?: string }> {
     const user = this.currentUser;
     if (!user) return { ok: false, message: 'No hay sesión activa.' };
+    if (user.role !== 'nutricionista') {
+      return { ok: false, message: 'Solo la nutricionista puede suscribirse a Plan Pro.' };
+    }
 
     const existingSub = this.subscription;
     if (existingSub && (existingSub.status === 'active' || existingSub.status === 'cancelled_pending')) {
@@ -684,15 +687,37 @@ class AuthStore {
     }
   }
 
+  /**
+   * True si el dueño (owner_id) de un recurso tiene acceso Pro activo.
+   * A diferencia de isPro(), que solo evalúa la suscripción del usuario logueado,
+   * esta función resuelve el plan del owner real — necesaria cuando una recepcionista
+   * (sin suscripción propia) crea recursos dentro del calendario de su nutri vinculada.
+   */
+  async isOwnerPro(ownerId: string): Promise<boolean> {
+    if (this.currentUser?.id === ownerId) return this.isPro();
+
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('plan, status')
+      .eq('owner_id', ownerId)
+      .single();
+    if (!sub) return false;
+    return sub.plan === 'pro' && (sub.status === 'active' || sub.status === 'cancelled_pending' || sub.status === 'past_due');
+  }
+
   /** True si alcanzó el límite de 10 pacientes activos en plan Free. */
   patientLimitReached(activePatientCount: number): boolean {
     if (this.isPro()) return false;
     return activePatientCount >= 10;
   }
 
-  /** True si alcanzó el límite de 20 citas en plan Free. */
-  appointmentLimitReached(appointmentCount: number): boolean {
-    if (this.isPro()) return false;
+  /**
+   * True si alcanzó el límite de 20 citas en plan Free.
+   * `isProOverride` permite evaluar el plan del owner del calendario en vez del usuario
+   * logueado (caso recepcionista) — ver isOwnerPro().
+   */
+  appointmentLimitReached(appointmentCount: number, isProOverride?: boolean): boolean {
+    if (isProOverride ?? this.isPro()) return false;
     return appointmentCount >= 20;
   }
 

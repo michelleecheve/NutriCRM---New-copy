@@ -21,6 +21,8 @@ export const PlanLimitModal: React.FC = () => {
 
   if (!open) return null;
 
+  const isReceptionist = authStore.getCurrentUser()?.role === 'recepcionista';
+
   const handleCheckout = async () => {
     setLoading(true);
     await authStore.startCheckout();
@@ -54,29 +56,46 @@ export const PlanLimitModal: React.FC = () => {
         <h2 className="text-center text-lg font-bold text-slate-800 mb-1">
           Límite del Plan Básico
         </h2>
-        <p className="text-center text-slate-500 text-sm mb-5">
-          Has llegado al límite de tu Plan Básico.
-        </p>
 
-        <>
-          <p className="text-center text-sm text-slate-600 mb-5">
-            Suscríbete a <span className="font-semibold text-amber-600">Plan Pro</span> para acceso ilimitado sin restricciones.
-          </p>
-          <button
-            onClick={handleCheckout}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold rounded-xl py-3 transition-colors"
-          >
-            <Zap className="w-4 h-4" />
-            {loading ? 'Redirigiendo...' : 'Suscribirse a Plan Pro'}
-          </button>
-          <button
-            onClick={() => setOpen(false)}
-            className="w-full mt-2 text-sm text-slate-400 hover:text-slate-600 py-2 transition-colors"
-          >
-            Ahora no
-          </button>
-        </>
+        {isReceptionist ? (
+          <>
+            <p className="text-center text-slate-500 text-sm mb-5">
+              La nutricionista ha llegado al límite de su Plan Básico.
+            </p>
+            <p className="text-center text-sm text-slate-600 mb-5">
+              Dile que se suscriba a <span className="font-semibold text-amber-600">Plan Pro</span> para acceso ilimitado sin restricciones.
+            </p>
+            <button
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl py-3 transition-colors"
+            >
+              Entendido
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-center text-slate-500 text-sm mb-5">
+              Has llegado al límite de tu Plan Básico.
+            </p>
+            <p className="text-center text-sm text-slate-600 mb-5">
+              Suscríbete a <span className="font-semibold text-amber-600">Plan Pro</span> para acceso ilimitado sin restricciones.
+            </p>
+            <button
+              onClick={handleCheckout}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white font-semibold rounded-xl py-3 transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              {loading ? 'Redirigiendo...' : 'Suscribirse a Plan Pro'}
+            </button>
+            <button
+              onClick={() => setOpen(false)}
+              className="w-full mt-2 text-sm text-slate-400 hover:text-slate-600 py-2 transition-colors"
+            >
+              Ahora no
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

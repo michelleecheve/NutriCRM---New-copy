@@ -148,7 +148,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* View toggle */}
-          <div className="flex items-center bg-slate-100 rounded-lg p-1 gap-0.5">
+          <div data-tour="calendar-view-toggle" className="flex items-center bg-slate-100 rounded-lg p-1 gap-0.5">
             <button
               onClick={() => handleViewModeChange('month')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
@@ -174,7 +174,9 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
           </div>
 
           {/* Status filter */}
-          <StatusFilter value={statusFilter} onChange={onStatusFilterChange} />
+          <span data-tour="calendar-filtro">
+            <StatusFilter value={statusFilter} onChange={onStatusFilterChange} />
+          </span>
         </div>
       </div>
 

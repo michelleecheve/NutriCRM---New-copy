@@ -894,9 +894,11 @@ export const supabaseService = {
   },
 
   async createAppointment(appointment: Omit<Appointment, 'id'>): Promise<Appointment> {
-    // Plan limit: free users can have at most 20 appointments
-    if (!authStore.isPro()) {
-      const ownerId = appointment.ownerId;
+    // Plan limit: free users can have at most 20 appointments.
+    // Se resuelve el plan del owner_id (la nutri dueña del calendario), no del usuario
+    // logueado — necesario para que las recepcionistas hereden correctamente el plan Pro.
+    const ownerId = appointment.ownerId;
+    if (!(await authStore.isOwnerPro(ownerId))) {
       const { count } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
