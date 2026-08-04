@@ -50,7 +50,13 @@
       "Bash(sed -i \"84,106s/—/-/g\" pages/Profile.tsx)",
       "Bash(grep -n \"symbol: '\\\\$',\" pages/Profile.tsx)",
       "Bash(netstat -ano)",
-      "Bash(taskkill *)"
+      "Bash(taskkill *)",
+      "Bash(MainPanel\\\\.tsx)",
+      "Bash(EvaluationsTab\\\\.tsx)",
+      "Bash(PatientConfigTab\\\\.tsx)",
+      "Bash(exportPatientZip\\\\.ts)",
+      "Bash(store\\\\.ts)",
+      "Bash(SaveButton\")"
     ]
   }
 }

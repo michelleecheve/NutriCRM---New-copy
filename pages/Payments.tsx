@@ -8,11 +8,12 @@ import {
   ChevronDown, ChevronLeft, ChevronRight, CheckCircle, ArrowUpCircle, ArrowDownCircle,
   Wallet, BarChart2, Download, CalendarDays, History,
 } from 'lucide-react';
-import { getTodayStr } from '../src/utils/dateUtils';
+import { getTodayStr, getZonedDateParts, ymd, daysInMonth, shiftMonth } from '../src/utils/dateUtils';
 import { showPlanLimitModal } from '../components/PlanLimitModal';
 import { authStore } from '../services/authStore';
 import { PageGuideButton } from '../components/tour/PageGuideButton';
 import { getPaymentsGuideSteps } from '../components/tour/pageGuides/payments';
+import { SaveButton } from '../components/SaveButton';
 
 type Tab         = 'ingresos' | 'egresos' | 'resumen';
 type StatusFilter = 'all' | 'Pendiente' | 'Pagado' | 'Vencido';
@@ -24,28 +25,34 @@ const EXPENSE_CATEGORIES = [
   'Equipo',
   'Suministros',
   'Marketing',
+  'Transporte',
   'Otro',
 ];
 
-const getPresetRange = (preset: DatePreset): { from: string; to: string } | null => {
+const getPresetRange = (preset: DatePreset, timezone?: string): { from: string; to: string } | null => {
   if (preset === 'all' || preset === 'custom') return null;
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+  const { year, month, day } = getZonedDateParts(timezone);
+
   if (preset === 'prev_month') {
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastDay  = new Date(now.getFullYear(), now.getMonth(), 0);
-    return { from: fmt(firstDay), to: fmt(lastDay) };
+    const { year: py, month: pm } = shiftMonth(year, month, -1);
+    return { from: ymd(py, pm, 1), to: ymd(py, pm, daysInMonth(py, pm)) };
   }
   if (preset === 'year') {
-    const y = new Date().getFullYear();
-    return { from: `${y}-01-01`, to: `${y}-12-31` };
+    return { from: `${year}-01-01`, to: `${year}-12-31` };
   }
-  const to   = new Date();
-  const from = new Date();
-  if (preset === '1m') { from.setDate(1); }
-  if (preset === '3m') { from.setMonth(from.getMonth() - 2); from.setDate(1); }
-  if (preset === '6m') { from.setMonth(from.getMonth() - 5); from.setDate(1); }
-  return { from: fmt(from), to: fmt(to) };
+  if (preset === '1m') {
+    return { from: ymd(year, month, 1), to: ymd(year, month, day) };
+  }
+  if (preset === '3m') {
+    const { year: sy, month: sm } = shiftMonth(year, month, -2);
+    return { from: ymd(sy, sm, 1), to: ymd(year, month, day) };
+  }
+  if (preset === '6m') {
+    const { year: sy, month: sm } = shiftMonth(year, month, -5);
+    return { from: ymd(sy, sm, 1), to: ymd(year, month, day) };
+  }
+  return null;
 };
 
 const PRESET_LABELS: Record<DatePreset, string> = {
@@ -64,6 +71,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Equipo':        'bg-cyan-400',
   'Suministros':   'bg-amber-400',
   'Marketing':     'bg-pink-400',
+  'Transporte':    'bg-teal-400',
   'Otro':          'bg-slate-400',
 };
 
@@ -91,6 +99,8 @@ export const Payments: React.FC = () => {
 
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  const invoiceFormRef = useRef<HTMLFormElement>(null);
 
   const emptyIngreso: Partial<Invoice> = {
     patientId:   '',
@@ -142,7 +152,7 @@ export const Payments: React.FC = () => {
     if (activePreset === 'all') return true;
     const range = activePreset === 'custom'
       ? (customFrom && customTo ? { from: customFrom, to: customTo } : null)
-      : getPresetRange(activePreset);
+      : getPresetRange(activePreset, user.timezone);
     if (!range) return true;
     return inv.date >= range.from && inv.date <= range.to;
   };
@@ -275,8 +285,10 @@ export const Payments: React.FC = () => {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async () => {
+    if (invoiceFormRef.current && !invoiceFormRef.current.reportValidity()) {
+      throw new Error('Completa los campos requeridos');
+    }
     try {
       if (currentInvoice.id) {
         await store.updateInvoice(currentInvoice as Invoice);
@@ -291,6 +303,7 @@ export const Payments: React.FC = () => {
         showPlanLimitModal();
       } else {
         console.error('Error saving invoice:', err);
+        throw err;
       }
     }
   };
@@ -952,7 +965,7 @@ export const Payments: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-6 space-y-5 overflow-y-auto flex-1">
+            <form ref={invoiceFormRef} onSubmit={e => e.preventDefault()} className="p-6 space-y-5 overflow-y-auto flex-1">
 
               {/* ── INGRESO fields ── */}
               {!isEgresoModal && (
@@ -1066,14 +1079,10 @@ export const Payments: React.FC = () => {
                   className="px-5 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition-colors">
                   Cancelar
                 </button>
-                <button type="submit"
-                  className={`px-6 py-2.5 text-white font-bold rounded-xl shadow-lg transition-all ${
-                    isEgresoModal
-                      ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20'
-                      : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
-                  }`}>
-                  Guardar
-                </button>
+                <SaveButton
+                  onSave={handleSave}
+                  variant={isEgresoModal ? 'red' : 'emerald'}
+                />
               </div>
             </form>
           </div>

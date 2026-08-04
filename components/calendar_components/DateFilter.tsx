@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Filter, ChevronDown } from 'lucide-react';
+import { ymd, shiftMonth, getZonedDateParts } from '../../src/utils/dateUtils';
 
 export type DatePreset = '1m' | '3m' | '6m' | 'year' | 'custom' | 'all';
 
@@ -12,16 +13,32 @@ export const PRESET_LABELS: Record<DatePreset, string> = {
   custom: 'Rango personalizado',
 };
 
-export const getPresetRange = (preset: DatePreset): { from: string; to: string } | null => {
+/**
+ * `todayStr` should be the app's timezone-correct "today" (YYYY-MM-DD, from
+ * getTodayStr(user.timezone)) so the range lines up with how appointment
+ * dates are actually stored. Falls back to the browser's local date if omitted.
+ */
+export const getPresetRange = (preset: DatePreset, todayStr?: string): { from: string; to: string } | null => {
   if (preset === 'all' || preset === 'custom') return null;
-  const to   = new Date();
-  const from = new Date();
-  if (preset === '1m')   { from.setDate(1); }
-  if (preset === '3m')   { from.setMonth(from.getMonth() - 2); from.setDate(1); }
-  if (preset === '6m')   { from.setMonth(from.getMonth() - 5); from.setDate(1); }
-  if (preset === 'year') { from.setMonth(0); from.setDate(1); }
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  return { from: fmt(from), to: fmt(to) };
+
+  const [y, m, d] = todayStr ? todayStr.split('-').map(Number) : [];
+  const { year, month, day } = (y && m && d) ? { year: y, month: m, day: d } : getZonedDateParts();
+
+  if (preset === 'year') {
+    return { from: `${year}-01-01`, to: `${year}-12-31` };
+  }
+  if (preset === '1m') {
+    return { from: ymd(year, month, 1), to: ymd(year, month, day) };
+  }
+  if (preset === '3m') {
+    const { year: sy, month: sm } = shiftMonth(year, month, -2);
+    return { from: ymd(sy, sm, 1), to: ymd(year, month, day) };
+  }
+  if (preset === '6m') {
+    const { year: sy, month: sm } = shiftMonth(year, month, -5);
+    return { from: ymd(sy, sm, 1), to: ymd(year, month, day) };
+  }
+  return null;
 };
 
 interface DateFilterProps {

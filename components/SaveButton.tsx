@@ -9,6 +9,8 @@ interface SaveButtonProps {
   label?: string;
   /** sm para botones secundarios, md es el default */
   size?: 'sm' | 'md';
+  /** Color del botón. Default: 'emerald' */
+  variant?: 'emerald' | 'red';
   /** Clases extra de Tailwind (ej. "w-full") */
   className?: string;
 }
@@ -36,11 +38,15 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
   onSave,
   label = 'Guardar',
   size = 'md',
+  variant = 'emerald',
   className = '',
 }) => {
   const { save, isSaving, savedOk, error } = useSave();
 
   const sizeClass = size === 'sm' ? 'px-4 py-1.5 text-xs' : 'px-6 py-2 text-sm';
+  const colorClass = variant === 'red'
+    ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20'
+    : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20';
 
   return (
     <div className="flex flex-col items-end gap-1">
@@ -51,7 +57,7 @@ export const SaveButton: React.FC<SaveButtonProps> = ({
         className={`flex items-center justify-center gap-2 font-bold text-white rounded-lg shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed
           ${savedOk
             ? 'bg-emerald-500 shadow-emerald-500/20'
-            : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+            : colorClass
           }
           ${sizeClass} ${className}`}
       >

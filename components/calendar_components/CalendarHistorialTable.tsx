@@ -99,7 +99,7 @@ export const CalendarHistorialTable: React.FC<CalendarHistorialTableProps> = ({
     .filter(appt => {
       const range = activePreset === 'custom'
         ? (customFrom && customTo ? { from: customFrom, to: customTo } : null)
-        : getPresetRange(activePreset);
+        : getPresetRange(activePreset, todayStr);
       if (!range) return true;
       return appt.date >= range.from && appt.date <= range.to;
     })
