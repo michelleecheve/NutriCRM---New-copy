@@ -56,7 +56,8 @@
       "Bash(PatientConfigTab\\\\.tsx)",
       "Bash(exportPatientZip\\\\.ts)",
       "Bash(store\\\\.ts)",
-      "Bash(SaveButton\")"
+      "Bash(SaveButton\")",
+      "Bash(git *)"
     ]
   }
 }

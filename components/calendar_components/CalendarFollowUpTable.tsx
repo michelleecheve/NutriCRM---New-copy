@@ -249,9 +249,7 @@ export const CalendarFollowUpTable: React.FC<CalendarFollowUpTableProps> = ({
         {/* Mobile layout */}
         <div className="sm:hidden flex flex-col gap-1">
           <div className="flex items-center justify-between">
-            <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Bell className="w-5 h-5 text-emerald-600" />
-            </div>
+            <Bell className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             <button
               onClick={(e) => { e.stopPropagation(); setCollapsed(v => !v); }}
               className="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-100 transition-colors"
@@ -267,9 +265,7 @@ export const CalendarFollowUpTable: React.FC<CalendarFollowUpTableProps> = ({
         {/* Desktop layout */}
         <div className="hidden sm:flex sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Bell className="w-5 h-5 text-emerald-600" />
-            </div>
+            <Bell className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             <div>
               <h3 className="font-bold text-slate-900 text-lg">Pacientes para Seguimiento</h3>
               <p className="text-xs text-slate-400">Identifica a quién contactar para recordatorio de reconsulta</p>

@@ -16,9 +16,16 @@ export const STATUS_FILTER_STYLES: Record<AppointmentStatusValue, { dot: string;
 interface StatusFilterProps {
   value: string[];
   onChange: (value: string[]) => void;
+  label?: string;
+  buttonClassName?: string;
 }
 
-export const StatusFilter: React.FC<StatusFilterProps> = ({ value, onChange }) => {
+export const StatusFilter: React.FC<StatusFilterProps> = ({
+  value,
+  onChange,
+  label = 'Filtrar',
+  buttonClassName = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all bg-white border-slate-200 text-slate-500 hover:bg-slate-50',
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -40,15 +47,15 @@ export const StatusFilter: React.FC<StatusFilterProps> = ({ value, onChange }) =
     <div className="relative flex-shrink-0" ref={ref}>
       <button
         onClick={(e) => { e.stopPropagation(); setIsOpen(o => !o); }}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+        className={buttonClassName}
       >
         <Filter className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Filtrar</span>
+        <span className="hidden sm:inline">{label}</span>
         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full mt-2 right-0 w-52 bg-white rounded-xl shadow-xl border border-slate-100 z-50 p-1 animate-in fade-in zoom-in duration-150">
+        <div className="absolute top-full mt-2 left-0 w-52 bg-white rounded-xl shadow-xl border border-slate-100 z-50 p-1 animate-in fade-in zoom-in duration-150">
           {APPOINTMENT_STATUSES.map(status => (
             <label
               key={status}

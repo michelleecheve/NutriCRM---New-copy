@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Filter, ChevronDown } from 'lucide-react';
+import { CalendarDays, ChevronDown } from 'lucide-react';
 import { ymd, shiftMonth, getZonedDateParts } from '../../src/utils/dateUtils';
 
 export type DatePreset = '1m' | '3m' | '6m' | 'year' | 'custom' | 'all';
@@ -78,7 +78,7 @@ export const DateFilter: React.FC<DateFilterProps> = ({
   }, [onClose]);
 
   return (
-    <div className="relative flex-shrink-0" ref={ref}>
+    <div className="relative flex-shrink-0" ref={ref} onClick={(e) => e.stopPropagation()}>
       <button
         onClick={(e) => { e.stopPropagation(); onToggle(); }}
         className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
@@ -87,7 +87,7 @@ export const DateFilter: React.FC<DateFilterProps> = ({
             : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm'
         }`}
       >
-        <Filter className="w-4 h-4" />
+        <CalendarDays className="w-4 h-4" />
         <span className="hidden sm:inline">Fecha: </span>{PRESET_LABELS[activePreset]}
         <ChevronDown className={`hidden sm:block w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
