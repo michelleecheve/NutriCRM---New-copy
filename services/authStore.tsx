@@ -369,8 +369,8 @@ class AuthStore {
 
   // ── Auth ──────────────────────────────────────────────────────────────────
 
-  async login(email: string, password: string): Promise<AppUser | null> {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  async login(email: string, password: string, captchaToken?: string): Promise<AppUser | null> {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
   if (error || !data.user) return null;
 
   // Esperar a que handleSupabaseSession termine
@@ -378,11 +378,11 @@ class AuthStore {
   return this.currentUser;
   }
 
-  async signUp(email: string, password: string, name: string, role: UserRole, timezone: string, avatar?: string, country?: string, dateOfBirth?: string, currency?: string): Promise<{ ok: boolean; message?: string }> {
+  async signUp(email: string, password: string, name: string, role: UserRole, timezone: string, avatar?: string, country?: string, dateOfBirth?: string, currency?: string, captchaToken?: string): Promise<{ ok: boolean; message?: string }> {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name, role } },
+      options: { data: { name, role }, captchaToken },
     });
     if (error) return { ok: false, message: error.message };
     if (!data.user) return { ok: false, message: 'Error al crear el usuario.' };

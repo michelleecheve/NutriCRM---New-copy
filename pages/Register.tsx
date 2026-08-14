@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Lock, Mail, ArrowRight, AlertCircle, User, Globe, Camera, ArrowLeft, MapPin, Calendar, Coins } from 'lucide-react';
 import { authStore } from '../services/authStore';
 import { supabaseService } from '../services/supabaseService';
@@ -121,8 +121,32 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
 
-  const isFormComplete = fullName.trim() !== '' && email.trim() !== '' && password.length >= 6 && country !== '' && dateOfBirth !== '';
+  // Renderiza el widget de Cloudflare Turnstile (captcha) apenas el script esté disponible.
+  useEffect(() => {
+    let cancelled = false;
+    const tryRender = () => {
+      if (cancelled) return;
+      const turnstile = (window as any).turnstile;
+      if (turnstile && turnstileRef.current && !turnstileWidgetId.current) {
+        turnstileWidgetId.current = turnstile.render(turnstileRef.current, {
+          sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
+          callback: (token: string) => setCaptchaToken(token),
+          'expired-callback': () => setCaptchaToken(''),
+          'error-callback': () => setCaptchaToken(''),
+        });
+      } else if (!turnstile) {
+        setTimeout(tryRender, 200);
+      }
+    };
+    tryRender();
+    return () => { cancelled = true; };
+  }, []);
+
+  const isFormComplete = fullName.trim() !== '' && email.trim() !== '' && password.length >= 6 && country !== '' && dateOfBirth !== '' && captchaToken !== '';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -150,11 +174,17 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
       // Or we can use a temporary ID or just update after.
       // Actually, my updated authStore.signUp creates the profile.
       
-      const result = await authStore.signUp(email, password, fullName, role, timezone, undefined, country, dateOfBirth, currency);
-      
+      const result = await authStore.signUp(email, password, fullName, role, timezone, undefined, country, dateOfBirth, currency, captchaToken);
+
       if (!result.ok) {
         setError(result.message || 'Error al registrarse.');
         setIsLoading(false);
+        // El token de Turnstile es de un solo uso: hay que resetear el widget para reintentar.
+        const turnstile = (window as any).turnstile;
+        if (turnstile && turnstileWidgetId.current) {
+          turnstile.reset(turnstileWidgetId.current);
+        }
+        setCaptchaToken('');
         return;
       }
 
@@ -199,6 +229,11 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
     } catch (err) {
       setIsLoading(false);
       setError('Ocurrió un error inesperado.');
+      const turnstile = (window as any).turnstile;
+      if (turnstile && turnstileWidgetId.current) {
+        turnstile.reset(turnstileWidgetId.current);
+      }
+      setCaptchaToken('');
     }
   };
 
@@ -370,6 +405,11 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
               </div>
               <p className="text-[10px] text-slate-400 px-1 mt-1">Sugerida según tu país. Podrás cambiarla luego en tu perfil.</p>
             </div>
+
+            <div ref={turnstileRef} className="flex justify-center pt-2" />
+            <p className="text-center text-[10px] text-slate-400">
+              Cloudflare verifica que eres una persona real y no un bot.
+            </p>
 
             {error && (
               <div className="flex items-center gap-2 text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm font-medium">

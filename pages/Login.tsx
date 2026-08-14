@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Lock, Mail, ArrowRight, AlertCircle, ArrowLeft, CheckCircle } from 'lucide-react';
 import { authStore } from '../services/authStore';
 import { supabase } from '../services/supabase';
@@ -21,6 +21,38 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
+
+  // Renderiza el widget de Cloudflare Turnstile (captcha) apenas el script esté disponible.
+  useEffect(() => {
+    let cancelled = false;
+    const tryRender = () => {
+      if (cancelled) return;
+      const turnstile = (window as any).turnstile;
+      if (turnstile && turnstileRef.current && !turnstileWidgetId.current) {
+        turnstileWidgetId.current = turnstile.render(turnstileRef.current, {
+          sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
+          callback: (token: string) => setCaptchaToken(token),
+          'expired-callback': () => setCaptchaToken(''),
+          'error-callback': () => setCaptchaToken(''),
+        });
+      } else if (!turnstile) {
+        setTimeout(tryRender, 200);
+      }
+    };
+    tryRender();
+    return () => { cancelled = true; };
+  }, []);
+
+  const resetCaptcha = () => {
+    const turnstile = (window as any).turnstile;
+    if (turnstile && turnstileWidgetId.current) {
+      turnstile.reset(turnstileWidgetId.current);
+    }
+    setCaptchaToken('');
+  };
 
   // Forgot password state
   const [forgotEmail, setForgotEmail] = useState('');
@@ -33,11 +65,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
     setIsLoading(true);
 
     try {
-      const user = await authStore.login(email, password);
+      const user = await authStore.login(email, password, captchaToken);
       setIsLoading(false);
 
       if (!user) {
         setError('Correo o contraseña incorrectos.');
+        resetCaptcha();
         return;
       }
 
@@ -45,6 +78,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
     } catch (err) {
       setIsLoading(false);
       setError('Ocurrió un error al iniciar sesión.');
+      resetCaptcha();
     }
   };
 
@@ -236,7 +270,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !captchaToken}
               className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 sm:py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-70 mt-2 sm:mt-4"
             >
               {isLoading ? (
@@ -290,10 +324,18 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
                   <a href="mailto:nutrifollow.app@outlook.com" className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
                     nutrifollow.app@outlook.com
                   </a>{' '}
+                  o a{' '}
+                  <a href="https://wa.me/50252720714" target="_blank" rel="noopener noreferrer" className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
+                    WhatsApp aquí
+                  </a>{' '}
                   y rápidamente te apoyaremos.
                 </p>
               )}
             </div>
+            <div ref={turnstileRef} className="flex justify-center pt-1" />
+            <p className="text-center text-[10px] text-slate-400 mt-1">
+              Cloudflare verifica que eres una persona real y no un bot.
+            </p>
           </div>
         </div>
       </div>
