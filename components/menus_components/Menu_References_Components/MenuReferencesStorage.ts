@@ -92,6 +92,7 @@ export function emptyDayMenuFromSlots(slots: MealSlot[]): DayMenu {
 export interface MenuReferenceData {
   kcal:            number;
   type:            ReferenceType;
+  name?:           string;
   meals:           MealSlot[];        // ordered array — defines table rows
   weeklyMenu:      Record<WeekDayKey, DayMenu> & {
     domingo: { note: string };

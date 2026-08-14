@@ -3,7 +3,7 @@ import { Bookmark, Check, FileText, Layout, X, ChevronDown } from 'lucide-react'
 import { MenuRecommendationData } from '../../../types';
 import { MenuPlanData } from '../../menus_components/MenuDesignTemplates';
 import { store } from '../../../services/store';
-import { menuPlanDataToReferenceData } from './helpers';
+import { menuPlanDataToReferenceData, menuPlanDataToExchangeReferenceData } from './helpers';
 
 interface SaveAsTemplateButtonProps {
   menuPreviewData: MenuPlanData | null;
@@ -12,6 +12,7 @@ interface SaveAsTemplateButtonProps {
 export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menuPreviewData }) => {
   const [showModal, setShowModal] = useState(false);
   const [saveTemplateType, setSaveTemplateType] = useState<'ref' | 'rec' | 'eating_out' | null>(null);
+  const [saveRefName, setSaveRefName] = useState('');
   const [saveTemplateName, setSaveTemplateName] = useState('');
   const [saveEatingOutName, setSaveEatingOutName] = useState('');
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
@@ -19,6 +20,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
 
   const handleOpen = () => {
     setSaveTemplateType(null);
+    setSaveRefName('');
     setSaveTemplateName('');
     setSaveEatingOutName('');
     setSaveTemplateSuccess(null);
@@ -26,12 +28,15 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
   };
 
   const handleSaveAsRef = async () => {
-    if (!menuPreviewData) return;
+    if (!menuPreviewData || !saveRefName.trim()) return;
     setIsSavingTemplate(true);
     try {
-      const refData = menuPlanDataToReferenceData(menuPreviewData);
-      await store.saveMenuReference({ data: refData });
+      const refData = isIntercambio
+        ? menuPlanDataToExchangeReferenceData(menuPreviewData, saveRefName)
+        : menuPlanDataToReferenceData(menuPreviewData, saveRefName);
+      await store.saveMenuReference({ data: refData as any, type: refData.type, kcal: refData.kcal });
       setSaveTemplateSuccess('ref');
+      setSaveRefName('');
       setTimeout(() => { setShowModal(false); setSaveTemplateSuccess(null); }, 2000);
     } catch (err) {
       console.error('Error saving reference:', err);
@@ -145,7 +150,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
                     </div>
                     <div className="flex-1">
                       <div className="text-sm font-bold text-slate-800">
-                        {isIntercambio ? 'Referencia de porciones y menú intercambio' : 'Referencia de porciones y menú semanal'}
+                        {isIntercambio ? 'Tabla de porciones y menú intercambio' : 'Tabla de porciones y menú semanal'}
                       </div>
                       <div className="text-xs text-slate-500 mt-0.5">
                         {refData
@@ -155,20 +160,30 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
                     </div>
                   </div>
                   {saveTemplateType === 'ref' ? (
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => setSaveTemplateType(null)}
-                        className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
-                      >
-                        ← Volver
-                      </button>
-                      <button
-                        onClick={handleSaveAsRef}
-                        disabled={isSavingTemplate}
-                        className="bg-blue-600 text-white font-bold px-6 py-2 rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
-                      >
-                        {isSavingTemplate ? 'Guardando...' : <><Bookmark className="w-4 h-4" />Guardar Referencia</>}
-                      </button>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        placeholder="Nombre de la plantilla..."
+                        value={saveRefName}
+                        onChange={e => setSaveRefName(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        autoFocus
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setSaveTemplateType(null)}
+                          className="px-4 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
+                        >
+                          ← Volver
+                        </button>
+                        <button
+                          onClick={handleSaveAsRef}
+                          disabled={isSavingTemplate || !saveRefName.trim()}
+                          className="bg-blue-600 text-white font-bold px-6 py-2 rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {isSavingTemplate ? 'Guardando...' : <><Bookmark className="w-4 h-4" />Guardar Referencia</>}
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <button

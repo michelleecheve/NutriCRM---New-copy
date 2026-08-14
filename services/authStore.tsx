@@ -291,6 +291,7 @@ class AuthStore {
         shareDigitalMenuMessage: profile?.share_digital_menu_message || undefined,
         navbarConfig:      (profile?.navbarconfig as 'sidebar' | 'topnav') || 'sidebar',
         portalConfig:      profile?.patient_portal_config || undefined,
+        menuReferenceCardConfig: profile?.menu_reference_card_config || undefined,
       } as any,
     };
 
@@ -632,6 +633,15 @@ class AuthStore {
     this.currentUser = {
       ...this.currentUser,
       profile: { ...this.currentUser.profile, portalConfig },
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
+  }
+
+  patchCurrentUserMenuReferenceCardConfig(menuReferenceCardConfig: Record<string, any>): void {
+    if (!this.currentUser) return;
+    this.currentUser = {
+      ...this.currentUser,
+      profile: { ...this.currentUser.profile, menuReferenceCardConfig },
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(this.currentUser));
   }

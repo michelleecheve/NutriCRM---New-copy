@@ -1,6 +1,6 @@
 import { Patient, VetCalculation } from '../../../types';
 import { MenuPlanData, MealPortions } from '../../menus_components/MenuDesignTemplates';
-import { MealLabel, MealSlot, WEEKDAY_KEYS, MenuReferenceData, emptyMealPortions, calcPortionsTotal } from '../../menus_components/Menu_References_Components/MenuReferencesStorage';
+import { MealLabel, MealSlot, WEEKDAY_KEYS, MenuReferenceData, ExchangeReferenceData, emptyMealPortions, calcPortionsTotal } from '../../menus_components/Menu_References_Components/MenuReferencesStorage';
 import { store } from '../../../services/store';
 
 export function buildBlankMenuPlanData(
@@ -116,7 +116,7 @@ export function mapToMealLabel(raw: string): MealLabel {
   return 'Refacción';
 }
 
-export function menuPlanDataToReferenceData(plan: MenuPlanData): MenuReferenceData {
+export function menuPlanDataToReferenceData(plan: MenuPlanData, name?: string): MenuReferenceData {
   const lunesData = (plan.weeklyMenu as any)?.lunes;
   const mealsOrder: string[] = lunesData?.mealsOrder || Object.keys((plan.portions as any)?.byMeal || {});
 
@@ -149,6 +149,7 @@ export function menuPlanDataToReferenceData(plan: MenuPlanData): MenuReferenceDa
   return {
     kcal:        plan.kcal || 0,
     type:        'SEMANAL',
+    name:        name?.trim() || undefined,
     meals,
     weeklyMenu:  refWeeklyMenu,
     hydration:   (plan.weeklyMenu as any)?.domingo?.hydration || '2.5L Agua/Día',
@@ -157,5 +158,29 @@ export function menuPlanDataToReferenceData(plan: MenuPlanData): MenuReferenceDa
     weightKg:    plan.patient?.weight || undefined,
     heightCm:    plan.patient?.height || undefined,
     fatPct:      plan.patient?.fatPct || undefined,
+  };
+}
+
+// Igual que menuPlanDataToReferenceData pero para el tipo INTERCAMBIO: arma
+// la referencia con la tabla de intercambio real (exchangeMenu), no con el
+// menú semanal — antes se guardaba siempre como SEMANAL sin importar el modo.
+export function menuPlanDataToExchangeReferenceData(plan: MenuPlanData, name: string): ExchangeReferenceData {
+  const lunesData = (plan.weeklyMenu as any)?.lunes;
+  const mealsOrder: string[] = lunesData?.mealsOrder || Object.keys((plan.portions as any)?.byMeal || {});
+
+  const portions: MealSlot[] = mealsOrder.map((slotId: string) => {
+    const mealInfo = lunesData?.[slotId];
+    const rawLabel = mealInfo?.label || slotId;
+    const mealPortions = (plan.portions as any)?.byMeal?.[slotId] || emptyMealPortions();
+    return { id: slotId, label: mapToMealLabel(rawLabel), portions: mealPortions };
+  });
+
+  return {
+    kcal: plan.kcal || 0,
+    type: 'INTERCAMBIO',
+    name: name.trim(),
+    portions,
+    exchangeMenu: plan.exchangeMenu || { meals: [], columnLabels: [], note: '', hydration: '' },
+    patientName: plan.patient?.name || undefined,
   };
 }

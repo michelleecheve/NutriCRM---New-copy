@@ -14,14 +14,17 @@ interface Props {
 }
 
 function buildInitialMeals(data: MenuPlanData): ExchangeMeal[] {
-  if (data.exchangeMenu?.meals?.length) return data.exchangeMenu.meals;
-  // Bootstrap from weekly menu meal order
+  // El orden y los nombres de los tiempos de comida vienen de weeklyMenu.lunes
+  // (la misma fuente que usan Tabla de Porciones y Menú Semanal), así que un
+  // agregar/quitar/reordenar/renombrar hecho en cualquiera de esas dos tablas
+  // se refleja aquí. Los ejemplos ya cargados se conservan por id.
   const order = data.weeklyMenu?.lunes?.mealsOrder || DEFAULT_MEAL_ORDER;
-  return order.map(id => ({
-    id,
-    label: (data.weeklyMenu?.lunes as any)?.[id]?.label || DEFAULT_MEAL_LABELS[id] || id,
-    examples: ['', ''],
-  }));
+  const savedById = new Map((data.exchangeMenu?.meals || []).map(m => [m.id, m]));
+  return order.map(id => {
+    const saved = savedById.get(id);
+    const label = (data.weeklyMenu?.lunes as any)?.[id]?.label || saved?.label || DEFAULT_MEAL_LABELS[id] || id;
+    return { id, label, examples: saved?.examples?.length ? [...saved.examples] : ['', ''] };
+  });
 }
 
 function buildInitialExamples(meals: ExchangeMeal[]): Record<string, string[]> {
@@ -51,6 +54,12 @@ export const MenuExchangeEditorSec3: React.FC<Props> = ({ menuPreviewData, setMe
   const latestRef = useRef({ meals, examples, note, hydration, columnLabels });
   useEffect(() => { latestRef.current = { meals, examples, note, hydration, columnLabels }; });
 
+  // Ref que siempre tiene el menuPreviewData más reciente, para no pisar con
+  // datos viejos cambios que hayan llegado de Tabla de Porciones mientras
+  // esperamos el debounce (mismo patrón que MenuTablePortionsSec3).
+  const menuPreviewDataRef = useRef(menuPreviewData);
+  useEffect(() => { menuPreviewDataRef.current = menuPreviewData; });
+
   useEffect(() => {
     return () => {
       if (commitTimerRef.current) {
@@ -62,15 +71,76 @@ export const MenuExchangeEditorSec3: React.FC<Props> = ({ menuPreviewData, setMe
     };
   }, []); // eslint-disable-line
 
+  // Sincroniza los nombres (label) de los tiempos de comida cuando se renombran
+  // desde Tabla de Porciones. Agregar/quitar/reordenar ya sincroniza vía remount
+  // (key en MenuEditSec3), pero un renombrado puro no cambia esa key.
+  const externalLabelsSignature = meals
+    .map(m => `${m.id}:${(menuPreviewData.weeklyMenu.lunes as any)[m.id]?.label ?? ''}`)
+    .join('|');
+  useEffect(() => {
+    let changed = false;
+    const next = meals.map(m => {
+      const freshLabel = (menuPreviewData.weeklyMenu.lunes as any)[m.id]?.label;
+      if (freshLabel !== undefined && freshLabel !== m.label) { changed = true; return { ...m, label: freshLabel }; }
+      return m;
+    });
+    if (changed) {
+      setMeals(next);
+      // A diferencia de Porciones/Semanal (que solo leen weeklyMenu), acá el
+      // renombrado también hay que guardarlo en exchangeMenu.meals — si no,
+      // Vista Previa/PDF (que lee data.exchangeMenu directamente) queda desactualizada.
+      scheduleCommit(next, examples, note, hydration, columnLabels);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalLabelsSignature]);
+
+  // Al montar (o remontar por un agregar/quitar/reordenar hecho en Tabla de
+  // Porciones), si el orden/nombres canónicos de weeklyMenu.lunes ya no
+  // coinciden con lo guardado en exchangeMenu.meals, persiste esa reconciliación
+  // de inmediato — si no, el cambio se ve en esta tabla pero no en Vista Previa/PDF
+  // hasta que el usuario vuelva a escribir algo acá.
+  const didSyncOnMountRef = useRef(false);
+  useEffect(() => {
+    if (didSyncOnMountRef.current) return;
+    didSyncOnMountRef.current = true;
+    const saved = menuPreviewData.exchangeMenu?.meals || [];
+    const inSync = saved.length === initialMeals.length &&
+      saved.every((m, i) => m.id === initialMeals[i].id && m.label === initialMeals[i].label);
+    if (!inSync) flush(initialMeals, buildInitialExamples(initialMeals), note, hydration, columnLabels);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function flush(ms: ExchangeMeal[], ex: Record<string, string[]>, n: string, h: string, cl: string[]) {
     const builtMeals: ExchangeMeal[] = ms.map(m => ({
       id: m.id,
       label: m.label,
       examples: (ex[m.id] || []),
     }));
+
+    // Mantiene el orden y los nombres de los tiempos de comida sincronizados
+    // con Tabla de Porciones / Menú Semanal, que también leen weeklyMenu.lunes.
+    const base = menuPreviewDataRef.current;
+    const newOrder = ms.map(m => m.id);
+    const newWeekly = { ...base.weeklyMenu } as any;
+    (['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'] as const).forEach(dayKey => {
+      const day = { ...newWeekly[dayKey], mealsOrder: newOrder };
+      ms.forEach(({ id, label }) => {
+        day[id] = day[id] ? { ...day[id], label } : { title: '', label };
+      });
+      newWeekly[dayKey] = day;
+    });
+    if (newWeekly.domingoV2) {
+      const domingoV2 = { ...newWeekly.domingoV2, mealsOrder: newOrder };
+      ms.forEach(({ id, label }) => {
+        domingoV2[id] = domingoV2[id] ? { ...domingoV2[id], label } : { title: '', label };
+      });
+      newWeekly.domingoV2 = domingoV2;
+    }
+
     setMenuPreviewData({
-      ...menuPreviewData,
+      ...base,
       menuType: 'intercambio',
+      weeklyMenu: newWeekly,
       exchangeMenu: { meals: builtMeals, columnLabels: cl, note: n, hydration: h },
     });
   }

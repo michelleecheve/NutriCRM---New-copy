@@ -469,6 +469,8 @@ const ExchangeRefEditor: React.FC<{
   onSave: (data: ExchangeReferenceData) => Promise<void>;
 }> = ({ initialData, readOnly, editingId, onSave }) => {
   const [name, setName] = useState(initialData.name || "");
+  const [kcal, setKcal] = useState(initialData.kcal || 0);
+  const [patientName, setPatientName] = useState(initialData.patientName || "");
   const [portions, setPortions] = useState<MealSlot[]>(
     initialData.portions || defaultMealSlots(),
   );
@@ -588,9 +590,10 @@ const ExchangeRefEditor: React.FC<{
     setIsSaving(true);
     try {
       await onSave({
-        kcal: 0,
+        kcal,
         type: "INTERCAMBIO",
         name: name.trim(),
+        patientName: patientName.trim() || undefined,
         portions,
         exchangeMenu: { meals, columnLabels, note, hydration },
       });
@@ -645,11 +648,55 @@ const ExchangeRefEditor: React.FC<{
         />
       </div>
 
-      {/* 2. Porciones */}
+      {/* 2. Datos base */}
+      <div className="space-y-4">
+        <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">
+          2. Datos Base
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl">
+          <div className="space-y-1.5 sm:col-span-1">
+            <label className="text-xs font-bold text-slate-500 uppercase">
+              Kcal
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={kcal || ""}
+              onChange={(e) => setKcal(Number(e.target.value) || 0)}
+              readOnly={readOnly}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+              placeholder="1820"
+            />
+          </div>
+          <div className="space-y-1.5 sm:col-span-1">
+            <label className="text-xs font-bold text-slate-500 uppercase">
+              Tipo
+            </label>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-500">
+              INTERCAMBIO
+            </div>
+          </div>
+          <div className="space-y-1.5 sm:col-span-1">
+            <label className="text-xs font-bold text-slate-500 uppercase">
+              Nombre y Apellido
+            </label>
+            <input
+              type="text"
+              value={patientName}
+              onChange={(e) => setPatientName(e.target.value)}
+              readOnly={readOnly}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+              placeholder="Opcional"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Porciones */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">
-            2. Porciones por Tiempo de Comida
+            3. Porciones por Tiempo de Comida
           </h4>
           {!readOnly && (
             <span className="text-[10px] text-slate-400 font-medium">
@@ -667,11 +714,11 @@ const ExchangeRefEditor: React.FC<{
         />
       </div>
 
-      {/* 3. Tabla de Intercambio */}
+      {/* 4. Tabla de Intercambio */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">
-            3. Tabla de Intercambio
+            4. Tabla de Intercambio
           </h4>
           {!readOnly && (
             <button
@@ -783,10 +830,10 @@ const ExchangeRefEditor: React.FC<{
         )}
       </div>
 
-      {/* 4. Nota e Hidratación */}
+      {/* 5. Nota e Hidratación */}
       <div className="space-y-4">
         <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">
-          4. Nota e Hidratación
+          5. Nota e Hidratación
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -1610,6 +1657,9 @@ export const MenuReferences: React.FC<{
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
                       <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        Nombre
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                         Kcal
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -1648,6 +1698,13 @@ export const MenuReferences: React.FC<{
                           onClick={() => openView(r)}
                           className={`border-b border-slate-100 last:border-0 cursor-pointer ${i % 2 === 0 ? "bg-white" : "bg-slate-50/40"} hover:bg-blue-50/30 transition-colors`}
                         >
+                          <td className="px-4 py-3 text-sm text-slate-700">
+                            {d.name ? (
+                              <span className="font-semibold">{d.name}</span>
+                            ) : (
+                              <span className="text-slate-300 text-xs">—</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3">
                             {d.kcal ? (
                               <>
@@ -1770,10 +1827,30 @@ export const MenuReferences: React.FC<{
             )}
           </div>
 
-          {/* 1. Datos base */}
+          {/* 1. Nombre */}
           <div className="space-y-4">
             <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">
-              1. Datos Base
+              1. Nombre de la Plantilla
+            </h4>
+            <input
+              type="text"
+              value={formData.name || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  name: e.target.value || undefined,
+                }))
+              }
+              readOnly={isReadOnly}
+              placeholder="Ej: Semanal 1800 kcal — Pérdida de peso"
+              className="w-full max-w-xl bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+            />
+          </div>
+
+          {/* 2. Datos base */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">
+              2. Datos Base
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl">
               <div className="space-y-1.5 sm:col-span-1">
@@ -1824,11 +1901,11 @@ export const MenuReferences: React.FC<{
             </div>
           </div>
 
-          {/* 2. Porciones */}
+          {/* 3. Porciones */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">
-                2. Porciones por Tiempo de Comida
+                3. Porciones por Tiempo de Comida
               </h4>
               {!isReadOnly && (
                 <span className="text-[10px] text-slate-400 font-medium">
@@ -1847,10 +1924,10 @@ export const MenuReferences: React.FC<{
             />
           </div>
 
-          {/* 3. Menú semanal */}
+          {/* 4. Menú semanal */}
           <div className="space-y-4">
             <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest">
-              3. Menú Semanal
+              4. Menú Semanal
             </h4>
             <WeeklyMenuEditor
               meals={formData.meals}

@@ -41,6 +41,7 @@ export const supabaseService = {
     if (profile.avatar)            updateData.avatar             = profile.avatar;
     if (profile.shareDigitalMenuMessage !== undefined) updateData.share_digital_menu_message = profile.shareDigitalMenuMessage;
     if (profile.portalConfig            !== undefined) updateData.patient_portal_config      = profile.portalConfig;
+    if (profile.menuReferenceCardConfig !== undefined) updateData.menu_reference_card_config = profile.menuReferenceCardConfig;
 
     const { data, error } = await supabase
       .from('profiles')

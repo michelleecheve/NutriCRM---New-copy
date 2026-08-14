@@ -114,6 +114,7 @@ export const MenuEditSec3: React.FC<Props> = ({ menuPreviewData, setMenuPreviewD
             portions={portions}
           />
           <MenuExchangeEditorSec3
+            key={mealOrderKey}
             menuPreviewData={menuPreviewData}
             setMenuPreviewData={setMenuPreviewData}
           />

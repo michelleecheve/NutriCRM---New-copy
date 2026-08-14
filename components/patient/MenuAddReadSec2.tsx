@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
-import { BookOpen, Eye, EyeOff, Plus, X, Check } from 'lucide-react';
+import { BookOpen, Eye, EyeOff, Plus, X, Check, Settings } from 'lucide-react';
 import { MenuReferenceRecord } from '../menus_components/Menu_References_Components/MenuReferencesStorage';
 import { store } from '../../services/store';
+import { authStore } from '../../services/authStore';
+import { supabaseService } from '../../services/supabaseService';
+import { MenuReferenceCardConfig } from '../../types';
+import { SaveButton } from '../SaveButton';
+
+const DEFAULT_CARD_CONFIG: Required<MenuReferenceCardConfig> = {
+  kcal: true,
+  menuName: true,
+  patientName: true,
+  menuType: true,
+};
 
 interface MenuAddReadSec2Props {
   selectedReferenceIds: string[];
@@ -25,6 +36,33 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
   const [showSelector, setShowSelector] = useState(false);
   const [selectorType, setSelectorType] = useState<'references' | 'recommendations'>('references');
   const [tempSelectedIds, setTempSelectedIds] = useState<string[]>([]);
+
+  // Qué info se muestra en cada tarjeta del selector de referencias — se guarda
+  // en la config del perfil (profiles.menu_reference_card_config).
+  const [cardConfig, setCardConfig] = useState<Required<MenuReferenceCardConfig>>({
+    ...DEFAULT_CARD_CONFIG,
+    ...(authStore.getCurrentUser()?.profile?.menuReferenceCardConfig || {}),
+  });
+  const [showCardConfig, setShowCardConfig] = useState(false);
+  const [draftCardConfig, setDraftCardConfig] = useState<Required<MenuReferenceCardConfig>>(cardConfig);
+
+  const handleOpenCardConfig = () => {
+    setDraftCardConfig(cardConfig);
+    setShowCardConfig(true);
+  };
+
+  const handleToggleDraftCardConfig = (key: keyof MenuReferenceCardConfig) => {
+    setDraftCardConfig(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleSaveCardConfig = async () => {
+    const userId = authStore.getCurrentUser()?.id;
+    if (!userId) return;
+    await supabaseService.updateProfile(userId, { menuReferenceCardConfig: draftCardConfig });
+    authStore.patchCurrentUserMenuReferenceCardConfig(draftCardConfig);
+    setCardConfig(draftCardConfig);
+    setShowCardConfig(false);
+  };
 
   const allReferences = store.menuReferences;
   const allRecommendations = store.menuRecommendations;
@@ -172,13 +210,24 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
           {showSelector && (
             <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 space-y-6 animate-in slide-in-from-top-4 duration-300">
               <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                    {selectorType === 'references' ? 'Elige hasta 3 referencias' : 'Elige hasta 3 recomendaciones'}
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">{tempSelectedIds.length}/3 seleccionadas</p>
+                <div className="flex items-center gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                      {selectorType === 'references' ? 'Elige hasta 3 referencias' : 'Elige hasta 3 recomendaciones'}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">{tempSelectedIds.length}/3 seleccionadas</p>
+                  </div>
+                  {selectorType === 'references' && (
+                    <button
+                      onClick={handleOpenCardConfig}
+                      title="Elegir qué información mostrar en las tarjetas"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-white transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
-                <button 
+                <button
                   onClick={() => setShowSelector(false)}
                   className="text-slate-400 hover:text-slate-600"
                 >
@@ -210,15 +259,24 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
                           }`}
                         >
                           <div>
-                            <div className={`text-sm font-bold ${isSelected ? 'text-indigo-700' : 'text-slate-700'}`}>
-                              {ref.data.kcal} kcal
-                            </div>
-                            {ref.data.patientName && (
+                            {cardConfig.kcal && (
+                              <div className={`text-sm font-bold ${isSelected ? 'text-indigo-700' : 'text-slate-700'}`}>
+                                {ref.data.kcal} kcal
+                              </div>
+                            )}
+                            {cardConfig.patientName && ref.data.patientName && (
                               <div className={`text-[11px] font-semibold truncate max-w-[110px] ${isSelected ? 'text-indigo-500' : 'text-slate-500'}`}>
                                 {ref.data.patientName}
                               </div>
                             )}
-                            <div className="text-[10px] text-slate-400 uppercase font-medium">{ref.data.type}</div>
+                            {cardConfig.menuType && (
+                              <div className="text-[10px] text-slate-400 uppercase font-medium">{ref.data.type}</div>
+                            )}
+                            {cardConfig.menuName && ref.data.name && (
+                              <div className={`text-[11px] font-semibold leading-snug break-words ${isSelected ? 'text-indigo-600' : 'text-slate-600'}`}>
+                                {ref.data.name}
+                              </div>
+                            )}
                           </div>
                           <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
                             isSelected 
@@ -286,6 +344,49 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
                 >
                   {selectorType === 'references' ? 'Agregar seleccionadas' : 'Agregar recomendaciones'}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* E) Modal: qué mostrar en las tarjetas de referencias */}
+          {showCardConfig && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 rounded-t-3xl">
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-indigo-600" />
+                    Mostrar en las tarjetas
+                  </h3>
+                  <button onClick={() => setShowCardConfig(false)} className="p-2 hover:bg-white rounded-xl transition-colors">
+                    <X className="w-4 h-4 text-slate-400" />
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-2">
+                  {([
+                    { key: 'kcal', label: 'KCAL' },
+                    { key: 'menuName', label: 'Nombre del menú' },
+                    { key: 'patientName', label: 'Nombre del paciente' },
+                    { key: 'menuType', label: 'Tipo de menú (semanal / intercambio)' },
+                  ] as { key: keyof MenuReferenceCardConfig; label: string }[]).map(({ key, label }) => (
+                    <label
+                      key={key}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={draftCardConfig[key]}
+                        onChange={() => handleToggleDraftCardConfig(key)}
+                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500/20 cursor-pointer"
+                      />
+                      <span className="text-sm font-semibold text-slate-700">{label}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="p-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl flex justify-end">
+                  <SaveButton onSave={handleSaveCardConfig} label="Guardar" size="sm" />
+                </div>
               </div>
             </div>
           )}

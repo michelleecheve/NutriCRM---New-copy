@@ -209,9 +209,11 @@ currency (default '$'), navbarconfig (default 'sidebar'),
 plan (text, default 'free'),
 patient_portal_config (jsonb, default '{}'),
 storage_saved (jsonb, default '{}'),
+menu_reference_card_config (jsonb, default '{}'),
 created_at
 ```
 > ⚠️ Las columnas `menu_ai_config` y `lab_ai_prompt` NO existen — fueron eliminadas con la integración IA.
+> 🆕 `menu_reference_card_config` agregada [PENDIENTE — ejecutar el ALTER TABLE indicado por Claude en el Dashboard de Supabase]: guarda qué campos (kcal/nombre del menú/nombre del paciente/tipo) se muestran en las tarjetas del selector "Elige hasta 3 referencias" (MenuAddReadSec2).
 
 ### `profile_links`
 ```

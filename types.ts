@@ -344,6 +344,7 @@ export interface UserProfile {
   shareDigitalMenuMessage?: string;
   navbarConfig?: 'sidebar' | 'topnav';
   portalConfig?: PortalConfig;
+  menuReferenceCardConfig?: MenuReferenceCardConfig;
 }
 
 export interface AntroFieldsConfig {
@@ -422,6 +423,16 @@ export interface PortalConfig {
   antroFieldsDefault?: AntroFieldsConfig;
   bioFieldsDefault?: BioFieldsConfig;
   pinActiveDefault?: boolean;
+}
+
+// Qué info se muestra en cada tarjeta del selector "Elige hasta 3 referencias"
+// (MenuAddReadSec2). Todos por default true — solo se guarda cuando el usuario
+// desactiva alguno.
+export interface MenuReferenceCardConfig {
+  kcal?: boolean;
+  menuName?: boolean;
+  patientName?: boolean;
+  menuType?: boolean;
 }
 
 export interface MenuReferenceRecord {
