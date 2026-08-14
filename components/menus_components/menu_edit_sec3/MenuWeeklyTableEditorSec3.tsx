@@ -13,6 +13,8 @@ import {
   Info,
   CheckCircle,
   FileText,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { MenuPlanData, DomingoV2 } from "../MenuDesignTemplates";
 import { PageGuideButton } from "../../tour/PageGuideButton";
@@ -180,6 +182,20 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
     menuPreviewData.weeklyMenu.domingoMode ??
       (hasV2Data ? "completo" : "libre"),
   );
+
+  // Ojito de la sección Nota e Hidratación (Dom. Libre / Semana Completa) —
+  // si está oculto, la sección no aparece en Vista Previa/PDF.
+  const [notesVisible, setNotesVisible] = useState(
+    menuPreviewData.weeklyMenu.notesVisible !== false,
+  );
+  const toggleNotesVisible = () => {
+    const next = !notesVisible;
+    setNotesVisible(next);
+    setMenuPreviewData({
+      ...menuPreviewData,
+      weeklyMenu: { ...menuPreviewData.weeklyMenu, notesVisible: next },
+    });
+  };
 
   // Sincroniza los nombres (label) de los tiempos de comida cuando se renombran
   // desde Tabla de Porciones. Agregar/quitar/reordenar ya sincroniza vía remount
@@ -448,17 +464,14 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
 
     if (domingoMode === "libre") {
       const extras: string[] = [];
-      if (domingoNote) extras.push(`Indicaciones domingo:\n${domingoNote}`);
-      if (hydration) extras.push(`Hidratación domingo:\n${hydration}`);
-      if (extras.length > 0)
-        blocks.push(`Dia: Domingo\n${extras.join("\n\n")}`);
+      if (domingoNote) extras.push(`Nota:\n${domingoNote}`);
+      if (hydration) extras.push(`Hidratación:\n${hydration}`);
+      if (extras.length > 0) blocks.push(extras.join("\n\n"));
     } else {
       const extras: string[] = [];
-      if (domingoV2Note) extras.push(`Nota domingo:\n${domingoV2Note}`);
-      if (domingoV2Hydration)
-        extras.push(`Hidratación domingo:\n${domingoV2Hydration}`);
-      if (extras.length > 0)
-        blocks.push(`Dia: Domingo\n${extras.join("\n\n")}`);
+      if (domingoV2Note) extras.push(`Nota:\n${domingoV2Note}`);
+      if (domingoV2Hydration) extras.push(`Hidratación:\n${domingoV2Hydration}`);
+      if (extras.length > 0) blocks.push(extras.join("\n\n"));
     }
 
     const text = blocks.join("\n\n\n");
@@ -530,13 +543,33 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
       return null;
     };
 
+    // Trigger 3 y 4: "Nota:" / "Hidratación:" (o "Meta Hidratación:") como encabezados
+    const matchNoteTrigger = (norm: string) => /^nota\s*:?\s*$/.test(norm);
+    const matchHydrationTrigger = (norm: string) =>
+      /^(meta\s+)?hidratacion\s*:?\s*$/.test(norm);
+
     let currentMealId: string | null = null;
     let currentDayKey: WeekDay | "domingo" | null = null;
+    let currentField: "note" | "hydration" | null = null;
     let contentLines: string[] = [];
+    let parsedDomingoNote = domingoNote;
+    let parsedHydration = hydration;
+    let parsedDomingoV2Note = domingoV2Note;
+    let parsedDomingoV2Hydration = domingoV2Hydration;
 
     const flushContent = () => {
-      if (!currentMealId || !currentDayKey) return;
       const content = contentLines.join("\n").trim();
+      if (currentField === "note") {
+        if (domingoMode === "completo") parsedDomingoV2Note = content;
+        else parsedDomingoNote = content;
+        return;
+      }
+      if (currentField === "hydration") {
+        if (domingoMode === "completo") parsedDomingoV2Hydration = content;
+        else parsedHydration = content;
+        return;
+      }
+      if (!currentMealId || !currentDayKey) return;
       if (currentDayKey === "domingo") {
         newDomingoV2Grid[currentMealId] = content;
       } else {
@@ -556,6 +589,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
         flushContent();
         currentMealId = mealDay.mealId;
         currentDayKey = mealDay.dayKey;
+        currentField = null;
         contentLines = [];
         continue;
       }
@@ -565,6 +599,25 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
         flushContent();
         currentMealId = null;
         currentDayKey = null;
+        currentField = null;
+        contentLines = [];
+        continue;
+      }
+
+      // Trigger de Nota / Hidratación
+      if (matchNoteTrigger(norm)) {
+        flushContent();
+        currentMealId = null;
+        currentDayKey = null;
+        currentField = "note";
+        contentLines = [];
+        continue;
+      }
+      if (matchHydrationTrigger(norm)) {
+        flushContent();
+        currentMealId = null;
+        currentDayKey = null;
+        currentField = "hydration";
         contentLines = [];
         continue;
       }
@@ -598,7 +651,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
       }
 
       // Content line (blank or text) — accumulate regardless of blank lines
-      if (currentMealId && currentDayKey) {
+      if ((currentMealId && currentDayKey) || currentField) {
         contentLines.push(rawLine);
       }
     }
@@ -609,15 +662,19 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
     setImportErrors(errors);
     setGrid(clonedGrid);
     setDomingoV2Grid(newDomingoV2Grid);
+    setDomingoNote(parsedDomingoNote);
+    setHydration(parsedHydration);
+    setDomingoV2Note(parsedDomingoV2Note);
+    setDomingoV2Hydration(parsedDomingoV2Hydration);
     setIsDirty(true);
     scheduleCommit(
       clonedGrid,
       meals,
-      domingoNote,
-      hydration,
+      parsedDomingoNote,
+      parsedHydration,
       newDomingoV2Grid,
-      domingoV2Note,
-      domingoV2Hydration,
+      parsedDomingoV2Note,
+      parsedDomingoV2Hydration,
     );
     setTimeout(() => meals.forEach((m) => syncRowHeights(m.id)), 0);
 
@@ -1115,13 +1172,27 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
           {/* Domingo Libre section */}
           {domingoMode === "libre" && (
             <div data-tour="menu-sec3-domingo-notes" className="mx-4 my-3 rounded-2xl border border-amber-200 bg-amber-50/40 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-amber-100 bg-amber-50/60">
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-xs font-black text-amber-600 uppercase tracking-wide">
-                  Domingo — Día Libre
-                </span>
+              <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-amber-100 bg-amber-50/60">
+                <div className="flex items-center gap-2">
+                  <Sun className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-xs font-black text-amber-600 uppercase tracking-wide">
+                    Domingo — Día Libre
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleNotesVisible}
+                  title={notesVisible ? "Ocultar en vista previa" : "Mostrar en vista previa"}
+                  className="p-1 rounded-lg hover:bg-white transition-colors"
+                >
+                  {notesVisible ? (
+                    <Eye className="w-3.5 h-3.5 text-amber-500" />
+                  ) : (
+                    <EyeOff className="w-3.5 h-3.5 text-slate-300" />
+                  )}
+                </button>
               </div>
-              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className={`p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 transition-opacity ${notesVisible ? '' : 'opacity-50'}`}>
                 <div>
                   <label className="text-[10px] font-black text-amber-500 uppercase tracking-wider block mb-1.5">
                     Nota / Indicaciones
@@ -1171,19 +1242,38 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                   />
                 </div>
               </div>
+              {!notesVisible && (
+                <p className="px-4 pb-3 text-[10px] text-slate-400 italic">
+                  Esta sección está oculta — no se mostrará en Vista Previa ni en el PDF.
+                </p>
+              )}
             </div>
           )}
 
           {/* Domingo Completo — nota + hidratación complementarias */}
           {domingoMode === "completo" && (
             <div data-tour="menu-sec3-domingo-notes" className="mx-4 my-3 rounded-2xl border border-indigo-100 bg-indigo-50/30 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-indigo-100 bg-indigo-50/50">
-                <CalendarDays className="w-3.5 h-3.5 text-indigo-500" />
-                <span className="text-xs font-black text-indigo-600 uppercase tracking-wide">
-                  Nota e Hidratación
-                </span>
+              <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-indigo-100 bg-indigo-50/50">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="w-3.5 h-3.5 text-indigo-500" />
+                  <span className="text-xs font-black text-indigo-600 uppercase tracking-wide">
+                    Nota e Hidratación
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleNotesVisible}
+                  title={notesVisible ? "Ocultar en vista previa" : "Mostrar en vista previa"}
+                  className="p-1 rounded-lg hover:bg-white transition-colors"
+                >
+                  {notesVisible ? (
+                    <Eye className="w-3.5 h-3.5 text-indigo-500" />
+                  ) : (
+                    <EyeOff className="w-3.5 h-3.5 text-slate-300" />
+                  )}
+                </button>
               </div>
-              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className={`p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 transition-opacity ${notesVisible ? '' : 'opacity-50'}`}>
                 <div>
                   <label className="text-[10px] font-black text-indigo-500 uppercase tracking-wider block mb-1.5">
                     Nota / Observaciones
@@ -1233,6 +1323,11 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                   />
                 </div>
               </div>
+              {!notesVisible && (
+                <p className="px-4 pb-3 text-[10px] text-slate-400 italic">
+                  Esta sección está oculta — no se mostrará en Vista Previa ni en el PDF.
+                </p>
+              )}
             </div>
           )}
 
@@ -1331,6 +1426,12 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                   si hay dos con el mismo nombre no sabremos cuál es cuál y se
                   pueden mezclar sin querer.
                 </p>
+                <p className="text-[11px] text-sky-700 leading-relaxed flex gap-1.5">
+                  <span className="text-emerald-500 font-black">✓</span> La
+                  Nota y la Hidratación del domingo también se copian y se
+                  pueden editar — respeta los encabezados "Nota:" e
+                  "Hidratación:".
+                </p>
               </div>
 
               {/* Textarea */}
@@ -1350,7 +1451,7 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
                   rows={10}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 outline-none transition-all resize-none leading-relaxed"
                   placeholder={
-                    "Dia: Lunes\nDesayuno Lunes:\nAvena con frutas y yogur\nAlmuerzo Lunes:\nPollo a la plancha con arroz\n\nDia: Martes\nDesayuno Martes:\nHuevos revueltos con tostadas\nAlmuerzo Martes:\n..."
+                    "Dia: Lunes\nDesayuno Lunes:\nAvena con frutas y yogur\nAlmuerzo Lunes:\nPollo a la plancha con arroz\n\nDia: Martes\nDesayuno Martes:\nHuevos revueltos con tostadas\nAlmuerzo Martes:\n...\n\nNota:\nIndicaciones del domingo...\n\nHidratación:\n2.5L de agua"
                   }
                 />
               </div>

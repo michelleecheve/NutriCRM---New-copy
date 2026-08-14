@@ -499,21 +499,9 @@ export const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => {
               width: "1%",
             }}
           >
-            DOMINGO
+            NOTAS
           </td>
           <td style={{ padding: "8px 14px", verticalAlign: "middle", width: "50%" }}>
-            <div
-              style={{
-                fontSize: `${7.5 * ts.fontSizeMultiplier}px`,
-                color: ts.colors.primary,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                marginBottom: "3px",
-              }}
-            >
-              DÍA LIBRE / OBSERVACIONES:
-            </div>
             <div
               style={{
                 fontSize: `${8.5 * ts.fontSizeMultiplier}px`,

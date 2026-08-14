@@ -47,6 +47,8 @@ export interface ExchangeMenuData {
   columnLabels?: string[];
   note?: string;
   hydration?: string;
+  /** Si es false, la sección Nota e Hidratación se oculta en Vista Previa/PDF. Default true. */
+  notesVisible?: boolean;
 }
 
 export interface MenuRecommendations {
@@ -125,6 +127,8 @@ export interface MenuPlanData {
     domingo: DomingoData;
     domingoV2?: DomingoV2;
     domingoMode?: "libre" | "completo";
+    /** Si es false, la sección Nota e Hidratación del domingo se oculta en Vista Previa/PDF. Default true. */
+    notesVisible?: boolean;
   };
   recommendations?: MenuRecommendations;
   sectionTitles?: MenuSectionTitles;

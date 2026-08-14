@@ -30,6 +30,7 @@ export const MenuTemplateV1: React.FC<{
 }> = ({ data, gridLayout = "3col", pageLayout = "layout1" }) => {
   const ts = getThemeStyles(useVisualTheme());
   const domingo = data.weeklyMenu.domingo as DomingoData;
+  const notesVisible = data.weeklyMenu.notesVisible !== false;
 
   if (pageLayout === "layout2") {
     return (
@@ -94,28 +95,30 @@ export const MenuTemplateV1: React.FC<{
             <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
               <DayCard label={WEEKDAY_LABELS["viernes"]} day={data.weeklyMenu["viernes"]} />
               <DayCard label={WEEKDAY_LABELS["sabado"]} day={data.weeklyMenu["sabado"]} />
-              <div style={{ flex: 2, minWidth: 0, alignSelf: "flex-start", display: "flex", gap: "6px" }}>
-                <div style={{ flex: 1, minWidth: 0, border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden" }}>
-                  <div style={{ backgroundColor: ts.colors.secondary, color: "#fff", textAlign: "center", padding: "5px 4px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px" }}>
-                    DOMINGO
+              {notesVisible && (
+                <div style={{ flex: 2, minWidth: 0, alignSelf: "flex-start", display: "flex", gap: "6px" }}>
+                  <div style={{ flex: 1, minWidth: 0, border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden" }}>
+                    <div style={{ backgroundColor: ts.colors.secondary, color: "#fff", textAlign: "center", padding: "5px 4px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px" }}>
+                      DOMINGO
+                    </div>
+                    <div style={{ padding: "6px 8px" }}>
+                      <div style={{ color: "#334155", fontSize: `${7.5 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3", whiteSpace: "pre-line" }}>
+                        {domingo.note}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ padding: "6px 8px" }}>
-                    <div style={{ color: "#334155", fontSize: `${7.5 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3", whiteSpace: "pre-line" }}>
-                      {domingo.note}
+                  <div style={{ flex: 1, minWidth: 0, border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden", display: "flex", alignItems: "center" }}>
+                    <div style={{ padding: "12px 14px" }}>
+                      <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600, marginBottom: "3px" }}>
+                        META HIDRATACIÓN
+                      </div>
+                      <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, whiteSpace: "pre-line" }}>
+                        💧 {domingo.hydration}
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0, border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden", display: "flex", alignItems: "center" }}>
-                  <div style={{ padding: "12px 14px" }}>
-                    <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600, marginBottom: "3px" }}>
-                      META HIDRATACIÓN
-                    </div>
-                    <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, whiteSpace: "pre-line" }}>
-                      💧 {domingo.hydration}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </>
         ) : (
@@ -130,7 +133,7 @@ export const MenuTemplateV1: React.FC<{
                 <DayCard key={day} label={WEEKDAY_LABELS[day]} day={data.weeklyMenu[day]} />
               ))}
             </div>
-            <DomingoRow domingo={domingo} />
+            {notesVisible && <DomingoRow domingo={domingo} />}
           </>
         )}
       </A4Wrapper>

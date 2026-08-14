@@ -128,7 +128,7 @@ const ExchangePage: React.FC<{ data: MenuPlanData; showPortions?: boolean }> = (
         </tbody>
       </table>
 
-      {(exchange.note || exchange.hydration) && (
+      {exchange.notesVisible !== false && (exchange.note || exchange.hydration) && (
         <table
           style={{
             width: "100%",

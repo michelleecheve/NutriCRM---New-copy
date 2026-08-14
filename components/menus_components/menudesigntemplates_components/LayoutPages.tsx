@@ -31,6 +31,7 @@ export const MenuOnlyPage: React.FC<{
   const domingoV2 = data.weeklyMenu.domingoV2;
   const noteText = domingoV2?.note || domingoV1.note;
   const hydrationText = domingoV2?.hydration || domingoV1.hydration;
+  const notesVisible = data.weeklyMenu.notesVisible !== false;
   const titles = data.sectionTitles || DEFAULT_SECTION_TITLES;
 
   const renderGrid = () => {
@@ -47,20 +48,22 @@ export const MenuOnlyPage: React.FC<{
             <div style={{ display: "flex", gap: "6px", marginBottom: "8px" }}>
               <DayCard label={WEEKDAY_LABELS["viernes"]} day={data.weeklyMenu["viernes"]} />
               <DayCard label={WEEKDAY_LABELS["sabado"]} day={data.weeklyMenu["sabado"]} />
-              <div style={{ flex: 2, minWidth: 0, alignSelf: "flex-start", display: "flex", gap: "6px" }}>
-                <div style={{ flex: 1, minWidth: 0, border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden" }}>
-                  <div style={{ backgroundColor: ts.colors.secondary, color: "#fff", textAlign: "center", padding: "5px 4px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px" }}>DOMINGO</div>
-                  <div style={{ padding: "6px 8px" }}>
-                    <div style={{ color: "#334155", fontSize: `${7.5 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3", whiteSpace: "pre-line" }}>{domingo.note}</div>
+              {notesVisible && (
+                <div style={{ flex: 2, minWidth: 0, alignSelf: "flex-start", display: "flex", gap: "6px" }}>
+                  <div style={{ flex: 1, minWidth: 0, border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden" }}>
+                    <div style={{ backgroundColor: ts.colors.secondary, color: "#fff", textAlign: "center", padding: "5px 4px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px" }}>DOMINGO</div>
+                    <div style={{ padding: "6px 8px" }}>
+                      <div style={{ color: "#334155", fontSize: `${7.5 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3", whiteSpace: "pre-line" }}>{domingo.note}</div>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden", display: "flex", alignItems: "center" }}>
+                    <div style={{ padding: "12px 14px" }}>
+                      <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600, marginBottom: "3px" }}>META HIDRATACIÓN</div>
+                      <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, whiteSpace: "pre-line" }}>💧 {domingo.hydration}</div>
+                    </div>
                   </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0, border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden", display: "flex", alignItems: "center" }}>
-                  <div style={{ padding: "12px 14px" }}>
-                    <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600, marginBottom: "3px" }}>META HIDRATACIÓN</div>
-                    <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, whiteSpace: "pre-line" }}>💧 {domingo.hydration}</div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </>
         );
@@ -77,7 +80,7 @@ export const MenuOnlyPage: React.FC<{
               <DayCard key={day} label={WEEKDAY_LABELS[day]} day={data.weeklyMenu[day]} />
             ))}
           </div>
-          <DomingoRow domingo={domingo} />
+          {notesVisible && <DomingoRow domingo={domingo} />}
         </>
       );
     }
@@ -97,14 +100,18 @@ export const MenuOnlyPage: React.FC<{
             {domingoV2 ? (
               <DayCard label="DOMINGO" day={domingoV2} />
             ) : (
-              <div style={{ border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden", flex: 1, minWidth: 0 }}>
-                <div style={{ backgroundColor: ts.colors.secondary, color: "#fff", textAlign: "center", padding: "5px 4px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px" }}>DOMINGO</div>
-                <div style={{ padding: "6px 8px" }}>
-                  <div style={{ color: "#334155", fontSize: `${8 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3", whiteSpace: "pre-line" }}>{domingoV1.note}</div>
+              notesVisible && (
+                <div style={{ border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden", flex: 1, minWidth: 0 }}>
+                  <div style={{ backgroundColor: ts.colors.secondary, color: "#fff", textAlign: "center", padding: "5px 4px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px" }}>DOMINGO</div>
+                  <div style={{ padding: "6px 8px" }}>
+                    <div style={{ color: "#334155", fontSize: `${8 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3", whiteSpace: "pre-line" }}>{domingoV1.note}</div>
+                  </div>
                 </div>
-              </div>
+              )
             )}
-            <SplitCell note={noteText} hydration={hydrationText} noteLabel="NOTAS" />
+            {notesVisible && (
+              <SplitCell note={noteText} hydration={hydrationText} noteLabel="NOTAS" />
+            )}
           </div>
         </>
       );
@@ -123,28 +130,32 @@ export const MenuOnlyPage: React.FC<{
           {domingoV2 ? (
             <DayCard label="DOMINGO" day={domingoV2} />
           ) : (
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden", flex: 1, minWidth: 0 }}>
-              <div style={{ backgroundColor: ts.colors.secondary, color: "#fff", textAlign: "center", padding: "5px 4px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px" }}>DOMINGO</div>
-              <div style={{ padding: "6px 8px", display: "flex", flexDirection: "column", gap: "5px" }}>
-                <div style={{ color: "#334155", fontSize: `${8 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3", whiteSpace: "pre-line" }}>{domingoV1.note}</div>
+            notesVisible && (
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden", flex: 1, minWidth: 0 }}>
+                <div style={{ backgroundColor: ts.colors.secondary, color: "#fff", textAlign: "center", padding: "5px 4px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px" }}>DOMINGO</div>
+                <div style={{ padding: "6px 8px", display: "flex", flexDirection: "column", gap: "5px" }}>
+                  <div style={{ color: "#334155", fontSize: `${8 * ts.fontSizeMultiplier}px`, fontWeight: 600, lineHeight: "1.3", whiteSpace: "pre-line" }}>{domingoV1.note}</div>
+                </div>
               </div>
-            </div>
+            )
           )}
         </div>
-        <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden" }}>
-          <tbody>
-            <tr>
-              <td style={{ backgroundColor: ts.colors.secondary, color: "#fff", padding: "10px 14px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px", whiteSpace: "nowrap", verticalAlign: "middle", width: "1%" }}>NOTAS</td>
-              <td style={{ padding: "8px 14px", verticalAlign: "middle" }}>
-                <div style={{ fontSize: `${8.5 * ts.fontSizeMultiplier}px`, color: "#334155", fontWeight: 600, whiteSpace: "pre-line" }}>{noteText}</div>
-              </td>
-              <td style={{ padding: "8px 14px", textAlign: "right", verticalAlign: "middle", borderLeft: "1px solid #f1f5f9", width: "50%" }}>
-                <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600, marginBottom: "3px" }}>META HIDRATACIÓN</div>
-                <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, wordBreak: "break-word", whiteSpace: "pre-line" }}>💧 {hydrationText}</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        {notesVisible && (
+          <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #e2e8f0", borderRadius: ts.cardRadius, overflow: "hidden" }}>
+            <tbody>
+              <tr>
+                <td style={{ backgroundColor: ts.colors.secondary, color: "#fff", padding: "10px 14px", fontWeight: 800, fontSize: `${9 * ts.fontSizeMultiplier}px`, letterSpacing: "1px", whiteSpace: "nowrap", verticalAlign: "middle", width: "1%" }}>NOTAS</td>
+                <td style={{ padding: "8px 14px", verticalAlign: "middle" }}>
+                  <div style={{ fontSize: `${8.5 * ts.fontSizeMultiplier}px`, color: "#334155", fontWeight: 600, whiteSpace: "pre-line" }}>{noteText}</div>
+                </td>
+                <td style={{ padding: "8px 14px", textAlign: "right", verticalAlign: "middle", borderLeft: "1px solid #f1f5f9", width: "50%" }}>
+                  <div style={{ fontSize: `${7 * ts.fontSizeMultiplier}px`, color: "#94a3b8", textTransform: "uppercase", fontWeight: 600, marginBottom: "3px" }}>META HIDRATACIÓN</div>
+                  <div style={{ fontSize: `${9 * ts.fontSizeMultiplier}px`, color: ts.colors.primary, fontWeight: 800, wordBreak: "break-word", whiteSpace: "pre-line" }}>💧 {hydrationText}</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        )}
       </>
     );
   };
