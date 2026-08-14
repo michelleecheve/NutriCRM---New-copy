@@ -48,7 +48,7 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
       >
         <span className="flex items-center gap-2 text-sm font-bold text-slate-700">
           <User className="w-4 h-4 text-indigo-600" />
-          Encabezado — Título del Plan y Paciente
+          Encabezado - Título del Plan y Paciente
           <PageGuideButton variant="icon" steps={getMenuSec3EncabezadoSteps()} label="Ver guía de esta sección" />
         </span>
         {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -59,7 +59,9 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
           <div className="overflow-x-auto">
           <div className="flex items-start gap-2 min-w-max">
             <div className="space-y-1 w-44 flex-shrink-0">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Título del Plan</label>
+              <div className="h-4 flex items-center">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Título del Plan</label>
+              </div>
               <textarea
                 rows={2}
                 value={planTitle}
@@ -70,11 +72,13 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
               <p className="text-[10px] text-slate-400 italic">Enter = 2 líneas</p>
             </div>
             <div className="w-52 flex-shrink-0 space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nombre</label>
+              <div className="h-4 flex items-center">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nombre</label>
+              </div>
               <input type="text" value={name} onChange={e => setName(e.target.value)} onBlur={commit} className={inp} />
             </div>
             <div className="w-24 flex-shrink-0 space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="h-4 flex items-center justify-between">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Edad</label>
                 <button type="button" onClick={() => toggleField('age')} className="p-0.5 rounded hover:bg-slate-100 transition-colors" title={hidden.age ? 'Mostrar en vista previa' : 'Ocultar en vista previa'}>
                   {hidden.age ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-indigo-400" />}
@@ -84,7 +88,7 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
                 onWheel={e => (e.target as HTMLInputElement).blur()} className={`${inp} ${hidden.age ? 'opacity-40' : ''}`} />
             </div>
             <div className="w-24 flex-shrink-0 space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="h-4 flex items-center justify-between">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peso (kg)</label>
                 <button type="button" onClick={() => toggleField('weight')} className="p-0.5 rounded hover:bg-slate-100 transition-colors" title={hidden.weight ? 'Mostrar en vista previa' : 'Ocultar en vista previa'}>
                   {hidden.weight ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-indigo-400" />}
@@ -94,7 +98,7 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
                 onWheel={e => (e.target as HTMLInputElement).blur()} className={`${inp} ${hidden.weight ? 'opacity-40' : ''}`} />
             </div>
             <div className="w-24 flex-shrink-0 space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="h-4 flex items-center justify-between">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">% Grasa</label>
                 <button type="button" onClick={() => toggleField('fatPct')} className="p-0.5 rounded hover:bg-slate-100 transition-colors" title={hidden.fatPct ? 'Mostrar en vista previa' : 'Ocultar en vista previa'}>
                   {hidden.fatPct ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-indigo-400" />}
@@ -104,7 +108,7 @@ export const MenuTableHeaderSec3: React.FC<Props> = ({ menuPreviewData, setMenuP
                 onWheel={e => (e.target as HTMLInputElement).blur()} className={`${inp} ${hidden.fatPct ? 'opacity-40' : ''}`} />
             </div>
             <div className="w-24 flex-shrink-0 space-y-1">
-              <div className="flex items-center justify-between">
+              <div className="h-4 flex items-center justify-between">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Kcal</label>
                 <button type="button" onClick={() => toggleField('kcal')} className="p-0.5 rounded hover:bg-slate-100 transition-colors" title={hidden.kcal ? 'Mostrar en vista previa' : 'Ocultar en vista previa'}>
                   {hidden.kcal ? <EyeOff className="w-3 h-3 text-slate-300" /> : <Eye className="w-3 h-3 text-indigo-400" />}
