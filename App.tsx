@@ -116,8 +116,18 @@ function App() {
       }
     });
 
-    // Detectar cuando Supabase manda un token de recuperación de contraseña
+    // Detectar cuando Supabase manda un token de recuperación de contraseña.
+    // Supabase transmite este evento a TODAS las pestañas abiertas del mismo sitio
+    // (vía BroadcastChannel), no solo a la que abrió el link del correo. Por eso
+    // solo navegamos a la pantalla de nueva contraseña si el link de recuperación
+    // está realmente en la URL de esta pestaña — así una pestaña que solo tenía
+    // "revisa tu correo" abierta no salta a la pantalla sin haber recibido el link.
     const unsubRecovery = authStore.onPasswordRecovery(() => {
+      const hasRecoveryLink =
+        window.location.hash.includes('type=recovery') ||
+        window.location.search.includes('type=recovery');
+      if (!hasRecoveryLink) return;
+
       setIsAuthReady(true);
       setCurrentRoute(AppRoute.RESET_PASSWORD);
     });

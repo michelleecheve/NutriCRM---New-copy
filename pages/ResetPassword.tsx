@@ -35,7 +35,13 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess }) => {
 
     if (error) {
       console.error('updateUser (reset password) error:', error);
-      setError('No se pudo actualizar la contraseña. El enlace puede haber expirado.');
+      const isSamePassword = (error as any).code === 'same_password'
+        || /different from the old password|same password/i.test(error.message);
+      setError(
+        isSamePassword
+          ? 'Escribe una contraseña diferente a la que ya tenías anteriormente.'
+          : 'No se pudo actualizar la contraseña. El enlace puede haber expirado.'
+      );
       return;
     }
 

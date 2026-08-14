@@ -325,7 +325,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
                     nutrifollow.app@outlook.com
                   </a>{' '}
                   o a{' '}
-                  <a href="https://wa.me/50252720714" target="_blank" rel="noopener noreferrer" className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
+                  <a href={`https://wa.me/50252720714?text=${encodeURIComponent('Hola quisiera ayuda de NutriFollow')}`} target="_blank" rel="noopener noreferrer" className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
                     WhatsApp aquí
                   </a>{' '}
                   y rápidamente te apoyaremos.
