@@ -1640,15 +1640,28 @@ export const MenuReferences: React.FC<{
                   ? "Crea plantillas de intercambio de alimentos para reutilizarlas en futuros menús."
                   : "Agrega menús reales como referencia para copiarlos como base al crear nuevos planes."}
               </p>
-              <button
-                onClick={openNew}
-                className={`mt-4 inline-flex items-center gap-2 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors ${activeRefTab === "INTERCAMBIO" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-blue-600 hover:bg-blue-700"}`}
-              >
-                <Plus className="w-4 h-4" />{" "}
-                {activeRefTab === "INTERCAMBIO"
-                  ? "Crear primera plantilla de intercambio"
-                  : "Agregar primera referencia"}
-              </button>
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={openNew}
+                  className={`inline-flex items-center gap-2 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors ${activeRefTab === "INTERCAMBIO" ? "bg-indigo-600 hover:bg-indigo-700" : "bg-blue-600 hover:bg-blue-700"}`}
+                >
+                  <Plus className="w-4 h-4" />{" "}
+                  {activeRefTab === "INTERCAMBIO"
+                    ? "Crear primera plantilla de intercambio"
+                    : "Agregar primera referencia"}
+                </button>
+                <button
+                  onClick={() =>
+                    activeRefTab === "INTERCAMBIO"
+                      ? setIsImportExchangeFromMenuOpen(true)
+                      : setIsImportFromMenuOpen(true)
+                  }
+                  className={`inline-flex items-center gap-2 bg-white font-semibold px-5 py-2.5 rounded-xl text-sm border transition-colors ${activeRefTab === "INTERCAMBIO" ? "border-indigo-200 text-indigo-600 hover:bg-indigo-50" : "border-blue-200 text-blue-600 hover:bg-blue-50"}`}
+                >
+                  <History className="w-4 h-4" /> Generar plantilla desde un
+                  menú existente
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
