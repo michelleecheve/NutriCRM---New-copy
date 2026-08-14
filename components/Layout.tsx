@@ -111,7 +111,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate
         <NavItem route={AppRoute.MENUS} icon={ClipboardList} label="Config. Menús" compact={compact} />
       )}
       <NavItem route={AppRoute.PROFILE} icon={User} label="Perfil" compact={compact} />
-      {(role === 'nutricionista' || role === 'admin') && (
+      {(role === 'nutricionista' || role === 'admin' || role === 'recepcionista') && (
         <NavItem route={AppRoute.AYUDA} icon={HelpCircle} label="Ayuda" compact={compact} />
       )}
       {role === 'admin' && (

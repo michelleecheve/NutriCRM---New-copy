@@ -18,6 +18,12 @@ interface PageGuideButtonProps {
   className?: string;
   /** 'dark' (default) es el botón sólido usado en la mayoría de páginas. 'light' es un botón discreto blanco/gris, usado en formularios donde no debe competir con el botón de Guardar. 'icon' es un botonsito circular con "?", pensado para ir dentro del encabezado de una sub-sección específica (ej. Tabla de Porciones) y mostrar solo los pasos de esa sub-sección. */
   variant?: "dark" | "light" | "icon";
+  /** si es true, la guía arranca sola al montar el componente (una sola vez), sin esperar el click del botón — pensado para llegar desde otra página con la guía ya activa. */
+  autoStart?: boolean;
+  /** paso en el que arranca cuando autoStart es true — default 0 (el primero). */
+  autoStartStepIndex?: number;
+  /** se llama justo después de arrancar por autoStart, para que quien controla ese flag lo apague y no se vuelva a disparar en el siguiente render/mount. */
+  onAutoStartConsumed?: () => void;
 }
 
 // Guía interactiva de una sola página, autocontenida: no depende del recorrido
@@ -29,6 +35,9 @@ export const PageGuideButton: React.FC<PageGuideButtonProps> = ({
   label = "Guía de esta página",
   className = "",
   variant = "dark",
+  autoStart = false,
+  autoStartStepIndex = 0,
+  onAutoStartConsumed,
 }) => {
   // Las variantes 'light' e 'icon' se usan dentro de formularios (Medición,
   // Bioimpedancia, Evaluación dietética, sub-secciones del Menú) y responden al
@@ -56,6 +65,15 @@ export const PageGuideButton: React.FC<PageGuideButtonProps> = ({
     }
     return subscribePageGuidesEnabled(() => setEnabled(isPageGuidesEnabled()));
   }, [isFormVariant]);
+
+  useEffect(() => {
+    if (autoStart) {
+      setActive(true);
+      setStepIndex(autoStartStepIndex);
+      onAutoStartConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
 
   const close = () => {
     setActive(false);
@@ -104,6 +122,7 @@ export const PageGuideButton: React.FC<PageGuideButtonProps> = ({
         </span>
       ) : (
         <button
+          type="button"
           onClick={open}
           className={
             variant === "light"

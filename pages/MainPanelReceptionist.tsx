@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarDays, Clock, Users, TrendingUp } from 'lucide-react';
+import { CalendarDays, Clock, Users, TrendingUp, UserPlus } from 'lucide-react';
 import { authStore } from '../services/authStore';
 import { store } from '../services/store';
 import { AppRoute, Appointment, AppUser } from '../types';
 import { PageGuideButton } from '../components/tour/PageGuideButton';
 import { mainPanelReceptionistGuideSteps } from '../components/tour/pageGuides/mainPanelReceptionist';
+import { requestVinculacionNutriGuide } from '../services/vinculacionGuidePrompt';
 
 interface Props {
   onNavigate: (page: string) => void;
@@ -28,6 +29,11 @@ export const MainPanelReceptionist: React.FC<Props> = ({ onNavigate }) => {
     }, 100);
     return () => clearInterval(checkInit);
   }, []);
+
+  const handleAddNutri = () => {
+    requestVinculacionNutriGuide();
+    onNavigate(AppRoute.PROFILE);
+  };
 
   const today = new Date().toISOString().split('T')[0];
   const todayAppts = appointments.filter(a => a.date === today);
@@ -76,6 +82,16 @@ export const MainPanelReceptionist: React.FC<Props> = ({ onNavigate }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Nutricionistas vinculadas */}
         <div data-tour="mp-recep-nutris" className="bg-white border border-slate-200 rounded-2xl p-6">
+          <div className="flex justify-start mb-2">
+            <button
+              type="button"
+              onClick={handleAddNutri}
+              className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Agregar nutricionistas
+            </button>
+          </div>
           <div className="flex items-center justify-between mb-5">
             <h3 className="font-bold text-slate-800">Mis Nutricionistas</h3>
             <button

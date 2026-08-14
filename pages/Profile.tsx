@@ -11,8 +11,9 @@ import {
 
 import { ProfileSubscription } from '../components/profile_config/ProfileSubscription';
 import { PageGuideButton } from '../components/tour/PageGuideButton';
-import { profileGuideSteps } from '../components/tour/pageGuides/profile';
-import { profileReceptionistGuideSteps } from '../components/tour/pageGuides/profileReceptionist';
+import { getProfileGuideSteps } from '../components/tour/pageGuides/profile';
+import { getProfileReceptionistGuideSteps } from '../components/tour/pageGuides/profileReceptionist';
+import { consumeVinculacionNutriGuideRequest } from '../services/vinculacionGuidePrompt';
 
 const InputField = ({ label, icon: Icon, value, onChange, type = "text", readOnly = false, placeholder = "" }: any) => (
   <div className="space-y-2">
@@ -144,7 +145,9 @@ const getLocalTimezone = () => {
 
 const VinculacionNutricionista: React.FC<{
   onUnlinkRequest: (id: string, name: string, type: 'receptionist') => void;
-  }> = ({ onUnlinkRequest }) => {
+  /** al volverse true, expande la sección — usado por la guía de esta página para abrirla antes de resaltarla. */
+  forceOpen?: boolean;
+  }> = ({ onUnlinkRequest, forceOpen }) => {
   const currentUser: any = authStore.getCurrentUser();
   const [isOpen, setIsOpen] = useState(false);
   const [linkCode, setLinkCode] = useState('');
@@ -162,6 +165,10 @@ const VinculacionNutricionista: React.FC<{
   useEffect(() => {
     authStore.getLinkedReceptionists().then(setLinkedReceptionists);
   }, [refreshKey]);
+
+  useEffect(() => {
+    if (forceOpen) setIsOpen(true);
+  }, [forceOpen]);
 
   const handleCopyMyCode = () => {
     navigator.clipboard.writeText(myLinkCode);
@@ -215,7 +222,7 @@ const VinculacionNutricionista: React.FC<{
               <div>
                 <p className="text-sm font-bold text-slate-800">Link de invitación para tu recepcionista</p>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Comparte este link con tu recepcionista para que cree su perfil y automáticamente se vincule contigo.
+                  Comparte este link con tu recepcionista si no se ha registrado para que cree su perfil y automáticamente se vincule contigo.
                 </p>
               </div>
               <div className="flex gap-3">
@@ -318,6 +325,7 @@ const VinculacionNutricionista: React.FC<{
             <p className="text-sm font-bold text-slate-700">
               Recepcionistas vinculadas ({linkedReceptionists.length})
             </p>
+            <p className="text-xs text-slate-400">Recarga para ver cambios</p>
             {linkedReceptionists.length === 0 ? (
               <div className="bg-slate-50 rounded-xl p-5 text-center text-sm text-slate-400">
                 No tienes recepcionistas vinculadas aún.
@@ -355,7 +363,9 @@ const VinculacionNutricionista: React.FC<{
 
 const VinculacionRecepcionista: React.FC<{
   onUnlinkRequest: (id: string, name: string, type: 'nutritionist') => void;
-}> = ({ onUnlinkRequest }) => {
+  /** al volverse true, expande la sección — usado por la guía de esta página para abrirla antes de resaltarla. */
+  forceOpen?: boolean;
+}> = ({ onUnlinkRequest, forceOpen }) => {
   const currentUser: any = authStore.getCurrentUser();
   const [isOpen, setIsOpen] = useState(false);
   const [linkCode, setLinkCode] = useState('');
@@ -369,6 +379,10 @@ const VinculacionRecepcionista: React.FC<{
   useEffect(() => {
     authStore.getLinkedNutritionists().then(setLinkedNutritionists);
   }, [refreshKey]);
+
+  useEffect(() => {
+    if (forceOpen) setIsOpen(true);
+  }, [forceOpen]);
 
   const handleCopyMyCode = () => {
     navigator.clipboard.writeText(myLinkCode);
@@ -465,6 +479,7 @@ const VinculacionRecepcionista: React.FC<{
             <p className="text-sm font-bold text-slate-700">
               Nutricionistas vinculadas ({linkedNutritionists.length})
             </p>
+            <p className="text-xs text-slate-400">Recarga para ver cambios</p>
             {linkedNutritionists.length === 0 ? (
               <div className="bg-slate-50 rounded-xl p-5 text-center text-sm text-slate-400">
                 No tienes nutricionistas vinculadas aún.
@@ -518,6 +533,38 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   // Estados para modal de desvinculación
   const [isUnlinkModalOpen, setIsUnlinkModalOpen] = useState(false);
   const [unlinkTarget, setUnlinkTarget] = useState<{ id: string; name: string; type: 'receptionist' | 'nutritionist' } | null>(null);
+
+  // Llegada desde el botón "Agregar nutricionistas" del panel principal de la
+  // recepcionista: arranca sola la guía de esta página, directo en el paso de
+  // Vinculación con Nutricionistas (en vez del paso 1).
+  const [autoStartVinculacionGuide, setAutoStartVinculacionGuide] = useState(false);
+  // Los pasos de Vinculación con Nutricionistas y Configuración de Sistema abren
+  // esas secciones (colapsadas por default) antes de resaltarlas.
+  const [vinculacionSectionOpen, setVinculacionSectionOpen] = useState(false);
+  const profileReceptionistSteps = getProfileReceptionistGuideSteps(
+    () => setVinculacionSectionOpen(true),
+    () => setIsSistemaOpen(true),
+  );
+  const vinculacionGuideStepIndex = Math.max(
+    0,
+    profileReceptionistSteps.findIndex(s => s.id === 'profile-vinculacion-nutricionistas'),
+  );
+
+  // Los pasos de Suscripción, Vinculación con Recepcionistas y Configuración de
+  // Sistema abren esas secciones (colapsadas por default) antes de resaltarlas.
+  const [subscriptionSectionOpen, setSubscriptionSectionOpen] = useState(false);
+  const [vinculacionRecepSectionOpen, setVinculacionRecepSectionOpen] = useState(false);
+  const profileGuideSteps = getProfileGuideSteps(
+    () => setSubscriptionSectionOpen(true),
+    () => setVinculacionRecepSectionOpen(true),
+    () => setIsSistemaOpen(true),
+  );
+
+  useEffect(() => {
+    if (consumeVinculacionNutriGuideRequest()) {
+      setAutoStartVinculacionGuide(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!formData.timezone || formData.timezone.includes('/') || !UTC_TIMEZONES.includes(formData.timezone)) {
@@ -591,7 +638,10 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           </p>
         </div>
         <PageGuideButton
-          steps={role === 'recepcionista' ? profileReceptionistGuideSteps : profileGuideSteps}
+          steps={role === 'recepcionista' ? profileReceptionistSteps : profileGuideSteps}
+          autoStart={autoStartVinculacionGuide}
+          autoStartStepIndex={vinculacionGuideStepIndex}
+          onAutoStartConsumed={() => setAutoStartVinculacionGuide(false)}
         />
       </div>
 
@@ -688,10 +738,10 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               </div>
             </div>
 
-            {showSubscription && <div data-tour="profile-subscription"><ProfileSubscription /></div>}
+            {showSubscription && <div data-tour="profile-subscription"><ProfileSubscription forceOpen={subscriptionSectionOpen} /></div>}
 
-            {showVinculacionRecepcionistas && <VinculacionNutricionista onUnlinkRequest={handleUnlinkRequest} />}
-            {showVinculacionNutricionistas && <VinculacionRecepcionista onUnlinkRequest={handleUnlinkRequest} />}
+            {showVinculacionRecepcionistas && <VinculacionNutricionista onUnlinkRequest={handleUnlinkRequest} forceOpen={vinculacionRecepSectionOpen} />}
+            {showVinculacionNutricionistas && <VinculacionRecepcionista onUnlinkRequest={handleUnlinkRequest} forceOpen={vinculacionSectionOpen} />}
 
             {showSistema && (
               <div data-tour="profile-sistema" className="space-y-6">

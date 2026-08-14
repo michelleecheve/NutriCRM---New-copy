@@ -10,7 +10,7 @@ export const DEFAULT_PERMISSIONS: PagePermission[] = [
   { pageId: 'dashboard', label: 'Pacientes', roles: ['admin', 'nutricionista'] },
   { pageId: 'menus', label: 'Menús', roles: ['admin', 'nutricionista'] },
   { pageId: 'payments', label: 'Pagos', roles: ['admin', 'nutricionista'] },
-  { pageId: 'ayuda', label: 'Ayuda', roles: ['admin', 'nutricionista'] },
+  { pageId: 'ayuda', label: 'Ayuda', roles: ['admin', 'nutricionista', 'recepcionista'] },
   {
     pageId: 'calendar',
     label: 'Calendario',

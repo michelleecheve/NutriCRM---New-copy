@@ -15,6 +15,7 @@ export const HideGuidesNotice: React.FC<HideGuidesNoticeProps> = ({ onClose }) =
         Si ya conoces muy bien NutriFollow, puedes ocultar estos botones desde la página de <span className="font-bold text-slate-800">Ayuda</span>.
       </p>
       <button
+        type="button"
         onClick={onClose}
         className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-all"
       >

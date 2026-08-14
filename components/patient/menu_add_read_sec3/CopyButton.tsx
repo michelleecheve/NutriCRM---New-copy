@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Copy, Check, X, ChevronDown } from 'lucide-react';
-import { Patient, VetCalculation } from '../../../types';
+import { Patient, VetCalculation, DEFAULT_SECTION_TITLES } from '../../../types';
 import { MenuPlanData } from '../../menus_components/MenuDesignTemplates';
 import { EatingOutPageData } from '../../menus_components/menudesigntemplates_components/menuTemplateTypes';
 import { MenuReferenceParsertoMenuData } from '../../menus_components/Menu_References_Components/MenuReferenceParsertoMenuData';
@@ -95,6 +95,9 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
             habitos:       rec.data.habitos       || [],
             organizacion:  rec.data.organizacion  || [],
           },
+          sectionTitles: rec.data.sectionTitles
+            ? { ...(plan.sectionTitles || DEFAULT_SECTION_TITLES), ...rec.data.sectionTitles }
+            : plan.sectionTitles,
         };
       }
     }

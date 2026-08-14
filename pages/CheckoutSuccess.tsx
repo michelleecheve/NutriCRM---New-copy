@@ -65,7 +65,7 @@ export const CheckoutSuccess: React.FC<{ onGoToProfile: () => void }> = ({ onGoT
               ? (verifyStatus === 'confirmed' ? 'Tu método de pago fue actualizado. Los próximos cobros usarán esta nueva tarjeta.' : 'Confirmando el cambio...')
               : <>
                   {verifyStatus === 'checking' && 'Estamos confirmando tu suscripción. Esto toma unos segundos.'}
-                  {verifyStatus === 'confirmed' && <>Tu suscripción <span className="font-bold text-emerald-600">NutriFlow Pro</span> está activa. ¡Bienvenida al plan completo!</>}
+                  {verifyStatus === 'confirmed' && <>Tu suscripción <span className="font-bold text-emerald-600">NutriFollow Pro</span> está activa. ¡Bienvenida al plan completo!</>}
                   {verifyStatus === 'timeout'  && 'Tu pago fue procesado. Si tu plan no aparece actualizado, recarga la página en unos minutos.'}
                 </>
             }
@@ -92,7 +92,7 @@ export const CheckoutSuccess: React.FC<{ onGoToProfile: () => void }> = ({ onGoT
             onClick={() => { window.location.href = 'https://www.nutrifollow.app'; }}
             className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-600/20"
           >
-            Entrar a NutriFlow
+            Entrar a NutriFollow
             <ArrowRight className="w-4 h-4" />
           </button>
         )}

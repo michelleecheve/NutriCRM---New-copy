@@ -13,6 +13,7 @@ import { Profile } from './pages/Profile';
 import { CheckoutSuccess } from './pages/CheckoutSuccess';
 import { Menus } from './pages/Menus';
 import { Ayuda } from './pages/Ayuda';
+import { AyudaRecepcionista } from './pages/AyudaRecepcionista';
 import { AdminPanel } from './pages/Admin';
 import { AppRoute, UserRole } from './types';
 import { authStore } from './services/authStore';
@@ -228,7 +229,7 @@ function App() {
         return <Profile onLogout={handleLogout} />;
 
       case AppRoute.AYUDA:
-        return <Ayuda />;
+        return authStore.getCurrentUser()?.role === 'recepcionista' ? <AyudaRecepcionista /> : <Ayuda />;
 
       case AppRoute.ADMIN:
         return <AdminPanel />;

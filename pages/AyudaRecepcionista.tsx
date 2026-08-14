@@ -1,8 +1,12 @@
 import React from 'react';
-import { Sparkles, LifeBuoy } from 'lucide-react';
-import { TourProfileSection } from '../components/tour/TourProfileSection';
+import { Sparkles, LifeBuoy, Compass } from 'lucide-react';
 
-export const Ayuda: React.FC = () => {
+// Página de ayuda para el rol recepcionista. A diferencia de la versión de la
+// nutricionista (pages/Ayuda.tsx), aquí no existe el interruptor para ocultar
+// las guías ni el recorrido guiado por capítulos (pensado para el flujo de
+// paciente, al que la recepcionista no tiene acceso) — el botón "Guía de esta
+// página" siempre está activo.
+export const AyudaRecepcionista: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white shadow-sm">
@@ -10,10 +14,28 @@ export const Ayuda: React.FC = () => {
           <Sparkles className="w-6 h-6" />
           <h2 className="text-2xl font-bold">¡Nos alegra tenerte aquí!</h2>
         </div>
+        <p className="text-emerald-50">
+          Esta es tu página de ayuda. Aquí encuentras cómo aprovechar las guías de cada página, el recorrido guiado paso a paso, y cómo contactarnos si algo no sale como esperas.
+        </p>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-        <TourProfileSection />
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+          <Compass className="w-5 h-5 text-emerald-600" />
+          <h3 className="font-bold text-slate-800">Guías de cada página</h3>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 bg-slate-50 rounded-xl px-4 py-3">
+          <p className="text-sm text-slate-600">
+            En cada página encontrarás un botón <span className="font-bold text-slate-800">"Guía de esta página"</span> para conocer sus elementos y funciones.
+          </p>
+          <span className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1.5">
+            Siempre disponible
+          </span>
+        </div>
+        <p className="text-xs text-slate-400">
+          Búscalo en la parte superior de cada página cuando necesites ayuda.
+        </p>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">

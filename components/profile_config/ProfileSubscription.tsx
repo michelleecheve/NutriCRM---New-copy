@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { authStore } from '../../services/authStore';
 import { Zap, CheckCircle, AlertCircle, CreditCard, Star, ChevronDown, XCircle, RefreshCw, Clock, Tag } from 'lucide-react';
 
-export const ProfileSubscription: React.FC = () => {
+export const ProfileSubscription: React.FC<{
+  /** al volverse true, expande la sección — usado por la guía de esta página para abrirla antes de resaltarla. */
+  forceOpen?: boolean;
+}> = ({ forceOpen }) => {
   const sub   = authStore.getSubscription();
   const isPro = authStore.isPro();
 
@@ -10,6 +13,10 @@ export const ProfileSubscription: React.FC = () => {
   const [isLoading, setIsLoading]             = useState(false);
   const [msg, setMsg]                         = useState<string | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  useEffect(() => {
+    if (forceOpen) setIsOpen(true);
+  }, [forceOpen]);
 
   const formatDate = (iso: string | null) => {
     if (!iso) return '';

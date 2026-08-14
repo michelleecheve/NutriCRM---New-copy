@@ -127,6 +127,7 @@ export const TourTooltip: React.FC<TourTooltipProps> = ({
     >
       {onCloseCorner && (
         <button
+          type="button"
           onClick={onCloseCorner}
           className="absolute top-3 right-3 p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-100 transition-colors"
         >
@@ -141,6 +142,7 @@ export const TourTooltip: React.FC<TourTooltipProps> = ({
       <div className={`flex items-center gap-2 ${canGoBack ? 'justify-end' : 'justify-between'}`}>
         {!canGoBack && (
           <button
+            type="button"
             onClick={onPauseLater}
             className="text-xs text-slate-400 hover:text-slate-600 font-semibold flex items-center gap-1 transition-colors"
           >
@@ -150,6 +152,7 @@ export const TourTooltip: React.FC<TourTooltipProps> = ({
         <div className="flex items-center gap-2">
           {canGoBack && (
             <button
+              type="button"
               onClick={onBack}
               className="flex items-center gap-1 px-2 py-2 rounded-lg text-slate-500 hover:bg-slate-100 text-sm font-semibold transition-colors"
             >
@@ -158,6 +161,7 @@ export const TourTooltip: React.FC<TourTooltipProps> = ({
           )}
           {showManualNext && (
             <button
+              type="button"
               onClick={onNext}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1 transition-all"
             >
