@@ -65,8 +65,32 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
         const totals = calcPortionsTotal(slots);
         const byMeal: Record<string, any> = {};
         slots.forEach((s: any) => { byMeal[s.id] = { ...s.portions, label: s.label }; });
+
+        // Tabla de Porciones y Menú de Intercambio arman sus filas leyendo
+        // weeklyMenu.lunes.mealsOrder, no exchangeMenu.meals/portions directamente.
+        // Si la referencia tiene tiempos de comida distintos a los 5 por defecto
+        // del blanco (agregados, renombrados o con otro id), dejar el mealsOrder
+        // fijo del blanco hace que esos tiempos no aparezcan aunque sus datos sí
+        // se hayan copiado — la plantilla queda "incompleta" al pegar. Se
+        // reconstruye acá el mealsOrder a partir de los tiempos reales guardados.
+        const refMeals: { id: string; label: string }[] =
+          (ref.data as any).exchangeMenu?.meals?.length
+            ? (ref.data as any).exchangeMenu.meals.map((m: any) => ({ id: m.id, label: m.label }))
+            : slots.map((s: any) => ({ id: s.id, label: s.label }));
+        const newOrder = refMeals.map(m => m.id);
+        const newWeekly: any = { ...blank.weeklyMenu };
+        (['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'] as const).forEach(dayKey => {
+          const day: any = { mealsOrder: newOrder };
+          refMeals.forEach(({ id, label }) => { day[id] = { title: '', label }; });
+          newWeekly[dayKey] = day;
+        });
+        const domingoV2: any = { mealsOrder: newOrder };
+        refMeals.forEach(({ id, label }) => { domingoV2[id] = { title: '', label }; });
+        newWeekly.domingoV2 = domingoV2;
+
         plan = {
           ...blank,
+          weeklyMenu: newWeekly,
           menuType: 'intercambio',
           exchangeMenu: (ref.data as any).exchangeMenu,
           kcal: (ref.data as any).kcal || 0,

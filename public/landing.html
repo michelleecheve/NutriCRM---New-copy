@@ -300,10 +300,10 @@
 
       /* ── HERO ── */
       #hero {
-        min-height: 100svh;
+        min-height: min(100svh, 780px);
         display: flex;
         align-items: center;
-        padding: 96px 0 72px;
+        padding: 120px 0 40px;
         position: relative;
         overflow: hidden;
         background: var(--bg);
@@ -534,7 +534,7 @@
 
       /* ── TRUST ── */
       #trust {
-        padding: 36px 0 60px;
+        padding: 16px 0 48px;
         border-bottom: 1px solid var(--border2);
       }
       .trust-row {
@@ -1020,63 +1020,309 @@
         }
       }
 
-      /* ── PHILOSOPHY ── */
-      #philosophy {
+      /* ── ABOUT / QUÉ ES Y PARA QUIÉN ── */
+      #about {
         padding: 104px 0;
-        background: var(--bg2);
       }
-      .pillars-grid {
+      .persona-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 13px;
+        margin-bottom: 60px;
       }
-      .pillar {
+      .persona {
         background: #fff;
         border: 1px solid var(--border2);
         border-radius: var(--radius);
-        padding: 32px 26px;
+        padding: 26px 22px;
         transition:
           box-shadow 0.2s,
           transform 0.2s;
       }
-      .pillar:hover {
+      .persona:hover {
         box-shadow: var(--shadow-lg);
         transform: translateY(-3px);
       }
-      .pillar-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        border: 1px solid var(--border2);
-        background: var(--bg2);
+      .persona-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+        background: var(--sky-dim);
+        border: 1px solid var(--sky-border);
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 18px;
+        margin-bottom: 14px;
       }
-      .pillar-icon svg {
-        width: 20px;
-        height: 20px;
+      .persona-icon svg {
+        width: 18px;
+        height: 18px;
         stroke: var(--sky-dark);
         fill: none;
         stroke-width: 1.9;
         stroke-linecap: round;
         stroke-linejoin: round;
       }
-      .pillar h3 {
+      .persona h3 {
+        font-weight: 700;
+        font-size: 14.5px;
+        margin-bottom: 7px;
+        line-height: 1.3;
+      }
+      .persona p {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+      @media (max-width: 900px) {
+        .persona-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 580px) {
+        .persona-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .compare-wrap {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .compare-col {
+        border-radius: var(--radius);
+        padding: 30px 28px;
+      }
+      .compare-before {
+        background: #fff;
+        border: 1.5px dashed var(--border2);
+      }
+      .compare-after {
+        background: #fff;
+        border: 1.5px solid var(--sky);
+        box-shadow: var(--shadow-lg);
+      }
+      .compare-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+      }
+      .compare-before .compare-label {
+        color: var(--text-dim);
+      }
+      .compare-after .compare-label {
+        color: var(--sky-dark);
+      }
+      .compare-list {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+      }
+      .compare-list li {
+        display: flex;
+        gap: 9px;
+        align-items: flex-start;
+        font-size: 13.5px;
+        line-height: 1.5;
+      }
+      .compare-before .compare-list li {
+        color: var(--text-muted);
+      }
+      .compare-after .compare-list li {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .compare-list svg {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        margin-top: 2px;
+        fill: none;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .compare-before .compare-list svg {
+        stroke: var(--text-dim);
+      }
+      .compare-after .compare-list svg {
+        stroke: var(--sky-dark);
+      }
+      @media (max-width: 700px) {
+        .compare-wrap {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ── HOW IT WORKS ── */
+      #how-it-works {
+        padding: 104px 0;
+        background: var(--bg2);
+      }
+      .how-steps {
+        max-width: 740px;
+        margin: 0 auto;
+      }
+      .how-step {
+        display: flex;
+        gap: 20px;
+      }
+      .how-step-track {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      .how-step-n {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: var(--sky-dark);
+        color: #fff;
+        font-weight: 800;
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+      }
+      .how-step-line {
+        flex: 1;
+        width: 2px;
+        min-height: 24px;
+        background: var(--border2);
+        margin: 6px 0;
+      }
+      .how-step:last-child .how-step-line {
+        display: none;
+      }
+      .how-step-card {
+        flex: 1;
+        background: #fff;
+        border: 1px solid var(--border2);
+        border-radius: var(--radius);
+        padding: 24px 26px;
+        margin-bottom: 18px;
+        transition:
+          box-shadow 0.2s,
+          transform 0.2s;
+      }
+      .how-step:last-child .how-step-card {
+        margin-bottom: 0;
+      }
+      .how-step-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+      }
+      .how-step-card h3 {
         font-weight: 700;
         font-size: 16px;
-        margin-bottom: 7px;
+        margin-bottom: 8px;
       }
-      .pillar p {
-        font-size: 13px;
+      .how-step-card p {
+        font-size: 13.5px;
         color: var(--text-muted);
         line-height: 1.65;
       }
-      @media (max-width: 768px) {
-        .pillars-grid {
-          grid-template-columns: 1fr;
+      .how-sublist {
+        margin-top: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+      }
+      .how-sublist li {
+        display: flex;
+        gap: 9px;
+        align-items: flex-start;
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+      .how-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--sky-dark);
+        flex-shrink: 0;
+        margin-top: 7px;
+      }
+      @media (max-width: 600px) {
+        .how-step-card {
+          padding: 20px;
         }
+      }
+
+      /* ── FAQ ── */
+      #faq {
+        padding: 104px 0;
+        background: var(--bg2);
+      }
+      .faq-list {
+        max-width: 740px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+      }
+      .faq-item {
+        background: #fff;
+        border: 1px solid var(--border2);
+        border-radius: var(--radius-sm);
+        padding: 6px 22px;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+      }
+      .faq-item[open] {
+        border-color: var(--sky-border);
+        box-shadow: var(--shadow);
+      }
+      .faq-item summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 16px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        font-weight: 700;
+        font-size: 14.5px;
+      }
+      .faq-item summary::-webkit-details-marker {
+        display: none;
+      }
+      .faq-icon {
+        flex-shrink: 0;
+        display: flex;
+        transition: transform 0.25s ease;
+      }
+      .faq-icon svg {
+        width: 18px;
+        height: 18px;
+        stroke: var(--text-muted);
+        fill: none;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .faq-item[open] .faq-icon {
+        transform: rotate(180deg);
+      }
+      .faq-item[open] .faq-icon svg {
+        stroke: var(--sky-dark);
+      }
+      .faq-answer {
+        padding: 0 0 18px;
+        font-size: 13.5px;
+        color: var(--text-muted);
+        line-height: 1.7;
+        max-width: 600px;
       }
 
       /* ── PRICING ── */
@@ -1334,10 +1580,11 @@
         </a>
         <nav>
           <ul class="nav-links">
+            <li><a href="#about">Qué es</a></li>
             <li><a href="#features">Funciones</a></li>
-            <li><a href="#menu-link">Menú Interactivo</a></li>
+            <li><a href="#how-it-works">Cómo funciona</a></li>
+            <li><a href="#faq">Preguntas</a></li>
             <li><a href="#pricing">Planes</a></li>
-            <li><a href="#philosophy">Misión</a></li>
           </ul>
         </nav>
         <div class="nav-actions">
@@ -1465,16 +1712,151 @@
         </div>
       </section>
 
+      <!-- ABOUT / QUÉ ES Y PARA QUIÉN ES -->
+      <section id="about">
+        <div class="container">
+          <div class="section-header fade">
+            <span class="tag">Qué es y para quién es</span>
+            <h2 class="section-h2">
+              Hecho para agilizar tu consulta,<br /><em>potenciado para nutrición deportiva</em>
+            </h2>
+            <p class="section-lead">
+              NutriFollow centraliza evaluaciones antropométricas, composición
+              corporal, menús y agenda de cada paciente en un solo lugar, sin
+              Excel, WhatsApp ni PDFs sueltos. Y si trabajas con atletas,
+              trae somatotipo, bioimpedancia y perfil deportivo listos para
+              usar.
+            </p>
+          </div>
+
+          <div class="persona-grid">
+            <div class="persona fade">
+              <div class="persona-icon">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+                </svg>
+              </div>
+              <h3>Nutricionista deportiva independiente</h3>
+              <p>
+                Manejas decenas de atletas con datos que cambian semana a
+                semana: peso, pliegues, % de grasa. Necesitas ver la evolución
+                de cada uno sin abrir cinco archivos distintos.
+              </p>
+            </div>
+            <div class="persona fade d1">
+              <div class="persona-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <h3>Nutricionista de equipos y clubes</h3>
+              <p>
+                Trabajas con planteles completos. Cada atleta necesita su
+                propio menú y su propio seguimiento por temporada, con una
+                imagen profesional frente al cuerpo técnico.
+              </p>
+            </div>
+            <div class="persona fade d2">
+              <div class="persona-icon">
+                <svg viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="17" rx="2" />
+                  <path d="M8 2v4M16 2v4M3 10h18" />
+                </svg>
+              </div>
+              <h3>Clínica con recepción</h3>
+              <p>
+                Tu recepcionista agenda las citas, tú manejas la parte
+                clínica. Cada quien ve solo lo que le corresponde, sin
+                fricción entre los dos roles.
+              </p>
+            </div>
+            <div class="persona fade d3">
+              <div class="persona-icon">
+                <svg viewBox="0 0 24 24">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              </div>
+              <h3>Consulta en crecimiento</h3>
+              <p>
+                Dejaste atrás la libreta y el Excel, pero las apps genéricas
+                de fitness no entienden antropometría, somatotipo ni
+                bioimpedancia.
+              </p>
+            </div>
+          </div>
+
+          <div class="compare-wrap fade">
+            <div class="compare-col compare-before">
+              <div class="compare-label">Antes</div>
+              <ul class="compare-list">
+                <li>
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Datos de atletas repartidos entre Excel, WhatsApp y papel
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Cálculos de VET y macros a mano en cada consulta
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Menús armados desde cero cada vez
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Sin forma clara de ver la evolución de un atleta en el tiempo
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Recepción y consulta clínica mezcladas en el mismo calendario
+                </li>
+              </ul>
+            </div>
+            <div class="compare-col compare-after">
+              <div class="compare-label">Con NutriFollow</div>
+              <ul class="compare-list">
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Ficha completa de cada atleta en un solo lugar
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  VET, macros y porciones calculados automáticamente
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Plantillas de menú reutilizables, editables en minutos
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Somatocarta, bioimpedancia y medidas comparadas consulta a
+                  consulta
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Calendario compartido con roles separados para tu
+                  recepcionista
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- FEATURES -->
       <section id="features">
         <div class="container">
           <div class="section-header fade">
-            <span class="tag">Todo lo que necesitas</span>
+            <span class="tag">Funcionalidades</span>
             <h2 class="section-h2">
-              Una plataforma,<br /><em>todas las herramientas</em>
+              Tu clínica digital,<br /><em>centralizada en un solo lugar</em>
             </h2>
             <p class="section-lead">
-              Desde la primera evaluación hasta el seguimiento a largo plazo.
+              Desde la primera evaluación hasta el seguimiento a largo plazo
+              de cada atleta.
             </p>
           </div>
           <div class="features-bento">
@@ -1575,6 +1957,37 @@
                 de tu práctica en el tiempo.
               </p>
             </div>
+            <div class="feat feat-large fade">
+              <div class="feat-num">07</div>
+              <div class="feat-icon">
+                <svg viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                  <path d="M9 15l2 2 4-4" />
+                </svg>
+              </div>
+              <h3 class="feat-h3">Agenda de citas completa</h3>
+              <p class="feat-p">
+                Programa, reprograma y da seguimiento a cada cita: modalidad,
+                duración, estado y recordatorios automáticos. Todo
+                sincronizado con Google Calendar.
+              </p>
+            </div>
+            <div class="feat fade d1">
+              <div class="feat-num">08</div>
+              <div class="feat-icon mint">
+                <svg viewBox="0 0 24 24">
+                  <path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z" />
+                  <path d="M9 8h6M9 12h6M9 16h4" />
+                </svg>
+              </div>
+              <h3 class="feat-h3">Control de pagos y facturas</h3>
+              <p class="feat-p">
+                Registra ingresos y egresos por paciente: estado de pago,
+                método y categoría. Sabes de un vistazo qué cobrar y qué ya
+                está pagado.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -1607,7 +2020,7 @@
                 <div class="hl-step">
                   <div class="hl-step-n">2</div>
                   <div class="hl-step-text">
-                    <strong>Comparte el enlace</strong> y PIN a tu paciente
+                    <strong>Comparte el enlace</strong> con tu paciente
                   </div>
                 </div>
                 <div class="hl-step">
@@ -1714,6 +2127,319 @@
         </div>
       </section>
 
+      <!-- HOW IT WORKS -->
+      <section id="how-it-works">
+        <div class="container">
+          <div class="section-header fade">
+            <span class="tag">Tu día a día</span>
+            <h2 class="section-h2">
+              ¿Cómo lo usarías<br /><em>en tu consulta?</em>
+            </h2>
+            <p class="section-lead">
+              Así se ve un día normal de trabajo con NutriFollow, de la cita
+              al menú compartido.
+            </p>
+          </div>
+          <div class="how-steps">
+            <div class="how-step fade">
+              <div class="how-step-track">
+                <div class="how-step-n">1</div>
+                <div class="how-step-line"></div>
+              </div>
+              <div class="how-step-card">
+                <h3>Revisas tu dashboard</h3>
+                <p>
+                  Entras y ves de un vistazo cómo va tu clínica: citas del
+                  día, menús pendientes, pagos por cobrar y seguimientos
+                  atrasados.
+                </p>
+              </div>
+            </div>
+            <div class="how-step fade d1">
+              <div class="how-step-track">
+                <div class="how-step-n">2</div>
+                <div class="how-step-line"></div>
+              </div>
+              <div class="how-step-card">
+                <h3>Agregas al paciente y su historial</h3>
+                <p>
+                  Al momento de cada cita registras al paciente y llenas su
+                  historial clínico: antecedentes, diagnóstico, alergias y
+                  datos personales.
+                </p>
+              </div>
+            </div>
+            <div class="how-step fade d2">
+              <div class="how-step-track">
+                <div class="how-step-n">3</div>
+                <div class="how-step-line"></div>
+              </div>
+              <div class="how-step-card">
+                <h3>Creas la evaluación de esa sesión</h3>
+                <p>
+                  Cada evaluación es como un folder donde guardas todo lo
+                  recolectado ese día, y te va guiando con las preguntas
+                  exactas que necesitas hacer para no olvidar nada.
+                </p>
+                <ul class="how-sublist">
+                  <li>
+                    <span class="how-dot"></span>Evaluación dietética: qué
+                    comió en las últimas 24 horas
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Medidas antropométricas o de
+                    bioimpedancia
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Cálculos automáticos y
+                    reportes de comparación para mostrarle al paciente su
+                    evolución
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Somatocarta generada con los
+                    ejes de sus medidas
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Laboratorios y fotos
+                    adjuntos a la evaluación
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="how-step fade d3">
+              <div class="how-step-track">
+                <div class="how-step-n">4</div>
+                <div class="how-step-line"></div>
+              </div>
+              <div class="how-step-card">
+                <h3>Armas su menú desde la misma evaluación</h3>
+                <p>
+                  Regresas al día de la evaluación y sigues, en orden, con el
+                  menú.
+                </p>
+                <ul class="how-sublist">
+                  <li>
+                    <span class="how-dot"></span>Calculas las kcal a trabajar
+                    según su nivel de actividad
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Defines la distribución de
+                    calorías y nutrientes
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Configuras la tabla de
+                    porciones
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Armas el menú semanal o de
+                    intercambio de alimentos
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="how-step fade d3">
+              <div class="how-step-track">
+                <div class="how-step-n">5</div>
+                <div class="how-step-line"></div>
+              </div>
+              <div class="how-step-card">
+                <h3>Exportas y compartes el menú</h3>
+                <p>
+                  Con el menú listo, lo dejas guardado y a un link de
+                  distancia de tu paciente.
+                </p>
+                <ul class="how-sublist">
+                  <li>
+                    <span class="how-dot"></span>Exporta a PDF y guárdalo
+                    como plantilla para usarlo en el futuro
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Comparte un link para que tu
+                    paciente lo vea en PDF o como tracker interactivo desde
+                    su celular, sin instalar nada
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="faq">
+        <div class="container">
+          <div class="section-header fade">
+            <span class="tag">Preguntas frecuentes</span>
+            <h2 class="section-h2">
+              Lo que las nutricionistas<br /><em>nos preguntan antes de empezar</em>
+            </h2>
+          </div>
+          <div class="faq-list fade">
+            <details class="faq-item" open>
+              <summary>
+                ¿NutriFollow es solo para nutrición deportiva o también lo
+                pueden usar en nutrición en general?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Todas las nutricionistas lo pueden usar. Llevar el
+                  historial clínico, registrar pacientes, dar seguimiento a
+                  calendario y pagos, y registrar medidas se adapta a
+                  cualquier consulta, deportiva o no.
+                </p>
+                <p style="margin-top: 12px">
+                  Donde las nutricionistas deportivas le sacan mayor
+                  provecho es en el cálculo nutricional automático al crear
+                  el menú, que trae fórmulas basadas en nutrición deportiva.
+                  Aun así, puedes ver la fórmula detrás de cada campo y, si
+                  aplica a tu paciente, usarla sin problema; y si prefieres
+                  no usar el cálculo automático deportivo, puedes saltártelo
+                  e ir directo a la redacción del menú.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Mis atletas necesitan instalar una app?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  No. Compartes un enlace y tu atleta abre su menú semanal
+                  desde el celular sin instalar nada ni crear una cuenta.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿En qué dispositivos funciona?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Funciona en cualquier dispositivo con navegador web:
+                  computadoras, tablets y celulares. El modo presentación
+                  está optimizado especialmente para computadora.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Funciona sin conexión a internet?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  No. Es importante tener una buena conexión a internet para
+                  que el guardado de la información sea rápido y seguro.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Puedo tener una recepcionista que maneje mi agenda del
+                calendario sin que vea el historial clínico de mis pacientes?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Sí. Los roles están separados: tu recepcionista gestiona la
+                  agenda de citas y tú eres la única con acceso a
+                  evaluaciones, menús y datos clínicos. El calendario no
+                  permite que los pacientes se autoagenden: la agenda solo la
+                  configuran la nutricionista y la recepcionista. También
+                  puedes sincronizarlo con Google Calendar para llevar
+                  contigo la agenda de tus pacientes.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Qué tan seguros están los datos de mis pacientes?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Tus datos viven en la nube, protegidos y bajo tu control.
+                  Nada se comparte con terceros ni se usa fuera de tu cuenta.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿El plan gratis tiene límite de tiempo o pide tarjeta de
+                crédito?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  No. El plan Básico es gratis de forma permanente, sin
+                  tarjeta, con acceso completo a las funciones hasta 10
+                  pacientes activos.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Cuánto tiempo toma empezar a usarlo con mis pacientes
+                actuales?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Puedes crear tu cuenta y empezar a registrar pacientes,
+                  evaluaciones y menús el mismo día. No hay instalación ni
+                  curva de aprendizaje larga.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Qué tan complejo es aprender a usarlo?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Es muy intuitivo. Encontrarás guías de página y de uso para
+                  sacarle el máximo potencial a cada función, y si tienes
+                  dudas puedes consultarlas por correo o WhatsApp.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Puedo cancelar el plan Pro cuando quiera?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>Sí, cancelas cuando quieras y sin penalizaciones.</p>
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
       <!-- PRICING -->
       <section id="pricing">
         <div class="container">
@@ -1787,60 +2513,6 @@
         </div>
       </section>
 
-      <!-- PHILOSOPHY -->
-      <section id="philosophy">
-        <div class="container">
-          <div class="section-header fade">
-            <span class="tag">Misión</span>
-            <h2 class="section-h2">
-              Más que un CRM.<br /><em>Un sistema completo.</em>
-            </h2>
-          </div>
-          <div class="pillars-grid">
-            <div class="pillar fade">
-              <div class="pillar-icon">
-                <svg viewBox="0 0 24 24">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-              </div>
-              <h3>Flujo clínico real</h3>
-              <p>
-                Diseñado con nutricionistas activos. Cada pantalla responde al
-                flujo real de una consulta, sin pasos innecesarios.
-              </p>
-            </div>
-            <div class="pillar fade d1">
-              <div class="pillar-icon">
-                <svg viewBox="0 0 24 24">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </div>
-              <h3>Privacidad por diseño</h3>
-              <p>
-                Tus datos clínicos están protegidos y bajo tu control total.
-                Nada se comparte con terceros.
-              </p>
-            </div>
-            <div class="pillar fade d2">
-              <div class="pillar-icon">
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-                  <path d="M4.93 4.93a10 10 0 0 0 0 14.14" />
-                </svg>
-              </div>
-              <h3>Datos centralizados</h3>
-              <p>
-                Olvidate de manejar archivos separados y hojas impresas.
-                Recolecta toda la información que necesitas en una sola
-                plataforma.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- CTA -->
       <section id="cta">
         <div class="container">
@@ -1877,13 +2549,14 @@
           <span>NutriFollow<span style="color: var(--sky-dark);">.app</span></span>
         </a>
         <nav class="footer-links">
+          <a href="#about">Qué es</a>
           <a href="#features">Funciones</a>
-          <a href="#menu-link">Menú Interactivo</a>
+          <a href="#how-it-works">Cómo funciona</a>
+          <a href="#faq">Preguntas</a>
           <a href="#pricing">Planes</a>
-          <a href="#philosophy">Misión</a>
           <a href="/login">Iniciar sesión</a>
         </nav>
-        <p class="footer-copy">© 2026 NutriFollow &nbsp;·&nbsp; <a href="/privacy-policy" style="color:inherit;text-decoration:underline;">Política de Privacidad</a> &nbsp;·&nbsp; <a href="/terms-of-service" style="color:inherit;text-decoration:underline;">Términos de Servicio</a></p>
+        <p class="footer-copy">© 2026 NutriFollow &nbsp;·&nbsp; <a href="/privacy-policy" style="color:inherit;text-decoration:underline;">Política de Privacidad</a> &nbsp;·&nbsp; <a href="/terms-of-service" style="color:inherit;text-decoration:underline;">Términos de Servicio</a> &nbsp;·&nbsp; <a href="/sensitive-data-policy.html" style="color:inherit;text-decoration:underline;">Datos Sensibles</a> &nbsp;·&nbsp; <a href="/disclaimers.html" style="color:inherit;text-decoration:underline;">Disclaimers</a></p>
       </div>
     </footer>
 

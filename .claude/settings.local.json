@@ -57,7 +57,8 @@
       "Bash(exportPatientZip\\\\.ts)",
       "Bash(store\\\\.ts)",
       "Bash(SaveButton\")",
-      "Bash(git *)"
+      "Bash(git *)",
+      "WebFetch(domain:fonema.uno)"
     ]
   }
 }

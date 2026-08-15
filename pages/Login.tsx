@@ -88,7 +88,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
     setForgotLoading(true);
 
     const { data, error } = await supabase.functions.invoke('send-password-reset', {
-      body: { email: forgotEmail.trim(), redirectTo: window.location.origin },
+      body: { email: forgotEmail.trim(), redirectTo: `${window.location.origin}/reset-password` },
     });
 
     setForgotLoading(false);

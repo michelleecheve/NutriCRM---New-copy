@@ -149,6 +149,13 @@ const mapProfileToAppUser = (p: any): AppUser => ({
   } as any,
 });
 
+// Detecta si la URL actual trae un link de recuperación de contraseña de
+// Supabase (#access_token=...&type=recovery). Se usa tanto para no
+// auto-loguear esa sesión como para saber a qué pantalla navegar.
+export const hasRecoveryLinkInUrl = (): boolean =>
+  window.location.hash.includes('type=recovery') ||
+  window.location.search.includes('type=recovery');
+
 // ─── Auth Store ──────────────────────────────────────────────────────────────
 
 // Listeners para que App.tsx pueda reaccionar cuando la sesión termina de cargar
@@ -212,7 +219,13 @@ class AuthStore {
 
     // Verificar/actualizar con Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      // Un link de recuperación de contraseña también deja una sesión válida en
+      // Supabase (necesaria para que ResetPassword.tsx pueda llamar updateUser),
+      // pero NO debe tratarse como un login normal — si no, el usuario entra
+      // directo al panel saltándose la pantalla de nueva contraseña. El evento
+      // 'PASSWORD_RECOVERY' de onAuthStateChange (abajo) es el que navega a
+      // /reset-password; aquí solo evitamos el auto-login.
+      if (session && !hasRecoveryLinkInUrl()) {
         this.handleSupabaseSession(session);
       } else {
         this.currentUser = null;

@@ -50,12 +50,14 @@ const GoogleCalendarTip: React.FC<{ iconOnly?: boolean }> = ({
       <button
         onClick={() => setOpen(true)}
         className={`flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:border-slate-300 transition-all ${
-          iconOnly ? 'px-3 py-2' : 'px-4 py-3'
+          iconOnly ? "px-3 py-2" : "px-4 py-3"
         }`}
       >
         {!iconOnly && <Info className="w-4 h-4" />}
-        <span className={`font-medium ${iconOnly ? 'text-[11px]' : 'text-[11px]'}`}>
-          {iconOnly ? 'Tips G.Calendar' : 'Tips Google Calendar'}
+        <span
+          className={`font-medium ${iconOnly ? "text-[11px]" : "text-[11px]"}`}
+        >
+          {iconOnly ? "Tips G.Calendar" : "Tips Google Calendar"}
         </span>
       </button>
 
@@ -514,7 +516,10 @@ export const CalendarPage: React.FC = () => {
   const handleNavigateTo = (date: Date) => setCurrentDate(date);
 
   const handleCreateAppointment = (dateStr?: string) => {
-    if (authStore.appointmentLimitReached(appointments.length, targetIsPro)) { showPlanLimitModal(); return; }
+    if (authStore.appointmentLimitReached(appointments.length, targetIsPro)) {
+      showPlanLimitModal();
+      return;
+    }
     const resolvedDateStr = dateStr ?? todayStr;
     setSelectedAppointment({
       date: resolvedDateStr,
@@ -588,9 +593,7 @@ export const CalendarPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              Calendario
-            </h1>
+            <h1 className="text-3xl font-bold text-slate-900">Calendario</h1>
             <p className="text-slate-500 mt-1">Gestiona tus citas y agenda</p>
           </div>
           <div className="flex items-center gap-2 lg:gap-3">
@@ -623,7 +626,10 @@ export const CalendarPage: React.FC = () => {
                   <GoogleCalendarTip iconOnly />
                 </span>
                 {/* Desktop: botones completos */}
-                <span data-tour="calendar-google-tools" className="hidden lg:flex items-center gap-2 lg:gap-3">
+                <span
+                  data-tour="calendar-google-tools"
+                  className="hidden lg:flex items-center gap-2 lg:gap-3"
+                >
                   <CalendarGoogleSync
                     userId={currentAppUser.id}
                     appointments={appointments}
@@ -690,7 +696,7 @@ export const CalendarPage: React.FC = () => {
         </div>
 
         {/* Follow-Up Table */}
-        {currentAppUser?.role !== 'recepcionista' && (
+        {currentAppUser?.role !== "recepcionista" && (
           <CalendarFollowUpTable
             appointments={appointments}
             todayStr={todayStr}

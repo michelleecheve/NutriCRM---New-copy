@@ -89,7 +89,31 @@
       .updated {
         font-size: 0.85rem;
         color: #6b7280;
-        margin-bottom: 40px;
+        margin-bottom: 24px;
+      }
+      .doc-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 32px;
+      }
+      .doc-nav a {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #166534;
+        background: #f0fdf4;
+        border: 1px solid #d1fae5;
+        padding: 6px 12px;
+        border-radius: 999px;
+        text-decoration: none;
+      }
+      .doc-nav a.current {
+        background: #16a34a;
+        color: #fff;
+        border-color: #16a34a;
+      }
+      .doc-nav a:hover:not(.current) {
+        background: #dcfce7;
       }
       .intro {
         background: #fff;
@@ -126,6 +150,10 @@
         color: #374151;
         margin-bottom: 6px;
       }
+      a.inline-link {
+        color: #16a34a;
+        font-weight: 600;
+      }
       .warning {
         background: #fefce8;
         border: 1px solid #fde047;
@@ -136,12 +164,27 @@
         font-weight: 500;
         margin-top: 8px;
       }
+      .highlight {
+        background: #f0fdf4;
+        border-radius: 8px;
+        padding: 14px 18px;
+        font-size: 0.9rem;
+        color: #166534;
+        font-weight: 500;
+        margin-top: 8px;
+      }
       footer {
         text-align: center;
         padding: 32px 24px;
         font-size: 0.82rem;
         color: #9ca3af;
         border-top: 1px solid #e5e7eb;
+      }
+      footer a {
+        color: #16a34a;
+      }
+      footer .sep {
+        margin: 0 6px;
       }
     </style>
   </head>
@@ -162,12 +205,22 @@
     <main>
       <div class="badge">Legal</div>
       <h1>Términos de Servicio</h1>
-      <p class="updated">Última actualización: 3 de abril de 2026</p>
+      <p class="updated">Última actualización: 14 de agosto de 2026</p>
+
+      <nav class="doc-nav">
+        <a href="/terms-of-service.html" class="current">Términos de Servicio</a>
+        <a href="/privacy-policy.html">Política de Privacidad</a>
+        <a href="/sensitive-data-policy.html">Datos Personales Sensibles</a>
+        <a href="/disclaimers.html">Disclaimers y Uso Aceptable</a>
+      </nav>
 
       <div class="intro">
-        Al usar NutriFollow, aceptas los presentes Términos de Servicio. Por
-        favor léelos con atención antes de utilizar la plataforma. Si no estás
-        de acuerdo, no utilices el servicio.
+        Al usar NutriFollow, aceptas los presentes Términos de Servicio, junto
+        con nuestra Política de Privacidad, nuestra Política de Tratamiento de
+        Datos Personales Sensibles y nuestros Disclaimers, Limitación de
+        Responsabilidad y Reglas de Uso Aceptable. Los cuatro documentos
+        forman un solo acuerdo. Léelos con atención antes de utilizar la
+        plataforma; si no estás de acuerdo, no utilices el servicio.
       </div>
 
       <section>
@@ -175,9 +228,10 @@
         <p>
           NutriFollow es una plataforma de gestión para profesionales de
           nutrición y salud. Permite administrar pacientes, evaluaciones
-          clínicas, planes alimentarios, agenda de citas y facturación. Incluye
-          integraciones opcionales con Google Calendar y herramientas de
-          Inteligencia Artificial para la generación de planes alimentarios.
+          clínicas, antropometría y bioimpedancia, evaluaciones dietéticas,
+          menús y planes alimentarios, agenda de citas, facturación y un
+          portal opcional para que tus pacientes consulten su menú vigente y
+          su seguimiento. Incluye integración opcional con Google Calendar.
         </p>
       </section>
 
@@ -185,13 +239,14 @@
         <h2>2. Elegibilidad y Registro</h2>
         <ul>
           <li>
-            Debes ser un profesional de salud o personal administrativo
-            autorizado para usar NutriFollow.
+            Debes ser un profesional de nutrición o salud, o personal
+            administrativo (recepcionista) autorizado por un profesional, para
+            usar NutriFollow.
           </li>
           <li>Debes tener al menos 18 años de edad.</li>
           <li>
-            Eres responsable de mantener la confidencialidad de tus credenciales
-            de acceso.
+            Eres responsable de mantener la confidencialidad de tus
+            credenciales de acceso.
           </li>
           <li>
             Debes proporcionar información veraz y actualizada al crear tu
@@ -201,94 +256,143 @@
       </section>
 
       <section>
-        <h2>3. Uso Aceptable</h2>
+        <h2>3. Planes y Suscripción</h2>
+        <ul>
+          <li>
+            NutriFollow ofrece un <strong>Plan Básico</strong> gratuito con
+            límites de uso, y un <strong>Plan Pro</strong> de pago con
+            funciones ampliadas.
+          </li>
+          <li>
+            Los pagos del Plan Pro se procesan a través de
+            <strong>Recurrente</strong>, un proveedor de pagos externo.
+            NutriFollow no almacena números de tarjeta ni otros datos
+            financieros completos; esa información la maneja directamente
+            Recurrente.
+          </li>
+          <li>
+            La suscripción Pro se renueva automáticamente al final de cada
+            periodo, salvo que la canceles antes de la fecha de renovación.
+          </li>
+          <li>
+            Puedes cancelar tu suscripción en cualquier momento desde tu
+            perfil. Conservarás el acceso Pro hasta el final del periodo ya
+            pagado.
+          </li>
+          <li>
+            Al finalizar tu acceso Pro, ya sea por cancelación o por falta de
+            pago, tu cuenta pasa automáticamente al Plan Básico: tus datos no
+            se eliminan, pero aplican los límites de ese plan para crear
+            nuevos registros.
+          </li>
+          <li>
+            Podemos ajustar los precios o las características de los planes
+            en el futuro, notificándote con antelación razonable.
+          </li>
+          <li>
+            <strong>Reembolsos:</strong> si se te realiza un cobro que no
+            reconoces, o si olvidaste cancelar tu suscripción a tiempo,
+            podemos reembolsarte únicamente el último cobro realizado. No se
+            reembolsan cobros anteriores a ese, y no se autorizará un nuevo
+            reembolso en la misma cuenta hasta que haya transcurrido al menos
+            un (1) año desde el reembolso anterior.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>4. Uso Aceptable</h2>
         <p>Te comprometes a usar NutriFollow únicamente para:</p>
         <ul>
           <li>Gestión legítima de pacientes bajo tu atención profesional.</li>
           <li>
-            Elaboración de evaluaciones nutricionales y planes alimentarios.
+            Elaboración de evaluaciones nutricionales, menús y planes
+            alimentarios.
           </li>
           <li>
             Administración de agenda de citas y cobros relacionados a tu
             práctica.
           </li>
         </ul>
-        <p>Está prohibido:</p>
-        <ul>
-          <li>Compartir credenciales de acceso con personas no autorizadas.</li>
-          <li>
-            Usar la plataforma para almacenar datos de pacientes sin su
-            consentimiento.
-          </li>
-          <li>
-            Intentar acceder a datos de otros usuarios o vulnerar la seguridad
-            del sistema.
-          </li>
-          <li>
-            Usar la plataforma con fines ilegales o contrarios a la ética
-            profesional.
-          </li>
-          <li>
-            Realizar ingeniería inversa o intentar extraer el código fuente del
-            servicio.
-          </li>
-        </ul>
+        <p>
+          El listado completo de conductas prohibidas y las reglas de uso
+          aceptable están detalladas en nuestro documento de
+          <a href="/disclaimers.html" class="inline-link"
+            >Disclaimers, Limitación de Responsabilidad y Reglas de Uso
+            Aceptable</a
+          >, que forma parte integral de estos Términos.
+        </p>
       </section>
 
       <section>
-        <h2>4. Integración con Google Calendar</h2>
+        <h2>5. Integración con Google Calendar</h2>
         <p>
           NutriFollow ofrece integración opcional con Google Calendar. Al
           activarla:
         </p>
         <ul>
           <li>
-            Autorizas a NutriFollow a crear, modificar y eliminar eventos en tu
-            calendario de Google en tu nombre.
+            Autorizas a NutriFollow a crear, modificar y eliminar eventos en
+            tu calendario de Google en tu nombre.
           </li>
           <li>
             Puedes revocar este acceso en cualquier momento desde tu perfil o
             desde la configuración de tu cuenta de Google.
           </li>
           <li>
-            NutriFollow no accede a otros datos de tu cuenta de Google más allá
-            del calendario primario.
+            NutriFollow no accede a otros datos de tu cuenta de Google más
+            allá del calendario primario.
           </li>
         </ul>
       </section>
 
       <section>
-        <h2>5. Datos de Pacientes y Responsabilidad Profesional</h2>
-        <div class="warning">
-          NutriFollow es una herramienta de apoyo para profesionales de salud.
-          Los planes alimentarios generados con IA son sugerencias que deben ser
-          revisadas y aprobadas por el profesional antes de ser entregadas al
-          paciente.
-        </div>
-        <p style="margin-top: 12px">El usuario es el único responsable de:</p>
+        <h2>6. Portal del Paciente</h2>
+        <p>
+          Puedes activar, de forma opcional, un portal para que tu paciente
+          consulte su menú vigente y su seguimiento, mediante un código de
+          acceso único.
+        </p>
         <ul>
           <li>
-            Obtener el consentimiento informado de sus pacientes para el manejo
-            de sus datos.
+            Eres responsable de informar a tu paciente sobre la existencia del
+            portal, sobre qué información quedará visible para él, y de
+            obtener su consentimiento para compartírsela por este medio.
+          </li>
+          <li>
+            Puedes desactivar el portal para un paciente específico en
+            cualquier momento desde su ficha.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>7. Datos de Pacientes y Responsabilidad Profesional</h2>
+        <p>El usuario profesional es el único responsable de:</p>
+        <ul>
+          <li>
+            Obtener el consentimiento informado de sus pacientes para el
+            manejo de sus datos, incluyendo, en su caso, el uso del portal.
           </li>
           <li>La exactitud de los datos ingresados en la plataforma.</li>
           <li>
-            Las decisiones clínicas tomadas con base en la información generada
-            por NutriFollow.
+            Las decisiones clínicas y nutricionales tomadas con base en su
+            propio criterio profesional. NutriFollow es una herramienta de
+            gestión y apoyo, no sustituye el juicio clínico del profesional.
           </li>
           <li>
-            Cumplir con la legislación local aplicable en materia de protección
-            de datos de salud.
+            Cumplir con la legislación local aplicable en materia de
+            protección de datos de salud y ejercicio profesional.
           </li>
         </ul>
       </section>
 
       <section>
-        <h2>6. Propiedad Intelectual</h2>
+        <h2>8. Propiedad Intelectual</h2>
         <p>
-          NutriFollow y todos sus componentes (código, diseño, marca, contenido)
-          son propiedad de sus desarrolladores y están protegidos por las leyes
-          de propiedad intelectual aplicables.
+          NutriFollow y todos sus componentes (código, diseño, marca,
+          contenido) son propiedad de sus desarrolladores y están protegidos
+          por las leyes de propiedad intelectual aplicables.
         </p>
         <p>
           Los datos que ingreses a la plataforma (datos de pacientes,
@@ -298,62 +402,88 @@
       </section>
 
       <section>
-        <h2>7. Disponibilidad del Servicio</h2>
+        <h2>9. Disponibilidad del Servicio</h2>
         <p>
-          Nos esforzamos por mantener NutriFollow disponible de manera continua,
-          pero no garantizamos disponibilidad ininterrumpida. Podemos realizar
-          mantenimientos programados o no programados, actualizaciones o
-          modificar funcionalidades sin previo aviso.
+          NutriFollow es un producto en desarrollo activo: agregamos
+          funciones y corregimos errores de forma constante. Nos esforzamos
+          por mantener el servicio disponible de manera continua, pero no
+          garantizamos disponibilidad ininterrumpida ni un funcionamiento
+          libre de errores en todo momento. Podemos realizar mantenimientos,
+          actualizaciones o modificar funcionalidades, con o sin previo aviso.
+        </p>
+        <p>
+          El detalle de estas condiciones, incluyendo qué hacemos cuando algo
+          falla, se describe en nuestro documento de
+          <a href="/disclaimers.html" class="inline-link">Disclaimers</a>.
         </p>
       </section>
 
       <section>
-        <h2>8. Limitación de Responsabilidad</h2>
+        <h2>10. Limitación de Responsabilidad</h2>
         <p>
-          NutriFollow se proporciona "tal como está". En ningún caso los
-          desarrolladores serán responsables por:
+          NutriFollow se proporciona "tal como está" y "según disponibilidad".
+          Nuestra responsabilidad frente a cualquier reclamo relacionado con
+          el servicio, incluida la eventual pérdida, alteración o
+          indisponibilidad temporal de datos, está sujeta a los límites,
+          exclusiones y condiciones detalladas en nuestro documento de
+          <a href="/disclaimers.html" class="inline-link"
+            >Disclaimers, Limitación de Responsabilidad y Reglas de Uso
+            Aceptable</a
+          >, el cual forma parte integral de estos Términos.
         </p>
+      </section>
+
+      <section>
+        <h2>11. Cancelación de Cuenta</h2>
+        <p>
+          Puedes cancelar tu suscripción Pro sin eliminar tu cuenta (ver
+          Sección 3). Si prefieres eliminar por completo tu cuenta y tus
+          datos, escríbenos a <strong>nutrifollow.app@outlook.com</strong>.
+          En ese caso, tus datos serán eliminados de nuestros servidores en un
+          plazo de 30 días, salvo que la ley requiera su retención por más
+          tiempo.
+        </p>
+        <p>
+          Nos reservamos el derecho de suspender o cancelar cuentas que
+          incumplan estos Términos o las Reglas de Uso Aceptable.
+        </p>
+      </section>
+
+      <section>
+        <h2>12. Modificaciones a los Términos</h2>
+        <p>
+          Podemos actualizar estos Términos de Servicio periódicamente. Te
+          notificaremos por correo electrónico ante cambios significativos.
+          El uso continuado del servicio después de la notificación
+          constituye aceptación de los nuevos términos.
+        </p>
+      </section>
+
+      <section>
+        <h2>13. Documentos Relacionados</h2>
+        <p>Estos Términos deben leerse junto con:</p>
         <ul>
           <li>
-            Pérdida de datos por causas ajenas a nuestra operación directa.
+            <a href="/privacy-policy.html" class="inline-link"
+              >Política de Privacidad</a
+            >
           </li>
           <li>
-            Decisiones clínicas tomadas con base en información generada por la
-            plataforma o su IA.
+            <a href="/sensitive-data-policy.html" class="inline-link"
+              >Política de Tratamiento de Datos Personales Sensibles</a
+            >
           </li>
           <li>
-            Daños indirectos, incidentales o consecuentes derivados del uso del
-            servicio.
+            <a href="/disclaimers.html" class="inline-link"
+              >Disclaimers, Limitación de Responsabilidad y Reglas de Uso
+              Aceptable</a
+            >
           </li>
         </ul>
       </section>
 
       <section>
-        <h2>9. Cancelación de Cuenta</h2>
-        <p>
-          Puedes solicitar la cancelación de tu cuenta en cualquier momento
-          contactándonos en <strong>nutrifollow.app@outlook.com</strong>. Al
-          cancelar, tus datos serán eliminados de nuestros servidores en un
-          plazo de 30 días, salvo que la ley requiera su retención.
-        </p>
-        <p>
-          Nos reservamos el derecho de suspender o cancelar cuentas que
-          incumplan estos términos.
-        </p>
-      </section>
-
-      <section>
-        <h2>10. Modificaciones a los Términos</h2>
-        <p>
-          Podemos actualizar estos Términos de Servicio periódicamente. Te
-          notificaremos por correo electrónico ante cambios significativos. El
-          uso continuado del servicio después de la notificación constituye
-          aceptación de los nuevos términos.
-        </p>
-      </section>
-
-      <section>
-        <h2>11. Ley Aplicable</h2>
+        <h2>14. Ley Aplicable</h2>
         <p>
           Estos términos se rigen por las leyes aplicables en Guatemala.
           Cualquier disputa se resolverá mediante los mecanismos legales
@@ -362,7 +492,7 @@
       </section>
 
       <section>
-        <h2>12. Contacto</h2>
+        <h2>15. Contacto</h2>
         <p>Para consultas sobre estos Términos de Servicio:</p>
         <ul>
           <li><strong>Correo:</strong> nutrifollow.app@outlook.com</li>
@@ -372,10 +502,13 @@
     </main>
 
     <footer>
-      &copy; 2026 NutriFollow. Todos los derechos reservados. &nbsp;·&nbsp;
-      <a href="/privacy-policy.html" style="color: #16a34a"
-        >Política de Privacidad</a
-      >
+      &copy; 2026 NutriFollow. Todos los derechos reservados.
+      <br />
+      <a href="/privacy-policy.html">Política de Privacidad</a>
+      <span class="sep">·</span>
+      <a href="/sensitive-data-policy.html">Datos Sensibles</a>
+      <span class="sep">·</span>
+      <a href="/disclaimers.html">Disclaimers</a>
     </footer>
   </body>
 </html>

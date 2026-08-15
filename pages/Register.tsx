@@ -122,6 +122,7 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [captchaToken, setCaptchaToken] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const turnstileRef = useRef<HTMLDivElement>(null);
   const turnstileWidgetId = useRef<string | null>(null);
 
@@ -146,7 +147,7 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
     return () => { cancelled = true; };
   }, []);
 
-  const isFormComplete = fullName.trim() !== '' && email.trim() !== '' && password.length >= 6 && country !== '' && dateOfBirth !== '' && captchaToken !== '';
+  const isFormComplete = fullName.trim() !== '' && email.trim() !== '' && password.length >= 6 && country !== '' && dateOfBirth !== '' && captchaToken !== '' && acceptedTerms;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -425,10 +426,41 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
               </div>
             )}
 
+            <label className="flex items-start gap-3 pt-1 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                required
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 w-4 h-4 flex-shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/30 cursor-pointer"
+              />
+              <span className="text-[11px] text-slate-500 leading-relaxed">
+                Confirmo que soy mayor de edad y que soy un profesional de
+                nutrición o salud, o personal administrativo (recepcionista).
+                Acepto los{' '}
+                <a href="/terms-of-service.html" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-slate-600 hover:text-emerald-600 transition-colors underline">
+                  Términos de Servicio
+                </a>
+                , la{' '}
+                <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-slate-600 hover:text-emerald-600 transition-colors underline">
+                  Política de Privacidad
+                </a>
+                , la{' '}
+                <a href="/sensitive-data-policy.html" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-slate-600 hover:text-emerald-600 transition-colors underline">
+                  Política de Datos Sensibles
+                </a>
+                {' '}y los{' '}
+                <a href="/disclaimers.html" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="font-semibold text-slate-600 hover:text-emerald-600 transition-colors underline">
+                  Disclaimers de la plataforma
+                </a>
+                .
+              </span>
+            </label>
+
             <button
               type="submit"
               disabled={isLoading || !isFormComplete}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-60 disabled:cursor-not-allowed mt-6"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-60 disabled:cursor-not-allowed mt-2"
             >
               {isLoading ? (
                 <span>Creando cuenta...</span>
@@ -439,18 +471,6 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
                 </>
               )}
             </button>
-
-            <p className="text-center text-[11px] text-slate-400 pt-1">
-              Al registrarte aceptas los{' '}
-              <a href="/terms-of-service.html" target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-500 hover:text-emerald-600 transition-colors underline">
-                Términos de Servicio
-              </a>{' '}
-              y la{' '}
-              <a href="/privacy-policy.html" target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-500 hover:text-emerald-600 transition-colors underline">
-                Política de Privacidad
-              </a>
-              .
-            </p>
           </form>
         </div>
       </div>

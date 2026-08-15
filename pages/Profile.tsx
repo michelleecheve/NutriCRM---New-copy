@@ -931,6 +931,10 @@ export const Profile: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
           <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Política de Privacidad</a>
           {' · '}
           <a href="/terms-of-service" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Términos de Servicio</a>
+          {' · '}
+          <a href="/sensitive-data-policy.html" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Datos Sensibles</a>
+          {' · '}
+          <a href="/disclaimers.html" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 transition-colors">Disclaimers</a>
         </p>
       </div>
 

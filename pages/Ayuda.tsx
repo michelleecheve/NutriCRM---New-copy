@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, LifeBuoy } from 'lucide-react';
+import { Sparkles, LifeBuoy, MessageCircle } from 'lucide-react';
 import { TourProfileSection } from '../components/tour/TourProfileSection';
 
 export const Ayuda: React.FC = () => {
@@ -26,11 +26,28 @@ export const Ayuda: React.FC = () => {
           <a href="mailto:nutrifollow.app@outlook.com" className="font-bold text-emerald-700 hover:text-emerald-800">
             nutrifollow.app@outlook.com
           </a>
-          {' '}y con gusto te ayudamos.
+          {' '}o por medio de whatsapp (
+          <a href={`https://wa.me/50252720714?text=${encodeURIComponent('Hola quisiera ayuda de NutriFollow')}`} target="_blank" rel="noopener noreferrer" className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
+            click aquí
+          </a>
+          ) y con gusto te ayudamos.
         </p>
-        <p className="text-sm text-slate-400">
-          Tip: estamos trabajando de forma continua para hacer de NutriFollow una plataforma cada vez más rápida y fácil de usar. Si en algún momento notas información o alguna función que no carga correctamente, te recomendamos recargar la página, ya que en la mayoría de los casos esto resuelve el inconveniente. Asegúrate también de contar con una buena conexión a internet, y si sientes la plataforma lenta, borrar la caché de tu navegador suele ayudar. Si el problema persiste, no dudes en reportarlo para que podamos solucionarlo lo antes posible.
-        </p>
+        <a
+          href={`https://wa.me/50252720714?text=${encodeURIComponent('Hola quisiera ayuda de NutriFollow')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl px-4 py-3 transition-colors shadow-sm shadow-emerald-600/20"
+        >
+          <MessageCircle className="w-4 h-4" />
+          Recibir ayuda por WhatsApp
+        </a>
+        <div className="text-sm text-slate-700 space-y-1">
+          <p className="font-bold text-slate-900">Tips para un funcionamiento rápido del sistema:</p>
+          <p><span className="font-bold text-slate-900">1.</span> Recarga la página si algo no carga bien.</p>
+          <p><span className="font-bold text-slate-900">2.</span> Verifica que tengas buena conexión a internet.</p>
+          <p><span className="font-bold text-slate-900">3.</span> Borra la caché de tu navegador de vez en cuando.</p>
+          <p><span className="font-bold text-slate-900">4.</span> Si el problema sigue, repórtalo y lo resolvemos.</p>
+        </div>
       </div>
     </div>
   );
