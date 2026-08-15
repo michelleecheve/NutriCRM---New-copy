@@ -242,6 +242,12 @@ created_at, updated_at, cancelled_at
 id, owner_id, event_type, recurrente_id, payload (jsonb), created_at
 ```
 
+### `password_reset_requests`
+```
+id (uuid, PK), email (text), requested_at (timestamptz, default now())
+```
+> 🆕 Agregada 2026-08 [PENDIENTE — ejecutar el SQL indicado por Claude en el Dashboard de Supabase]: registra cada intento de "olvidé mi contraseña" para que la Edge Function `send-password-reset` pueda limitar a 3 intentos por correo cada 15 minutos y evitar spam de correos / agotar la cuota de Resend. Solo la escribe/lee el `service_role` desde la Edge Function — RLS activo, sin policies (nadie más tiene acceso). No tiene `owner_id`: no pertenece a ningún usuario, es infraestructura anti-abuso.
+
 ---
 
 ## Arquitectura y patrones

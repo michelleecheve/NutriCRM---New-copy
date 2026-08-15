@@ -16,7 +16,7 @@ import { Ayuda } from './pages/Ayuda';
 import { AyudaRecepcionista } from './pages/AyudaRecepcionista';
 import { AdminPanel } from './pages/Admin';
 import { AppRoute, UserRole } from './types';
-import { authStore, hasRecoveryLinkInUrl } from './services/authStore';
+import { authStore } from './services/authStore';
 import { Landing } from './pages/Landing';
 import { PlanLimitModal } from './components/PlanLimitModal';
 import { SupabaseStatusBanner } from './components/SupabaseStatusBanner';
@@ -116,20 +116,7 @@ function App() {
       }
     });
 
-    // Detectar cuando Supabase manda un token de recuperación de contraseña.
-    // Supabase transmite este evento a TODAS las pestañas abiertas del mismo sitio
-    // (vía BroadcastChannel), no solo a la que abrió el link del correo. Por eso
-    // solo navegamos a la pantalla de nueva contraseña si el link de recuperación
-    // está realmente en la URL de esta pestaña — así una pestaña que solo tenía
-    // "revisa tu correo" abierta no salta a la pantalla sin haber recibido el link.
-    const unsubRecovery = authStore.onPasswordRecovery(() => {
-      if (!hasRecoveryLinkInUrl()) return;
-
-      setIsAuthReady(true);
-      setCurrentRoute(AppRoute.RESET_PASSWORD);
-    });
-
-    return () => { unsub(); unsubRecovery(); };
+    return () => { unsub(); };
   }, []);
 
   const handleLogin = (role: UserRole) => {

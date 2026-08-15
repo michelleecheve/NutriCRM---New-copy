@@ -13,7 +13,11 @@ interface LoginProps {
 type LoginView = 'login' | 'forgot' | 'forgot-sent';
 
 export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onNavigateToLanding }) => {
-  const [view, setView] = useState<LoginView>('login');
+  // Permite a otras pantallas (p.ej. "enlace inválido" en /reset-password)
+  // regresar directo al formulario de "olvidé mi contraseña" con /login?forgot=1
+  const [view, setView] = useState<LoginView>(
+    () => (new URLSearchParams(window.location.search).get('forgot') === '1' ? 'forgot' : 'login')
+  );
   const [showHelp, setShowHelp] = useState(false);
 
   // Login state
@@ -58,6 +62,45 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState('');
+  const [forgotCaptchaToken, setForgotCaptchaToken] = useState('');
+  const forgotTurnstileRef = useRef<HTMLDivElement>(null);
+  const forgotTurnstileWidgetId = useRef<string | null>(null);
+
+  // Widget de Turnstile propio para "olvidé mi contraseña" — sin esto, cualquiera
+  // podía spamear el endpoint de recuperación sin ninguna verificación humana
+  // (el captcha de arriba solo protege el login normal, no este formulario).
+  useEffect(() => {
+    if (view !== 'forgot') return;
+    let cancelled = false;
+    const tryRender = () => {
+      if (cancelled) return;
+      const turnstile = (window as any).turnstile;
+      if (turnstile && forgotTurnstileRef.current && !forgotTurnstileWidgetId.current) {
+        forgotTurnstileWidgetId.current = turnstile.render(forgotTurnstileRef.current, {
+          sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
+          callback: (token: string) => setForgotCaptchaToken(token),
+          'expired-callback': () => setForgotCaptchaToken(''),
+          'error-callback': () => setForgotCaptchaToken(''),
+        });
+      } else if (!turnstile) {
+        setTimeout(tryRender, 200);
+      }
+    };
+    tryRender();
+    return () => {
+      cancelled = true;
+      forgotTurnstileWidgetId.current = null;
+      setForgotCaptchaToken('');
+    };
+  }, [view]);
+
+  const resetForgotCaptcha = () => {
+    const turnstile = (window as any).turnstile;
+    if (turnstile && forgotTurnstileWidgetId.current) {
+      turnstile.reset(forgotTurnstileWidgetId.current);
+    }
+    setForgotCaptchaToken('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,16 +128,27 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError('');
+
+    if (!forgotCaptchaToken) {
+      setForgotError('Completa la verificación de seguridad.');
+      return;
+    }
+
     setForgotLoading(true);
 
     const { data, error } = await supabase.functions.invoke('send-password-reset', {
-      body: { email: forgotEmail.trim(), redirectTo: `${window.location.origin}/reset-password` },
+      body: {
+        email:        forgotEmail.trim(),
+        redirectTo:   `${window.location.origin}/reset-password`,
+        captchaToken: forgotCaptchaToken,
+      },
     });
 
     setForgotLoading(false);
+    resetForgotCaptcha();
 
     if (error || !data?.ok) {
-      setForgotError('No se pudo enviar el correo. Verifica la dirección e intenta de nuevo.');
+      setForgotError(data?.message || 'No se pudo enviar el correo. Verifica la dirección e intenta de nuevo.');
       return;
     }
 
@@ -111,10 +165,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
               <CheckCircle className="w-8 h-8 text-emerald-600" />
             </div>
             <h1 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Revisa tu correo</h1>
-            <p className="text-slate-500 text-sm mb-2">
-              Enviamos un enlace de recuperación a:
+            <p className="text-slate-500 text-sm mb-6">
+              Si existe una cuenta asociada a <span className="font-semibold text-slate-800">{forgotEmail}</span>, recibirás un enlace para restablecer tu contraseña.
             </p>
-            <p className="font-semibold text-slate-800 text-sm mb-6">{forgotEmail}</p>
             <p className="text-slate-400 text-xs mb-8">
               Haz clic en el enlace del correo para definir tu nueva contraseña. Si no lo ves, revisa tu carpeta de spam.
             </p>
@@ -171,9 +224,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
                 </div>
               )}
 
+              <div ref={forgotTurnstileRef} className="flex justify-center pt-1" />
+
               <button
                 type="submit"
-                disabled={forgotLoading}
+                disabled={forgotLoading || !forgotCaptchaToken}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-70"
               >
                 {forgotLoading ? (

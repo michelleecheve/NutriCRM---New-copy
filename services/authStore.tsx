@@ -149,12 +149,42 @@ const mapProfileToAppUser = (p: any): AppUser => ({
   } as any,
 });
 
-// Detecta si la URL actual trae un link de recuperación de contraseña de
-// Supabase (#access_token=...&type=recovery). Se usa tanto para no
-// auto-loguear esa sesión como para saber a qué pantalla navegar.
-export const hasRecoveryLinkInUrl = (): boolean =>
-  window.location.hash.includes('type=recovery') ||
-  window.location.search.includes('type=recovery');
+// Detecta si esta carga de página llegó desde un link de recuperación de
+// contraseña de Supabase. Esto se calcula UNA sola vez, de forma síncrona, en
+// el momento en que este módulo se importa — nunca dentro de un callback ni
+// después de un `await`.
+//
+// Motivo: @supabase/auth-js procesa el hash/query del link de recuperación
+// como parte de su propia inicialización asíncrona (GoTrueClient#_initialize)
+// y limpia esos parámetros de la URL en el proceso (ver
+// GoTrueClient#_getSessionFromURL, que hace `window.location.hash = ''`).
+// Si leyéramos window.location más tarde (p.ej. dentro de onAuthStateChange
+// o de un .then()), el hash ya podría estar vacío y perderíamos la señal.
+// Esto era la causa raíz de que un link de recuperación válido a veces
+// terminara iniciando sesión normal (saltándose la pantalla de nueva
+// contraseña) en vez de quedarse en el flujo de recovery: el auto-login
+// ganaba la carrera contra nuestra propia detección.
+const capturedAuthParams = (() => {
+  const stripLeading = (s: string, ch: string) => (s.startsWith(ch) ? s.slice(1) : s);
+  return {
+    hash:   new URLSearchParams(stripLeading(window.location.hash, '#')),
+    search: new URLSearchParams(stripLeading(window.location.search, '?')),
+  };
+})();
+
+const isRecoveryAttemptInUrl = (): boolean => {
+  const { hash, search } = capturedAuthParams;
+  if (hash.get('type') === 'recovery' || search.get('type') === 'recovery') return true;
+  // Un link vencido o ya usado no trae type=recovery — Supabase redirige con
+  // un error en su lugar (#error=...&error_code=otp_expired&...). Solo lo
+  // tratamos como intento de recuperación si además estamos en
+  // /reset-password, que es la única ruta a la que apuntan nuestros links.
+  const hasAuthError = !!(hash.get('error') || hash.get('error_code') || search.get('error') || search.get('error_code'));
+  return hasAuthError && window.location.pathname === '/reset-password';
+};
+
+// Calculado UNA sola vez al cargar el módulo — ver comentario arriba.
+const RECOVERY_ATTEMPT_ON_LOAD = isRecoveryAttemptInUrl();
 
 // ─── Auth Store ──────────────────────────────────────────────────────────────
 
@@ -178,7 +208,9 @@ class AuthStore {
   private subscription: SubscriptionState | null = null;
   public isLoading: boolean = true;
   private listeners: AuthListener[] = [];
-  private recoveryListeners: AuthListener[] = [];
+  // true si esta carga de página es un intento de recuperación de contraseña —
+  // calculado una sola vez y de forma síncrona, ver RECOVERY_ATTEMPT_ON_LOAD.
+  private recoveryMode: boolean = RECOVERY_ATTEMPT_ON_LOAD;
 
   // Permite a componentes suscribirse a cambios de auth
   onAuthReady(fn: AuthListener): () => void {
@@ -186,18 +218,8 @@ class AuthStore {
     return () => { this.listeners = this.listeners.filter(l => l !== fn); };
   }
 
-  // Permite a App.tsx saber cuando llega un token de recuperación de contraseña
-  onPasswordRecovery(fn: AuthListener): () => void {
-    this.recoveryListeners.push(fn);
-    return () => { this.recoveryListeners = this.recoveryListeners.filter(l => l !== fn); };
-  }
-
   private notifyListeners() {
     this.listeners.forEach(fn => fn());
-  }
-
-  private notifyRecovery() {
-    this.recoveryListeners.forEach(fn => fn());
   }
 
   constructor() {
@@ -217,15 +239,32 @@ class AuthStore {
       this.subscription = null;
     }
 
+    // Si esta carga es un intento de recuperación de contraseña, empezar en
+    // blanco aunque haya una sesión cacheada de un login anterior en este
+    // navegador — un link de recuperación nunca debe heredar ni exponer una
+    // sesión normal previa mientras se muestra /reset-password.
+    if (this.recoveryMode) {
+      this.currentUser = null;
+      this.subscription = null;
+    }
+
     // Verificar/actualizar con Supabase
     supabase.auth.getSession().then(({ data: { session } }) => {
       // Un link de recuperación de contraseña también deja una sesión válida en
       // Supabase (necesaria para que ResetPassword.tsx pueda llamar updateUser),
-      // pero NO debe tratarse como un login normal — si no, el usuario entra
-      // directo al panel saltándose la pantalla de nueva contraseña. El evento
-      // 'PASSWORD_RECOVERY' de onAuthStateChange (abajo) es el que navega a
-      // /reset-password; aquí solo evitamos el auto-login.
-      if (session && !hasRecoveryLinkInUrl()) {
+      // pero NUNCA debe tratarse como un login normal — si no, el usuario entra
+      // directo al panel saltándose la pantalla de nueva contraseña.
+      // `recoveryMode` se calculó de forma SÍNCRONA al cargar el módulo, antes
+      // de que Supabase pudiera limpiar el hash de la URL, así que sigue siendo
+      // confiable aunque este callback corra después de que el hash ya no esté
+      // (ver RECOVERY_ATTEMPT_ON_LOAD). ResetPassword.tsx es quien decide, con
+      // su propia verificación de sesión, si el link es válido o ya expiró.
+      if (this.recoveryMode) {
+        this.isLoading = false;
+        this.notifyListeners();
+        return;
+      }
+      if (session) {
         this.handleSupabaseSession(session);
       } else {
         this.currentUser = null;
@@ -238,10 +277,19 @@ class AuthStore {
     });
 
     supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        this.notifyRecovery();
-        return;
-      }
+      // Un evento PASSWORD_RECOVERY se transmite (BroadcastChannel) a TODAS
+      // las pestañas abiertas del mismo origen, no solo a la que recibió el
+      // link — nunca debe adoptarse como sesión normal en ninguna pestaña,
+      // sea o no la que originó el link.
+      if (event === 'PASSWORD_RECOVERY') return;
+
+      // Mientras esta carga de página esté en modo recovery (ver
+      // RECOVERY_ATTEMPT_ON_LOAD), ignoramos cualquier otra sesión que llegue
+      // por este listener (INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED...):
+      // nunca debe traducirse en un login normal de la app hasta que el
+      // usuario complete el cambio de contraseña (o abandone el flujo).
+      if (this.recoveryMode) return;
+
       if (session) {
         this.handleSupabaseSession(session);
       } else {
@@ -436,6 +484,22 @@ class AuthStore {
 
   isAuthenticated(): boolean {
     return this.currentUser !== null;
+  }
+
+  /**
+   * True si esta carga de página es un intento de recuperación de contraseña
+   * (el usuario llegó desde el link del correo de "olvidé mi contraseña").
+   * Se calcula una sola vez, de forma síncrona, al cargar la página — ver
+   * RECOVERY_ATTEMPT_ON_LOAD. ResetPassword.tsx lo usa para decidir si debe
+   * verificar una sesión de recovery o mostrar directamente "enlace inválido".
+   */
+  isPasswordRecovery(): boolean {
+    return this.recoveryMode;
+  }
+
+  /** Sale del modo recovery. Se llama tras completar o abandonar el cambio de contraseña. */
+  exitRecoveryMode(): void {
+    this.recoveryMode = false;
   }
 
   // ── Permissions ───────────────────────────────────────────────────────────
