@@ -89,7 +89,7 @@ export const CheckoutSuccess: React.FC<{ onGoToProfile: () => void }> = ({ onGoT
         {verifyStatus !== 'checking' && (
           <button
             type="button"
-            onClick={() => { window.location.href = 'https://www.nutrifollow.app'; }}
+            onClick={() => { window.location.href = 'https://my.nutrifollow.app'; }}
             className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-600/20"
           >
             Entrar a NutriFollow

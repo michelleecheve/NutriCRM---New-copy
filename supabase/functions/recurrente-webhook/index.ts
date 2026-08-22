@@ -38,7 +38,7 @@ function layout(content: string): string {
 </table></td></tr></table></body></html>`;
 }
 
-const APP_URL = 'https://www.nutrifollow.app';
+const APP_URL = 'https://my.nutrifollow.app';
 const btn = (text: string, href: string) =>
   `<div style="text-align:center;margin:32px 0;"><a href="${href}" style="display:inline-block;background:#059669;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;font-size:15px;text-decoration:none;">${text} →</a></div>`;
 

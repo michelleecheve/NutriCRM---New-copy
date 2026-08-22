@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/p/:token*",
+      "destination": "https://my.nutrifollow.app/p/:token*",
+      "permanent": true
+    }
+  ]
+}

@@ -34,7 +34,7 @@ async function sendEmail(opts: { to: string; subject: string; html: string }): P
 }
 
 function emailDowngradedToBasic(name: string): string {
-  const APP_URL = 'https://www.nutrifollow.app';
+  const APP_URL = 'https://my.nutrifollow.app';
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#f8fafc;font-family:sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 0;">

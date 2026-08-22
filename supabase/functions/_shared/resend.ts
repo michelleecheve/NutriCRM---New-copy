@@ -76,7 +76,7 @@ function btn(text: string, href: string): string {
   </div>`;
 }
 
-const APP_URL = 'https://www.nutrifollow.app';
+const APP_URL = 'https://my.nutrifollow.app';
 
 export function emailWelcomePro(name: string, nextBilling: string): string {
   return layout(`

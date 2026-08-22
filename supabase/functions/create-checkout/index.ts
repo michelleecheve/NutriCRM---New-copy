@@ -13,7 +13,7 @@
 import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const APP_URL = 'https://www.nutrifollow.app';
+const APP_URL = 'https://my.nutrifollow.app';
 const RECURRENTE_PRODUCT_ID = 'prod_22uktkdj';
 
 const CORS_HEADERS = {

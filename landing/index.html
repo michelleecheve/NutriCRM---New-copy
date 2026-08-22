@@ -1,0 +1,2706 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NutriFollow · Gestión Nutricional para tu Clínica</title>
+    <meta
+      name="description"
+      content="NutriFollow centraliza la gestión de pacientes, evaluaciones antropométricas, menús interactivos y agenda de citas para nutricionistas y clínicas de nutrición deportiva. Empieza gratis."
+    />
+    <link rel="canonical" href="https://www.nutrifollow.app/" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/logo_nutrifollow.png" />
+    <meta name="theme-color" content="#2563EB" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NutriFollow" />
+    <meta property="og:title" content="NutriFollow · Gestión Nutricional para tu Clínica" />
+    <meta
+      property="og:description"
+      content="Pacientes, evaluaciones, menús interactivos y agenda de citas, todo en una plataforma diseñada para nutricionistas."
+    />
+    <meta property="og:url" content="https://www.nutrifollow.app/" />
+    <meta property="og:image" content="https://www.nutrifollow.app/logo_nutrifollow.png" />
+    <meta property="og:locale" content="es_LA" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="NutriFollow · Gestión Nutricional para tu Clínica" />
+    <meta
+      name="twitter:description"
+      content="Pacientes, evaluaciones, menús interactivos y agenda de citas, todo en una plataforma diseñada para nutricionistas."
+    />
+    <meta name="twitter:image" content="https://www.nutrifollow.app/logo_nutrifollow.png" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "NutriFollow",
+        "url": "https://www.nutrifollow.app/",
+        "description": "Plataforma de gestión para nutricionistas: pacientes, evaluaciones antropométricas, menús interactivos y agenda de citas.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": [
+          {
+            "@type": "Offer",
+            "name": "Básico",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "name": "Pro",
+            "price": "29",
+            "priceCurrency": "USD"
+          }
+        ]
+      }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --sky: #3B6FE8;
+        --sky-dark: #2563EB;
+        --sky-dim: rgba(37, 99, 235, 0.1);
+        --sky-border: rgba(37, 99, 235, 0.22);
+        --mint: #F59E0B;
+        --mint-dim: rgba(245, 158, 11, 0.13);
+        --mint-dark: #D97706;
+
+        --bg: #F0F2FA;
+        --bg2: #F0F2FA;
+        --bg3: #E4E8F5;
+
+        --text: #0A0A0A;
+        --text-muted: #6B7280;
+        --text-dim: #9CA3AF;
+
+        --border: rgba(37, 99, 235, 0.2);
+        --border2: #E2E8F0;
+
+        --shadow: 0 4px 20px rgba(10, 20, 50, 0.07);
+        --shadow-lg: 0 16px 52px rgba(10, 20, 50, 0.11);
+
+        --radius: 20px;
+        --radius-sm: 12px;
+        --font: "Plus Jakarta Sans", sans-serif;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--text);
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .container {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--sky-dark);
+        background: var(--sky-dim);
+        border: 1px solid var(--sky-border);
+        border-radius: 100px;
+        padding: 6px 14px;
+      }
+      .tag-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--sky);
+        animation: blink 2s infinite;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font);
+        font-weight: 700;
+        font-size: 14px;
+        border-radius: 100px;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.18s ease;
+        white-space: nowrap;
+      }
+      .btn-primary {
+        background: var(--sky);
+        color: #fff;
+        padding: 13px 26px;
+      }
+      .btn-primary:hover {
+        background: var(--sky-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px rgba(37, 99, 235, 0.32);
+      }
+      .btn-outline {
+        background: #fff;
+        color: var(--text);
+        border: 1.5px solid var(--border2);
+        padding: 12px 22px;
+      }
+      .btn-outline:hover {
+        border-color: var(--sky);
+        color: var(--sky-dark);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-muted);
+        padding: 12px 16px;
+        font-size: 13px;
+      }
+      .btn-ghost:hover {
+        color: var(--text);
+      }
+
+      .fade {
+        opacity: 0;
+        transform: translateY(18px);
+        transition:
+          opacity 0.5s ease,
+          transform 0.5s ease;
+      }
+      .fade.d1 {
+        transition-delay: 0.09s;
+      }
+      .fade.d2 {
+        transition-delay: 0.17s;
+      }
+      .fade.d3 {
+        transition-delay: 0.25s;
+      }
+      .fade.visible {
+        opacity: 1;
+        transform: none;
+      }
+
+      /* ── PROGRESS ── */
+      #progress {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--sky), var(--mint));
+        z-index: 300;
+        width: 0%;
+      }
+
+      /* ── NAVBAR ── */
+      #nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        transition:
+          background 0.25s,
+          box-shadow 0.25s;
+      }
+      #nav.scrolled {
+        background: rgba(255, 255, 255, 0.93);
+        backdrop-filter: blur(16px);
+        box-shadow: 0 1px 0 var(--border2);
+      }
+      .nav-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 24px;
+        height: 66px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-weight: 800;
+        font-size: 17px;
+        color: var(--text);
+        text-decoration: none;
+      }
+      .nav-logo-img {
+        width: 33px;
+        height: 33px;
+        border-radius: 10px;
+        object-fit: contain;
+      }
+      .nav-logo-mark {
+        width: 33px;
+        height: 33px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--sky), var(--mint));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .nav-logo-mark svg {
+        width: 16px;
+        height: 16px;
+        stroke: #fff;
+        fill: none;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .nav-links {
+        display: flex;
+        gap: 28px;
+        list-style: none;
+      }
+      .nav-links a {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .nav-links a:hover {
+        color: var(--text);
+      }
+      .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .nav-hamburger {
+        display: none;
+        flex-direction: column;
+        gap: 5px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+      }
+      .nav-hamburger span {
+        width: 22px;
+        height: 2px;
+        background: var(--text);
+        border-radius: 2px;
+      }
+      @media (max-width: 768px) {
+        .nav-links,
+        .nav-actions .btn-outline {
+          display: none;
+        }
+        .nav-hamburger {
+          display: flex;
+        }
+        #nav.open .nav-links {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+          position: fixed;
+          top: 66px;
+          left: 0;
+          right: 0;
+          background: #fff;
+          border-bottom: 1px solid var(--border2);
+          padding: 8px 24px 24px;
+          box-shadow: var(--shadow);
+        }
+        #nav.open .nav-links a {
+          display: block;
+          padding: 14px 0;
+          border-bottom: 1px solid var(--border2);
+          font-size: 15px;
+          color: var(--text);
+        }
+      }
+
+      /* ── HERO ── */
+      #hero {
+        min-height: min(100svh, 780px);
+        display: flex;
+        align-items: center;
+        padding: 120px 0 40px;
+        position: relative;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      .hero-blob1 {
+        position: absolute;
+        width: 560px;
+        height: 560px;
+        border-radius: 50%;
+        background: radial-gradient(
+          ellipse,
+          rgba(37, 99, 235, 0.13) 0%,
+          transparent 68%
+        );
+        top: -160px;
+        right: -100px;
+        pointer-events: none;
+      }
+      .hero-blob2 {
+        position: absolute;
+        width: 320px;
+        height: 320px;
+        border-radius: 50%;
+        background: radial-gradient(
+          ellipse,
+          rgba(245, 158, 11, 0.09) 0%,
+          transparent 68%
+        );
+        bottom: 60px;
+        left: -60px;
+        pointer-events: none;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 64px;
+        align-items: center;
+        position: relative;
+      }
+      .hero-h1 {
+        font-weight: 800;
+        font-size: clamp(36px, 4.2vw, 58px);
+        line-height: 1.1;
+        letter-spacing: -0.025em;
+        margin: 18px 0 18px;
+      }
+      .hero-h1 em {
+        font-style: normal;
+        color: var(--sky-dark);
+        -webkit-text-fill-color: var(--sky-dark);
+      }
+      .hero-sub {
+        font-size: 16px;
+        line-height: 1.7;
+        color: var(--text-muted);
+        margin-bottom: 32px;
+        max-width: 400px;
+      }
+      .hero-cta {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      /* Hero card */
+      .hero-card {
+        background: #fff;
+        border: 1px solid var(--border2);
+        border-radius: var(--radius);
+        padding: 22px;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+      }
+      .hero-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 20px;
+        right: 20px;
+        height: 2px;
+        background: linear-gradient(90deg, var(--sky), var(--mint));
+        border-radius: 2px;
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .card-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+      }
+      .card-badge {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--sky-dark);
+        background: var(--sky-dim);
+        padding: 3px 9px;
+        border-radius: 100px;
+      }
+      .patient-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border2);
+      }
+      .patient-row:last-child {
+        border: none;
+        padding-bottom: 0;
+      }
+      .patient-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 12px;
+      }
+      .av1 {
+        background: var(--sky-dim);
+        color: var(--sky-dark);
+      }
+      .av2 {
+        background: var(--mint-dim);
+        color: var(--mint-dark);
+      }
+      .av3 {
+        background: rgba(255, 160, 60, 0.1);
+        color: #c47a0a;
+      }
+      .patient-info {
+        flex: 1;
+      }
+      .patient-name {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 1px;
+      }
+      .patient-detail {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+      .patient-status {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 100px;
+      }
+      .status-ok {
+        background: var(--mint-dim);
+        color: var(--mint-dark);
+      }
+      .status-pending {
+        background: rgba(255, 160, 60, 0.1);
+        color: #c47a0a;
+      }
+      .status-new {
+        background: var(--sky-dim);
+        color: var(--sky-dark);
+      }
+
+      /* Floating chips */
+      .hero-float {
+        position: absolute;
+        background: #fff;
+        border: 1px solid var(--border2);
+        border-radius: var(--radius-sm);
+        padding: 11px 15px;
+        box-shadow: var(--shadow-lg);
+      }
+      .hf-ai {
+        top: -14px;
+        right: -20px;
+        min-width: 172px;
+      }
+      .hf-menu {
+        bottom: -14px;
+        left: -24px;
+        min-width: 188px;
+      }
+      .hf-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 3px;
+      }
+      .hf-value {
+        font-weight: 800;
+        font-size: 14px;
+      }
+      .hf-sky {
+        color: var(--sky-dark);
+      }
+      .hf-mint {
+        color: var(--mint-dark);
+        font-size: 12px !important;
+      }
+      .hf-sub {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+      @media (max-width: 900px) {
+        .hero-grid {
+          grid-template-columns: 1fr;
+          gap: 48px;
+        }
+        .hero-h1 {
+          font-size: clamp(32px, 7vw, 48px);
+        }
+        .hf-menu {
+          display: none;
+        }
+        .hf-ai {
+          right: 0;
+        }
+      }
+
+      /* ── TRUST ── */
+      #trust {
+        padding: 16px 0 48px;
+        border-bottom: 1px solid var(--border2);
+      }
+      .trust-row {
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .trust-item {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+      }
+      .trust-item svg {
+        width: 15px;
+        height: 15px;
+        stroke: var(--sky);
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+
+      /* ── SECTION HEADER ── */
+      .section-header {
+        text-align: center;
+        margin-bottom: 60px;
+      }
+      .section-h2 {
+        font-weight: 800;
+        font-size: clamp(26px, 3.2vw, 44px);
+        line-height: 1.12;
+        letter-spacing: -0.02em;
+        margin: 12px 0 14px;
+      }
+      .section-h2 em {
+        font-style: normal;
+        color: var(--sky-dark);
+        -webkit-text-fill-color: var(--sky-dark);
+      }
+      .section-lead {
+        font-size: 15px;
+        color: var(--text-muted);
+        max-width: 440px;
+        margin: 0 auto;
+        line-height: 1.7;
+      }
+
+      /* ── FEATURES ── */
+      #features {
+        padding: 104px 0;
+        background: var(--bg2);
+      }
+      .features-bento {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 13px;
+      }
+      .feat {
+        background: #fff;
+        border: 1px solid var(--border2);
+        border-radius: var(--radius);
+        padding: 28px;
+        transition:
+          box-shadow 0.2s,
+          transform 0.2s,
+          border-color 0.2s;
+      }
+      .feat:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-3px);
+        border-color: var(--border);
+      }
+      .feat-large {
+        grid-column: span 2;
+      }
+      .feat-tall {
+        grid-row: span 2;
+      }
+      .feat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+        background: var(--sky-dim);
+        border: 1px solid var(--sky-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+      }
+      .feat-icon svg {
+        width: 18px;
+        height: 18px;
+        stroke: var(--sky-dark);
+        fill: none;
+        stroke-width: 1.9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .feat-icon.mint {
+        background: var(--mint-dim);
+        border-color: rgba(61, 219, 180, 0.25);
+      }
+      .feat-icon.mint svg {
+        stroke: var(--mint-dark);
+      }
+      .feat-num {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-dim);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 7px;
+      }
+      .feat-h3 {
+        font-weight: 700;
+        font-size: 16px;
+        margin-bottom: 7px;
+        line-height: 1.25;
+      }
+      .feat-p {
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.65;
+      }
+      .ai-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 14px;
+        background: var(--sky-dim);
+        border: 1px solid var(--sky-border);
+        border-radius: 100px;
+        padding: 4px 11px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--sky-dark);
+      }
+      .ai-chip-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--sky);
+        animation: blink 1.6s infinite;
+      }
+      .feat-chart {
+        margin-top: 20px;
+        width: 100%;
+        height: 64px;
+      }
+      .feat-chart svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+      .chart-line-path {
+        fill: none;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 400;
+        stroke-dashoffset: 400;
+        transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .chart-line-path.animated {
+        stroke-dashoffset: 0;
+      }
+      .chart-area-path {
+        opacity: 0;
+        transition: opacity 0.6s ease 0.6s;
+      }
+      .chart-area-path.animated {
+        opacity: 1;
+      }
+      .chart-dot {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        transition-delay: 1s;
+      }
+      .chart-dot.animated {
+        opacity: 1;
+      }
+      @media (max-width: 900px) {
+        .features-bento {
+          grid-template-columns: 1fr 1fr;
+        }
+        .feat-large {
+          grid-column: span 2;
+        }
+        .feat-tall {
+          grid-row: span 1;
+        }
+      }
+      @media (max-width: 580px) {
+        .features-bento {
+          grid-template-columns: 1fr;
+        }
+        .feat-large,
+        .feat-tall {
+          grid-column: span 1;
+        }
+      }
+
+      /* ── MENU LINK ── */
+      #menu-link {
+        padding: 104px 0;
+      }
+      .highlight-wrap {
+        border-radius: 26px;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border: 1px solid var(--border2);
+        box-shadow: var(--shadow-lg);
+      }
+      .hl-content {
+        padding: 56px;
+        background: #fff;
+      }
+      .hl-tag {
+        margin-bottom: 18px;
+      }
+      .hl-h2 {
+        font-weight: 800;
+        font-size: clamp(24px, 2.6vw, 38px);
+        line-height: 1.12;
+        letter-spacing: -0.02em;
+        margin-bottom: 12px;
+      }
+      .hl-h2 em {
+        font-style: normal;
+        color: var(--sky-dark);
+        -webkit-text-fill-color: var(--sky-dark);
+      }
+      .hl-p {
+        font-size: 14px;
+        color: var(--text-muted);
+        line-height: 1.7;
+        margin-bottom: 28px;
+      }
+      .hl-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+      }
+      .hl-step {
+        display: flex;
+        gap: 13px;
+        align-items: flex-start;
+      }
+      .hl-step-n {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: var(--sky-dark);
+        color: #fff;
+        font-weight: 800;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .hl-step-text {
+        font-size: 13.5px;
+        color: var(--text-muted);
+        line-height: 1.55;
+        padding-top: 2px;
+      }
+      .hl-step-text strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .hl-visual {
+        background: linear-gradient(140deg, var(--bg3) 0%, #DBEAFE 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 44px 36px;
+      }
+      /* ── Phone mockup — DayMenuView replica ── */
+      .phone-mock {
+        width: 218px;
+        background: #F2F7F4;
+        border-radius: 34px;
+        border: 1.5px solid #c8ddd2;
+        overflow: hidden;
+        box-shadow: 0 20px 56px rgba(13, 27, 42, 0.18);
+      }
+      /* Hero header — covers from very top of phone */
+      .phone-hero {
+        background: #1A2E25;
+        border-radius: 0 0 20px 20px;
+        padding: 14px 14px 14px;
+      }
+      .phone-hero-icon { display: none; }
+      .phone-greeting {
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 2px;
+      }
+      .phone-hero-sub {
+        color: rgba(255,255,255,0.5);
+        font-size: 8.5px;
+        font-weight: 500;
+        margin-bottom: 10px;
+      }
+      .phone-prog-row {
+        display: flex;
+        gap: 6px;
+      }
+      .phone-prog-box {
+        flex: 1;
+        background: rgba(255,255,255,0.08);
+        border-radius: 8px;
+        padding: 7px 8px;
+        border: 1px solid rgba(255,255,255,0.07);
+      }
+      .phone-prog-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+      }
+      .phone-prog-name {
+        color: rgba(255,255,255,0.65);
+        font-size: 8px;
+        font-weight: 600;
+      }
+      .phone-prog-val {
+        color: #6EE7B7;
+        font-size: 8px;
+        font-weight: 700;
+      }
+      .phone-prog-track {
+        height: 3px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .phone-prog-fill {
+        height: 100%;
+        border-radius: 99px;
+        background: linear-gradient(90deg, #6EE7B7, #34D399);
+      }
+      /* Day selector */
+      .phone-days {
+        display: flex;
+        gap: 5px;
+        padding: 10px 10px 4px;
+        overflow: hidden;
+      }
+      .phone-day {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 6px 4px 4px;
+        border-radius: 10px;
+        background: white;
+        border: 1.5px solid #E0E8E3;
+        gap: 1px;
+      }
+      .phone-day.active {
+        background: #2D5A4B;
+        border-color: #2D5A4B;
+        box-shadow: 0 3px 10px rgba(45,90,75,0.28);
+      }
+      .pd-label {
+        font-size: 7.5px;
+        font-weight: 600;
+        color: rgba(55,65,81,0.5);
+        letter-spacing: 0.02em;
+      }
+      .phone-day.active .pd-label { color: rgba(255,255,255,0.7); }
+      .pd-num {
+        font-size: 13px;
+        font-weight: 800;
+        color: #374151;
+        line-height: 1;
+      }
+      .phone-day.active .pd-num { color: white; }
+      .pd-dot {
+        width: 4px; height: 4px;
+        border-radius: 50%;
+        background: transparent;
+        margin-top: 1px;
+      }
+      .phone-day.active .pd-dot { background: rgba(110,231,183,0.9); }
+      /* Day title */
+      .phone-day-title {
+        padding: 5px 12px 3px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .phone-day-title span {
+        font-size: 9.5px;
+        font-weight: 700;
+        color: #1F2937;
+      }
+      .phone-today-badge {
+        font-size: 7px;
+        font-weight: 700;
+        background: #ECFDF5;
+        color: #065F46;
+        padding: 2px 5px;
+        border-radius: 99px;
+        border: 1px solid #D1FAE5;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      /* Meal cards */
+      .phone-meals {
+        padding: 3px 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .phone-meal {
+        background: white;
+        border-radius: 11px;
+        border: 1px solid #E5E7EB;
+        padding: 8px 9px;
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      }
+      .phone-meal.done { border-color: #BBF7D0; box-shadow: 0 1px 5px rgba(22,163,74,0.18); }
+      .pm-icon {
+        width: 26px; height: 26px;
+        border-radius: 7px;
+        flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px;
+      }
+      .pm-text { flex: 1; min-width: 0; }
+      .pm-label {
+        font-size: 8.5px;
+        font-weight: 700;
+        color: #1F2937;
+        margin-bottom: 1px;
+      }
+      .pm-title {
+        font-size: 8px;
+        color: #6B7280;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pm-check {
+        width: 18px; height: 18px;
+        border-radius: 50%;
+        border: 1.5px solid #D1FAE5;
+        background: #F9FAFB;
+        flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 9px;
+        color: transparent;
+      }
+      .pm-check.checked {
+        background: #22c55e;
+        border-color: #22c55e;
+        color: white;
+      }
+      @media (max-width: 900px) {
+        .highlight-wrap {
+          grid-template-columns: 1fr;
+        }
+        .hl-content {
+          padding: 36px 26px;
+        }
+        .hl-visual {
+          padding: 36px 26px;
+        }
+      }
+
+      /* ── ABOUT / QUÉ ES Y PARA QUIÉN ── */
+      #about {
+        padding: 104px 0;
+      }
+      .persona-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 13px;
+        margin-bottom: 60px;
+      }
+      .persona {
+        background: #fff;
+        border: 1px solid var(--border2);
+        border-radius: var(--radius);
+        padding: 26px 22px;
+        transition:
+          box-shadow 0.2s,
+          transform 0.2s;
+      }
+      .persona:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-3px);
+      }
+      .persona-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 11px;
+        background: var(--sky-dim);
+        border: 1px solid var(--sky-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 14px;
+      }
+      .persona-icon svg {
+        width: 18px;
+        height: 18px;
+        stroke: var(--sky-dark);
+        fill: none;
+        stroke-width: 1.9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .persona h3 {
+        font-weight: 700;
+        font-size: 14.5px;
+        margin-bottom: 7px;
+        line-height: 1.3;
+      }
+      .persona p {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        line-height: 1.6;
+      }
+      @media (max-width: 900px) {
+        .persona-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 580px) {
+        .persona-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .compare-wrap {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .compare-col {
+        border-radius: var(--radius);
+        padding: 30px 28px;
+      }
+      .compare-before {
+        background: #fff;
+        border: 1.5px dashed var(--border2);
+      }
+      .compare-after {
+        background: #fff;
+        border: 1.5px solid var(--sky);
+        box-shadow: var(--shadow-lg);
+      }
+      .compare-label {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+      }
+      .compare-before .compare-label {
+        color: var(--text-dim);
+      }
+      .compare-after .compare-label {
+        color: var(--sky-dark);
+      }
+      .compare-list {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+      }
+      .compare-list li {
+        display: flex;
+        gap: 9px;
+        align-items: flex-start;
+        font-size: 13.5px;
+        line-height: 1.5;
+      }
+      .compare-before .compare-list li {
+        color: var(--text-muted);
+      }
+      .compare-after .compare-list li {
+        color: var(--text);
+        font-weight: 500;
+      }
+      .compare-list svg {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        margin-top: 2px;
+        fill: none;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .compare-before .compare-list svg {
+        stroke: var(--text-dim);
+      }
+      .compare-after .compare-list svg {
+        stroke: var(--sky-dark);
+      }
+      @media (max-width: 700px) {
+        .compare-wrap {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ── HOW IT WORKS ── */
+      #how-it-works {
+        padding: 104px 0;
+        background: var(--bg2);
+      }
+      .how-steps {
+        max-width: 740px;
+        margin: 0 auto;
+      }
+      .how-step {
+        display: flex;
+        gap: 20px;
+      }
+      .how-step-track {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      .how-step-n {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: var(--sky-dark);
+        color: #fff;
+        font-weight: 800;
+        font-size: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+      }
+      .how-step-line {
+        flex: 1;
+        width: 2px;
+        min-height: 24px;
+        background: var(--border2);
+        margin: 6px 0;
+      }
+      .how-step:last-child .how-step-line {
+        display: none;
+      }
+      .how-step-card {
+        flex: 1;
+        background: #fff;
+        border: 1px solid var(--border2);
+        border-radius: var(--radius);
+        padding: 24px 26px;
+        margin-bottom: 18px;
+        transition:
+          box-shadow 0.2s,
+          transform 0.2s;
+      }
+      .how-step:last-child .how-step-card {
+        margin-bottom: 0;
+      }
+      .how-step-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+      }
+      .how-step-card h3 {
+        font-weight: 700;
+        font-size: 16px;
+        margin-bottom: 8px;
+      }
+      .how-step-card p {
+        font-size: 13.5px;
+        color: var(--text-muted);
+        line-height: 1.65;
+      }
+      .how-sublist {
+        margin-top: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+      }
+      .how-sublist li {
+        display: flex;
+        gap: 9px;
+        align-items: flex-start;
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+      .how-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--sky-dark);
+        flex-shrink: 0;
+        margin-top: 7px;
+      }
+      @media (max-width: 600px) {
+        .how-step-card {
+          padding: 20px;
+        }
+      }
+
+      /* ── FAQ ── */
+      #faq {
+        padding: 104px 0;
+        background: var(--bg2);
+      }
+      .faq-list {
+        max-width: 740px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+      }
+      .faq-item {
+        background: #fff;
+        border: 1px solid var(--border2);
+        border-radius: var(--radius-sm);
+        padding: 6px 22px;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+      }
+      .faq-item[open] {
+        border-color: var(--sky-border);
+        box-shadow: var(--shadow);
+      }
+      .faq-item summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 16px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        font-weight: 700;
+        font-size: 14.5px;
+      }
+      .faq-item summary::-webkit-details-marker {
+        display: none;
+      }
+      .faq-icon {
+        flex-shrink: 0;
+        display: flex;
+        transition: transform 0.25s ease;
+      }
+      .faq-icon svg {
+        width: 18px;
+        height: 18px;
+        stroke: var(--text-muted);
+        fill: none;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .faq-item[open] .faq-icon {
+        transform: rotate(180deg);
+      }
+      .faq-item[open] .faq-icon svg {
+        stroke: var(--sky-dark);
+      }
+      .faq-answer {
+        padding: 0 0 18px;
+        font-size: 13.5px;
+        color: var(--text-muted);
+        line-height: 1.7;
+        max-width: 600px;
+      }
+
+      /* ── PRICING ── */
+      #pricing {
+        padding: 104px 0;
+      }
+      .pricing-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        max-width: 760px;
+        margin: 0 auto;
+      }
+      .price-card {
+        background: #fff;
+        border: 1.5px solid var(--border2);
+        border-radius: var(--radius);
+        padding: 34px 30px;
+        position: relative;
+        transition:
+          box-shadow 0.2s,
+          transform 0.2s,
+          border-color 0.2s;
+      }
+      .price-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-3px);
+      }
+      .price-card.featured {
+        border-color: var(--sky);
+        box-shadow: var(--shadow-lg);
+      }
+      .price-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+      .price-name {
+        font-weight: 800;
+        font-size: 16px;
+      }
+      .price-popular {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #fff;
+        background: var(--sky);
+        padding: 4px 10px;
+        border-radius: 100px;
+      }
+      .price-desc {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 18px;
+      }
+      .price-value {
+        font-weight: 800;
+        font-size: 42px;
+        letter-spacing: -0.02em;
+        line-height: 1;
+      }
+      .price-value span {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-muted);
+      }
+      .price-promo {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 12px;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #fff;
+        background: var(--mint-dark);
+        padding: 4px 10px;
+        border-radius: 100px;
+      }
+      .price-list {
+        display: flex;
+        flex-direction: column;
+        gap: 11px;
+        margin: 26px 0 28px;
+      }
+      .price-list li {
+        display: flex;
+        gap: 9px;
+        align-items: flex-start;
+        font-size: 13.5px;
+        color: var(--text-muted);
+        line-height: 1.4;
+      }
+      .price-list li svg {
+        width: 16px;
+        height: 16px;
+        stroke: var(--sky-dark);
+        fill: none;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .price-card .btn {
+        width: 100%;
+        justify-content: center;
+        padding: 12px 22px;
+      }
+      .price-note {
+        text-align: center;
+        font-size: 12.5px;
+        color: var(--text-dim);
+        margin-top: 24px;
+      }
+      @media (max-width: 700px) {
+        .pricing-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ── CTA ── */
+      #cta {
+        padding: 0 0 104px;
+      }
+      .cta-box {
+        border-radius: 26px;
+        padding: 76px 56px;
+        text-align: center;
+        background: linear-gradient(
+          135deg,
+          #1E1B6E 0%,
+          #2563EB 100%
+        );
+        position: relative;
+        overflow: hidden;
+      }
+      .cta-box::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40' cy='40' r='1.2' fill='white' fill-opacity='0.07'/%3E%3C/svg%3E");
+      }
+      .cta-box > * {
+        position: relative;
+      }
+      .cta-h2 {
+        font-weight: 800;
+        font-size: clamp(24px, 3.2vw, 42px);
+        line-height: 1.1;
+        color: #fff;
+        margin-bottom: 12px;
+        letter-spacing: -0.02em;
+      }
+      .cta-p {
+        font-size: 15px;
+        color: rgba(255, 255, 255, 0.75);
+        margin-bottom: 32px;
+        max-width: 380px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.65;
+      }
+      .cta-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .btn-white {
+        background: #fff;
+        color: var(--sky-dark);
+        padding: 14px 28px;
+        font-weight: 800;
+      }
+      .btn-white:hover {
+        background: #EFF6FF;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+      }
+      .btn-woutline {
+        background: transparent;
+        color: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.32);
+        padding: 12px 24px;
+      }
+      .btn-woutline:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      @media (max-width: 580px) {
+        .cta-box {
+          padding: 48px 22px;
+        }
+      }
+
+      /* ── FOOTER ── */
+      footer {
+        border-top: 1px solid var(--border2);
+        padding: 44px 0 28px;
+        background: #fff;
+      }
+      .footer-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 18px;
+      }
+      .footer-logo {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-weight: 800;
+        font-size: 15px;
+        color: var(--text);
+        text-decoration: none;
+      }
+      .footer-links {
+        display: flex;
+        gap: 22px;
+        flex-wrap: wrap;
+      }
+      .footer-links a {
+        font-size: 13px;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.15s;
+      }
+      .footer-links a:hover {
+        color: var(--text);
+      }
+      .footer-copy {
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="progress"></div>
+
+    <!-- NAVBAR -->
+    <header id="nav">
+      <div class="nav-inner">
+        <a href="/" class="nav-logo">
+          <img
+            src="/logo_nutrifollow.png"
+            alt="NutriFollow"
+            class="nav-logo-img"
+          />
+          <span>NutriFollow<span style="color: var(--sky-dark);">.app</span></span>
+        </a>
+        <nav>
+          <ul class="nav-links">
+            <li><a href="#about">Qué es</a></li>
+            <li><a href="#features">Funciones</a></li>
+            <li><a href="#how-it-works">Cómo funciona</a></li>
+            <li><a href="#faq">Preguntas</a></li>
+            <li><a href="#pricing">Planes</a></li>
+          </ul>
+        </nav>
+        <div class="nav-actions">
+          <a href="https://my.nutrifollow.app/login" class="btn btn-outline">Iniciar sesión</a>
+          <a href="https://my.nutrifollow.app/login" class="btn btn-primary">Empezar →</a>
+          <button class="nav-hamburger" id="hamburger" aria-label="Menú">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- HERO -->
+      <section id="hero">
+        <div class="hero-blob1"></div>
+        <div class="hero-blob2"></div>
+        <div class="container">
+          <div class="hero-grid">
+            <div>
+              <div class="fade">
+                <span class="tag"
+                  ><span class="tag-dot"></span>Plataforma para
+                  nutricionistas</span
+                >
+              </div>
+              <h1 class="hero-h1 fade d1">
+                Tu clínica<br />nutricional,<br /><em
+                  >potenciada y centralizada</em
+                ><br />en un solo lugar
+              </h1>
+              <p class="hero-sub fade d2">
+                Pacientes, evaluaciones, menús interactivos y agenda de citas,
+                todo en una plataforma diseñada para ti.
+              </p>
+              <div class="hero-cta fade d3">
+                <a
+                  href="https://my.nutrifollow.app/login"
+                  class="btn btn-primary"
+                  style="font-size: 15px; padding: 14px 28px"
+                  >Empezar gratis →</a
+                >
+                <a href="#features" class="btn btn-ghost">Ver funciones</a>
+              </div>
+            </div>
+            <div style="position: relative" class="fade d2">
+              <div class="hero-card">
+                <div class="card-header">
+                  <span class="card-title">Citas de hoy</span>
+                  <span class="card-badge">3 pendientes</span>
+                </div>
+                <div class="patient-row">
+                  <div class="patient-avatar av1">MA</div>
+                  <div class="patient-info">
+                    <div class="patient-name">María Alvarado</div>
+                    <div class="patient-detail">Seguimiento · 10:00 AM</div>
+                  </div>
+                  <span class="patient-status status-ok">Menú listo</span>
+                </div>
+                <div class="patient-row">
+                  <div class="patient-avatar av2">CR</div>
+                  <div class="patient-info">
+                    <div class="patient-name">Carlos Ramírez</div>
+                    <div class="patient-detail">
+                      Primera consulta · 11:30 AM
+                    </div>
+                  </div>
+                  <span class="patient-status status-new">Nuevo</span>
+                </div>
+                <div class="patient-row">
+                  <div class="patient-avatar av3">LP</div>
+                  <div class="patient-info">
+                    <div class="patient-name">Laura Pérez</div>
+                    <div class="patient-detail">Control mensual · 1:00 PM</div>
+                  </div>
+                  <span class="patient-status status-pending"
+                    >Menú pendiente</span
+                  >
+                </div>
+              </div>
+              <div class="hero-float hf-ai">
+                <div class="hf-label">Menú de la semana</div>
+                <div class="hf-value hf-sky">1,850 kcal</div>
+                <div class="hf-sub">Plan semanal · María A.</div>
+              </div>
+              <div class="hero-float hf-menu">
+                <div class="hf-label">Menú compartido</div>
+                <div class="hf-value hf-mint">my.nutrifollow.app/p/ma91</div>
+                <div class="hf-sub">Iniciado el dia de hoy ✓</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRUST -->
+      <section id="trust">
+        <div class="container">
+          <div class="trust-row">
+            <div class="trust-item">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg
+              >Tus datos protegidos en la nube
+            </div>
+            <div class="trust-item">
+              <svg viewBox="0 0 24 24">
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg
+              >100% privado
+            </div>
+            <div class="trust-item">
+              <svg viewBox="0 0 24 24">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg
+              >Seguimiento clínico completo
+            </div>
+            <div class="trust-item">
+              <svg viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg
+              >Diseñado con nutricionistas
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ABOUT / QUÉ ES Y PARA QUIÉN ES -->
+      <section id="about">
+        <div class="container">
+          <div class="section-header fade">
+            <span class="tag">Qué es y para quién es</span>
+            <h2 class="section-h2">
+              Hecho para agilizar tu consulta,<br /><em>potenciado para nutrición deportiva</em>
+            </h2>
+            <p class="section-lead">
+              NutriFollow centraliza evaluaciones antropométricas, composición
+              corporal, menús y agenda de cada paciente en un solo lugar, sin
+              Excel, WhatsApp ni PDFs sueltos. Y si trabajas con atletas,
+              trae somatotipo, bioimpedancia y perfil deportivo listos para
+              usar.
+            </p>
+          </div>
+
+          <div class="persona-grid">
+            <div class="persona fade">
+              <div class="persona-icon">
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+                </svg>
+              </div>
+              <h3>Nutricionista deportiva independiente</h3>
+              <p>
+                Manejas decenas de atletas con datos que cambian semana a
+                semana: peso, pliegues, % de grasa. Necesitas ver la evolución
+                de cada uno sin abrir cinco archivos distintos.
+              </p>
+            </div>
+            <div class="persona fade d1">
+              <div class="persona-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <h3>Nutricionista de equipos y clubes</h3>
+              <p>
+                Trabajas con planteles completos. Cada atleta necesita su
+                propio menú y su propio seguimiento por temporada, con una
+                imagen profesional frente al cuerpo técnico.
+              </p>
+            </div>
+            <div class="persona fade d2">
+              <div class="persona-icon">
+                <svg viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="17" rx="2" />
+                  <path d="M8 2v4M16 2v4M3 10h18" />
+                </svg>
+              </div>
+              <h3>Clínica con recepción</h3>
+              <p>
+                Tu recepcionista agenda las citas, tú manejas la parte
+                clínica. Cada quien ve solo lo que le corresponde, sin
+                fricción entre los dos roles.
+              </p>
+            </div>
+            <div class="persona fade d3">
+              <div class="persona-icon">
+                <svg viewBox="0 0 24 24">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              </div>
+              <h3>Consulta en crecimiento</h3>
+              <p>
+                Dejaste atrás la libreta y el Excel, pero las apps genéricas
+                de fitness no entienden antropometría, somatotipo ni
+                bioimpedancia.
+              </p>
+            </div>
+          </div>
+
+          <div class="compare-wrap fade">
+            <div class="compare-col compare-before">
+              <div class="compare-label">Antes</div>
+              <ul class="compare-list">
+                <li>
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Datos de atletas repartidos entre Excel, WhatsApp y papel
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Cálculos de VET y macros a mano en cada consulta
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Menús armados desde cero cada vez
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Sin forma clara de ver la evolución de un atleta en el tiempo
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  Recepción y consulta clínica mezcladas en el mismo calendario
+                </li>
+              </ul>
+            </div>
+            <div class="compare-col compare-after">
+              <div class="compare-label">Con NutriFollow</div>
+              <ul class="compare-list">
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Ficha completa de cada atleta en un solo lugar
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  VET, macros y porciones calculados automáticamente
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Plantillas de menú reutilizables, editables en minutos
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Somatocarta, bioimpedancia y medidas comparadas consulta a
+                  consulta
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Calendario compartido con roles separados para tu
+                  recepcionista
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FEATURES -->
+      <section id="features">
+        <div class="container">
+          <div class="section-header fade">
+            <span class="tag">Funcionalidades</span>
+            <h2 class="section-h2">
+              Tu clínica digital,<br /><em>centralizada en un solo lugar</em>
+            </h2>
+            <p class="section-lead">
+              Desde la primera evaluación hasta el seguimiento a largo plazo
+              de cada atleta.
+            </p>
+          </div>
+          <div class="features-bento">
+            <div class="feat feat-large fade">
+              <div class="feat-num">01</div>
+              <div class="feat-icon">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"
+                  />
+                  <rect x="9" y="3" width="6" height="4" rx="2" />
+                  <path d="M9 12h6M9 16h4" />
+                </svg>
+              </div>
+              <h3 class="feat-h3">Menús editables y compartibles</h3>
+              <p class="feat-p">
+                Diseña planes alimentarios con tus propias plantillas, ajusta
+                porciones y macros al detalle, exporta a PDF con tu marca o
+                comparte un enlace interactivo que tu paciente sigue día a día.
+              </p>
+            </div>
+            <div class="feat fade d1">
+              <div class="feat-num">02</div>
+              <div class="feat-icon mint">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M14.5 2v17.5c0 1.4-1.1 2.5-2.5 2.5s-2.5-1.1-2.5-2.5V2"
+                  />
+                  <path d="M8.5 2h7" />
+                  <path d="M7 14c-1 1-2 3-2 4a7 7 0 0 0 14 0c0-1-1-3-2-4" />
+                </svg>
+              </div>
+              <h3 class="feat-h3">Archivos y documentos</h3>
+              <p class="feat-p">
+                Fotos de progreso, laboratorios y documentos, organizados por
+                paciente y evaluación en un solo lugar.
+              </p>
+            </div>
+            <div class="feat feat-tall fade d2">
+              <div class="feat-num">03</div>
+              <div class="feat-icon">
+                <svg viewBox="0 0 24 24">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              </div>
+              <h3 class="feat-h3">Seguimiento de evolución</h3>
+              <p class="feat-p">
+                Registra medidas antropométricas, bioimpedancia y fotos de
+                progreso. Somatocarta XY, cálculo de somatotipo y comparación
+                histórica consulta a consulta.
+              </p>
+              <div class="feat-chart" id="chart"></div>
+            </div>
+            <div class="feat fade d1">
+              <div class="feat-num">04</div>
+              <div class="feat-icon mint">
+                <svg viewBox="0 0 24 24">
+                  <rect x="4" y="2" width="16" height="20" rx="2" />
+                  <path d="M9 7h6M9 11h6M9 15h4" />
+                </svg>
+              </div>
+              <h3 class="feat-h3">Cálculo nutricional automático</h3>
+              <p class="feat-p">
+                VET, macros y porciones calculados automáticamente.
+                Harris-Benedict, Mifflin-St Jeor y bioimpedancia.
+              </p>
+            </div>
+            <div class="feat fade d2">
+              <div class="feat-num">05</div>
+              <div class="feat-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
+              <h3 class="feat-h3">Calendario compartido</h3>
+              <p class="feat-p">
+                Tu recepcionista gestiona citas sin ver datos clínicos.
+                Calendario sincronizado en tiempo real entre ambos usuarios.
+              </p>
+            </div>
+            <div class="feat feat-large fade d3">
+              <div class="feat-num">06</div>
+              <div class="feat-icon mint">
+                <svg viewBox="0 0 24 24">
+                  <rect x="3" y="3" width="7" height="7" />
+                  <rect x="14" y="3" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" />
+                  <rect x="3" y="14" width="7" height="7" />
+                </svg>
+              </div>
+              <h3 class="feat-h3">Dashboard para tu día a día</h3>
+              <p class="feat-p">
+                Citas del día, menús pendientes, pagos por cobrar y seguimientos
+                atrasados, todo visible al abrir la plataforma. Más analíticas
+                de tu práctica en el tiempo.
+              </p>
+            </div>
+            <div class="feat feat-large fade">
+              <div class="feat-num">07</div>
+              <div class="feat-icon">
+                <svg viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                  <path d="M9 15l2 2 4-4" />
+                </svg>
+              </div>
+              <h3 class="feat-h3">Agenda de citas completa</h3>
+              <p class="feat-p">
+                Programa, reprograma y da seguimiento a cada cita: modalidad,
+                duración, estado y recordatorios automáticos. Todo
+                sincronizado con Google Calendar.
+              </p>
+            </div>
+            <div class="feat fade d1">
+              <div class="feat-num">08</div>
+              <div class="feat-icon mint">
+                <svg viewBox="0 0 24 24">
+                  <path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z" />
+                  <path d="M9 8h6M9 12h6M9 16h4" />
+                </svg>
+              </div>
+              <h3 class="feat-h3">Control de pagos y facturas</h3>
+              <p class="feat-p">
+                Registra ingresos y egresos por paciente: estado de pago,
+                método y categoría. Sabes de un vistazo qué cobrar y qué ya
+                está pagado.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MENU LINK -->
+      <section id="menu-link">
+        <div class="container">
+          <div class="highlight-wrap fade">
+            <div class="hl-content">
+              <div class="hl-tag">
+                <span class="tag"
+                  ><span class="tag-dot"></span>Nueva función</span
+                >
+              </div>
+              <h2 class="hl-h2">
+                Menú interactivo, <em>en el celular<br />de tu paciente</em>
+              </h2>
+              <p class="hl-p">
+                Comparte un enlace único y que tus pacientes vean su plan
+                semanal de forma interactiva, sin apps, sin cuentas y sin
+                complicaciones.
+              </p>
+              <div class="hl-steps">
+                <div class="hl-step">
+                  <div class="hl-step-n">1</div>
+                  <div class="hl-step-text">
+                    <strong>Diseña el menú</strong> con tus plantillas o desde cero.
+                  </div>
+                </div>
+                <div class="hl-step">
+                  <div class="hl-step-n">2</div>
+                  <div class="hl-step-text">
+                    <strong>Comparte el enlace</strong> con tu paciente
+                  </div>
+                </div>
+                <div class="hl-step">
+                  <div class="hl-step-n">3</div>
+                  <div class="hl-step-text">
+                    <strong>Tu paciente navega</strong> su plan día por día,
+                    anotando si logra cumplir con el tiempo de comida y mantener
+                    su racha de nutrición.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="hl-visual">
+              <div class="phone-mock">
+                <!-- Hero header (starts at top, includes notch) -->
+                <div class="phone-hero">
+                  <div class="phone-greeting">¡Buenos días, María!</div>
+                  <div class="phone-hero-sub">Tu menú de hoy está listo</div>
+                  <div class="phone-prog-row">
+                    <div class="phone-prog-box">
+                      <div class="phone-prog-top">
+                        <span class="phone-prog-name">Semana 1</span>
+                        <span class="phone-prog-val">75%</span>
+                      </div>
+                      <div class="phone-prog-track">
+                        <div class="phone-prog-fill" style="width:75%"></div>
+                      </div>
+                    </div>
+                    <div class="phone-prog-box">
+                      <div class="phone-prog-top">
+                        <span class="phone-prog-name">Comidas</span>
+                        <span class="phone-prog-val">3/4</span>
+                      </div>
+                      <div class="phone-prog-track">
+                        <div class="phone-prog-fill" style="width:75%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Day selector -->
+                <div class="phone-days">
+                  <div class="phone-day">
+                    <div class="pd-label">Lun</div>
+                    <div class="pd-num">24</div>
+                    <div class="pd-dot"></div>
+                  </div>
+                  <div class="phone-day active">
+                    <div class="pd-label">Mar</div>
+                    <div class="pd-num">25</div>
+                    <div class="pd-dot"></div>
+                  </div>
+                  <div class="phone-day">
+                    <div class="pd-label">Mié</div>
+                    <div class="pd-num">26</div>
+                    <div class="pd-dot"></div>
+                  </div>
+                  <div class="phone-day">
+                    <div class="pd-label">Jue</div>
+                    <div class="pd-num">27</div>
+                    <div class="pd-dot"></div>
+                  </div>
+                </div>
+                <!-- Day label -->
+                <div class="phone-day-title">
+                  <span>Martes, 25 de marzo</span>
+                  <span class="phone-today-badge">Hoy</span>
+                </div>
+                <!-- Meals -->
+                <div class="phone-meals">
+                  <div class="phone-meal done">
+                    <div class="pm-icon" style="background:#FEF3C7;color:#D97706;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+                    </div>
+                    <div class="pm-text">
+                      <div class="pm-label">Desayuno</div>
+                      <div class="pm-title">Avena con fruta y yogur</div>
+                    </div>
+                    <div class="pm-check checked">✓</div>
+                  </div>
+                  <div class="phone-meal done">
+                    <div class="pm-icon" style="background:#DBEAFE;color:#2563EB;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+                    </div>
+                    <div class="pm-text">
+                      <div class="pm-label">Almuerzo</div>
+                      <div class="pm-title">Pollo, arroz y verduras</div>
+                    </div>
+                    <div class="pm-check checked">✓</div>
+                  </div>
+                  <div class="phone-meal">
+                    <div class="pm-icon" style="background:#EDE9FE;color:#7C3AED;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </div>
+                    <div class="pm-text">
+                      <div class="pm-label">Cena</div>
+                      <div class="pm-title">Ensalada con proteína</div>
+                    </div>
+                    <div class="pm-check"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOW IT WORKS -->
+      <section id="how-it-works">
+        <div class="container">
+          <div class="section-header fade">
+            <span class="tag">Tu día a día</span>
+            <h2 class="section-h2">
+              ¿Cómo lo usarías<br /><em>en tu consulta?</em>
+            </h2>
+            <p class="section-lead">
+              Así se ve un día normal de trabajo con NutriFollow, de la cita
+              al menú compartido.
+            </p>
+          </div>
+          <div class="how-steps">
+            <div class="how-step fade">
+              <div class="how-step-track">
+                <div class="how-step-n">1</div>
+                <div class="how-step-line"></div>
+              </div>
+              <div class="how-step-card">
+                <h3>Revisas tu dashboard</h3>
+                <p>
+                  Entras y ves de un vistazo cómo va tu clínica: citas del
+                  día, menús pendientes, pagos por cobrar y seguimientos
+                  atrasados.
+                </p>
+              </div>
+            </div>
+            <div class="how-step fade d1">
+              <div class="how-step-track">
+                <div class="how-step-n">2</div>
+                <div class="how-step-line"></div>
+              </div>
+              <div class="how-step-card">
+                <h3>Agregas al paciente y su historial</h3>
+                <p>
+                  Al momento de cada cita registras al paciente y llenas su
+                  historial clínico: antecedentes, diagnóstico, alergias y
+                  datos personales.
+                </p>
+              </div>
+            </div>
+            <div class="how-step fade d2">
+              <div class="how-step-track">
+                <div class="how-step-n">3</div>
+                <div class="how-step-line"></div>
+              </div>
+              <div class="how-step-card">
+                <h3>Creas la evaluación de esa sesión</h3>
+                <p>
+                  Cada evaluación es como un folder donde guardas todo lo
+                  recolectado ese día, y te va guiando con las preguntas
+                  exactas que necesitas hacer para no olvidar nada.
+                </p>
+                <ul class="how-sublist">
+                  <li>
+                    <span class="how-dot"></span>Evaluación dietética: qué
+                    comió en las últimas 24 horas
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Medidas antropométricas o de
+                    bioimpedancia
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Cálculos automáticos y
+                    reportes de comparación para mostrarle al paciente su
+                    evolución
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Somatocarta generada con los
+                    ejes de sus medidas
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Laboratorios y fotos
+                    adjuntos a la evaluación
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="how-step fade d3">
+              <div class="how-step-track">
+                <div class="how-step-n">4</div>
+                <div class="how-step-line"></div>
+              </div>
+              <div class="how-step-card">
+                <h3>Armas su menú desde la misma evaluación</h3>
+                <p>
+                  Regresas al día de la evaluación y sigues, en orden, con el
+                  menú.
+                </p>
+                <ul class="how-sublist">
+                  <li>
+                    <span class="how-dot"></span>Calculas las kcal a trabajar
+                    según su nivel de actividad
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Defines la distribución de
+                    calorías y nutrientes
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Configuras la tabla de
+                    porciones
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Armas el menú semanal o de
+                    intercambio de alimentos
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="how-step fade d3">
+              <div class="how-step-track">
+                <div class="how-step-n">5</div>
+                <div class="how-step-line"></div>
+              </div>
+              <div class="how-step-card">
+                <h3>Exportas y compartes el menú</h3>
+                <p>
+                  Con el menú listo, lo dejas guardado y a un link de
+                  distancia de tu paciente.
+                </p>
+                <ul class="how-sublist">
+                  <li>
+                    <span class="how-dot"></span>Exporta a PDF y guárdalo
+                    como plantilla para usarlo en el futuro
+                  </li>
+                  <li>
+                    <span class="how-dot"></span>Comparte un link para que tu
+                    paciente lo vea en PDF o como tracker interactivo desde
+                    su celular, sin instalar nada
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="faq">
+        <div class="container">
+          <div class="section-header fade">
+            <span class="tag">Preguntas frecuentes</span>
+            <h2 class="section-h2">
+              Lo que las nutricionistas<br /><em>nos preguntan antes de empezar</em>
+            </h2>
+          </div>
+          <div class="faq-list fade">
+            <details class="faq-item" open>
+              <summary>
+                ¿NutriFollow es solo para nutrición deportiva o también lo
+                pueden usar en nutrición en general?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Todas las nutricionistas lo pueden usar. Llevar el
+                  historial clínico, registrar pacientes, dar seguimiento a
+                  calendario y pagos, y registrar medidas se adapta a
+                  cualquier consulta, deportiva o no.
+                </p>
+                <p style="margin-top: 12px">
+                  Donde las nutricionistas deportivas le sacan mayor
+                  provecho es en el cálculo nutricional automático al crear
+                  el menú, que trae fórmulas basadas en nutrición deportiva.
+                  Aun así, puedes ver la fórmula detrás de cada campo y, si
+                  aplica a tu paciente, usarla sin problema; y si prefieres
+                  no usar el cálculo automático deportivo, puedes saltártelo
+                  e ir directo a la redacción del menú.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Mis atletas necesitan instalar una app?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  No. Compartes un enlace y tu atleta abre su menú semanal
+                  desde el celular sin instalar nada ni crear una cuenta.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿En qué dispositivos funciona?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Funciona en cualquier dispositivo con navegador web:
+                  computadoras, tablets y celulares. El modo presentación
+                  está optimizado especialmente para computadora.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Funciona sin conexión a internet?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  No. Es importante tener una buena conexión a internet para
+                  que el guardado de la información sea rápido y seguro.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Puedo tener una recepcionista que maneje mi agenda del
+                calendario sin que vea el historial clínico de mis pacientes?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Sí. Los roles están separados: tu recepcionista gestiona la
+                  agenda de citas y tú eres la única con acceso a
+                  evaluaciones, menús y datos clínicos. El calendario no
+                  permite que los pacientes se autoagenden: la agenda solo la
+                  configuran la nutricionista y la recepcionista. También
+                  puedes sincronizarlo con Google Calendar para llevar
+                  contigo la agenda de tus pacientes.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Qué tan seguros están los datos de mis pacientes?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Tus datos viven en la nube, protegidos y bajo tu control.
+                  Nada se comparte con terceros ni se usa fuera de tu cuenta.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿El plan gratis tiene límite de tiempo o pide tarjeta de
+                crédito?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  No. El plan Básico es gratis de forma permanente, sin
+                  tarjeta, con acceso completo a las funciones hasta 10
+                  pacientes activos.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Cuánto tiempo toma empezar a usarlo con mis pacientes
+                actuales?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Puedes crear tu cuenta y empezar a registrar pacientes,
+                  evaluaciones y menús el mismo día. No hay instalación ni
+                  curva de aprendizaje larga.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Qué tan complejo es aprender a usarlo?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>
+                  Es muy intuitivo. Encontrarás guías de página y de uso para
+                  sacarle el máximo potencial a cada función, y si tienes
+                  dudas puedes consultarlas por correo o WhatsApp.
+                </p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>
+                ¿Puedo cancelar el plan Pro cuando quiera?
+                <span class="faq-icon"
+                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                ></span>
+              </summary>
+              <div class="faq-answer">
+                <p>Sí, cancelas cuando quieras y sin penalizaciones.</p>
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRICING -->
+      <section id="pricing">
+        <div class="container">
+          <div class="section-header fade">
+            <span class="tag">Planes</span>
+            <h2 class="section-h2">
+              Empieza gratis,<br /><em>crece cuando lo necesites</em>
+            </h2>
+            <p class="section-lead">
+              Ambos planes incluyen todas las funciones de la plataforma. Pro
+              te da registros ilimitados.
+            </p>
+          </div>
+          <div class="pricing-grid">
+            <div class="price-card fade">
+              <div class="price-top">
+                <span class="price-name">Básico</span>
+              </div>
+              <p class="price-desc">Para empezar a organizar tu práctica.</p>
+              <div class="price-value">$0 <span>/mes</span></div>
+              <ul class="price-list">
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Acceso completo a todas las funciones
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Hasta 10 pacientes activos
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Hasta 20 citas en calendario
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Hasta 20 facturas registradas
+                </li>
+              </ul>
+              <a href="https://my.nutrifollow.app/login" class="btn btn-outline">Empezar gratis</a>
+            </div>
+            <div class="price-card featured fade d1">
+              <div class="price-top">
+                <span class="price-name">Pro</span>
+                <span class="price-popular">Más popular</span>
+              </div>
+              <p class="price-desc">Para clínicas sin límites de crecimiento.</p>
+              <div class="price-value">$29 <span>USD/mes</span></div>
+              <span class="price-promo">50% OFF tu primer pago</span>
+              <ul class="price-list">
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Acceso completo a todas las funciones
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Pacientes ilimitados
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Citas ilimitadas
+                </li>
+                <li>
+                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  Facturas ilimitadas
+                </li>
+              </ul>
+              <a href="https://my.nutrifollow.app/login" class="btn btn-primary">Suscribirme a Pro</a>
+            </div>
+          </div>
+          <p class="price-note">Puedes cancelar cuando quieras, sin penalizaciones.</p>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <section id="cta">
+        <div class="container">
+          <div class="cta-box fade">
+            <h2 class="cta-h2">
+              Tu clínica merece<br />las mejores herramientas
+            </h2>
+            <p class="cta-p">
+              Únete y transforma la manera en que gestionas tu práctica
+              nutricional.
+            </p>
+            <div class="cta-actions">
+              <a
+                href="https://my.nutrifollow.app/login"
+                class="btn btn-white"
+                style="font-size: 15px; padding: 14px 28px"
+                >Empezar gratis →</a
+              >
+              <a href="#features" class="btn btn-woutline">Ver funciones</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-inner">
+        <a href="/" class="footer-logo">
+          <img
+            src="/logo_nutrifollow.png"
+            alt="NutriFollow"
+            class="nav-logo-img"
+          />
+          <span>NutriFollow<span style="color: var(--sky-dark);">.app</span></span>
+        </a>
+        <nav class="footer-links">
+          <a href="#about">Qué es</a>
+          <a href="#features">Funciones</a>
+          <a href="#how-it-works">Cómo funciona</a>
+          <a href="#faq">Preguntas</a>
+          <a href="#pricing">Planes</a>
+          <a href="https://my.nutrifollow.app/login">Iniciar sesión</a>
+        </nav>
+        <p class="footer-copy">© 2026 NutriFollow &nbsp;·&nbsp; <a href="https://my.nutrifollow.app/privacy-policy" style="color:inherit;text-decoration:underline;">Política de Privacidad</a> &nbsp;·&nbsp; <a href="https://my.nutrifollow.app/terms-of-service" style="color:inherit;text-decoration:underline;">Términos de Servicio</a> &nbsp;·&nbsp; <a href="https://my.nutrifollow.app/sensitive-data-policy.html" style="color:inherit;text-decoration:underline;">Datos Sensibles</a> &nbsp;·&nbsp; <a href="https://my.nutrifollow.app/disclaimers.html" style="color:inherit;text-decoration:underline;">Disclaimers</a></p>
+      </div>
+    </footer>
+
+    <script>
+      // Progress
+      window.addEventListener(
+        "scroll",
+        () => {
+          document.getElementById("progress").style.width =
+            (window.scrollY /
+              (document.body.scrollHeight - window.innerHeight)) *
+              100 +
+            "%";
+        },
+        { passive: true },
+      );
+
+      // Navbar
+      const nav = document.getElementById("nav");
+      window.addEventListener(
+        "scroll",
+        () => nav.classList.toggle("scrolled", window.scrollY > 20),
+        { passive: true },
+      );
+
+      // Hamburger
+      document
+        .getElementById("hamburger")
+        .addEventListener("click", () => nav.classList.toggle("open"));
+
+      // Fades
+      const obs = new IntersectionObserver(
+        (e) =>
+          e.forEach((x) => {
+            if (x.isIntersecting) {
+              x.target.classList.add("visible");
+              obs.unobserve(x.target);
+            }
+          }),
+        { threshold: 0.08, rootMargin: "0px 0px -40px 0px" },
+      );
+      document.querySelectorAll(".fade").forEach((el) => {
+        if (el.getBoundingClientRect().top < window.innerHeight)
+          el.classList.add("visible");
+        else obs.observe(el);
+      });
+
+      // Line Chart
+      const chart = document.getElementById("chart");
+      if (chart) {
+        const pts = [18, 32, 24, 44, 36, 52, 42, 58, 50, 64, 54, 70];
+        const W = 220, H = 56, pad = 4;
+        const xs = pts.map((_, i) => pad + (i / (pts.length - 1)) * (W - pad * 2));
+        const ys = pts.map(v => H - pad - ((v - 10) / 65) * (H - pad * 2));
+        const linePts = xs.map((x, i) => `${x},${ys[i]}`).join(" ");
+        const areaPts = `${xs[0]},${H} ` + xs.map((x, i) => `${x},${ys[i]}`).join(" ") + ` ${xs[xs.length-1]},${H}`;
+        const lastX = xs[xs.length - 1], lastY = ys[ys.length - 1];
+
+        chart.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="var(--sky)"/>
+              <stop offset="100%" stop-color="var(--mint)"/>
+            </linearGradient>
+            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--mint)" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="var(--mint)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <polygon class="chart-area-path" points="${areaPts}" fill="url(#areaGrad)"/>
+          <polyline class="chart-line-path" points="${linePts}" stroke="url(#lineGrad)"/>
+          <circle class="chart-dot" cx="${lastX}" cy="${lastY}" r="3.5" fill="var(--mint)"/>
+          <circle class="chart-dot" cx="${lastX}" cy="${lastY}" r="6" fill="var(--mint)" opacity="0.25"/>
+        </svg>`;
+
+        setTimeout(() => {
+          chart.querySelectorAll(".chart-line-path, .chart-area-path, .chart-dot").forEach(el => el.classList.add("animated"));
+        }, 400);
+      }
+
+      // Smooth scroll
+      document.querySelectorAll('a[href^="#"]').forEach((a) => {
+        a.addEventListener("click", (e) => {
+          const t = document.querySelector(a.getAttribute("href"));
+          if (t) {
+            e.preventDefault();
+            t.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
