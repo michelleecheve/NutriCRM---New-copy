@@ -27,7 +27,8 @@ import { TourOverlay } from './components/tour/TourOverlay';
 const OAUTH_CALLBACK_ROUTE = '__oauth_callback__';
 
 // Maps URL paths to app routes so deep links and OAuth callbacks work correctly.
-// Unknown paths are left as AppRoute.LANDING — onAuthReady redirects
+// Unknown paths fall back to AppRoute.LOGIN (the marketing landing now lives
+// externally at www.nutrifollow.app) — onAuthReady redirects
 // authenticated users away from it to their home page.
 const PATH_TO_ROUTE: Record<string, string> = {
   '/login':         AppRoute.LOGIN,
@@ -61,7 +62,7 @@ function getInitialRoute(): string {
     return OAUTH_CALLBACK_ROUTE;
   }
 
-  return PATH_TO_ROUTE[path] ?? AppRoute.LANDING;
+  return PATH_TO_ROUTE[path] ?? AppRoute.LOGIN;
 }
 
 function getHomeRoute(role?: UserRole): string {
@@ -110,7 +111,7 @@ function App() {
             prev === AppRoute.LOGIN ||
             prev === AppRoute.LANDING
           ) return prev;
-          return AppRoute.LANDING;
+          return AppRoute.LOGIN;
         });
         setSelectedPatientId(null);
       }
@@ -182,7 +183,7 @@ function App() {
         return <Landing />;
 
       case AppRoute.LOGIN:
-        return <Login onLogin={handleLogin} onNavigateToRegister={() => setCurrentRoute(AppRoute.REGISTER)} onNavigateToLanding={() => setCurrentRoute(AppRoute.LANDING)} />;
+        return <Login onLogin={handleLogin} onNavigateToRegister={() => setCurrentRoute(AppRoute.REGISTER)} onNavigateToLanding={() => { window.location.href = 'https://www.nutrifollow.app'; }} />;
 
       case AppRoute.REGISTER:
         return <Register onBack={() => setCurrentRoute(AppRoute.LOGIN)} onSuccess={() => setCurrentRoute(getHomeRoute(authStore.getCurrentUser()?.role))} />;
@@ -232,7 +233,7 @@ function App() {
         return <CheckoutSuccess onGoToProfile={() => setCurrentRoute(AppRoute.PROFILE)} />;
 
       default:
-        return <Login onLogin={handleLogin} onNavigateToLanding={() => setCurrentRoute(AppRoute.LANDING)} />;
+        return <Login onLogin={handleLogin} onNavigateToLanding={() => { window.location.href = 'https://www.nutrifollow.app'; }} />;
     }
   };
 
