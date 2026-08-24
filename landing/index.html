@@ -17,23 +17,35 @@
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="NutriFollow" />
-    <meta property="og:title" content="NutriFollow · Gestión Nutricional para tu Clínica" />
+    <meta
+      property="og:title"
+      content="NutriFollow · Gestión Nutricional para tu Clínica"
+    />
     <meta
       property="og:description"
       content="Pacientes, evaluaciones, menús interactivos y agenda de citas, todo en una plataforma diseñada para nutricionistas."
     />
     <meta property="og:url" content="https://www.nutrifollow.app/" />
-    <meta property="og:image" content="https://www.nutrifollow.app/logo_nutrifollow.png" />
+    <meta
+      property="og:image"
+      content="https://www.nutrifollow.app/logo_nutrifollow.png"
+    />
     <meta property="og:locale" content="es_LA" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="NutriFollow · Gestión Nutricional para tu Clínica" />
+    <meta
+      name="twitter:title"
+      content="NutriFollow · Gestión Nutricional para tu Clínica"
+    />
     <meta
       name="twitter:description"
       content="Pacientes, evaluaciones, menús interactivos y agenda de citas, todo en una plataforma diseñada para nutricionistas."
     />
-    <meta name="twitter:image" content="https://www.nutrifollow.app/logo_nutrifollow.png" />
+    <meta
+      name="twitter:image"
+      content="https://www.nutrifollow.app/logo_nutrifollow.png"
+    />
 
     <!-- Structured data -->
     <script type="application/ld+json">
@@ -78,24 +90,24 @@
       }
 
       :root {
-        --sky: #3B6FE8;
-        --sky-dark: #2563EB;
+        --sky: #3b6fe8;
+        --sky-dark: #2563eb;
         --sky-dim: rgba(37, 99, 235, 0.1);
         --sky-border: rgba(37, 99, 235, 0.22);
-        --mint: #F59E0B;
+        --mint: #f59e0b;
         --mint-dim: rgba(245, 158, 11, 0.13);
-        --mint-dark: #D97706;
+        --mint-dark: #d97706;
 
-        --bg: #F0F2FA;
-        --bg2: #F0F2FA;
-        --bg3: #E4E8F5;
+        --bg: #f0f2fa;
+        --bg2: #f0f2fa;
+        --bg3: #e4e8f5;
 
-        --text: #0A0A0A;
-        --text-muted: #6B7280;
-        --text-dim: #9CA3AF;
+        --text: #0a0a0a;
+        --text-muted: #6b7280;
+        --text-dim: #9ca3af;
 
         --border: rgba(37, 99, 235, 0.2);
-        --border2: #E2E8F0;
+        --border2: #e2e8f0;
 
         --shadow: 0 4px 20px rgba(10, 20, 50, 0.07);
         --shadow-lg: 0 16px 52px rgba(10, 20, 50, 0.11);
@@ -392,14 +404,14 @@
       }
       .hero-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 0.75fr 1.25fr;
         gap: 64px;
         align-items: center;
         position: relative;
       }
       .hero-h1 {
         font-weight: 800;
-        font-size: clamp(36px, 4.2vw, 58px);
+        font-size: clamp(36px, 4.4vw, 60px);
         line-height: 1.1;
         letter-spacing: -0.025em;
         margin: 18px 0 18px;
@@ -414,12 +426,20 @@
         line-height: 1.7;
         color: var(--text-muted);
         margin-bottom: 32px;
-        max-width: 400px;
+        max-width: 440px;
       }
       .hero-cta {
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
+      }
+
+      /* Hero mockup image */
+      .hero-mockup-img {
+        display: block;
+        width: 155%;
+        max-width: 155%;
+        height: auto;
       }
 
       /* Hero card */
@@ -578,6 +598,10 @@
         .hero-h1 {
           font-size: clamp(32px, 7vw, 48px);
         }
+        .hero-mockup-img {
+          width: 100%;
+          max-width: 100%;
+        }
         .hf-menu {
           display: none;
         }
@@ -640,6 +664,9 @@
         max-width: 440px;
         margin: 0 auto;
         line-height: 1.7;
+      }
+      #about .section-lead {
+        max-width: 680px;
       }
 
       /* ── FEATURES ── */
@@ -868,7 +895,7 @@
         font-weight: 600;
       }
       .hl-visual {
-        background: linear-gradient(140deg, var(--bg3) 0%, #DBEAFE 100%);
+        background: linear-gradient(140deg, var(--bg3) 0%, #dbeafe 100%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -877,7 +904,7 @@
       /* ── Phone mockup — DayMenuView replica ── */
       .phone-mock {
         width: 218px;
-        background: #F2F7F4;
+        background: #f2f7f4;
         border-radius: 34px;
         border: 1.5px solid #c8ddd2;
         overflow: hidden;
@@ -885,11 +912,13 @@
       }
       /* Hero header — covers from very top of phone */
       .phone-hero {
-        background: #1A2E25;
+        background: #1a2e25;
         border-radius: 0 0 20px 20px;
         padding: 14px 14px 14px;
       }
-      .phone-hero-icon { display: none; }
+      .phone-hero-icon {
+        display: none;
+      }
       .phone-greeting {
         color: #fff;
         font-size: 12px;
@@ -898,7 +927,7 @@
         margin-bottom: 2px;
       }
       .phone-hero-sub {
-        color: rgba(255,255,255,0.5);
+        color: rgba(255, 255, 255, 0.5);
         font-size: 8.5px;
         font-weight: 500;
         margin-bottom: 10px;
@@ -909,10 +938,10 @@
       }
       .phone-prog-box {
         flex: 1;
-        background: rgba(255,255,255,0.08);
+        background: rgba(255, 255, 255, 0.08);
         border-radius: 8px;
         padding: 7px 8px;
-        border: 1px solid rgba(255,255,255,0.07);
+        border: 1px solid rgba(255, 255, 255, 0.07);
       }
       .phone-prog-top {
         display: flex;
@@ -921,25 +950,25 @@
         margin-bottom: 5px;
       }
       .phone-prog-name {
-        color: rgba(255,255,255,0.65);
+        color: rgba(255, 255, 255, 0.65);
         font-size: 8px;
         font-weight: 600;
       }
       .phone-prog-val {
-        color: #6EE7B7;
+        color: #6ee7b7;
         font-size: 8px;
         font-weight: 700;
       }
       .phone-prog-track {
         height: 3px;
-        background: rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.1);
         border-radius: 99px;
         overflow: hidden;
       }
       .phone-prog-fill {
         height: 100%;
         border-radius: 99px;
-        background: linear-gradient(90deg, #6EE7B7, #34D399);
+        background: linear-gradient(90deg, #6ee7b7, #34d399);
       }
       /* Day selector */
       .phone-days {
@@ -956,35 +985,42 @@
         padding: 6px 4px 4px;
         border-radius: 10px;
         background: white;
-        border: 1.5px solid #E0E8E3;
+        border: 1.5px solid #e0e8e3;
         gap: 1px;
       }
       .phone-day.active {
-        background: #2D5A4B;
-        border-color: #2D5A4B;
-        box-shadow: 0 3px 10px rgba(45,90,75,0.28);
+        background: #2d5a4b;
+        border-color: #2d5a4b;
+        box-shadow: 0 3px 10px rgba(45, 90, 75, 0.28);
       }
       .pd-label {
         font-size: 7.5px;
         font-weight: 600;
-        color: rgba(55,65,81,0.5);
+        color: rgba(55, 65, 81, 0.5);
         letter-spacing: 0.02em;
       }
-      .phone-day.active .pd-label { color: rgba(255,255,255,0.7); }
+      .phone-day.active .pd-label {
+        color: rgba(255, 255, 255, 0.7);
+      }
       .pd-num {
         font-size: 13px;
         font-weight: 800;
         color: #374151;
         line-height: 1;
       }
-      .phone-day.active .pd-num { color: white; }
+      .phone-day.active .pd-num {
+        color: white;
+      }
       .pd-dot {
-        width: 4px; height: 4px;
+        width: 4px;
+        height: 4px;
         border-radius: 50%;
         background: transparent;
         margin-top: 1px;
       }
-      .phone-day.active .pd-dot { background: rgba(110,231,183,0.9); }
+      .phone-day.active .pd-dot {
+        background: rgba(110, 231, 183, 0.9);
+      }
       /* Day title */
       .phone-day-title {
         padding: 5px 12px 3px;
@@ -995,16 +1031,16 @@
       .phone-day-title span {
         font-size: 9.5px;
         font-weight: 700;
-        color: #1F2937;
+        color: #1f2937;
       }
       .phone-today-badge {
         font-size: 7px;
         font-weight: 700;
-        background: #ECFDF5;
-        color: #065F46;
+        background: #ecfdf5;
+        color: #065f46;
         padding: 2px 5px;
         border-radius: 99px;
-        border: 1px solid #D1FAE5;
+        border: 1px solid #d1fae5;
         text-transform: uppercase;
         letter-spacing: 0.06em;
       }
@@ -1018,42 +1054,54 @@
       .phone-meal {
         background: white;
         border-radius: 11px;
-        border: 1px solid #E5E7EB;
+        border: 1px solid #e5e7eb;
         padding: 8px 9px;
         display: flex;
         gap: 7px;
         align-items: center;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
       }
-      .phone-meal.done { border-color: #BBF7D0; box-shadow: 0 1px 5px rgba(22,163,74,0.18); }
+      .phone-meal.done {
+        border-color: #bbf7d0;
+        box-shadow: 0 1px 5px rgba(22, 163, 74, 0.18);
+      }
       .pm-icon {
-        width: 26px; height: 26px;
+        width: 26px;
+        height: 26px;
         border-radius: 7px;
         flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-size: 12px;
       }
-      .pm-text { flex: 1; min-width: 0; }
+      .pm-text {
+        flex: 1;
+        min-width: 0;
+      }
       .pm-label {
         font-size: 8.5px;
         font-weight: 700;
-        color: #1F2937;
+        color: #1f2937;
         margin-bottom: 1px;
       }
       .pm-title {
         font-size: 8px;
-        color: #6B7280;
+        color: #6b7280;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
       .pm-check {
-        width: 18px; height: 18px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
-        border: 1.5px solid #D1FAE5;
-        background: #F9FAFB;
+        border: 1.5px solid #d1fae5;
+        background: #f9fafb;
         flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-size: 9px;
         color: transparent;
       }
@@ -1080,7 +1128,7 @@
       }
       .persona-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 13px;
         margin-bottom: 60px;
       }
@@ -1507,11 +1555,7 @@
         border-radius: 26px;
         padding: 76px 56px;
         text-align: center;
-        background: linear-gradient(
-          135deg,
-          #1E1B6E 0%,
-          #2563EB 100%
-        );
+        background: linear-gradient(135deg, #1e1b6e 0%, #2563eb 100%);
         position: relative;
         overflow: hidden;
       }
@@ -1554,7 +1598,7 @@
         font-weight: 800;
       }
       .btn-white:hover {
-        background: #EFF6FF;
+        background: #eff6ff;
         transform: translateY(-1px);
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
       }
@@ -1630,7 +1674,9 @@
             alt="NutriFollow"
             class="nav-logo-img"
           />
-          <span>NutriFollow<span style="color: var(--sky-dark);">.app</span></span>
+          <span
+            >NutriFollow<span style="color: var(--sky-dark)">.app</span></span
+          >
         </a>
         <nav>
           <ul class="nav-links">
@@ -1642,8 +1688,12 @@
           </ul>
         </nav>
         <div class="nav-actions">
-          <a href="https://my.nutrifollow.app/login" class="btn btn-outline">Iniciar sesión</a>
-          <a href="https://my.nutrifollow.app/login" class="btn btn-primary">Empezar →</a>
+          <a href="https://my.nutrifollow.app/login" class="btn btn-outline"
+            >Iniciar sesión</a
+          >
+          <a href="https://my.nutrifollow.app/login" class="btn btn-primary"
+            >Empezar →</a
+          >
           <button class="nav-hamburger" id="hamburger" aria-label="Menú">
             <span></span><span></span><span></span>
           </button>
@@ -1661,18 +1711,18 @@
             <div>
               <div class="fade">
                 <span class="tag"
-                  ><span class="tag-dot"></span>Plataforma para
-                  nutricionistas</span
+                  ><span class="tag-dot"></span>Plataforma para nutricionistas
+                  deportivas</span
                 >
               </div>
               <h1 class="hero-h1 fade d1">
-                Tu clínica<br />nutricional,<br /><em
-                  >potenciada y centralizada</em
-                ><br />en un solo lugar
+                Tu clínica digital <em>simple y completa</em>
               </h1>
               <p class="hero-sub fade d2">
-                Pacientes, evaluaciones, menús interactivos y agenda de citas,
-                todo en una plataforma diseñada para ti.
+                Si ya sabes usar Word, ya sabes usar Nutrifollow. Gestiona
+                consultas, planes, menús, pacientes, agenda y finanzas desde una
+                plataforma diseñada para nutricionistas que quieren crecer sin
+                temor al desorden administrativo.
               </p>
               <div class="hero-cta fade d3">
                 <a
@@ -1685,50 +1735,11 @@
               </div>
             </div>
             <div style="position: relative" class="fade d2">
-              <div class="hero-card">
-                <div class="card-header">
-                  <span class="card-title">Citas de hoy</span>
-                  <span class="card-badge">3 pendientes</span>
-                </div>
-                <div class="patient-row">
-                  <div class="patient-avatar av1">MA</div>
-                  <div class="patient-info">
-                    <div class="patient-name">María Alvarado</div>
-                    <div class="patient-detail">Seguimiento · 10:00 AM</div>
-                  </div>
-                  <span class="patient-status status-ok">Menú listo</span>
-                </div>
-                <div class="patient-row">
-                  <div class="patient-avatar av2">CR</div>
-                  <div class="patient-info">
-                    <div class="patient-name">Carlos Ramírez</div>
-                    <div class="patient-detail">
-                      Primera consulta · 11:30 AM
-                    </div>
-                  </div>
-                  <span class="patient-status status-new">Nuevo</span>
-                </div>
-                <div class="patient-row">
-                  <div class="patient-avatar av3">LP</div>
-                  <div class="patient-info">
-                    <div class="patient-name">Laura Pérez</div>
-                    <div class="patient-detail">Control mensual · 1:00 PM</div>
-                  </div>
-                  <span class="patient-status status-pending"
-                    >Menú pendiente</span
-                  >
-                </div>
-              </div>
-              <div class="hero-float hf-ai">
-                <div class="hf-label">Menú de la semana</div>
-                <div class="hf-value hf-sky">1,850 kcal</div>
-                <div class="hf-sub">Plan semanal · María A.</div>
-              </div>
-              <div class="hero-float hf-menu">
-                <div class="hf-label">Menú compartido</div>
-                <div class="hf-value hf-mint">my.nutrifollow.app/p/ma91</div>
-                <div class="hf-sub">Iniciado el dia de hoy ✓</div>
-              </div>
+              <img
+                src="/Images/Mockup%20Hero%202_web.webp"
+                alt="NutriFollow"
+                class="hero-mockup-img"
+              />
             </div>
           </div>
         </div>
@@ -1772,75 +1783,17 @@
           <div class="section-header fade">
             <span class="tag">Qué es y para quién es</span>
             <h2 class="section-h2">
-              Hecho para agilizar tu consulta,<br /><em>potenciado para nutrición deportiva</em>
+              Hecho para agilizar tu consulta,<br /><em
+                >potenciado para nutrición deportiva</em
+              >
             </h2>
             <p class="section-lead">
               NutriFollow centraliza evaluaciones antropométricas, composición
               corporal, menús y agenda de cada paciente en un solo lugar, sin
-              Excel, WhatsApp ni PDFs sueltos. Y si trabajas con atletas,
-              trae somatotipo, bioimpedancia y perfil deportivo listos para
-              usar.
+              Excel, WhatsApp ni PDFs sueltos. Y si trabajas con atletas, trae
+              tablas de somatotipo, antropometría, bioimpedancia y perfil
+              deportivo listos para usar.
             </p>
-          </div>
-
-          <div class="persona-grid">
-            <div class="persona fade">
-              <div class="persona-icon">
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
-                </svg>
-              </div>
-              <h3>Nutricionista deportiva independiente</h3>
-              <p>
-                Manejas decenas de atletas con datos que cambian semana a
-                semana: peso, pliegues, % de grasa. Necesitas ver la evolución
-                de cada uno sin abrir cinco archivos distintos.
-              </p>
-            </div>
-            <div class="persona fade d1">
-              <div class="persona-icon">
-                <svg viewBox="0 0 24 24">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </div>
-              <h3>Nutricionista de equipos y clubes</h3>
-              <p>
-                Trabajas con planteles completos. Cada atleta necesita su
-                propio menú y su propio seguimiento por temporada, con una
-                imagen profesional frente al cuerpo técnico.
-              </p>
-            </div>
-            <div class="persona fade d2">
-              <div class="persona-icon">
-                <svg viewBox="0 0 24 24">
-                  <rect x="3" y="4" width="18" height="17" rx="2" />
-                  <path d="M8 2v4M16 2v4M3 10h18" />
-                </svg>
-              </div>
-              <h3>Clínica con recepción</h3>
-              <p>
-                Tu recepcionista agenda las citas, tú manejas la parte
-                clínica. Cada quien ve solo lo que le corresponde, sin
-                fricción entre los dos roles.
-              </p>
-            </div>
-            <div class="persona fade d3">
-              <div class="persona-icon">
-                <svg viewBox="0 0 24 24">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
-              </div>
-              <h3>Consulta en crecimiento</h3>
-              <p>
-                Dejaste atrás la libreta y el Excel, pero las apps genéricas
-                de fitness no entienden antropometría, somatotipo ni
-                bioimpedancia.
-              </p>
-            </div>
           </div>
 
           <div class="compare-wrap fade">
@@ -1848,23 +1801,38 @@
               <div class="compare-label">Antes</div>
               <ul class="compare-list">
                 <li>
-                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                   Datos de atletas repartidos entre Excel, WhatsApp y papel
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                   Cálculos de VET y macros a mano en cada consulta
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                   Menús armados desde cero cada vez
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                   Sin forma clara de ver la evolución de un atleta en el tiempo
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                   Recepción y consulta clínica mezcladas en el mismo calendario
                 </li>
               </ul>
@@ -1873,28 +1841,231 @@
               <div class="compare-label">Con NutriFollow</div>
               <ul class="compare-list">
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   Ficha completa de cada atleta en un solo lugar
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   VET, macros y porciones calculados automáticamente
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   Plantillas de menú reutilizables, editables en minutos
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
-                  Somatocarta, bioimpedancia y medidas comparadas consulta a
-                  consulta
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Tablas de comparación de medidas de Antropometría,
+                  somatocarta, y bioimpedancia para ver la evolución del
+                  paciente.
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
-                  Calendario compartido con roles separados para tu
-                  recepcionista
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Calendario compartido con tu recepcionista para agendar citas
+                  sin fricciones.
                 </li>
               </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MENU LINK -->
+      <section id="menu-link">
+        <div class="container">
+          <div class="highlight-wrap fade">
+            <div class="hl-content">
+              <div class="hl-tag">
+                <span class="tag"
+                  ><span class="tag-dot"></span>Nueva función</span
+                >
+              </div>
+              <h2 class="hl-h2">
+                Menú interactivo, <em>en el celular de tu paciente</em>
+              </h2>
+              <p class="hl-p">
+                Comparte un enlace único y que tus pacientes vean su plan
+                semanal de forma interactiva, sin apps, sin cuentas y sin
+                complicaciones.
+              </p>
+              <div class="hl-steps">
+                <div class="hl-step">
+                  <div class="hl-step-n">1</div>
+                  <div class="hl-step-text">
+                    <strong>Diseña el menú</strong> con tus plantillas o desde
+                    cero.
+                  </div>
+                </div>
+                <div class="hl-step">
+                  <div class="hl-step-n">2</div>
+                  <div class="hl-step-text">
+                    <strong>Comparte el enlace</strong> con tu paciente
+                  </div>
+                </div>
+                <div class="hl-step">
+                  <div class="hl-step-n">3</div>
+                  <div class="hl-step-text">
+                    <strong>Tu paciente navega</strong> su plan día por día,
+                    anotando si logra cumplir con el tiempo de comida y mantener
+                    su racha de nutrición.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="hl-visual">
+              <div class="phone-mock">
+                <!-- Hero header (starts at top, includes notch) -->
+                <div class="phone-hero">
+                  <div class="phone-greeting">¡Buenos días, María!</div>
+                  <div class="phone-hero-sub">Tu menú de hoy está listo</div>
+                  <div class="phone-prog-row">
+                    <div class="phone-prog-box">
+                      <div class="phone-prog-top">
+                        <span class="phone-prog-name">Semana 1</span>
+                        <span class="phone-prog-val">75%</span>
+                      </div>
+                      <div class="phone-prog-track">
+                        <div class="phone-prog-fill" style="width: 75%"></div>
+                      </div>
+                    </div>
+                    <div class="phone-prog-box">
+                      <div class="phone-prog-top">
+                        <span class="phone-prog-name">Comidas</span>
+                        <span class="phone-prog-val">3/4</span>
+                      </div>
+                      <div class="phone-prog-track">
+                        <div class="phone-prog-fill" style="width: 75%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Day selector -->
+                <div class="phone-days">
+                  <div class="phone-day">
+                    <div class="pd-label">Lun</div>
+                    <div class="pd-num">24</div>
+                    <div class="pd-dot"></div>
+                  </div>
+                  <div class="phone-day active">
+                    <div class="pd-label">Mar</div>
+                    <div class="pd-num">25</div>
+                    <div class="pd-dot"></div>
+                  </div>
+                  <div class="phone-day">
+                    <div class="pd-label">Mié</div>
+                    <div class="pd-num">26</div>
+                    <div class="pd-dot"></div>
+                  </div>
+                  <div class="phone-day">
+                    <div class="pd-label">Jue</div>
+                    <div class="pd-num">27</div>
+                    <div class="pd-dot"></div>
+                  </div>
+                </div>
+                <!-- Day label -->
+                <div class="phone-day-title">
+                  <span>Martes, 25 de marzo</span>
+                  <span class="phone-today-badge">Hoy</span>
+                </div>
+                <!-- Meals -->
+                <div class="phone-meals">
+                  <div class="phone-meal done">
+                    <div
+                      class="pm-icon"
+                      style="background: #fef3c7; color: #d97706"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="4" />
+                        <line x1="12" y1="2" x2="12" y2="6" />
+                        <line x1="12" y1="18" x2="12" y2="22" />
+                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+                        <line x1="2" y1="12" x2="6" y2="12" />
+                        <line x1="18" y1="12" x2="22" y2="12" />
+                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+                        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
+                      </svg>
+                    </div>
+                    <div class="pm-text">
+                      <div class="pm-label">Desayuno</div>
+                      <div class="pm-title">Avena con fruta y yogur</div>
+                    </div>
+                    <div class="pm-check checked">✓</div>
+                  </div>
+                  <div class="phone-meal done">
+                    <div
+                      class="pm-icon"
+                      style="background: #dbeafe; color: #2563eb"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+                        <path d="M7 2v20" />
+                        <path
+                          d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"
+                        />
+                      </svg>
+                    </div>
+                    <div class="pm-text">
+                      <div class="pm-label">Almuerzo</div>
+                      <div class="pm-title">Pollo, arroz y verduras</div>
+                    </div>
+                    <div class="pm-check checked">✓</div>
+                  </div>
+                  <div class="phone-meal">
+                    <div
+                      class="pm-icon"
+                      style="background: #ede9fe; color: #7c3aed"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+                        />
+                      </svg>
+                    </div>
+                    <div class="pm-text">
+                      <div class="pm-label">Cena</div>
+                      <div class="pm-title">Ensalada con proteína</div>
+                    </div>
+                    <div class="pm-check"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1905,12 +2076,10 @@
         <div class="container">
           <div class="section-header fade">
             <span class="tag">Funcionalidades</span>
-            <h2 class="section-h2">
-              Tu clínica digital,<br /><em>centralizada en un solo lugar</em>
-            </h2>
+            <h2 class="section-h2">Que puedes hacer con NutriFollow</h2>
             <p class="section-lead">
-              Desde la primera evaluación hasta el seguimiento a largo plazo
-              de cada atleta.
+              Desde la primera evaluación hasta el seguimiento a largo plazo de
+              cada atleta.
             </p>
           </div>
           <div class="features-bento">
@@ -2023,8 +2192,8 @@
               <h3 class="feat-h3">Agenda de citas completa</h3>
               <p class="feat-p">
                 Programa, reprograma y da seguimiento a cada cita: modalidad,
-                duración, estado y recordatorios automáticos. Todo
-                sincronizado con Google Calendar.
+                duración, estado y recordatorios automáticos. Todo sincronizado
+                con Google Calendar.
               </p>
             </div>
             <div class="feat fade d1">
@@ -2037,145 +2206,10 @@
               </div>
               <h3 class="feat-h3">Control de pagos y facturas</h3>
               <p class="feat-p">
-                Registra ingresos y egresos por paciente: estado de pago,
-                método y categoría. Sabes de un vistazo qué cobrar y qué ya
-                está pagado.
+                Registra ingresos y egresos por paciente: estado de pago, método
+                y categoría. Sabes de un vistazo qué cobrar y qué ya está
+                pagado.
               </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- MENU LINK -->
-      <section id="menu-link">
-        <div class="container">
-          <div class="highlight-wrap fade">
-            <div class="hl-content">
-              <div class="hl-tag">
-                <span class="tag"
-                  ><span class="tag-dot"></span>Nueva función</span
-                >
-              </div>
-              <h2 class="hl-h2">
-                Menú interactivo, <em>en el celular<br />de tu paciente</em>
-              </h2>
-              <p class="hl-p">
-                Comparte un enlace único y que tus pacientes vean su plan
-                semanal de forma interactiva, sin apps, sin cuentas y sin
-                complicaciones.
-              </p>
-              <div class="hl-steps">
-                <div class="hl-step">
-                  <div class="hl-step-n">1</div>
-                  <div class="hl-step-text">
-                    <strong>Diseña el menú</strong> con tus plantillas o desde cero.
-                  </div>
-                </div>
-                <div class="hl-step">
-                  <div class="hl-step-n">2</div>
-                  <div class="hl-step-text">
-                    <strong>Comparte el enlace</strong> con tu paciente
-                  </div>
-                </div>
-                <div class="hl-step">
-                  <div class="hl-step-n">3</div>
-                  <div class="hl-step-text">
-                    <strong>Tu paciente navega</strong> su plan día por día,
-                    anotando si logra cumplir con el tiempo de comida y mantener
-                    su racha de nutrición.
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="hl-visual">
-              <div class="phone-mock">
-                <!-- Hero header (starts at top, includes notch) -->
-                <div class="phone-hero">
-                  <div class="phone-greeting">¡Buenos días, María!</div>
-                  <div class="phone-hero-sub">Tu menú de hoy está listo</div>
-                  <div class="phone-prog-row">
-                    <div class="phone-prog-box">
-                      <div class="phone-prog-top">
-                        <span class="phone-prog-name">Semana 1</span>
-                        <span class="phone-prog-val">75%</span>
-                      </div>
-                      <div class="phone-prog-track">
-                        <div class="phone-prog-fill" style="width:75%"></div>
-                      </div>
-                    </div>
-                    <div class="phone-prog-box">
-                      <div class="phone-prog-top">
-                        <span class="phone-prog-name">Comidas</span>
-                        <span class="phone-prog-val">3/4</span>
-                      </div>
-                      <div class="phone-prog-track">
-                        <div class="phone-prog-fill" style="width:75%"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- Day selector -->
-                <div class="phone-days">
-                  <div class="phone-day">
-                    <div class="pd-label">Lun</div>
-                    <div class="pd-num">24</div>
-                    <div class="pd-dot"></div>
-                  </div>
-                  <div class="phone-day active">
-                    <div class="pd-label">Mar</div>
-                    <div class="pd-num">25</div>
-                    <div class="pd-dot"></div>
-                  </div>
-                  <div class="phone-day">
-                    <div class="pd-label">Mié</div>
-                    <div class="pd-num">26</div>
-                    <div class="pd-dot"></div>
-                  </div>
-                  <div class="phone-day">
-                    <div class="pd-label">Jue</div>
-                    <div class="pd-num">27</div>
-                    <div class="pd-dot"></div>
-                  </div>
-                </div>
-                <!-- Day label -->
-                <div class="phone-day-title">
-                  <span>Martes, 25 de marzo</span>
-                  <span class="phone-today-badge">Hoy</span>
-                </div>
-                <!-- Meals -->
-                <div class="phone-meals">
-                  <div class="phone-meal done">
-                    <div class="pm-icon" style="background:#FEF3C7;color:#D97706;">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
-                    </div>
-                    <div class="pm-text">
-                      <div class="pm-label">Desayuno</div>
-                      <div class="pm-title">Avena con fruta y yogur</div>
-                    </div>
-                    <div class="pm-check checked">✓</div>
-                  </div>
-                  <div class="phone-meal done">
-                    <div class="pm-icon" style="background:#DBEAFE;color:#2563EB;">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
-                    </div>
-                    <div class="pm-text">
-                      <div class="pm-label">Almuerzo</div>
-                      <div class="pm-title">Pollo, arroz y verduras</div>
-                    </div>
-                    <div class="pm-check checked">✓</div>
-                  </div>
-                  <div class="phone-meal">
-                    <div class="pm-icon" style="background:#EDE9FE;color:#7C3AED;">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                    </div>
-                    <div class="pm-text">
-                      <div class="pm-label">Cena</div>
-                      <div class="pm-title">Ensalada con proteína</div>
-                    </div>
-                    <div class="pm-check"></div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -2190,8 +2224,8 @@
               ¿Cómo lo usarías<br /><em>en tu consulta?</em>
             </h2>
             <p class="section-lead">
-              Así se ve un día normal de trabajo con NutriFollow, de la cita
-              al menú compartido.
+              Así se ve un día normal de trabajo con NutriFollow, de la cita al
+              menú compartido.
             </p>
           </div>
           <div class="how-steps">
@@ -2203,9 +2237,8 @@
               <div class="how-step-card">
                 <h3>Revisas tu dashboard</h3>
                 <p>
-                  Entras y ves de un vistazo cómo va tu clínica: citas del
-                  día, menús pendientes, pagos por cobrar y seguimientos
-                  atrasados.
+                  Entras y ves de un vistazo cómo va tu clínica: citas del día,
+                  menús pendientes, pagos por cobrar y seguimientos atrasados.
                 </p>
               </div>
             </div>
@@ -2218,8 +2251,8 @@
                 <h3>Agregas al paciente y su historial</h3>
                 <p>
                   Al momento de cada cita registras al paciente y llenas su
-                  historial clínico: antecedentes, diagnóstico, alergias y
-                  datos personales.
+                  historial clínico: antecedentes, diagnóstico, alergias y datos
+                  personales.
                 </p>
               </div>
             </div>
@@ -2232,30 +2265,29 @@
                 <h3>Creas la evaluación de esa sesión</h3>
                 <p>
                   Cada evaluación es como un folder donde guardas todo lo
-                  recolectado ese día, y te va guiando con las preguntas
-                  exactas que necesitas hacer para no olvidar nada.
+                  recolectado ese día, y te va guiando con las preguntas exactas
+                  que necesitas hacer para no olvidar nada.
                 </p>
                 <ul class="how-sublist">
                   <li>
-                    <span class="how-dot"></span>Evaluación dietética: qué
-                    comió en las últimas 24 horas
+                    <span class="how-dot"></span>Evaluación dietética: qué comió
+                    en las últimas 24 horas
                   </li>
                   <li>
                     <span class="how-dot"></span>Medidas antropométricas o de
                     bioimpedancia
                   </li>
                   <li>
-                    <span class="how-dot"></span>Cálculos automáticos y
-                    reportes de comparación para mostrarle al paciente su
-                    evolución
+                    <span class="how-dot"></span>Cálculos automáticos y reportes
+                    de comparación para mostrarle al paciente su evolución
                   </li>
                   <li>
                     <span class="how-dot"></span>Somatocarta generada con los
                     ejes de sus medidas
                   </li>
                   <li>
-                    <span class="how-dot"></span>Laboratorios y fotos
-                    adjuntos a la evaluación
+                    <span class="how-dot"></span>Laboratorios y fotos adjuntos a
+                    la evaluación
                   </li>
                 </ul>
               </div>
@@ -2299,18 +2331,18 @@
               <div class="how-step-card">
                 <h3>Exportas y compartes el menú</h3>
                 <p>
-                  Con el menú listo, lo dejas guardado y a un link de
-                  distancia de tu paciente.
+                  Con el menú listo, lo dejas guardado y a un link de distancia
+                  de tu paciente.
                 </p>
                 <ul class="how-sublist">
                   <li>
-                    <span class="how-dot"></span>Exporta a PDF y guárdalo
-                    como plantilla para usarlo en el futuro
+                    <span class="how-dot"></span>Exporta a PDF y guárdalo como
+                    plantilla para usarlo en el futuro
                   </li>
                   <li>
                     <span class="how-dot"></span>Comparte un link para que tu
-                    paciente lo vea en PDF o como tracker interactivo desde
-                    su celular, sin instalar nada
+                    paciente lo vea en PDF o como tracker interactivo desde su
+                    celular, sin instalar nada
                   </li>
                 </ul>
               </div>
@@ -2325,7 +2357,9 @@
           <div class="section-header fade">
             <span class="tag">Preguntas frecuentes</span>
             <h2 class="section-h2">
-              Lo que las nutricionistas<br /><em>nos preguntan antes de empezar</em>
+              Lo que las nutricionistas<br /><em
+                >nos preguntan antes de empezar</em
+              >
             </h2>
           </div>
           <div class="faq-list fade">
@@ -2334,24 +2368,25 @@
                 ¿NutriFollow es solo para nutrición deportiva o también lo
                 pueden usar en nutrición en general?
                 <span class="faq-icon"
-                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9" /></svg
                 ></span>
               </summary>
               <div class="faq-answer">
                 <p>
-                  Todas las nutricionistas lo pueden usar. Llevar el
-                  historial clínico, registrar pacientes, dar seguimiento a
-                  calendario y pagos, y registrar medidas se adapta a
-                  cualquier consulta, deportiva o no.
+                  Todas las nutricionistas lo pueden usar. Llevar el historial
+                  clínico, registrar pacientes, dar seguimiento a calendario y
+                  pagos, y registrar medidas se adapta a cualquier consulta,
+                  deportiva o no.
                 </p>
                 <p style="margin-top: 12px">
-                  Donde las nutricionistas deportivas le sacan mayor
-                  provecho es en el cálculo nutricional automático al crear
-                  el menú, que trae fórmulas basadas en nutrición deportiva.
-                  Aun así, puedes ver la fórmula detrás de cada campo y, si
-                  aplica a tu paciente, usarla sin problema; y si prefieres
-                  no usar el cálculo automático deportivo, puedes saltártelo
-                  e ir directo a la redacción del menú.
+                  Donde las nutricionistas deportivas le sacan mayor provecho es
+                  en el cálculo nutricional automático al crear el menú, que
+                  trae fórmulas basadas en nutrición deportiva. Aun así, puedes
+                  ver la fórmula detrás de cada campo y, si aplica a tu
+                  paciente, usarla sin problema; y si prefieres no usar el
+                  cálculo automático deportivo, puedes saltártelo e ir directo a
+                  la redacción del menú.
                 </p>
               </div>
             </details>
@@ -2359,13 +2394,14 @@
               <summary>
                 ¿Mis atletas necesitan instalar una app?
                 <span class="faq-icon"
-                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9" /></svg
                 ></span>
               </summary>
               <div class="faq-answer">
                 <p>
-                  No. Compartes un enlace y tu atleta abre su menú semanal
-                  desde el celular sin instalar nada ni crear una cuenta.
+                  No. Compartes un enlace y tu atleta abre su menú semanal desde
+                  el celular sin instalar nada ni crear una cuenta.
                 </p>
               </div>
             </details>
@@ -2373,14 +2409,15 @@
               <summary>
                 ¿En qué dispositivos funciona?
                 <span class="faq-icon"
-                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9" /></svg
                 ></span>
               </summary>
               <div class="faq-answer">
                 <p>
                   Funciona en cualquier dispositivo con navegador web:
-                  computadoras, tablets y celulares. El modo presentación
-                  está optimizado especialmente para computadora.
+                  computadoras, tablets y celulares. El modo presentación está
+                  optimizado especialmente para computadora.
                 </p>
               </div>
             </details>
@@ -2388,13 +2425,14 @@
               <summary>
                 ¿Funciona sin conexión a internet?
                 <span class="faq-icon"
-                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9" /></svg
                 ></span>
               </summary>
               <div class="faq-answer">
                 <p>
-                  No. Es importante tener una buena conexión a internet para
-                  que el guardado de la información sea rápido y seguro.
+                  No. Es importante tener una buena conexión a internet para que
+                  el guardado de la información sea rápido y seguro.
                 </p>
               </div>
             </details>
@@ -2403,18 +2441,19 @@
                 ¿Puedo tener una recepcionista que maneje mi agenda del
                 calendario sin que vea el historial clínico de mis pacientes?
                 <span class="faq-icon"
-                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9" /></svg
                 ></span>
               </summary>
               <div class="faq-answer">
                 <p>
                   Sí. Los roles están separados: tu recepcionista gestiona la
-                  agenda de citas y tú eres la única con acceso a
-                  evaluaciones, menús y datos clínicos. El calendario no
-                  permite que los pacientes se autoagenden: la agenda solo la
-                  configuran la nutricionista y la recepcionista. También
-                  puedes sincronizarlo con Google Calendar para llevar
-                  contigo la agenda de tus pacientes.
+                  agenda de citas y tú eres la única con acceso a evaluaciones,
+                  menús y datos clínicos. El calendario no permite que los
+                  pacientes se autoagenden: la agenda solo la configuran la
+                  nutricionista y la recepcionista. También puedes sincronizarlo
+                  con Google Calendar para llevar contigo la agenda de tus
+                  pacientes.
                 </p>
               </div>
             </details>
@@ -2422,13 +2461,14 @@
               <summary>
                 ¿Qué tan seguros están los datos de mis pacientes?
                 <span class="faq-icon"
-                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9" /></svg
                 ></span>
               </summary>
               <div class="faq-answer">
                 <p>
-                  Tus datos viven en la nube, protegidos y bajo tu control.
-                  Nada se comparte con terceros ni se usa fuera de tu cuenta.
+                  Tus datos viven en la nube, protegidos y bajo tu control. Nada
+                  se comparte con terceros ni se usa fuera de tu cuenta.
                 </p>
               </div>
             </details>
@@ -2437,30 +2477,31 @@
                 ¿El plan gratis tiene límite de tiempo o pide tarjeta de
                 crédito?
                 <span class="faq-icon"
-                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9" /></svg
                 ></span>
               </summary>
               <div class="faq-answer">
                 <p>
-                  No. El plan Básico es gratis de forma permanente, sin
-                  tarjeta, con acceso completo a las funciones hasta 10
-                  pacientes activos.
+                  No. El plan Básico es gratis de forma permanente, sin tarjeta,
+                  con acceso completo a las funciones hasta 10 pacientes
+                  activos.
                 </p>
               </div>
             </details>
             <details class="faq-item">
               <summary>
-                ¿Cuánto tiempo toma empezar a usarlo con mis pacientes
-                actuales?
+                ¿Cuánto tiempo toma empezar a usarlo con mis pacientes actuales?
                 <span class="faq-icon"
-                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9" /></svg
                 ></span>
               </summary>
               <div class="faq-answer">
                 <p>
                   Puedes crear tu cuenta y empezar a registrar pacientes,
-                  evaluaciones y menús el mismo día. No hay instalación ni
-                  curva de aprendizaje larga.
+                  evaluaciones y menús el mismo día. No hay instalación ni curva
+                  de aprendizaje larga.
                 </p>
               </div>
             </details>
@@ -2468,14 +2509,15 @@
               <summary>
                 ¿Qué tan complejo es aprender a usarlo?
                 <span class="faq-icon"
-                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9" /></svg
                 ></span>
               </summary>
               <div class="faq-answer">
                 <p>
                   Es muy intuitivo. Encontrarás guías de página y de uso para
-                  sacarle el máximo potencial a cada función, y si tienes
-                  dudas puedes consultarlas por correo o WhatsApp.
+                  sacarle el máximo potencial a cada función, y si tienes dudas
+                  puedes consultarlas por correo o WhatsApp.
                 </p>
               </div>
             </details>
@@ -2483,7 +2525,8 @@
               <summary>
                 ¿Puedo cancelar el plan Pro cuando quiera?
                 <span class="faq-icon"
-                  ><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9" /></svg
                 ></span>
               </summary>
               <div class="faq-answer">
@@ -2503,8 +2546,8 @@
               Empieza gratis,<br /><em>crece cuando lo necesites</em>
             </h2>
             <p class="section-lead">
-              Ambos planes incluyen todas las funciones de la plataforma. Pro
-              te da registros ilimitados.
+              Ambos planes incluyen todas las funciones de la plataforma. Pro te
+              da registros ilimitados.
             </p>
           </div>
           <div class="pricing-grid">
@@ -2516,54 +2559,78 @@
               <div class="price-value">$0 <span>/mes</span></div>
               <ul class="price-list">
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   Acceso completo a todas las funciones
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   Hasta 10 pacientes activos
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   Hasta 20 citas en calendario
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   Hasta 20 facturas registradas
                 </li>
               </ul>
-              <a href="https://my.nutrifollow.app/login" class="btn btn-outline">Empezar gratis</a>
+              <a href="https://my.nutrifollow.app/login" class="btn btn-outline"
+                >Empezar gratis</a
+              >
             </div>
             <div class="price-card featured fade d1">
               <div class="price-top">
                 <span class="price-name">Pro</span>
                 <span class="price-popular">Más popular</span>
               </div>
-              <p class="price-desc">Para clínicas sin límites de crecimiento.</p>
+              <p class="price-desc">
+                Para clínicas sin límites de crecimiento.
+              </p>
               <div class="price-value">$29 <span>USD/mes</span></div>
               <span class="price-promo">50% OFF tu primer pago</span>
               <ul class="price-list">
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   Acceso completo a todas las funciones
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   Pacientes ilimitados
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   Citas ilimitadas
                 </li>
                 <li>
-                  <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
+                  <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                   Facturas ilimitadas
                 </li>
               </ul>
-              <a href="https://my.nutrifollow.app/login" class="btn btn-primary">Suscribirme a Pro</a>
+              <a href="https://my.nutrifollow.app/login" class="btn btn-primary"
+                >Suscribirme a Pro</a
+              >
             </div>
           </div>
-          <p class="price-note">Puedes cancelar cuando quieras, sin penalizaciones.</p>
+          <p class="price-note">
+            Puedes cancelar cuando quieras, sin penalizaciones.
+          </p>
         </div>
       </section>
 
@@ -2600,7 +2667,9 @@
             alt="NutriFollow"
             class="nav-logo-img"
           />
-          <span>NutriFollow<span style="color: var(--sky-dark);">.app</span></span>
+          <span
+            >NutriFollow<span style="color: var(--sky-dark)">.app</span></span
+          >
         </a>
         <nav class="footer-links">
           <a href="#about">Qué es</a>
@@ -2610,7 +2679,32 @@
           <a href="#pricing">Planes</a>
           <a href="https://my.nutrifollow.app/login">Iniciar sesión</a>
         </nav>
-        <p class="footer-copy">© 2026 NutriFollow &nbsp;·&nbsp; <a href="https://my.nutrifollow.app/privacy-policy" style="color:inherit;text-decoration:underline;">Política de Privacidad</a> &nbsp;·&nbsp; <a href="https://my.nutrifollow.app/terms-of-service" style="color:inherit;text-decoration:underline;">Términos de Servicio</a> &nbsp;·&nbsp; <a href="https://my.nutrifollow.app/sensitive-data-policy.html" style="color:inherit;text-decoration:underline;">Datos Sensibles</a> &nbsp;·&nbsp; <a href="https://my.nutrifollow.app/disclaimers.html" style="color:inherit;text-decoration:underline;">Disclaimers</a></p>
+        <p class="footer-copy">
+          © 2026 NutriFollow &nbsp;·&nbsp;
+          <a
+            href="https://my.nutrifollow.app/privacy-policy"
+            style="color: inherit; text-decoration: underline"
+            >Política de Privacidad</a
+          >
+          &nbsp;·&nbsp;
+          <a
+            href="https://my.nutrifollow.app/terms-of-service"
+            style="color: inherit; text-decoration: underline"
+            >Términos de Servicio</a
+          >
+          &nbsp;·&nbsp;
+          <a
+            href="https://my.nutrifollow.app/sensitive-data-policy.html"
+            style="color: inherit; text-decoration: underline"
+            >Datos Sensibles</a
+          >
+          &nbsp;·&nbsp;
+          <a
+            href="https://my.nutrifollow.app/disclaimers.html"
+            style="color: inherit; text-decoration: underline"
+            >Disclaimers</a
+          >
+        </p>
       </div>
     </footer>
 
@@ -2662,12 +2756,20 @@
       const chart = document.getElementById("chart");
       if (chart) {
         const pts = [18, 32, 24, 44, 36, 52, 42, 58, 50, 64, 54, 70];
-        const W = 220, H = 56, pad = 4;
-        const xs = pts.map((_, i) => pad + (i / (pts.length - 1)) * (W - pad * 2));
-        const ys = pts.map(v => H - pad - ((v - 10) / 65) * (H - pad * 2));
+        const W = 220,
+          H = 56,
+          pad = 4;
+        const xs = pts.map(
+          (_, i) => pad + (i / (pts.length - 1)) * (W - pad * 2),
+        );
+        const ys = pts.map((v) => H - pad - ((v - 10) / 65) * (H - pad * 2));
         const linePts = xs.map((x, i) => `${x},${ys[i]}`).join(" ");
-        const areaPts = `${xs[0]},${H} ` + xs.map((x, i) => `${x},${ys[i]}`).join(" ") + ` ${xs[xs.length-1]},${H}`;
-        const lastX = xs[xs.length - 1], lastY = ys[ys.length - 1];
+        const areaPts =
+          `${xs[0]},${H} ` +
+          xs.map((x, i) => `${x},${ys[i]}`).join(" ") +
+          ` ${xs[xs.length - 1]},${H}`;
+        const lastX = xs[xs.length - 1],
+          lastY = ys[ys.length - 1];
 
         chart.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
           <defs>
@@ -2687,7 +2789,9 @@
         </svg>`;
 
         setTimeout(() => {
-          chart.querySelectorAll(".chart-line-path, .chart-area-path, .chart-dot").forEach(el => el.classList.add("animated"));
+          chart
+            .querySelectorAll(".chart-line-path, .chart-area-path, .chart-dot")
+            .forEach((el) => el.classList.add("animated"));
         }, 400);
       }
 
