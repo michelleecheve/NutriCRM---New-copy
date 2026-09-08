@@ -22,6 +22,7 @@ import { PlanLimitModal } from './components/PlanLimitModal';
 import { SupabaseStatusBanner } from './components/SupabaseStatusBanner';
 import { store } from './services/store';
 import { seedExamplePatientIfNeeded } from './services/exampleSeed';
+import { setAnalyticsUser, clearAnalyticsUser } from './services/analytics';
 import { TourOverlay } from './components/tour/TourOverlay';
 
 const OAUTH_CALLBACK_ROUTE = '__oauth_callback__';
@@ -87,6 +88,7 @@ function App() {
       setIsAuthReady(true);
 
       if (user) {
+        setAnalyticsUser(user.id, user.role);
         setCurrentRoute(prev => {
           // Redirect to home from any unauthenticated-only page or unknown URL (LANDING)
           if (
@@ -104,6 +106,7 @@ function App() {
           seedExamplePatientIfNeeded();
         }
       } else {
+        clearAnalyticsUser();
         setCurrentRoute(prev => {
           if (
             prev === AppRoute.REGISTER ||
