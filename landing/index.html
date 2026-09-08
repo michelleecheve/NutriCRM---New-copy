@@ -11,7 +11,11 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
-      gtag('config', 'G-C588B79E8B');
+      gtag('config', 'G-C588B79E8B', {
+        linker: {
+          domains: ['my.nutrifollow.app', 'www.nutrifollow.app']
+        }
+      });
     </script>
 
     <title>NutriFollow · Gestión Nutricional para tu Clínica</title>
@@ -2814,6 +2818,22 @@
             e.preventDefault();
             t.scrollIntoView({ behavior: "smooth", block: "start" });
           }
+        });
+      });
+
+      // Google Analytics: trackea cada clic en un botón que lleva a la app
+      // (my.nutrifollow.app) para poder armar el embudo landing → registro/login.
+      document.querySelectorAll('a[href="https://my.nutrifollow.app/"]').forEach((link) => {
+        link.addEventListener("click", () => {
+          if (typeof gtag !== "function") return;
+          const header = link.closest("header");
+          const footer = link.closest("footer");
+          const section = link.closest("section[id]");
+          const location = header ? "header" : footer ? "footer" : section ? section.id : "other";
+          gtag("event", "cta_click", {
+            cta_label: link.textContent.trim().replace(/\s+/g, " "),
+            cta_location: location,
+          });
         });
       });
     </script>

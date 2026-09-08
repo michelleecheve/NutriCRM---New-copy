@@ -3,6 +3,7 @@ import { Lock, Mail, ArrowRight, AlertCircle, User, Globe, Camera, ArrowLeft, Ma
 import { authStore } from '../services/authStore';
 import { supabaseService } from '../services/supabaseService';
 import { compressImage } from '../services/imageUtils';
+import { trackEvent } from '../services/analytics';
 import { AppRoute, UserRole } from '../types';
 
 interface RegisterProps {
@@ -188,6 +189,10 @@ export const Register: React.FC<RegisterProps> = ({ onBack, onSuccess }) => {
         setCaptchaToken('');
         return;
       }
+
+      // Cuenta creada en Supabase Auth — cuenta como "sign_up" completo en GA,
+      // haya o no que confirmar el correo todavía.
+      trackEvent('sign_up', { method: 'email', role });
 
       // 2. If there's an avatar, upload it and update the profile
       const user = authStore.getCurrentUser();

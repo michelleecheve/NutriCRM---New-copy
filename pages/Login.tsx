@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Lock, Mail, ArrowRight, AlertCircle, ArrowLeft, CheckCircle } from 'lucide-react';
 import { authStore } from '../services/authStore';
 import { supabase } from '../services/supabase';
+import { trackEvent } from '../services/analytics';
 import { UserRole } from '../types';
 
 interface LoginProps {
@@ -117,6 +118,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, onNavigateToRegister, onN
         return;
       }
 
+      trackEvent('login', { method: 'email' });
       onLogin(user.role);
     } catch (err) {
       setIsLoading(false);
