@@ -1675,6 +1675,64 @@
         font-size: 12px;
         color: var(--text-dim);
       }
+
+      /* Aviso de cookies */
+      #cookie-notice {
+        position: fixed;
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        z-index: 999;
+        max-width: 640px;
+        margin: 0 auto;
+        background: #fff;
+        border: 1px solid var(--border2);
+        border-radius: 16px;
+        box-shadow: var(--shadow-lg);
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      #cookie-notice p {
+        flex: 1 1 260px;
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--text-muted);
+      }
+      #cookie-notice a {
+        color: var(--sky-dark);
+        font-weight: 700;
+        text-decoration: underline;
+      }
+      #cookie-notice button {
+        flex: 0 0 auto;
+        font-family: var(--font);
+        font-weight: 700;
+        font-size: 13px;
+        color: #fff;
+        background: var(--sky);
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      #cookie-notice button:hover {
+        background: var(--sky-dark);
+      }
+      @media (max-width: 480px) {
+        #cookie-notice {
+          flex-direction: column;
+          align-items: stretch;
+          text-align: center;
+        }
+        #cookie-notice button {
+          width: 100%;
+        }
+      }
     </style>
   </head>
   <body>
@@ -2723,6 +2781,15 @@
       </div>
     </footer>
 
+    <div id="cookie-notice" hidden>
+      <p>
+        Usamos cookies propias y de Google Analytics para entender cómo se
+        usa este sitio y mejorarlo. Más info en nuestra
+        <a href="https://my.nutrifollow.app/privacy-policy">Política de Privacidad</a>.
+      </p>
+      <button type="button" id="cookie-notice-close">Entendido</button>
+    </div>
+
     <script>
       // Progress
       window.addEventListener(
@@ -2820,6 +2887,24 @@
           }
         });
       });
+
+      // Aviso de cookies: se muestra una sola vez por navegador (no bloquea
+      // la carga de Google Analytics, solo informa).
+      (function () {
+        try {
+          if (localStorage.getItem("cookie_notice_dismissed") === "1") return;
+        } catch (e) {}
+        const notice = document.getElementById("cookie-notice");
+        if (!notice) return;
+        notice.hidden = false;
+        const closeBtn = document.getElementById("cookie-notice-close");
+        closeBtn.addEventListener("click", () => {
+          notice.hidden = true;
+          try {
+            localStorage.setItem("cookie_notice_dismissed", "1");
+          } catch (e) {}
+        });
+      })();
 
       // Google Analytics: trackea cada clic en un botón que lleva a la app
       // (my.nutrifollow.app) para poder armar el embudo landing → registro/login.
