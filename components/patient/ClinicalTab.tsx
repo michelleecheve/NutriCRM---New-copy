@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Patient } from '../../types';
 import { store } from '../../services/store';
-import { User, Activity, History as HistoryIcon, Flag, Plus, Trash2 } from 'lucide-react';
+import { User, Activity, History as HistoryIcon, Flag, Plus, Trash2, Copy, Check } from 'lucide-react';
 import { GridInput, SectionHeader, ModernTextArea } from './SharedComponents';
 import { SaveButton } from '../SaveButton';
 
@@ -13,6 +13,7 @@ export const ClinicalTab: React.FC<{
 }> = ({ patient, onUpdate, hideHeader, hideContainer }) => {
   const [localPatient, setLocalPatient] = React.useState<Patient>(patient);
   const [statusList, setStatusList] = React.useState<string[]>(store.getPatientStatuses().filter(s => s !== 'Sin Status'));
+  const [clinicalInfoCopied, setClinicalInfoCopied] = React.useState(false);
 
   // Sincronizar estado local si cambia el paciente (por ejemplo al cambiar de ID)
   useEffect(() => {
@@ -64,6 +65,74 @@ export const ClinicalTab: React.FC<{
     await onUpdate(localPatient);
   };
 
+  const copyClinicalInfo = () => {
+    const c = localPatient.clinical;
+    const fullName = `${localPatient.firstName || ''} ${localPatient.lastName || ''}`.trim();
+    const val = (v: any) => (v !== undefined && v !== null && String(v).trim() !== '') ? String(v) : 'Sin especificar';
+
+    const lines: string[] = [];
+    lines.push(`FICHA CLÍNICA: ${fullName || 'Sin nombre'}`);
+    lines.push(`Status: ${c.status || 'Sin Status'}`);
+    lines.push('');
+    lines.push('INFORMACIÓN PERSONAL');
+    lines.push(`Nombre completo: ${fullName || 'Sin especificar'}`);
+    lines.push(`CUI/DPI: ${val(c.cui)}`);
+    lines.push(`Fecha de nacimiento: ${val(c.birthdate)}`);
+    lines.push(`Edad: ${c.age ? `${c.age} años` : 'Sin especificar'}`);
+    lines.push(`Género: ${val(c.sex)}`);
+    lines.push(`Email: ${val(c.email)}`);
+    lines.push(`Teléfono: ${val(c.phone)}`);
+    lines.push(`Trabajo: ${val(c.occupation)}`);
+    lines.push(`Estudio: ${val(c.study)}`);
+    lines.push('');
+    lines.push('Motivos de Consulta:');
+    lines.push(val(c.consultmotive));
+    lines.push('');
+    lines.push('Antecedentes:');
+    lines.push(val(c.clinicalbackground));
+    lines.push('');
+    lines.push('PERFIL DEPORTIVO');
+    const sports = localPatient.sportsProfile || [];
+    if (sports.length > 0) {
+      sports.forEach((s, i) => {
+        lines.push(`${i + 1}. Deporte/Actividad: ${val(s.sport)}`);
+        lines.push(`   Días por semana: ${val(s.daysPerWeek)}`);
+        lines.push(`   Horario: ${val(s.schedule)}`);
+        lines.push(`   Horas al día: ${val(s.hoursPerDay)}`);
+      });
+    } else {
+      lines.push('Sin deportes o actividades físicas registradas.');
+    }
+    lines.push('');
+    lines.push(`Categoría / Disciplina: ${val(c.categ_discipline)}`);
+    lines.push(`Edad Deportiva: ${val(c.sport_age)}`);
+    lines.push(`Competencia: ${val(c.competencia)}`);
+    lines.push('');
+    lines.push('HISTORIA CLÍNICA');
+    lines.push(`Diagnóstico médico: ${val(c.diagnosis)}`);
+    lines.push(`Antecedentes familiares de enfermedades: ${val(c.familyHistory)}`);
+    lines.push(`Medicamentos: ${val(c.medications)}`);
+    lines.push(`Suplementos: ${val(c.supplements)}`);
+    lines.push(`Alergias y/o Intolerancias: ${val(c.allergies)}`);
+    lines.push('');
+    lines.push('Horas de Sueño:');
+    lines.push(val(c.sleep_hours));
+    lines.push('');
+    lines.push('Periodo Menstrual (si aplica)');
+    lines.push(`Regular: ${val(c.regularPeriod)}`);
+    lines.push(`Duración: ${val(c.periodDuration)}`);
+    lines.push(`Edad de primera menstruación: ${val(c.firstperiodage)}`);
+    lines.push(`Otros: ${val(c.menstrualOthers)}`);
+    lines.push('');
+    lines.push('Otras Notas:');
+    lines.push(val(c.othersNotes));
+
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      setClinicalInfoCopied(true);
+      setTimeout(() => setClinicalInfoCopied(false), 2000);
+    });
+  };
+
   useEffect(() => {
     if (localPatient.clinical.birthdate) {
       const today = new Date();
@@ -91,6 +160,24 @@ export const ClinicalTab: React.FC<{
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <SectionHeader icon={Flag} title="Status del Paciente" />
+          <button
+            type="button"
+            onClick={copyClinicalInfo}
+            title="Copiar toda la información de esta pestaña"
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            {clinicalInfoCopied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-emerald-600">Copiado</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                Copiar información
+              </>
+            )}
+          </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2">
           <div className="flex flex-col">

@@ -303,6 +303,52 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     }
   }, [formEvaluation?.date, currentMenuId]);
 
+  // Arma el GeneratedMenu a partir del estado actual del formulario. `menuDataOverride` permite
+  // guardar un menuData específico (en vez del que esté en el state) para evitar carreras cuando
+  // se necesita persistir inmediatamente un cambio recién calculado (ver persistMenuDataSilently).
+  const buildMenuToSave = (ev: PatientEvaluation, menuDataOverride?: MenuPlanData | null): GeneratedMenu => {
+    const menuId = currentMenuIdRef.current || crypto.randomUUID();
+    currentMenuIdRef.current = menuId;
+    const data = menuDataOverride !== undefined ? menuDataOverride : menuPreviewData;
+
+    return {
+      id: menuId,
+      date: ev.date,
+      linkedEvaluationId: formEvaluationId!,
+      patientId: patient.id,
+      age: vetData.age,
+      weightKg: vetData.weight,
+      heightCm: vetData.height,
+      gender: vetData.sex,
+      vetDetails: {
+        activityLevel: vetData.activityLevel,
+        activityFactor: vetData.activityFactor,
+        tmbKcal: vetData.kcal,
+        getKcalReal: vetData.kcalReal
+      },
+      kcalToWork: vetData.kcalToWork,
+      macros: macros,
+      portions: portions,
+      templatesReferences: JSON.stringify({
+        templateId: selectedTemplateId,
+        referenceIds: selectedReferenceIds,
+        recommendationIds: selectedRecommendationIds
+      }),
+      templateId: selectedPreviewTemplate,
+      designConfig: {
+        ...localDesignConfig,
+        templateDesign: selectedPreviewTemplate as MenuDesignConfig['templateDesign'],
+      },
+      menuData: data ? {
+        ...data,
+        sectionTitles: data.sectionTitles ?? store.getMenuTemplate()?.sectionTitles,
+      } : data,
+      name: menuName || `Menú ${vetData.kcalToWork} kcal`,
+      content: '',
+      aiRationale: ''
+    };
+  };
+
   const handleSaveAndClose = async () => {
     if (!formEvaluationId) {
       setInfoModal({ title: 'Falta evaluación', message: 'Primero selecciona una evaluación.' });
@@ -314,48 +360,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
       return;
     }
 
-    const menuId = currentMenuIdRef.current || crypto.randomUUID();
-    currentMenuIdRef.current = menuId;
-
-    const menuToSave: GeneratedMenu = {
-      id: menuId,
-      date: ev.date,
-      linkedEvaluationId: formEvaluationId,
-      patientId: patient.id,
-      age: vetData.age,
-      weightKg: vetData.weight,
-      heightCm: vetData.height,
-      gender: vetData.sex,
-      vetDetails: {
-        activityLevel: vetData.activityLevel,
-        activityFactor: vetData.activityFactor,
-        tmbKcal: vetData.kcal,
-        getKcalReal: vetData.kcalReal
-      },
-      kcalToWork: vetData.kcalToWork,
-      macros: macros,
-      portions: portions,
-      templatesReferences: JSON.stringify({
-        templateId: selectedTemplateId,
-        referenceIds: selectedReferenceIds,
-        recommendationIds: selectedRecommendationIds
-      }),
-      templateId: selectedPreviewTemplate,
-      designConfig: {
-        ...localDesignConfig,
-        templateDesign: selectedPreviewTemplate as MenuDesignConfig['templateDesign'],
-      },
-      menuData: menuPreviewData ? {
-        ...menuPreviewData,
-        sectionTitles: menuPreviewData.sectionTitles ?? store.getMenuTemplate()?.sectionTitles,
-      } : menuPreviewData,
-      name: menuName || `Menú ${vetData.kcalToWork} kcal`,
-      content: '',
-      aiRationale: ''
-    };
+    const menuToSave = buildMenuToSave(ev);
 
     const updatedMenus = [...(patient.menus || [])];
-    const existingIdx = updatedMenus.findIndex(m => m.id === menuId);
+    const existingIdx = updatedMenus.findIndex(m => m.id === menuToSave.id);
     if (existingIdx !== -1) {
       updatedMenus[existingIdx] = menuToSave;
     } else {
@@ -365,7 +373,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     onUpdate({ ...patient, menus: updatedMenus, dietary: { ...patient.dietary, menus: [] } });
     try {
       await store.saveMenu(formEvaluationId, menuToSave);
-      setCurrentMenuId(menuId);
+      setCurrentMenuId(menuToSave.id);
       onClose();
     } catch (error) {
       console.error('Error saving menu:', error);
@@ -377,48 +385,10 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
     const ev = store.getEvaluationById(formEvaluationId);
     if (!ev) throw new Error('La evaluación seleccionada no existe o fue eliminada.');
 
-    const menuId = currentMenuIdRef.current || crypto.randomUUID();
-    currentMenuIdRef.current = menuId;
-
-    const menuToSave: GeneratedMenu = {
-      id: menuId,
-      date: ev.date,
-      linkedEvaluationId: formEvaluationId,
-      patientId: patient.id,
-      age: vetData.age,
-      weightKg: vetData.weight,
-      heightCm: vetData.height,
-      gender: vetData.sex,
-      vetDetails: {
-        activityLevel: vetData.activityLevel,
-        activityFactor: vetData.activityFactor,
-        tmbKcal: vetData.kcal,
-        getKcalReal: vetData.kcalReal
-      },
-      kcalToWork: vetData.kcalToWork,
-      macros: macros,
-      portions: portions,
-      templatesReferences: JSON.stringify({
-        templateId: selectedTemplateId,
-        referenceIds: selectedReferenceIds,
-        recommendationIds: selectedRecommendationIds
-      }),
-      templateId: selectedPreviewTemplate,
-      designConfig: {
-        ...localDesignConfig,
-        templateDesign: selectedPreviewTemplate as MenuDesignConfig['templateDesign'],
-      },
-      menuData: menuPreviewData ? {
-        ...menuPreviewData,
-        sectionTitles: menuPreviewData.sectionTitles ?? store.getMenuTemplate()?.sectionTitles,
-      } : menuPreviewData,
-      name: menuName || `Menú ${vetData.kcalToWork} kcal`,
-      content: '',
-      aiRationale: ''
-    };
+    const menuToSave = buildMenuToSave(ev);
 
     const updatedMenus = [...(patient.menus || [])];
-    const existingIdx = updatedMenus.findIndex(m => m.id === menuId);
+    const existingIdx = updatedMenus.findIndex(m => m.id === menuToSave.id);
     if (existingIdx !== -1) {
       updatedMenus[existingIdx] = menuToSave;
     } else {
@@ -427,7 +397,35 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
 
     onUpdate({ ...patient, menus: updatedMenus, dietary: { ...patient.dietary, menus: [] } });
     await store.saveMenu(formEvaluationId, menuToSave);
-    setCurrentMenuId(menuId);
+    setCurrentMenuId(menuToSave.id);
+  };
+
+  // Guarda en segundo plano (sin cerrar ni mostrar modales) el menú completo con un menuData
+  // puntual — se usa para persistir de una vez el flag de "ya guardado como plantilla" apenas
+  // se guarda una Referencia/Recomendación/Comer afuera, y así no se pierda si la nutri sale
+  // del menú sin darle a "Guardar Menú".
+  const persistMenuDataSilently = async (data: MenuPlanData) => {
+    if (!formEvaluationId) return;
+    const ev = store.getEvaluationById(formEvaluationId);
+    if (!ev) return;
+
+    const menuToSave = buildMenuToSave(ev, data);
+
+    const updatedMenus = [...(patient.menus || [])];
+    const existingIdx = updatedMenus.findIndex(m => m.id === menuToSave.id);
+    if (existingIdx !== -1) {
+      updatedMenus[existingIdx] = menuToSave;
+    } else {
+      updatedMenus.push(menuToSave);
+    }
+
+    onUpdate({ ...patient, menus: updatedMenus, dietary: { ...patient.dietary, menus: [] } });
+    try {
+      await store.saveMenu(formEvaluationId, menuToSave);
+      setCurrentMenuId(menuToSave.id);
+    } catch (error) {
+      console.error('Error guardando estado de plantilla del menú:', error);
+    }
   };
 
   const handleDeleteMenuConfirmed = async () => {
@@ -670,6 +668,7 @@ export const MenuAddRead: React.FC<MenuAddReadProps> = ({ patient, onUpdate, edi
           setLocalDesignConfig={setLocalDesignConfig}
           isVisible={isSec3Visible}
           onToggleVisible={() => setIsSec3Visible(v => !v)}
+          onTemplateSaved={persistMenuDataSilently}
         />
 
         {/* Sticky Save Button */}

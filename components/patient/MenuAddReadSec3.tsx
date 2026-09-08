@@ -39,6 +39,7 @@ interface MenuAddReadSec3Props {
   isVisible: boolean;
   onToggleVisible: () => void;
   onDirty?: () => void;
+  onTemplateSaved?: (data: MenuPlanData) => void;
 }
 
 export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
@@ -60,7 +61,8 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
   evaluationId,
   isVisible,
   onToggleVisible,
-  onDirty
+  onDirty,
+  onTemplateSaved
 }) => {
   const [editMode, setEditMode] = useState<'tabla' | 'preview'>('tabla');
   const [editTablaKey, setEditTablaKey] = useState(0);
@@ -92,6 +94,19 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
     if (updates.templateDesign) {
       setSelectedPreviewTemplate(updates.templateDesign);
     }
+  };
+
+  // Marca en el propio menuPreviewData que este tipo (ref/rec/eatingOut) ya se guardó como
+  // plantilla y lo persiste de una vez en Supabase, para que el aviso "Ya se encuentra guardado"
+  // sobreviva aunque la nutri salga del menú sin darle a "Guardar Menú".
+  const handleTemplateSaved = (type: 'ref' | 'rec' | 'eatingOut') => {
+    if (!menuPreviewData) return;
+    const next: MenuPlanData = {
+      ...menuPreviewData,
+      templateSaveStatus: { ...menuPreviewData.templateSaveStatus, [type]: true },
+    };
+    handleSetMenuPreviewData(next);
+    onTemplateSaved?.(next);
   };
 
   const handleDomingoModeChange = (mode: 'libre' | 'completo') => {
@@ -245,7 +260,7 @@ export const MenuAddReadSec3: React.FC<MenuAddReadSec3Props> = ({
                   setEditTablaKey(k => k + 1);
                 }}
               />
-              <SaveAsTemplateButton menuPreviewData={menuPreviewData} />
+              <SaveAsTemplateButton menuPreviewData={menuPreviewData} onTemplateSaved={handleTemplateSaved} />
               <MenuExportPDF
                 elementId="menu-print-area"
                 filename={`Menu_${patient.firstName}_${new Date().toISOString().split('T')[0]}`}

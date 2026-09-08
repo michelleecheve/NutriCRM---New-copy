@@ -3,7 +3,7 @@ import { Patient, Measurement, PatientEvaluation } from '../../types';
 import { store } from '../../services/store';
 import {
   Trash2, ChevronRight, Calculator, Info,
-  Star, X, AlertTriangle
+  Star, X, AlertTriangle, Copy, Check
 } from 'lucide-react';
 import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
@@ -323,6 +323,7 @@ export const NewMeasurementForm: React.FC<{
   }, [evaluation?.date]);
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [measurementInfoCopied, setMeasurementInfoCopied] = useState(false);
 
   const handleFieldChange = (key: keyof Measurement, value: any) => {
     setFormData(prev => calculateAnthropometry({ ...prev, [key]: value }));
@@ -346,6 +347,44 @@ export const NewMeasurementForm: React.FC<{
 
     await store.saveMeasurement(evaluationId, { ...normalized, patientId: patient.id });
     onUpdate({ ...patient, measurements: updatedMeasurements });
+  };
+
+  const copyMeasurementInfo = () => {
+    const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
+    const lines: string[] = [];
+    lines.push(`ANTROPOMETRÍA: ${fullName || 'Sin nombre'}`);
+    lines.push(`Fecha: ${linkedDate || 'Sin especificar'}`);
+    lines.push('');
+
+    FORM_SECTIONS.forEach((section) => {
+      lines.push(section.title);
+      section.fields.forEach((field: any) => {
+        const raw = (formData as any)[field.key];
+        let displayVal: string;
+        if (field.isCalculated) {
+          displayVal = (raw === undefined || raw === null || isNaN(raw)) ? 'Sin especificar' : Number(raw).toFixed(2);
+        } else if (field.isStar) {
+          displayVal = raw ? 'Sí' : 'No';
+        } else {
+          displayVal = (raw !== undefined && raw !== null && String(raw).trim() !== '') ? String(raw) : 'Sin especificar';
+        }
+
+        if (field.isTextarea) {
+          lines.push(`${field.label}:`);
+          lines.push(displayVal);
+        } else {
+          lines.push(`${field.label}: ${displayVal}`);
+        }
+      });
+      lines.push('');
+    });
+
+    while (lines.length && lines[lines.length - 1] === '') lines.pop();
+
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      setMeasurementInfoCopied(true);
+      setTimeout(() => setMeasurementInfoCopied(false), 2000);
+    });
   };
 
   const handleDeleteConfirmed = async () => {
@@ -533,6 +572,28 @@ export const NewMeasurementForm: React.FC<{
               </div>
             </div>
           ))}
+
+          {/* Copiar información */}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={copyMeasurementInfo}
+              title="Copiar toda la información de este registro antropométrico"
+              className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              {measurementInfoCopied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-600">Copiado</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  Copiar información
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Footer */}

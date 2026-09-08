@@ -136,6 +136,13 @@ export interface MenuPlanData {
   exchangeMenu?: ExchangeMenuData;
   eatingOutPage?: EatingOutPageData;
   isVegetarian?: boolean;
+  /** Marca qué partes de este menú ya se guardaron como plantilla (Referencia / Recomendación / Comer afuera),
+   *  para no dejar guardarlas de nuevo y evitar duplicados en menu_references / menu_recommendations. */
+  templateSaveStatus?: {
+    ref?: boolean;
+    rec?: boolean;
+    eatingOut?: boolean;
+  };
   nutritionist: {
     name: string;
     professionalTitle: string;

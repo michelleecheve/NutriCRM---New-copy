@@ -161,6 +161,34 @@ export function menuPlanDataToReferenceData(plan: MenuPlanData, name?: string): 
   };
 }
 
+// Serializa un objeto ordenando sus keys recursivamente, para poder comparar dos objetos
+// por contenido sin que el orden en que se escribieron las keys afecte el resultado.
+function stableStringify(value: any): string {
+  return JSON.stringify(value, (_key, val) => {
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      return Object.keys(val).sort().reduce((acc: any, k) => {
+        acc[k] = val[k];
+        return acc;
+      }, {});
+    }
+    return val;
+  });
+}
+
+// Compara el contenido de dos plantillas (ignorando las keys de nivel superior indicadas,
+// típicamente "name") para detectar si un menú ya se había guardado como referencia/
+// recomendación/comer afuera ANTES de que existiera el flag `templateSaveStatus` — así los
+// menús guardados antes de este control también muestran "Ya se encuentra guardado".
+export function isSameTemplateContent(a: any, b: any, ignoreKeys: string[] = []): boolean {
+  if (!a || !b) return false;
+  const strip = (obj: any) => {
+    const clone = { ...obj };
+    ignoreKeys.forEach(k => delete clone[k]);
+    return clone;
+  };
+  return stableStringify(strip(a)) === stableStringify(strip(b));
+}
+
 // Igual que menuPlanDataToReferenceData pero para el tipo INTERCAMBIO: arma
 // la referencia con la tabla de intercambio real (exchangeMenu), no con el
 // menú semanal — antes se guardaba siempre como SEMANAL sin importar el modo.

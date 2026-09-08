@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Patient } from '../../types';
-import { X, Activity, ChevronRight, Trash2, Star, Info } from 'lucide-react';
+import { X, Activity, ChevronRight, Trash2, Star, Info, Copy, Check } from 'lucide-react';
 import { SaveButton } from '../SaveButton';
 import { GridInput } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
@@ -81,6 +81,7 @@ export const BioimpedanciaForm: React.FC<{
 }> = ({ patient, onClose, onUpdate, editingId }) => {
   const [evaluationId, setEvaluationId] = useState<string | null>(() => store.getSelectedEvaluationId(patient.id) ?? store.getLatestEvaluationId(patient.id));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [bioInfoCopied, setBioInfoCopied] = useState(false);
   const savedIdRef = useRef<string | undefined>(editingId || undefined);
   
   const [formData, setFormData] = useState({
@@ -196,6 +197,50 @@ export const BioimpedanciaForm: React.FC<{
 
     const updatedPatient = store.getPatient(patient.id);
     if (updatedPatient) onUpdate(updatedPatient);
+  };
+
+  const copyBioimpedanciaInfo = () => {
+    const val = (v: any) => (v !== undefined && v !== null && String(v).trim() !== '') ? String(v) : 'Sin especificar';
+    const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
+
+    const lines: string[] = [];
+    lines.push(`BIOIMPEDANCIA: ${fullName || 'Sin nombre'}`);
+    lines.push(`Fecha: ${val(linkedDate)}`);
+    lines.push('');
+    lines.push('DATOS GENERALES');
+    lines.push(`Género: ${val(formData.gender)}`);
+    lines.push(`Edad (años): ${val(formData.age)}`);
+    lines.push(`Peso corporal (kg): ${val(formData.weight)}`);
+    lines.push(`Talla (cm): ${val(formData.height)}`);
+    lines.push(`IMC: ${val(formData.imc)}`);
+    lines.push(`% Grasa corporal: ${val(formData.bodyFat)}`);
+    lines.push(`% Agua corporal total: ${val(formData.totalBodyWater)}`);
+    lines.push(`Masa muscular: ${val(formData.muscleMass)}`);
+    lines.push(`Physique Rating: ${val(formData.physiqueRating)}`);
+    lines.push(`Grasa visceral: ${val(formData.visceralFat)}`);
+    lines.push(`Masa ósea estimada: ${val(formData.boneMass)}`);
+    lines.push(`Metabolismo basal (kcal): ${val(formData.bmr)}`);
+    lines.push(`Edad metabólica: ${val(formData.metabolicAge)}`);
+    lines.push(`Meta cumplida: ${formData.meta_complied ? 'Sí' : 'No'}`);
+    lines.push('');
+    lines.push('PERÍMETROS CORPORALES (CM)');
+    lines.push(`Brazo: ${val(formData.armRelaxed)}`);
+    lines.push(`Brazo contraído: ${val(formData.armContracted)}`);
+    lines.push(`Pantorrilla: ${val(formData.calfGirth)}`);
+    lines.push(`Cintura: ${val(formData.waist)}`);
+    lines.push(`Umbilical: ${val(formData.umbilical)}`);
+    lines.push(`Cadera: ${val(formData.hip)}`);
+    lines.push(`3 cm abajo umbilical: ${val(formData.abdominalLow)}`);
+    lines.push(`Muslo derecho: ${val(formData.thighRight)}`);
+    lines.push(`Muslo izquierdo: ${val(formData.thighLeft)}`);
+    lines.push('');
+    lines.push('Notas:');
+    lines.push(val(formData.notes));
+
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      setBioInfoCopied(true);
+      setTimeout(() => setBioInfoCopied(false), 2000);
+    });
   };
 
   const handleDelete = async () => {
@@ -446,6 +491,28 @@ export const BioimpedanciaForm: React.FC<{
         {/* Visual Interpretation */}
         <div data-tour="bioimpedancia-interpretation">
           <BioimpedanciaInterpretation formData={formData} />
+        </div>
+
+        {/* Copiar información */}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={copyBioimpedanciaInfo}
+            title="Copiar toda la información de este registro de bioimpedancia"
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-700 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            {bioInfoCopied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-blue-600">Copiado</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                Copiar información
+              </>
+            )}
+          </button>
         </div>
 
         {/* Footer */}

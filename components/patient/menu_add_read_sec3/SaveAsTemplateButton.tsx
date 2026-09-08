@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bookmark, Check, FileText, Layout, X, ChevronDown } from 'lucide-react';
 import { MenuRecommendationData } from '../../../types';
 import { MenuPlanData } from '../../menus_components/MenuDesignTemplates';
 import { store } from '../../../services/store';
-import { menuPlanDataToReferenceData, menuPlanDataToExchangeReferenceData } from './helpers';
+import { menuPlanDataToReferenceData, menuPlanDataToExchangeReferenceData, isSameTemplateContent } from './helpers';
 
 interface SaveAsTemplateButtonProps {
   menuPreviewData: MenuPlanData | null;
+  // Avisa que un tipo (ref/rec/eatingOut) se guardó como plantilla, para que el menú
+  // guarde ese estado (menuPreviewData.templateSaveStatus) y no se pierda al salir del menú.
+  onTemplateSaved: (type: 'ref' | 'rec' | 'eatingOut') => void;
 }
 
-export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menuPreviewData }) => {
+export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menuPreviewData, onTemplateSaved }) => {
   const [showModal, setShowModal] = useState(false);
   const [saveTemplateType, setSaveTemplateType] = useState<'ref' | 'rec' | 'eating_out' | null>(null);
   const [saveRefName, setSaveRefName] = useState('');
@@ -17,6 +20,13 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
   const [saveEatingOutName, setSaveEatingOutName] = useState('');
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [saveTemplateSuccess, setSaveTemplateSuccess] = useState<'ref' | 'rec' | 'eating_out' | null>(null);
+
+  // Una vez guardado cada tipo para este menú, queda marcado en el propio menuPreviewData
+  // (persistido en menu_data) para evitar que la nutri lo vuelva a guardar sin querer y se
+  // duplique en menu_references / menu_recommendations — sobrevive salir y volver al menú.
+  const savedRef = !!menuPreviewData?.templateSaveStatus?.ref;
+  const savedRec = !!menuPreviewData?.templateSaveStatus?.rec;
+  const savedEatingOut = !!menuPreviewData?.templateSaveStatus?.eatingOut;
 
   const handleOpen = () => {
     setSaveTemplateType(null);
@@ -28,7 +38,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
   };
 
   const handleSaveAsRef = async () => {
-    if (!menuPreviewData || !saveRefName.trim()) return;
+    if (!menuPreviewData || !saveRefName.trim() || savedRef) return;
     setIsSavingTemplate(true);
     try {
       const refData = isIntercambio
@@ -36,6 +46,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
         : menuPlanDataToReferenceData(menuPreviewData, saveRefName);
       await store.saveMenuReference({ data: refData as any, type: refData.type, kcal: refData.kcal });
       setSaveTemplateSuccess('ref');
+      onTemplateSaved('ref');
       setSaveRefName('');
       setTimeout(() => { setShowModal(false); setSaveTemplateSuccess(null); }, 2000);
     } catch (err) {
@@ -46,7 +57,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
   };
 
   const handleSaveAsEatingOut = async () => {
-    if (!menuPreviewData?.eatingOutPage || !saveEatingOutName.trim()) return;
+    if (!menuPreviewData?.eatingOutPage || !saveEatingOutName.trim() || savedEatingOut) return;
     setIsSavingTemplate(true);
     try {
       await store.saveMenuRecommendation({
@@ -55,6 +66,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
         type: 'eating_out',
       });
       setSaveTemplateSuccess('eating_out');
+      onTemplateSaved('eatingOut');
       setSaveEatingOutName('');
       setTimeout(() => { setShowModal(false); setSaveTemplateSuccess(null); }, 2000);
     } catch (err) {
@@ -65,7 +77,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
   };
 
   const handleSaveAsRec = async () => {
-    if (!menuPreviewData || !saveTemplateName.trim()) return;
+    if (!menuPreviewData || !saveTemplateName.trim() || savedRec) return;
     setIsSavingTemplate(true);
     try {
       const recData: MenuRecommendationData = {
@@ -77,6 +89,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
       };
       await store.saveMenuRecommendation({ name: saveTemplateName.trim(), data: recData });
       setSaveTemplateSuccess('rec');
+      onTemplateSaved('rec');
       setSaveTemplateName('');
       setTimeout(() => { setShowModal(false); setSaveTemplateSuccess(null); }, 2000);
     } catch (err) {
@@ -96,6 +109,44 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
   const hasRecs = totalRecs > 0;
   const hasEatingOut = !!(menuPreviewData?.eatingOutPage);
   const isIntercambio = menuPreviewData?.menuType === 'intercambio';
+
+  // Detección retroactiva (una sola vez, al montar): si este menú ya se había guardado como
+  // plantilla ANTES de que existiera templateSaveStatus, lo detectamos comparando su contenido
+  // contra las referencias/recomendaciones que la nutri ya tiene guardadas, y lo marcamos —
+  // así los menús guardados antes de este control también avisan "Ya se encuentra guardado".
+  const retroCheckedRef = useRef(false);
+  useEffect(() => {
+    if (retroCheckedRef.current || !menuPreviewData) return;
+    retroCheckedRef.current = true;
+
+    if (!savedRef) {
+      const expectedRef = isIntercambio
+        ? menuPlanDataToExchangeReferenceData(menuPreviewData, '')
+        : menuPlanDataToReferenceData(menuPreviewData);
+      const alreadySaved = store.getMenuReferences().some(r => isSameTemplateContent(expectedRef, r.data, ['name']));
+      if (alreadySaved) onTemplateSaved('ref');
+    }
+
+    if (!savedRec && hasRecs) {
+      const expectedRec: MenuRecommendationData = {
+        preparacion:   menuPreviewData.recommendations?.preparacion   || [],
+        restricciones: menuPreviewData.recommendations?.restricciones || [],
+        habitos:       menuPreviewData.recommendations?.habitos       || [],
+        organizacion:  menuPreviewData.recommendations?.organizacion  || [],
+        sectionTitles: menuPreviewData.sectionTitles || undefined,
+      };
+      const alreadySaved = store.getMenuRecommendations()
+        .some(r => r.type !== 'eating_out' && isSameTemplateContent(expectedRec, r.data));
+      if (alreadySaved) onTemplateSaved('rec');
+    }
+
+    if (!savedEatingOut && hasEatingOut) {
+      const alreadySaved = store.getMenuRecommendations()
+        .some(r => r.type === 'eating_out' && isSameTemplateContent(menuPreviewData.eatingOutPage, r.data));
+      if (alreadySaved) onTemplateSaved('eatingOut');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>
@@ -159,7 +210,12 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
                       </div>
                     </div>
                   </div>
-                  {saveTemplateType === 'ref' ? (
+                  {savedRef ? (
+                    <div className="flex items-center gap-2 p-3 bg-slate-100 rounded-xl border border-slate-200">
+                      <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      <span className="text-sm font-bold text-slate-500">Ya se encuentra guardado</span>
+                    </div>
+                  ) : saveTemplateType === 'ref' ? (
                     <div className="space-y-3">
                       <input
                         type="text"
@@ -211,7 +267,12 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
                       </div>
                     </div>
                   </div>
-                  {saveTemplateType === 'rec' ? (
+                  {savedRec ? (
+                    <div className="flex items-center gap-2 p-3 bg-slate-100 rounded-xl border border-slate-200">
+                      <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      <span className="text-sm font-bold text-slate-500">Ya se encuentra guardado</span>
+                    </div>
+                  ) : saveTemplateType === 'rec' ? (
                     <div className="space-y-3">
                       <input
                         type="text"
@@ -265,7 +326,12 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
                       </div>
                     </div>
                   </div>
-                  {saveTemplateType === 'eating_out' ? (
+                  {savedEatingOut ? (
+                    <div className="flex items-center gap-2 p-3 bg-slate-100 rounded-xl border border-slate-200">
+                      <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      <span className="text-sm font-bold text-slate-500">Ya se encuentra guardado</span>
+                    </div>
+                  ) : saveTemplateType === 'eating_out' ? (
                     <div className="space-y-3">
                       <input
                         type="text"

@@ -499,7 +499,7 @@ export const DomingoRow: React.FC<{ domingo: DomingoData }> = ({ domingo }) => {
               width: "1%",
             }}
           >
-            NOTAS
+            DOMINGO
           </td>
           <td style={{ padding: "8px 14px", verticalAlign: "middle", width: "50%" }}>
             <div

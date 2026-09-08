@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { DietaryEvaluation, MealEntry, Patient, PatientEvaluation } from '../../types';
-import { Utensils, Plus, X, Trash2, AlertTriangle } from 'lucide-react';
+import { Utensils, Plus, X, Trash2, AlertTriangle, Copy, Check } from 'lucide-react';
 import { SaveButton } from '../SaveButton';
 import { GridInput, ModernTextArea } from './SharedComponents';
 import { EvaluationLink } from './EvaluationLink';
@@ -121,6 +121,7 @@ export const DietaryForm: React.FC<{
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const canDelete = showDelete && !!onDelete;
+  const [dietaryInfoCopied, setDietaryInfoCopied] = useState(false);
 
   const addMeal = () =>
     setFormData({ 
@@ -172,6 +173,49 @@ export const DietaryForm: React.FC<{
         ] 
       });
     }
+  };
+
+  const copyDietaryInfo = () => {
+    const val = (v: any) => (v !== undefined && v !== null && String(v).trim() !== '') ? String(v) : 'Sin especificar';
+    const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
+
+    const lines: string[] = [];
+    lines.push(`EVALUACIÓN DIETÉTICA: ${fullName || 'Sin nombre'}`);
+    lines.push(`Fecha: ${val(formData.date)}`);
+    lines.push('');
+    lines.push('DATOS GENERALES');
+    lines.push(`Comidas al día: ${val(formData.mealsPerDay)}`);
+    lines.push(`Alimentos que evita: ${val(formData.excludedFoods)}`);
+    lines.push('');
+    lines.push('Notas adicionales:');
+    lines.push(val(formData.notes));
+    lines.push('');
+    lines.push('RECORDATORIO DE 24 HORAS');
+    if (formData.recall.length > 0) {
+      formData.recall.forEach((meal, i) => {
+        lines.push(`${i + 1}. Tiempo de comida: ${val(meal.mealTime)}`);
+        lines.push(`   Hora: ${val(meal.time)}`);
+        lines.push(`   Lugar: ${val(meal.place)}`);
+        lines.push(`   Alimentos y cantidad: ${val(meal.description)}`);
+      });
+    } else {
+      lines.push('Sin comidas registradas.');
+    }
+    lines.push('');
+    lines.push('FRECUENCIA DE CONSUMO DE ALIMENTOS');
+    const frequencyArray = Array.isArray(formData.foodFrequency) ? formData.foodFrequency : [];
+    FOOD_GROUPS.forEach(group => {
+      const freq = frequencyArray.find(f => f.category === group)?.frequency;
+      lines.push(`${group}: ${freq || 'Sin especificar'}`);
+    });
+    lines.push('');
+    lines.push('Otros (frecuencia de consumo):');
+    lines.push(val(formData.foodFrequencyOthers));
+
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      setDietaryInfoCopied(true);
+      setTimeout(() => setDietaryInfoCopied(false), 2000);
+    });
   };
 
   const handleSave = async () => {
@@ -374,6 +418,26 @@ export const DietaryForm: React.FC<{
             onChange={(e: any) => setFormData({ ...formData, foodFrequencyOthers: e.target.value })}
             rows={4}
           />
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={copyDietaryInfo}
+            title="Copiar toda la información de esta evaluación dietética"
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            {dietaryInfoCopied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-emerald-600">Copiado</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                Copiar información
+              </>
+            )}
+          </button>
         </div>
       </div>
 
