@@ -683,15 +683,22 @@ export const supabaseService = {
 
     // El kcal editado en el encabezado del menú vive dentro de menu_data (jsonb) — se trae aparte
     // extrayendo solo esa key (sin descargar el resto del JSONB) para no perder la carga liviana del historial.
+    // Igual con templateSaveStatus: marca si el menú ya se guardó alguna vez como plantilla (referencia / recomendación / comer afuera).
     const kcalById = new Map<string, number>();
+    const saveStatusById = new Map<string, { ref?: boolean; rec?: boolean; eatingOut?: boolean }>();
     if (rows.length > 0) {
       const { data: kcalRows, error: kcalError } = await supabase
         .from('menus')
-        .select('id, kcal:menu_data->>kcal')
+        .select('id, kcal:menu_data->>kcal, refSaved:menu_data->templateSaveStatus->>ref, recSaved:menu_data->templateSaveStatus->>rec, eatingOutSaved:menu_data->templateSaveStatus->>eatingOut')
         .in('id', rows.map((m: any) => m.id));
       if (!kcalError) {
         (kcalRows || []).forEach((r: any) => {
           if (r.kcal !== null && r.kcal !== undefined) kcalById.set(r.id, Number(r.kcal));
+          saveStatusById.set(r.id, {
+            ref:       r.refSaved === 'true',
+            rec:       r.recSaved === 'true',
+            eatingOut: r.eatingOutSaved === 'true',
+          });
         });
       }
     }
@@ -713,8 +720,19 @@ export const supabaseService = {
         recommendations: m.has_recommendations
           ? { preparacion: ['_'], restricciones: [], habitos: [], organizacion: [] }
           : null,
+        templateSaveStatus: saveStatusById.get(m.id),
       },
     }));
+  },
+
+  // Marca en menu_data que este menú ya se guardó como plantilla (templateSaveStatus.ref / rec / eatingOut),
+  // para que el historial pueda avisar "Ya guardado". Recibe el menu_data completo ya cargado.
+  async markMenuSavedAsTemplate(menuId: string, menuData: any, type: 'ref' | 'rec' | 'eatingOut') {
+    const { error } = await supabase
+      .from('menus')
+      .update({ menu_data: { ...menuData, templateSaveStatus: { ...menuData?.templateSaveStatus, [type]: true } } })
+      .eq('id', menuId);
+    if (error) throw error;
   },
 
   async getMenuData(menuId: string): Promise<{ menuData: any; content: string }> {

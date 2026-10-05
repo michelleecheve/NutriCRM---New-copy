@@ -157,6 +157,12 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
         return;
       }
       await onAddAsReference({ ...entry.menu, menuData }, entry.patient);
+      // Deja marcado el menú como ya guardado (templateSaveStatus.ref) para avisar "Ya guardado" la próxima vez.
+      // Si falla el marcado, la plantilla igual quedó guardada: no se trata como error.
+      const markedData = { ...menuData, templateSaveStatus: { ...menuData.templateSaveStatus, ref: true } };
+      setMenus(prev => prev.map(m => m.id === entry.menu.id ? { ...m, menuData: markedData } : m));
+      supabaseService.markMenuSavedAsTemplate(entry.menu.id, menuData, 'ref')
+        .catch(e => console.error('Error marcando menú como guardado:', e));
       setRefStatus(prev => ({ ...prev, [entry.menu.id]: 'success' }));
       clearRefStatus(entry.menu.id);
     } catch {
@@ -164,6 +170,9 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
       clearRefStatus(entry.menu.id);
     }
   };
+
+  // El popup de recomendaciones se usa para generales y para comer afuera: cada uno marca su propio flag.
+  const recSaveKey: 'rec' | 'eatingOut' = filterEatingOut ? 'eatingOut' : 'rec';
 
   const handleOpenRecModal = (entry: HistoryEntry) => {
     setRecModal({ menu: entry.menu, patient: entry.patient });
@@ -178,8 +187,13 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
       // recModal.menu.menuData viene de getMenusForHistory() (solo flags livianos, sin JSONB) — siempre hay que traer el menu_data completo
       const { menuData } = await supabaseService.getMenuData(menuId);
       if (!menuData) throw new Error('No menuData');
-      setMenus(prev => prev.map(m => m.id === menuId ? { ...m, menuData } : m));
       await onAddAsRecommendation({ ...recModal.menu, menuData }, recModal.patient, recModalName.trim());
+      // Deja marcado el menú como ya guardado (templateSaveStatus.rec / eatingOut) para avisar "Ya guardado" la próxima vez.
+      // Si falla el marcado, la plantilla igual quedó guardada: no se trata como error.
+      const markedData = { ...menuData, templateSaveStatus: { ...menuData.templateSaveStatus, [recSaveKey]: true } };
+      setMenus(prev => prev.map(m => m.id === menuId ? { ...m, menuData: markedData } : m));
+      supabaseService.markMenuSavedAsTemplate(menuId, menuData, recSaveKey)
+        .catch(e => console.error('Error marcando menú como guardado:', e));
       setRecStatus(prev => ({ ...prev, [menuId]: 'success' }));
       setRecModal(null);
       clearRecStatus(menuId);
@@ -321,13 +335,18 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                         ) : refStatus[entry.menu.id] === 'nodata' ? (
                           <span className="text-xs text-amber-600 px-2">Sin datos estructurados</span>
                         ) : (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleAddRef(entry); }}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
-                            title={!entry.menu.menuData ? 'Este menú no tiene datos estructurados' : 'Usar como referencia (Hoja 1)'}
-                          >
-                            <FileText className="w-3.5 h-3.5" /> Usar como referencia
-                          </button>
+                          <div className="flex flex-col items-end gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleAddRef(entry); }}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                              title={!entry.menu.menuData ? 'Este menú no tiene datos estructurados' : 'Guardar como plantilla (Hoja 1)'}
+                            >
+                              Guardar como Plantilla
+                            </button>
+                            {entry.menu.menuData?.templateSaveStatus?.ref && (
+                              <span className="text-xs font-bold text-emerald-600">Ya guardado</span>
+                            )}
+                          </div>
                         )
                       )}
                       {/* Always visible: import as recommendation */}
@@ -339,32 +358,39 @@ export const MenuHistory: React.FC<MenuHistoryProps> = ({ onSelectPatient, hideH
                         ) : recStatus[entry.menu.id] === 'error' ? (
                           <span className="text-xs text-red-500 px-2">✗ Error</span>
                         ) : (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleOpenRecModal(entry); }}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
-                            title={!entry.menu.menuData ? 'Este menú no tiene datos estructurados' : 'Usar como recomendación (Hoja 2)'}
-                          >
-                            <ClipboardList className="w-3.5 h-3.5" /> Usar como recomendación
-                          </button>
+                          <div className="flex flex-col items-end gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleOpenRecModal(entry); }}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                              title={!entry.menu.menuData ? 'Este menú no tiene datos estructurados' : 'Guardar como plantilla (Hoja 2)'}
+                            >
+                              Guardar como Plantilla
+                            </button>
+                            {entry.menu.menuData?.templateSaveStatus?.[recSaveKey] && (
+                              <span className="text-xs font-bold text-emerald-600">Ya guardado</span>
+                            )}
+                          </div>
                         )
                       )}
-                      {/* Always visible: preview + navigate */}
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleOpenMenu(entry); }}
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Previsualizar"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onSelectPatient?.(entry.patient.id, 'menus'); }}
-                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                          title="Ver Detalles"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </button>
-                      </div>
+                      {/* Preview + navigate: solo en el historial general (en los popups de plantillas el click en la fila ya previsualiza) */}
+                      {!onAddAsReference && !onAddAsRecommendation && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleOpenMenu(entry); }}
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Previsualizar"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onSelectPatient?.(entry.patient.id, 'menus'); }}
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Ver Detalles"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>

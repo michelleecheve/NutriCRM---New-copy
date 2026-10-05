@@ -219,7 +219,16 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
   >({});
   const tableScrollRef = useRef<HTMLDivElement>(null);
   const topScrollRef = useRef<HTMLDivElement>(null);
-  const isSyncing = useRef(false);
+  // Which of the two scrollers the user is currently driving. Only that one
+  // mirrors its position to the other, so the echo scroll event of the
+  // programmatic sync can never write a stale position back.
+  const activeScroller = useRef<"top" | "table">("table");
+  const setTopActive = () => {
+    activeScroller.current = "top";
+  };
+  const setTableActive = () => {
+    activeScroller.current = "table";
+  };
 
   // Tracks latest state values so the cleanup effect can flush on unmount
   const latestRef = useRef({
@@ -233,19 +242,15 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
   });
 
   const handleTableScroll = () => {
-    if (isSyncing.current) return;
-    isSyncing.current = true;
+    if (activeScroller.current !== "table") return;
     if (topScrollRef.current && tableScrollRef.current)
       topScrollRef.current.scrollLeft = tableScrollRef.current.scrollLeft;
-    isSyncing.current = false;
   };
 
   const handleTopScroll = () => {
-    if (isSyncing.current) return;
-    isSyncing.current = true;
+    if (activeScroller.current !== "top") return;
     if (tableScrollRef.current && topScrollRef.current)
       tableScrollRef.current.scrollLeft = topScrollRef.current.scrollLeft;
-    isSyncing.current = false;
   };
 
   const syncRowHeights = (mealId: string) => {
@@ -944,6 +949,10 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
           <div
             ref={topScrollRef}
             onScroll={handleTopScroll}
+            onPointerEnter={setTopActive}
+            onPointerDown={setTopActive}
+            onTouchStart={setTopActive}
+            onWheel={setTopActive}
             className="overflow-x-scroll border-b border-slate-100"
             style={{ height: 16 }}
           >
@@ -954,6 +963,11 @@ export const MenuWeeklyTableEditorSec3: React.FC<Props> = ({
           <div
             ref={tableScrollRef}
             onScroll={handleTableScroll}
+            onPointerEnter={setTableActive}
+            onPointerDown={setTableActive}
+            onTouchStart={setTableActive}
+            onWheel={setTableActive}
+            onFocus={setTableActive}
             className="overflow-x-auto"
           >
             <table
