@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, BookOpen, Flame } from 'lucide-react';
 import { GeneratedMenu, TrackingRow } from '../../types';
+import { isDomingoLibre } from './DayMenuView';
 
 interface Props {
   menus: GeneratedMenu[];
@@ -59,8 +60,11 @@ const ExpandedMenu: React.FC<{ menu: GeneratedMenu }> = ({ menu }) => {
   return (
     <div className="mt-3 space-y-4">
       {DAYS_ORDERED.map(({ key, label, color }) => {
+        // Domingo libre: se muestra solo la nota, nunca lo que haya quedado escrito en domingoV2
         const dayData = key === 'domingo'
-          ? (wm.domingoV2?.desayuno ? wm.domingoV2 : (wm.domingo?.desayuno ? wm.domingo : null))
+          ? (isDomingoLibre(menu)
+              ? { mealsOrder: ['dia_libre'], dia_libre: { label: 'Día Libre', title: wm.domingo?.note || 'Disfruta tu día de descanso.' } }
+              : (wm.domingoV2?.desayuno ? wm.domingoV2 : (wm.domingo?.desayuno ? wm.domingo : null)))
           : wm[key];
         if (!dayData) return null;
 

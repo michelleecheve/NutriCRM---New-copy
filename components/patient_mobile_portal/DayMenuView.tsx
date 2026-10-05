@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronUp, Sun, UtensilsCrossed, Moon, Star, Flame, Smile, ClipboardList, LayoutGrid } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sun, UtensilsCrossed, Moon, Star, Flame, Smile, ClipboardList, LayoutGrid, GlassWater } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { GeneratedMenu, TrackingRow, DEFAULT_SECTION_TITLES } from '../../types';
 import { MealCard, MealCardInfo, MealData, MealUpdate } from './MealCard';
@@ -24,6 +24,11 @@ const DAYS = [
   { short: 'Sáb', key: 'sabado',    jsDay: 6 },
   { short: 'Dom', key: 'domingo',   jsDay: 0 },
 ] as const;
+
+// Registro de agua del día: se guarda en tracking_data[fecha][WATER_KEY] = { glasses: n }.
+// No lleva `completed`, así que no entra en el conteo de comidas ni en la racha.
+const WATER_KEY = 'agua_vasos';
+const WATER_GLASSES = 12;
 
 const DEFAULT_MEAL_ORDER = ['desayuno', 'refaccion1', 'almuerzo', 'refaccion2', 'cena'];
 
@@ -100,7 +105,7 @@ function getWeekStats(
     const date = getDateForPos(i, menuStartDate, weekIdx);
     const dd = getDayData(menu, orderedDays[i].key);
     const mm = buildMeals(dd);
-    const isDomingoV1 = orderedDays[i].key === 'domingo' && menu.templateId === 'plantilla_v1' && mm.length === 0;
+    const isDomingoV1 = orderedDays[i].key === 'domingo' && isDomingoLibre(menu);
     if (isDomingoV1) {
       total += 1;
       if (trackingData[date]?.dia_libre?.completed === true) done++;
@@ -137,6 +142,18 @@ function calcStreak(trackingData: Record<string, any>, startDate: string | null)
   return streak;
 }
 
+// El modo real del domingo vive en menu_data.weeklyMenu.domingoMode (switch "Dom. Libre / Semana Completa").
+// Puede haber texto en domingoV2 aunque el menú esté en modo libre (ej. se copió una plantilla de semana completa),
+// así que nunca se decide por la existencia de datos. templateId queda solo como fallback para menús viejos sin domingoMode.
+export function isDomingoLibre(menu: GeneratedMenu): boolean {
+  if (menu.menuData?.menuType !== 'intercambio') {
+    const mode = menu.menuData?.weeklyMenu?.domingoMode;
+    if (mode === 'libre') return true;
+    if (mode === 'completo') return false;
+  }
+  return menu.templateId === 'plantilla_v1';
+}
+
 function getDayData(menu: GeneratedMenu, dayKey: string): any {
   // Exchange menu: same reference day repeated for every day of the week
   if (menu.menuData?.menuType === 'intercambio') {
@@ -160,6 +177,7 @@ function getDayData(menu: GeneratedMenu, dayKey: string): any {
   const wm = menu.menuData?.weeklyMenu;
   if (!wm) return null;
   if (dayKey === 'domingo') {
+    if (isDomingoLibre(menu)) return null;
     const v2 = wm.domingoV2;
     if (v2?.desayuno) return v2;
     const v1 = wm.domingo;
@@ -254,13 +272,14 @@ export const DayMenuView: React.FC<Props> = ({
 
   // ── Optimistic update + upsert ──
   const handleUpdate = useCallback(
-    async (mealKey: string, update: MealUpdate) => {
+    async (mealKey: string, update: MealUpdate & { glasses?: number }) => {
       const prevData   = localTracking[dateKey]?.[mealKey] ?? {};
       const newMealData = { ...prevData, ...update };
 
       if (newMealData.completed === null) delete newMealData.completed;
       if (newMealData.rating    === null) delete newMealData.rating;
       if (newMealData.note      === '')  delete newMealData.note;
+      if (newMealData.glasses   === 0)   delete newMealData.glasses;
 
       const newDayData = { ...(localTracking[dateKey] ?? {}), [mealKey]: newMealData };
       if (Object.keys(newMealData).length === 0) delete newDayData[mealKey];
@@ -665,8 +684,8 @@ export const DayMenuView: React.FC<Props> = ({
       {!showCompletion && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '0 16px 28px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {/* Domingo día libre — plantilla v1 */}
-          {selectedDay.key === 'domingo' && menu.templateId === 'plantilla_v1' ? (
+          {/* Domingo día libre */}
+          {selectedDay.key === 'domingo' && isDomingoLibre(menu) ? (
             (() => {
               const dlData = getMealData(localTracking, dateKey, 'dia_libre');
               const dlSaveKey = `${dateKey}_dia_libre`;
@@ -745,6 +764,59 @@ export const DayMenuView: React.FC<Props> = ({
               );
             })
           )}
+
+          {/* Agua del día: 12 vasitos (6 y 6), cada quien marca los que tomó */}
+          {((selectedDay.key === 'domingo' && isDomingoLibre(menu)) || meals.length > 0) && (() => {
+            const glasses: number = localTracking[dateKey]?.[WATER_KEY]?.glasses ?? 0;
+            const waterSaving = savingKeys.has(`${dateKey}_${WATER_KEY}`);
+            return (
+              <div style={{
+                padding: '16px',
+                borderRadius: '16px',
+                backgroundColor: 'white',
+                border: `1px solid ${glasses > 0 ? '#BAE6FD' : '#E5E7EB'}`,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                opacity: waterSaving ? 0.65 : 1,
+                transition: 'all 0.2s ease',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: '12px', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: '#E0F2FE', color: '#0284C7',
+                  }}>
+                    <GlassWater size={20} />
+                  </div>
+                  <p style={{ fontSize: '14px', fontWeight: 700, color: '#1F2937', margin: 0 }}>Agua</p>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }}>
+                  {Array.from({ length: WATER_GLASSES }, (_, i) => {
+                    const n = i + 1;
+                    const filled = n <= glasses;
+                    return (
+                      <button
+                        key={n}
+                        onClick={() => handleUpdate(WATER_KEY, { glasses: glasses === n ? n - 1 : n })}
+                        disabled={waterSaving || isPastDay}
+                        className="flex items-center justify-center transition-all active:scale-90"
+                        style={{
+                          height: 42, borderRadius: '10px',
+                          backgroundColor: filled ? '#E0F2FE' : 'white',
+                          border: filled ? '2px solid #38BDF8' : '2px solid #E5E7EB',
+                          color: filled ? '#0284C7' : '#D1D5DB',
+                          cursor: isPastDay ? 'not-allowed' : 'pointer',
+                          opacity: isPastDay ? 0.6 : 1,
+                        }}
+                        aria-label={`Vaso de agua ${n}`}
+                      >
+                        <GlassWater size={20} fill={filled ? '#BAE6FD' : 'none'} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* ─── Tabla de Porciones ─────────────────────────────────────────── */}

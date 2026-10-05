@@ -6,7 +6,8 @@ import { Sun, Cookie, UtensilsCrossed, Moon } from 'lucide-react';
 export type MealKey = string;
 
 export interface MealData {
-  completed: boolean | null;
+  // true = cumplido, 'partial' = a medias, false = no cumplido
+  completed: boolean | 'partial' | null;
   rating: '😊' | '😐' | '😔' | null;
   note: string;
 }
@@ -64,12 +65,14 @@ export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving, readOn
   // Subtle border color
   const borderColor =
     data.completed === true  ? '#BBF7D0' :
+    data.completed === 'partial' ? '#FDE68A' :
     data.completed === false ? '#FECACA' :
     '#E5E7EB';
 
   // Soft glow shadow based on completion state
   const glowShadow =
     data.completed === true  ? '0 2px 8px rgba(22,163,74,0.38)' :
+    data.completed === 'partial' ? '0 2px 8px rgba(245,158,11,0.38)' :
     data.completed === false ? '0 2px 8px rgba(239,68,68,0.38)' :
     '0 2px 8px rgba(0,0,0,0.05)';
 
@@ -141,6 +144,21 @@ export const MealCard: React.FC<Props> = ({ meal, data, onUpdate, saving, readOn
                 }}
                 aria-label="Sí cumplido"
               >✓</button>
+              <button
+                onClick={() => onUpdate({ completed: data.completed === 'partial' ? null : 'partial' })}
+                disabled={saving || readOnly}
+                className="flex items-center justify-center font-bold text-base transition-all active:scale-90"
+                style={{
+                  width: 38, height: 38, borderRadius: '10px',
+                  backgroundColor: data.completed === 'partial' ? '#F59E0B' : 'white',
+                  border:          data.completed === 'partial' ? '2px solid #F59E0B' : '2px solid #D1D5DB',
+                  color:           data.completed === 'partial' ? 'white' : '#D1D5DB',
+                  boxShadow:       data.completed === 'partial' ? '0 2px 8px rgba(245,158,11,0.28)' : 'none',
+                  cursor:          readOnly ? 'not-allowed' : 'pointer',
+                  opacity:         readOnly ? 0.6 : 1,
+                }}
+                aria-label="Cumplido a medias"
+              >½</button>
               <button
                 onClick={() => onUpdate({ completed: data.completed === false ? null : false })}
                 disabled={saving || readOnly}

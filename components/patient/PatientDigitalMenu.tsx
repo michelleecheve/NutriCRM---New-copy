@@ -21,7 +21,6 @@ import { supabaseService } from "../../services/supabaseService";
 import { supabase } from "../../services/supabase";
 import { authStore } from "../../services/authStore";
 import { MeasurementsToggle } from "../patient_mobile_portal/MeasurementsToggle";
-
 interface Props {
   patient: Patient;
   onUpdate: (p: Patient) => void;
@@ -47,80 +46,6 @@ function todayStr(): string {
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split("-");
   return `${d}/${m}/${y}`;
-}
-
-// ─── Plan compliance (based on full menu structure) ──────────────────────────
-
-const PLAN_DAY_KEYS = [
-  "lunes",
-  "martes",
-  "miercoles",
-  "jueves",
-  "viernes",
-  "sabado",
-  "domingo",
-];
-const PLAN_MEAL_ORDER = [
-  "desayuno",
-  "refaccion1",
-  "almuerzo",
-  "refaccion2",
-  "cena",
-];
-
-function getMenuDayData(menu: GeneratedMenu, dayKey: string): any {
-  const wm = menu.menuData?.weeklyMenu;
-  if (!wm) return null;
-  if (dayKey === "domingo") {
-    const v2 = wm.domingoV2;
-    if (v2?.desayuno) return v2;
-    return wm.domingo ?? null;
-  }
-  return wm[dayKey] ?? null;
-}
-
-function getMealKeys(dayData: any): string[] {
-  if (!dayData) return [];
-  const order: string[] = dayData.mealsOrder?.length
-    ? dayData.mealsOrder
-    : PLAN_MEAL_ORDER;
-  return order.filter((k: string) => dayData[k]?.title);
-}
-
-function getOrderedDayKeys(menuStartDate: string): string[] {
-  const jsDay = new Date(menuStartDate + "T12:00:00").getDay();
-  const startIdx = jsDay === 0 ? 6 : jsDay - 1;
-  return [
-    ...PLAN_DAY_KEYS.slice(startIdx),
-    ...PLAN_DAY_KEYS.slice(0, startIdx),
-  ];
-}
-
-/** Count total meal slots from the menu structure × plan duration, and completed from tracking_data */
-function calcPlanCompliance(
-  menu: GeneratedMenu,
-  tracking: TrackingRow,
-): { completed: number; total: number } {
-  if (!tracking.menuStartDate) return { completed: 0, total: 0 };
-  const orderedKeys = getOrderedDayKeys(tracking.menuStartDate);
-  const start = new Date(tracking.menuStartDate + "T12:00:00");
-  let total = 0;
-  let completed = 0;
-
-  for (let i = 0; i < tracking.durationDays; i++) {
-    const dayKey = orderedKeys[i % 7];
-    const dayData = getMenuDayData(menu, dayKey);
-    const mealKeys = getMealKeys(dayData);
-    total += mealKeys.length;
-
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    for (const mk of mealKeys) {
-      if (tracking.trackingData[dateStr]?.[mk]?.completed === true) completed++;
-    }
-  }
-  return { completed, total };
 }
 
 function diffDays(from: string, to: string): number {
@@ -204,8 +129,7 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
   const [tracking, setTracking] = useState<TrackingRow | null | undefined>(
     undefined,
   );
-  const [trackingLoading, setTrackingLoading] = useState(false);
-  const [durationDays, setDurationDays] = useState(28);
+  const [trackingLoading, setTrackingLoading] = useState(false);  const [durationDays, setDurationDays] = useState(28);
   const [savingConfig, setSavingConfig] = useState(false);
 
   // ── Portal goal state ──
@@ -288,7 +212,6 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       loadTracking(selectedMenuId);
     }
   }, [selectedMenuId, patient.portalActive, loadTracking]);
-
   // ── Newer menu banner detection ──
   useEffect(() => {
     if (!patient.portalActive || menus.length < 2 || !selectedMenuId) return;
@@ -455,19 +378,11 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
       100,
       Math.round((elapsed / tracking.durationDays) * 100),
     );
-    const selectedMenu = menus.find((m) => m.id === selectedMenuId) ?? null;
-    const { completed, total } = selectedMenu
-      ? calcPlanCompliance(selectedMenu, tracking)
-      : { completed: 0, total: 0 };
-    const compliancePct = total > 0 ? Math.round((completed / total) * 100) : 0;
     return {
       elapsed,
       totalWeeks,
       currentWeek,
       pct,
-      completed,
-      total,
-      compliancePct,
     };
   })();
 
@@ -631,31 +546,12 @@ export const PatientDigitalMenu: React.FC<Props> = ({ patient, onUpdate }) => {
                   <div className="text-xs font-medium text-slate-600 mb-1.5">
                     Día {progressData.elapsed} de {durationDays}
                   </div>
-                  <div className="h-1.5 bg-emerald-200 rounded-full overflow-hidden mb-1.5">
+                  <div className="h-1.5 bg-emerald-200 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                       style={{ width: `${progressData.pct}%` }}
                     />
                   </div>
-                  {progressData.total > 0 ? (
-                    <div className="text-xs text-slate-500">
-                      <span
-                        className={`font-semibold ${
-                          progressData.compliancePct >= 75
-                            ? "text-emerald-600"
-                            : progressData.compliancePct >= 50
-                              ? "text-amber-500"
-                              : "text-red-500"
-                        }`}
-                      >
-                        {progressData.compliancePct}%
-                      </span>{" "}
-                      cumplimiento ({progressData.completed}/
-                      {progressData.total})
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-400">Sin registros aún.</p>
-                  )}
                 </div>
               ) : (
                 <div />
