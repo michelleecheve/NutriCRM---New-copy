@@ -179,8 +179,8 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
           isLocked
             ? 'Desbloquea para usar este botón'
             : availableRefs.length === 0 && availableRecs.length === 0
-            ? 'Selecciona referencias o recomendaciones en la sección anterior'
-            : 'Copiar estructura y datos de una referencia o recomendaciones'
+            ? 'Selecciona plantillas o recomendaciones en la sección anterior'
+            : 'Copiar estructura y datos de una plantilla o recomendaciones'
         }
         className={className ?? `shrink-0 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold transition-all border-2 text-sm ${
           isLocked || (availableRefs.length === 0 && availableRecs.length === 0)
@@ -210,11 +210,11 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
               {/* Referencias de menú */}
               <div className="space-y-3">
                 <p className="text-xs font-bold text-slate-500 uppercase ml-1">
-                  Selecciona qué plantilla de referencia copiar
+                  Selecciona qué plantilla de plan alimenticio copiar
                 </p>
                 {availableRefs.length === 0 ? (
                   <p className="text-sm text-slate-400 italic py-4 text-center">
-                    No hay referencias seleccionadas en la sección anterior.
+                    No hay plantillas seleccionadas en la sección anterior.
                   </p>
                 ) : (
                   <div className="space-y-2">

@@ -1306,7 +1306,7 @@ export const MenuReferences: React.FC<{
       });
       backToList();
     } catch {
-      setSaveError("Error al guardar la referencia.");
+      setSaveError("Error al guardar la plantilla.");
     }
   };
 
@@ -1330,7 +1330,7 @@ export const MenuReferences: React.FC<{
       await store.deleteMenuReference(confirmDeleteId);
       setConfirmDeleteId(null);
     } catch {
-      setDeleteError("Error al eliminar la referencia.");
+      setDeleteError("Error al eliminar la plantilla.");
       setTimeout(() => setDeleteError(""), 3000);
     }
   };
@@ -1377,11 +1377,11 @@ export const MenuReferences: React.FC<{
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">
-                    Agregar Referencia desde Menú Existente
+                    Agregar Plantilla desde Menú Existente
                   </h3>
                   <p className="text-sm text-slate-500">
                     Selecciona un menú semanal del historial para guardarlo como
-                    plantilla de referencia (Hoja 1)
+                    plantilla de plan alimenticio (Hoja 1)
                   </p>
                 </div>
               </div>
@@ -1417,7 +1417,7 @@ export const MenuReferences: React.FC<{
                   </h3>
                   <p className="text-sm text-slate-500">
                     Selecciona un menú de intercambio del historial para
-                    guardarlo como plantilla de referencia
+                    guardarlo como plantilla de plan alimenticio
                   </p>
                 </div>
               </div>
@@ -1448,7 +1448,7 @@ export const MenuReferences: React.FC<{
                   <Trash2 className="w-5 h-5 text-red-600" />
                 </div>
                 <h3 className="font-bold text-slate-900">
-                  Eliminar referencia
+                  Eliminar plantilla
                 </h3>
               </div>
               <button
@@ -1460,7 +1460,7 @@ export const MenuReferences: React.FC<{
             </div>
             <div className="p-5">
               <p className="text-sm text-slate-600">
-                ¿Estás seguro de que deseas eliminar esta referencia? Esta
+                ¿Estás seguro de que deseas eliminar esta plantilla? Esta
                 acción no se puede deshacer.
               </p>
               {deleteError && (
@@ -1493,7 +1493,7 @@ export const MenuReferences: React.FC<{
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col gap-4 p-6">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-slate-900 text-lg">
-                Importar referencia desde YAML
+                Importar plantilla desde YAML
               </h3>
               <button
                 onClick={() => {
@@ -1508,7 +1508,7 @@ export const MenuReferences: React.FC<{
               </button>
             </div>
             <p className="text-sm text-slate-500">
-              Pega el YAML de tu referencia. Se convertirá automáticamente al
+              Pega el YAML de tu plantilla. Se convertirá automáticamente al
               nuevo formato.
             </p>
             <textarea
@@ -1529,7 +1529,7 @@ export const MenuReferences: React.FC<{
             )}
             {importOk && (
               <p className="text-sm text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
-                ✅ Referencia importada correctamente.
+                ✅ Plantilla importada correctamente.
               </p>
             )}
             <div className="flex justify-end gap-3">
@@ -1566,11 +1566,11 @@ export const MenuReferences: React.FC<{
               </div>
               <div>
                 <h3 className="font-bold text-slate-900">
-                  Plantillas de Referencias
+                  Plantillas de Plan Alimenticio
                 </h3>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {activeRefTab === "SEMANAL"
-                    ? "Menús semanales de referencia que puedes copiar como base."
+                    ? "Plantillas de menús semanales que puedes copiar como base."
                     : "Plantillas de intercambio de alimentos reutilizables."}
                 </p>
               </div>
@@ -1633,12 +1633,12 @@ export const MenuReferences: React.FC<{
               <h4 className="font-bold text-slate-700 mb-1">
                 {activeRefTab === "INTERCAMBIO"
                   ? "Aún no hay plantillas de intercambio"
-                  : "Aún no hay referencias"}
+                  : "Aún no hay plantillas de plan alimenticio"}
               </h4>
               <p className="text-slate-500 text-sm max-w-sm mx-auto">
                 {activeRefTab === "INTERCAMBIO"
                   ? "Crea plantillas de intercambio de alimentos para reutilizarlas en futuros menús."
-                  : "Agrega menús reales como referencia para copiarlos como base al crear nuevos planes."}
+                  : "Agrega menús reales como plantilla para copiarlos como base al crear nuevos planes."}
               </p>
               <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
@@ -1648,7 +1648,7 @@ export const MenuReferences: React.FC<{
                   <Plus className="w-4 h-4" />{" "}
                   {activeRefTab === "INTERCAMBIO"
                     ? "Crear primera plantilla de intercambio"
-                    : "Agregar primera referencia"}
+                    : "Agregar primera plantilla"}
                 </button>
                 <button
                   onClick={() =>
@@ -1819,7 +1819,7 @@ export const MenuReferences: React.FC<{
                 onClick={handleSave}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-xl text-sm transition-colors"
               >
-                <Save className="w-4 h-4" /> Guardar referencia
+                <Save className="w-4 h-4" /> Guardar plantilla
               </button>
             )}
             <button

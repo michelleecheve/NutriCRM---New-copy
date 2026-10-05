@@ -8,7 +8,7 @@ interface MenuGuideHubProps {
 
 const OPTIONS: { key: 'sec1' | 'sec2' | 'sec3'; step: string; label: string }[] = [
   { key: 'sec1', step: 'Paso 1', label: 'Cálculo Nutricional' },
-  { key: 'sec2', step: 'Paso 2', label: 'Plantilla + Referencias' },
+  { key: 'sec2', step: 'Paso 2', label: 'Selecciona Plantillas' },
   { key: 'sec3', step: 'Paso 3', label: 'Edición y Preview' },
 ];
 

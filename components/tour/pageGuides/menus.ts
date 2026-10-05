@@ -17,7 +17,7 @@ export function getMenusGuideSteps(expandConfigPanel: () => void): PageGuideStep
       id: 'menus-referencias',
       target: '[data-tour="menus-referencias"]',
       placement: 'right',
-      title: 'Plantillas de referencias',
+      title: 'Plantillas de plan alimenticio',
       body: 'Aquí agregas y guardas plantillas de contenido de menús, para reutilizarlas después.',
       onBeforeShow: expandConfigPanel,
     },

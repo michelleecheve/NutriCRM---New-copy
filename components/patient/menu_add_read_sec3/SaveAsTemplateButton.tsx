@@ -177,7 +177,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
               {saveTemplateSuccess === 'ref' && (
                 <div className="flex items-center gap-2 p-4 bg-emerald-50 rounded-2xl border border-emerald-200">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                  <span className="text-sm font-bold text-emerald-700">Referencia guardada correctamente</span>
+                  <span className="text-sm font-bold text-emerald-700">Plantilla de plan alimenticio guardada correctamente</span>
                 </div>
               )}
               {saveTemplateSuccess === 'rec' && (
@@ -237,7 +237,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
                           disabled={isSavingTemplate || !saveRefName.trim()}
                           className="bg-blue-600 text-white font-bold px-6 py-2 rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50"
                         >
-                          {isSavingTemplate ? 'Guardando...' : <><Bookmark className="w-4 h-4" />Guardar Referencia</>}
+                          {isSavingTemplate ? 'Guardando...' : <><Bookmark className="w-4 h-4" />Guardar Plantilla</>}
                         </button>
                       </div>
                     </div>
@@ -246,7 +246,7 @@ export const SaveAsTemplateButton: React.FC<SaveAsTemplateButtonProps> = ({ menu
                       onClick={() => setSaveTemplateType('ref')}
                       className="w-full py-2 text-sm font-bold text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-blue-200"
                     >
-                      Guardar como Referencia →
+                      Guardar como Plantilla de Plan Alimenticio →
                     </button>
                   )}
                 </div>

@@ -123,7 +123,7 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
           <div className="bg-indigo-100 p-2 rounded-xl">
             <BookOpen className="w-5 h-5 text-indigo-600" />
           </div>
-          <h2 className="text-lg font-bold text-slate-800">Plantilla + Referencias</h2>
+          <h2 className="text-lg font-bold text-slate-800">Selecciona Plantillas</h2>
           <div className="flex items-center gap-2">
             <button
               className="p-1.5 hover:bg-white rounded-lg transition-colors text-slate-400 hover:text-indigo-600"
@@ -136,22 +136,24 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
 
       {isVisible && (
         <div className="p-8 space-y-8 animate-in slide-in-from-top-2 duration-300">
+          <p className="text-sm text-slate-500">Utiliza una plantilla previamente guardada de menús realizados anteriormente para que no empieces desde cero.</p>
+
           {/* B) Referencias Seleccionadas */}
           <div data-tour="menu-sec2-referencias" className="space-y-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-500 uppercase ml-1">Referencias seleccionadas</label>
+              <label className="text-xs font-bold text-slate-500 uppercase ml-1">Plantillas de plan alimenticio seleccionadas</label>
               <button 
                 onClick={() => handleOpenSelector('references')}
                 className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Agregar referencias
+                Agregar plantillas
               </button>
             </div>
 
             <div className="flex flex-wrap gap-2 min-h-[40px] p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
               {selectedReferences.length === 0 ? (
-                <p className="text-sm text-slate-400 italic">Aún no has seleccionado referencias</p>
+                <p className="text-sm text-slate-400 italic">Aún no has seleccionado plantillas</p>
               ) : (
                 selectedReferences.map(ref => (
                   <div 
@@ -213,7 +215,7 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
                 <div className="flex items-center gap-2">
                   <div>
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                      {selectorType === 'references' ? 'Elige hasta 3 referencias' : 'Elige hasta 3 recomendaciones'}
+                      {selectorType === 'references' ? 'Elige hasta 3 plantillas' : 'Elige hasta 3 recomendaciones'}
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">{tempSelectedIds.length}/3 seleccionadas</p>
                   </div>
@@ -239,7 +241,7 @@ export const MenuAddReadSec2: React.FC<MenuAddReadSec2Props> = ({
                 {selectorType === 'references' ? (
                   allReferences.length === 0 ? (
                     <div className="col-span-full py-8 text-center text-slate-400 text-sm italic">
-                      No hay referencias guardadas en el sistema.
+                      No hay plantillas guardadas en el sistema.
                     </div>
                   ) : (
                     allReferences.map(ref => {

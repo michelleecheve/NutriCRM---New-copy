@@ -772,9 +772,9 @@ export const Menus: React.FC<{ onSelectPatient?: (id: string, tab?: string) => v
 
             <div data-tour="menus-referencias">
               <MenuWrapper
-                title="Plantillas de Referencias"
+                title="Plantillas de Plan Alimenticio"
                 icon={<FileText className="w-5 h-5 text-blue-600" />}
-                description="Ingresa un menú de referencia por kcal para usar como base al copiar"
+                description="Guarda un menú por kcal como plantilla para usarlo como base al copiar"
                 storageKey="referencias"
               >
                 <MenuReferences hideHeader hideContainer />

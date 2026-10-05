@@ -91,7 +91,7 @@ export const chapter3: TourChapter = {
       target: '[data-tour="evaluation-menu-section"]',
       placement: 'top',
       title: 'El menú de esta evaluación',
-      body: 'Cuando estés listo para armar el plan de alimentación, puedes crearlo desde aquí en Crear. Vas a ver un formulario mucho más extenso, con 3 secciones: cálculo nutricional, plantillas y referencias, y edición/preview con opción a exportar en PDF. No te preocupes ahorita por aprender a hacerlo solo, más adelante te enseñaremos paso a paso.',
+      body: 'Cuando estés listo para armar el plan de alimentación, puedes crearlo desde aquí en Crear. Vas a ver un formulario mucho más extenso, con 3 secciones: cálculo nutricional, selección de plantillas, y edición/preview con opción a exportar en PDF. No te preocupes ahorita por aprender a hacerlo solo, más adelante te enseñaremos paso a paso.',
       advanceOn: { type: 'manual' },
     },
     {
