@@ -267,8 +267,11 @@ export const DayMenuView: React.FC<Props> = ({
   const isToday = (weekIdx: number, pos: number) =>
     weekIdx === todayWeekIdx && pos === todayPos;
 
-  const todayDateStr = toLocalDateStr(new Date());
-  const isPastDay = dateKey < todayDateStr;
+  // Hoy y ayer quedan editables (por si olvidó marcar ayer); antes de ayer se bloquea.
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayDateStr = toLocalDateStr(yesterday);
+  const isPastDay = dateKey < yesterdayDateStr;
 
   // ── Optimistic update + upsert ──
   const handleUpdate = useCallback(
