@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NutriFollow</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <script>
+      // Portal del paciente (/p/:token): icono propio al "Agregar a pantalla de inicio"
+      if (/^\/p\/[^/]+/.test(window.location.pathname)) {
+        document.querySelector('link[rel="icon"]').href = '/client-portal-icon.png';
+        var touchIcon = document.createElement('link');
+        touchIcon.rel = 'apple-touch-icon';
+        touchIcon.href = '/client-portal-icon.png';
+        document.head.appendChild(touchIcon);
+      }
+    </script>
 
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-C588B79E8B"></script>
